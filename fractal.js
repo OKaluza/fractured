@@ -236,7 +236,6 @@
         if (!val2) val2 = 0;      //Default 2nd val for complex if none
 
         //Not overwriting param if already exists as same type, causes problems, should probably clear all or detect if changed
-        //TODO: if param parser is smart enough to detect type, should we remove type declaration requirement for simplicity?
         if (!this[name] || (this[name] && this[name].type != type)) {
           if (type == "complex")
             this[name] = new Param([val1, val2], label);
@@ -257,7 +256,7 @@
         alert("No match for parameter (" + name + ") value: " + value);
       }
 
-      //Always overwrite the comment labels as these are not saved in param files
+      //Overwrite the comment label
       this[name].label = label;
     };
   }

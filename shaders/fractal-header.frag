@@ -5,7 +5,7 @@ precision highp float;
 #define rgb vec3 
 #define rgba vec4 
 
-//Complex mathematical library functions
+//Complex number library functions
 const real PI = 3.1415926536;
 const real TWO_PI = 2.0 * PI;
 complex mul(in complex a, in complex b);
@@ -30,6 +30,7 @@ complex csin(in complex z);
 complex ccos(in complex z);
 complex ctan(in complex z);
 complex csqrt(in complex z);
+complex csqrt2(in complex z);
 bool equals(complex z1, complex z2, real tolerance);
 
 //Globals
@@ -42,7 +43,7 @@ int maxiterations;  //Number of iterations to perform
 int count = 0;      //Step counter
 bool converged;     //Converge flag
 
-//Uniforms, builtins first
+//Uniform data
 uniform bool julia;
 uniform bool perturb;
 uniform real pixelsize;
