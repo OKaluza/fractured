@@ -1,0 +1,234 @@
+<!doctype html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Fractal WebGL</title>
+
+<link rel="stylesheet" type="text/css" href="styles.css">
+
+<script type="text/javascript" src="index.js"></script>
+<script type="text/javascript" src="utils.js"></script>
+<script type="text/javascript" src="ajax.js"></script>
+<script type="text/javascript" src="mouse.js"></script>
+<script type="text/javascript" src="fractal.js"></script>
+<script type="text/javascript" src="webgl.js"></script>
+<script type="text/javascript" src="colour.js"></script>
+
+<script type="text/javascript" src="sylvester.js"></script>
+<script type="text/javascript" src="glUtils.js"></script>
+<script type="text/javascript" src="matrix.js"></script>
+
+<!-- Colour picker -->
+<script type="text/javascript" src="colourPicker.js"></script>
+
+<script id="default-vs" type="x-shader/x-vertex">
+precision highp float;
+attribute vec3 aVertexPosition;
+attribute vec2 aTextureCoord;
+varying vec2 vTextureCoord;
+void main(void)
+{
+  //Scale 3/4, for testing
+  gl_Position = vec4(0.75 * aVertexPosition, 1.0);
+  vTextureCoord = aTextureCoord;  
+}
+</script>
+
+<script id="default-fs" type="x-shader/x-fragment">
+//Basic texturing shader
+precision highp float;
+varying vec2 vTextureCoord;
+uniform sampler2D texture;
+void main(void)
+{
+  gl_FragColor = texture2D(texture, vec2(vTextureCoord.s, vTextureCoord.t));
+}
+</script>
+
+</head>
+
+<body onload="pageStart();" id="body">
+
+  <!--header id="header"><h2>Fractal WebGL</h2></header-->
+
+  <section id="middle">  
+
+    <aside id="sidebar">
+
+      <nav id="navbar">
+        <ul>
+        <li onmousedown="return event.returnValue = showPanel(this, 'panel1');" id="tab1" >Parameters</li>
+        <li onmousedown="return event.returnValue = showPanel(this, 'panel2');" >Formula</li>
+        <li onmousedown="return event.returnValue = showPanel(this, 'panel3');" >Palette</li>
+        <li onmousedown="return event.returnValue = showPanel(this, 'panel4');" >Console</li>
+        <li onmousedown="return event.returnValue = showPanel(this, 'panel5');" >Images</li>
+        </ul>
+      </nav>
+
+      <div class="panel" id="panel1" style="display: block">
+
+        <!--hr-->
+
+        <div id="formscroll">
+          <form name="inputs" class="formbox">
+            <div class="row">
+              <span class="label">Size</span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
+            </div>
+
+            <div class="row">
+              <span class="label">Zoom</span>
+              <span class="field"><input type="number" id="zoomLevel" value="0.5"></span>
+              <div class="left"><input type="button" value="Reset" onclick="fractal.resetZoom()"></div>
+            </div>
+            <div class="row">
+              <span class="label">Rotate</span>
+              <span class="field"><input type="number" id="rotate" value="0.0"></span>
+            </div>
+            <div class="row">
+              <span class="label">Origin</span><span class="field"><input type="number" id="xPosInput" value="0.0"></span><span class="field"><input type="number" id="yPosInput" value="0.0"></span>
+            </div>
+            <div class="row">
+              <span class="label">Selected coord</span><span class="field"><input type="number" id="xSelInput" value="0.0"></span><span class="field"><input type="number" id="ySelInput" value="0.0"></span>
+            </div>
+            <div class="row">
+              <span class="label"></span>
+              <span class="field"><input type="checkbox" id="julia" checked="unchecked">Julia</span>
+              <span class="field"><input type="checkbox" id="perturb" checked="unchecked">Perturb</span>
+            </div>
+
+            <div class="clear"></div>
+            <div class="row">
+            </div>
+
+            <div id="base_params" width="100%"></div>
+            <div id="fractal_params" width="100%"></div>
+            <div id="transform_params" width="100%"></div>
+            <div id="outside_colour_params" width="100%"></div>
+            <div id="inside_colour_params" width="100%"></div>
+
+            <div class="clear"></div>
+
+          </form>
+        </div>
+
+      </div>
+
+      <div class="panel" id="panel2" style="display: none">
+        File upload:<br>
+        <input name="file" type="file"onchange="filesProcess(this.files, loadFile)"/><br />
+
+        <div class="label">Fractal</div>
+        <div class="field">
+          <select id="fractal_formula" onchange="fractal.selectFormula('fractal', this.value)">
+          <option value="mandelbrot">Mandelbrot</option>
+          <option value="burningship">Burning Ship</option>
+          <option value="magnet1">Magnet 1</option>
+          <option value="magnet2">Magnet 2</option>
+          <option value="magnet3">Magnet 3</option>
+          <option value="nova">Nova</option>
+          <option value="novabs">Novabs</option>
+          </select>
+          <input type="button" value="Edit" onclick="fractal.editFormula('fractal');" />
+        </div>
+
+        <div class="label">Transform</div>
+        <div class="field">
+          <select id="transform_formula" onchange="fractal.selectFormula('transform', this.value)">
+          <option value="none"></option>
+          <option value="abs">abs</option>
+          <option value="fractured">Fractured</option>
+          </select>
+          <input type="button" value="Edit" onclick="fractal.editFormula('transform');" />
+        </div>
+
+        <div class="label">Outside Colour</div>
+        <div class="field">
+          <select id="outside_colour_formula" onchange="fractal.selectFormula('outside_colour', this.value)">
+          <option value="none"></option>
+          <option value="default" selected>Default</option>
+          <option value="smooth1">Smooth 1</option>
+          <option value="smooth2">Smooth 2</option>
+          <option value="exp_diverge">Exponential Smooth (Diverge)</option>
+          <option value="exp2_diverge">Exponential Smooth 2 (Diverge)</option>
+          <option value="exp_converge">Exponential Smooth (Converge)</option>
+          <option value="exp_combined">Exponential Smooth (Combined)</option>
+          <option value="triangle_inequality">Triangle Inequality</option>
+          </select>
+          <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');" />
+        </div>
+        <div class="label">Inside Colour</div>
+        <div class="field">
+          <select id="inside_colour_formula" onchange="fractal.selectFormula('inside_colour', this.value)">
+          <option value="none"></option>
+          <option value="smooth1">Smooth 1</option>
+          <option value="smooth2">Smooth 2</option>
+          <option value="exp_diverge">Exponential Smooth (Diverge)</option>
+          <option value="exp2_diverge">Exponential Smooth 2 (Diverge)</option>
+          <option value="exp_converge">Exponential Smooth (Converge)</option>
+          <option value="exp_combined">Exponential Smooth (Combined)</option>
+          <option value="triangle_inequality">Triangle Inequality</option>
+          </select>
+          <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');" />
+        </div>
+
+      </div>
+
+      <div class="panel" id="panel3" style="display: none">
+        <input type="button" value="Palette Edit" onClick="openPaletteEditor()">
+        <hr>
+      </div>
+
+
+      <div class="panel" id="panel4" style="display: none">
+        <textarea id="console" style="width: 99%" spellcheck="false">
+        </textarea>
+      </div>
+
+      <div class="panel" id="panel5" style="display: none">
+        <div id="image"></div>
+      </div>
+
+      <div id="statusbar">
+        <span id="coords">&nbsp;re: im:</span>
+      </div>
+
+    </aside>
+    <section id="main">
+      <div id="controls">
+        <input type="button" id="hideshow" value="<<" onClick="toggleParams()"><input type="button" value="Apply & Redraw" onclick="fractal.applyChanges()"><input type="button" value="Edit source" onClick="lineOffset=0; openEditor('gen-shader.frag')"><input type="button" value="Save Palette"  onClick="savePalette()"><input type="button" value="Save Image"  onClick="saveImage()"><input type="button" value="Save..."  onClick="fractal.save();"><input type="button" value="Load...">
+      </div>
+
+      <div id="fractal">
+        <div id="minwidth">
+          <div id="backgroundBG"><div id="backgroundCUR" onmousedown="bgColourMouseClick();"></div></div>
+          <canvas id="palette" width="572" height="24"></canvas>
+        </div>
+        <div id="select" style="display: none"></div>
+        <canvas id="fractal-canvas" width="600" height="600"></canvas>
+      </div>
+
+    </section>
+
+  </section>
+
+  <!-- Colour picker -->
+  <div id="plugin" onmousedown="HSVslide('drag','plugin',event)">
+    <div id="plugCURBG"><div id="plugCUR"></div></div>
+    <div id="plugHEX" onmousedown="stop=0; setTimeout('stop=1',100);">FFFFFF</div>
+    <div id="plugCLOSE" onmousedown="toggle('plugin'); colourPickerX()">X</div>
+    <div id="plugOK" onmousedown="toggle('plugin'); colourPickerOK(picked);">OK</div><br>
+    <div id="SV" onmousedown="HSVslide('SVslide','plugin',event)" title="Saturation + Value">
+     <div id="SVslide"><br/></div>
+    </div>
+    <form id="H" onmousedown="HSVslide('Hslide','plugin',event)" title="Hue">
+     <div id="Hslide"><br/></div>
+     <div id="Hmodel"></div>
+    </form>
+    <form id="O" onmousedown="HSVslide('Oslide','plugin',event)" title="Opacity">
+     <div id="Oslide"><br/></div>
+     <div id="Omodel"></div>
+    </form>
+  </div>
+
+  <img src="media/slider.png" id="slider" style="display: none;"/>
+
+</body>
+</html>

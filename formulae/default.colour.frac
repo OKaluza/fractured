@@ -1,0 +1,8 @@
+//Default colouring algorithm, does nothing but return the count
+void default_init() {}
+void default_reset() {} 
+void default_calc() {}
+real default_result()
+{
+  return real(count);
+}

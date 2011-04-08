@@ -1,0 +1,41 @@
+@power = complex(3,0);    //Power
+@bailout = real(0.00001);   //Bailout
+@param2 = complex(1,0);
+
+//Init, called once at start of render
+void init()
+{
+}
+
+//Reset, called once for each pixel before iterating
+void reset()
+{
+  if (!julia) z = complex(1.0,0.0);  //Nova init
+}
+
+//Get next z(n+1), performs an iteration step
+void runstep()
+{
+  //Novabs: z = abs(z - (param0 * (z^p - 1)) / (p * z^(p-1))) + c
+  if (power == C(3.0))
+  {
+    complex zsquared = mul(z,z);
+    complex zcubed = mul(zsquared,z);
+    z = abs(z - div(mul(param2, zcubed - C(1.0)), mul(zsquared, C(3.0)))) + c;
+  }
+  else
+  {
+    //Any power - generic version, requires cpow
+    z = abs(z - div(mul(param2, (cpow(z, power.x)) - C(1.0)),
+               (mul(power, cpow(z, power-C(1.0)))))) + c;
+    //z = z - param1 * (cpow(z, power) - 1.0) / (power * cpow(z, power-1.0)) + c;
+  }
+}
+
+bool bailed()
+{
+  //Check bailout condition and return true if bailed out...
+  if (norm(z-zold) < bailout) return true; //Nova bailout
+  return false;
+}
+

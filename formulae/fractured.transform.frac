@@ -1,0 +1,55 @@
+@function1 = int(1);  //Real function
+@function2 = int(1);  //Imag function
+@inductop = int(1);       //Induct operator
+@induct = complex(1,0);    //Induction
+
+bool mod0(in int a, in int b)
+{
+  return mod(float(a),float(b)) == 0.0;
+}  
+
+void transform_component(in int fn, inout real val)
+{
+  if (fn == 0) return;
+  else if (fn == 1) val = abs(val);
+  else if (fn == 2) val = sin(val);
+  else if (fn == 3) val = cos(val);
+  else if (fn == 4) val = tan(val);
+  else if (fn == 5) val = asin(val);
+  else if (fn == 6) val = acos(val);
+  else if (fn == 7) val = atan(val);
+  else if (fn == 8) val = float(int(val));
+  else if (fn == 9) val = log(val);
+  else if (fn == 10) val = log(val) / log(10.0);
+  else if (fn == 11) val = sqrt(val);
+  else if (fn == 13) val = 1.0/val;
+  else if (fn == 14 && mod0(count,2)) val = abs(val);
+  else if (fn == 15 && z.x < z.y) val = abs(val);
+}
+
+void transform()
+{
+  //Apply induction, available operators are 1(*) and 3(@)
+  if (inductop > 0)
+  {
+    if (inductop == 1)
+      z += mul(zoldold, induct);
+    else if (inductop == 3)
+      z+= mul(zold, induct);
+  }
+
+  //Apply functions to real and/or imaginary components
+  if (function1 == 0 && function2 == 0)
+    return;
+  if (function1 == 1 && function2 == 1)
+    z = abs(z);
+  else
+  {
+    if (function1 == 12 || function2 == 12)
+      z = complex(z.y, z.x);     //Swap
+   
+    transform_component(function1, z.x);
+    transform_component(function2, z.y);
+  }
+}
+
