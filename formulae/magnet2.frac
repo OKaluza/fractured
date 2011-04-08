@@ -1,0 +1,42 @@
+@bailout = real(100);   //Bailout
+@bailoutc = real(0.00005);   //Converge Bailout
+//power = complex(2);    //Power
+
+//Init, called once at start of render
+void init()
+{
+}
+
+//Reset, called once for each pixel before iterating
+void reset()
+{
+}
+
+//Get next z(n+1), performs an iteration step
+void runstep()
+{
+  //Magnet2
+  complex z2 = mul(z,z);
+  complex c1 = c - C(1.0);
+  complex c2 = c - C(2.0);
+  complex c1c2 = mul(c1, c2);
+  z = div(mul(z2,z) + 3.0*mul(z, c1) + c1c2,
+          3.0*z2 + 3.0*mul(z, c2) + c1c2 + C(1.0));
+  z = mul(z,z);
+}
+
+//Check bailout conditions and return true if bailed out
+bool bailed()
+{
+  //Divergent bailout
+  if (norm(z) > bailout) return true;
+  //Convergent bailout
+  if (norm(z - C(1.0)) <= bailoutc)
+  {
+    converged = true;
+    return true;
+  }
+  return false;
+}
+
+

@@ -1,0 +1,48 @@
+@bailout = real(100);   //Bailout
+@bailoutc = real(0.00005);   //Converge Bailout
+@power = complex(2);    //Power
+@param1 = complex(1,0); //A
+@param2 = complex(1,0); //C
+@param3 = complex(1,0); //B-D
+
+//Init, called once at start of render
+void init()
+{
+}
+
+//Reset, called once for each pixel before iterating
+void reset()
+{
+}
+
+//Get next z(n+1), performs an iteration step
+void runstep()
+{
+  //Magnet3
+  // similar to kleinien group / mobius transform arangement:
+  // Mobius transorm z = az^2 + b / cz^2 + d
+  complex z2;
+  if (power == C(2.0))
+    z2 = mul(z,z);
+  else
+    z2 = cpow(z,power);
+
+  z = div(mul(param1, z2) + param3,
+          mul(param2, z2) - param3)
+          + c;
+}
+
+//Check bailout conditions and return true if bailed out
+bool bailed()
+{
+  //Divergent bailout
+  if (norm(z) > bailout) return true;
+  //Convergent bailout
+  if (norm(z - C(1.0)) <= bailoutc)
+  {
+    converged = true;
+    return true;
+  }
+  return false;
+}
+

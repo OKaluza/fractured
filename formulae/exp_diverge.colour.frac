@@ -1,0 +1,21 @@
+//Exponential smooth (diverge mode)
+real sum = 0.0;
+void exp_diverge_init()
+{
+}
+
+void exp_diverge_reset()
+{
+  sum = 0.0;
+}
+
+void exp_diverge_calc()
+{
+  //Exp. smooth (diverge mode) calc section:
+  sum += exp(-cabs(z));
+}
+
+real exp_diverge_result()
+{
+  return sum;
+}

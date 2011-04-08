@@ -1,0 +1,13 @@
+//Smooth colouring algorithm v1
+real il;
+void smooth1_init()
+{
+  il = 1.0/log(2.0);        //Inverse log of (power).
+}
+void smooth1_reset() {} 
+void smooth1_calc() {}
+real smooth1_result()
+{
+  //Smooth1 colouring
+  return real(count+1) - log(log(cabs(z))) * il;
+}

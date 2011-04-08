@@ -1,0 +1,202 @@
+body {
+  font-family: sans;
+  font-size: 10pt;
+  background: #ffe;
+}
+html, body { 
+  padding: 0; margin: 0; 
+}
+
+/* Data entry form layout */
+form.formbox {padding: 5px;}
+div.row      {clear: both; }
+div.row span.label   {display: inline; float: left; width: 124px; text-align: right; margin: 3px}
+div.row span.field   {display: inline; float: left; text-align: left; margin: 0px} 
+.formbox textarea    {width: 100%}
+
+/* Floating divs */
+.left       {float: left}
+.right      {float: right}
+.clear      {clear: both;}
+
+.divider{
+  clear: both; margin: 0px 0px 3px; padding: 0px 0px 3px; 
+  border-bottom: dotted 1px; color: #aaaaaa;
+}
+
+textarea{
+  width: 98%;
+  height: 98%;
+}
+
+input[type="number"] {
+  width: 100px;
+}
+
+canvas {
+  margin:0px;
+  padding:0px;
+  border: solid 1px;
+  background-image: url("media/bg.png");
+  border-radius: 4px;
+  /*box-shadow: 1px 1px 1px #333;*/
+}
+
+/* Background colour */
+#backgroundBG { float: left; width: 24px; height: 24px; margin-right: 2px; border: solid 1px; background-image: url("media/bg.png"); border-radius: 4px; /*box-shadow: 1px 1px 1px #333;*/}
+#backgroundCUR { float: left; width: 24px; height: 24px; background: "#fff"; margin-right: 2px; border-radius: 4px;}
+
+/* Image area selection */
+#select {
+  z-index: 10;
+  position:absolute;
+  border:1px solid #596380;
+  background: #EECC11;
+  opacity: 0.3;
+}
+
+/* Tab panels */
+.panel { 
+  border: none; 
+  padding: 5px; overflow: hidden;
+  background: #e9e4cc;
+  border-radius: 0px 5px 5px 5px;
+  box-shadow: 3px 3px 2px #333;
+
+  position: absolute; top: 25px; left: 3px; bottom: 27px; width: 366px;
+}
+
+/* Scrolling area of form */
+#formscroll {
+  overflow: auto; position: absolute; top: 0px; bottom: 5px; width: 98%;
+  /*overflow: auto; position: absolute; top: 40px; bottom: 5px; width: 98%; With non-scrolling top area*/
+}
+
+#controls {
+  margin: 0px 0px 2px 0px; padding:0px;
+  border-radius: 4px;
+  background: #888;
+  height: 28px;
+  width: 602px;
+}
+#controls input {
+  margin: 2px; padding: 0px 0px 2px 0px; height: 24px;
+}
+
+#statusbar {
+  position: absolute; bottom: 0px; width: 380px; margin: 0; padding: 0;
+}
+
+#coords {
+  float: left; background-color: #cd9; padding: 1px; margin: 3px;
+}
+
+section, header, aside, nav, article{
+  display: block;
+}
+
+header, nav, #middle {
+  margin: 0 auto;
+  clear: both;
+}
+
+header { 
+  height: 22px;
+  width:100%;
+}
+
+header h2 {
+  margin: 2px;
+  padding-left: 3px;
+  border-radius: 4px;
+  background: #ddc;
+  font-size: 10pt;
+}
+
+/* Tab navigation */
+nav ul {
+  height: 24px;
+
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+  display: block;
+  float: left;
+}
+nav li {
+  border-collapse: collapse; 
+  border-style: none;  
+  border-color: black; 
+  border-width: 1px 1px 0px 1px; 
+  color: #001166; 
+  background: #b9b49c;
+  padding: 2px 0.5em 0px 0.5em; 
+  margin-right: 3px;
+  text-decoration: none;
+  float: left;        
+  height: 22px;
+  border-radius: 5px 5px 0px 0px;
+  box-shadow: 1px -1px 1px #333;
+}
+nav li:hover { 
+  color: #0088AA; 
+  border-color: black; 
+  background: white; 
+  height: 22px;
+  cursor: pointer
+}
+
+#middle {
+  position:absolute;   
+  left:0;
+  top: 2px;
+  /*top: 22px; With header*/
+  bottom:0px;  
+  width:100%;
+}
+
+aside {
+  height: 99%;
+  margin: 3px;
+  float: left;
+  width: 376px;
+}
+
+#main {
+  float: left;
+  margin-left: 3px;
+  width: 2px;
+}
+#fractal {
+  float: left;
+}
+#minwidth {
+  width:602px;
+}
+
+/* colourPicker.js plugin */
+#plugin { display:none; top: 58px; z-index: 20; background: #0d0d0d; color: #aaa; cursor: move; font-family: arial; font-size: 11px; padding: 7px 10px 11px 10px; z-index: 1; position: absolute; width: 229px; border-radius: 5px;}
+#plugin br { clear: both; margin: 0; padding: 0;  }
+#plugin select { border: 1px solid #333; background: #fff; position: relative; top: 4px; }
+
+#plugHEX { float: left; position: relative; top: -1px; }
+#plugOK { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; user-select: none; }
+#plugCLOSE { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; user-select: none; }
+#plugHEX:hover,#plugCLOSE:hover,#plugOK:hover { color: #FFD000;  }
+
+#plugCURBG { float: left; width: 12px; height: 12px; margin-right: 3px; background-image: url("media/bg.png"); }
+#plugCUR { float: left; width: 12px; height: 12px; background: #fff; margin-right: 3px;}
+
+#SV { background: #ff0000 url('media/SatVal.png'); position: relative; cursor: crosshair; float: left; height: 170px; width: 170px; margin-right: 10px; user-select: none; }
+#SVslide {top: -4px; left: -4px; background: url('media/slide.png'); height: 9px; width: 9px; position: absolute; }
+
+#H { cursor: crosshair; float: left; height: 170px; position: relative; width: 19px; padding: 0; top: 0px; user-select: none; }
+#Hslide { top: 0px; left: -5px; background: url('media/slideHue.png'); height: 5px; width: 29px; position: absolute; }
+#Hmodel { position: relative; }
+#Hmodel div { height: 1px; width: 19px; margin: 0; padding: 0; }
+
+#O { border: 1px solid #888; cursor: crosshair; float: left; height: 170px; position: relative; width: 19px; padding: 0; top: 0px; left: 8px; user-select: none; background-image: url("media/bg.png"); }
+#Oslide { top: 0px; left: -5px; background: url('media/slideHue.png'); height: 5px; width: 29px; position: absolute; }
+#Omodel { position: relative;  }
+#Omodel div { height: 1px; width: 19px; margin: 0; padding: 0; background: #000;}

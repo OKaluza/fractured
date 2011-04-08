@@ -1,0 +1,39 @@
+//Triangle Inequality
+real te_il, te_lp;
+real te_sum = 0.0;
+real te_sum2 = 0.0;
+real te_ac = 0.0;
+
+void triangle_inequality_init()
+{
+  te_il = 1.0/log(2.0); //Should be inverse log of power.
+  te_lp = log(log(bailout)/2.0);
+}
+
+void triangle_inequality_reset()
+{
+  te_sum = 0.0;
+  te_sum2 = 0.0;
+  te_ac = cabs(c);
+}
+
+void triangle_inequality_calc()
+{
+  te_sum2 = te_sum;
+  if (count > 0)
+  {
+    real az2 = cabs(z - c);
+    real lowbound = abs(az2 - te_ac);
+    te_sum += (cabs(z) - lowbound) / (az2 + te_ac - lowbound);
+  }
+}
+
+real triangle_inequality_result()
+{
+  te_sum /= real(count);
+  te_sum2 /= real(count - 1);
+  real f = te_il * (te_lp - log(log(cabs(z))));
+  real idx = te_sum2 + (te_sum - te_sum2) * (f+1.0);
+  return idx * real(iterations);
+}
+
