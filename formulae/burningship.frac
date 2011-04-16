@@ -1,5 +1,5 @@
 @bailout = real(4);   //Bailout
-//power = complex(2);    //Power
+@power = real(2);    //Power
 
 //Init, called once at start of render
 void init()
@@ -14,8 +14,11 @@ void reset()
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
-  //(default mandelbrot)
-  z = abs(mul(z,z) + c);
+  if (power == 2.0)
+    //(default mandelbrot)
+    z = abs(mul(z,z) + c);
+  else
+    z = abs(cpow(z, power) + c);
 }
 
 //Check bailout condition and return true if bailed out

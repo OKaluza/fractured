@@ -1,5 +1,5 @@
-@function1 = int(1);  //Real function
-@function2 = int(1);  //Imag function
+@re_fn = int(1);  //Real function
+@im_fn = int(1);  //Imag function
 @inductop = int(1);       //Induct operator
 @induct = complex(1,0);    //Induction
 
@@ -39,17 +39,17 @@ void transform()
   }
 
   //Apply functions to real and/or imaginary components
-  if (function1 == 0 && function2 == 0)
+  if (re_fn == 0 && im_fn == 0)
     return;
-  if (function1 == 1 && function2 == 1)
+  if (re_fn == 1 && im_fn == 1)
     z = abs(z);
   else
   {
-    if (function1 == 12 || function2 == 12)
+    if (re_fn == 12 || im_fn == 12)
       z = complex(z.y, z.x);     //Swap
    
-    transform_component(function1, z.x);
-    transform_component(function2, z.y);
+    transform_component(re_fn, z.x);
+    transform_component(im_fn, z.y);
   }
 }
 

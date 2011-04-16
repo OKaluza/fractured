@@ -32,6 +32,11 @@ complex ctan(in complex z);
 complex csqrt(in complex z);
 complex csqrt2(in complex z);
 bool equals(complex z1, complex z2, real tolerance);
+complex ctrunc(in complex z);
+complex cfloor(in complex z);
+complex cciel(in complex z);
+complex cround(in complex z);
+complex cflip(in complex z);
 
 //Globals
 complex z;

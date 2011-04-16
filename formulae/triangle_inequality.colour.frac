@@ -1,39 +1,39 @@
 //Triangle Inequality
-real te_il, te_lp;
-real te_sum = 0.0;
-real te_sum2 = 0.0;
-real te_ac = 0.0;
+real ~il, ~lp;
+real ~sum = 0.0;
+real ~sum2 = 0.0;
+real ~ac = 0.0;
 
-void triangle_inequality_init()
+void ~init()
 {
-  te_il = 1.0/log(2.0); //Should be inverse log of power.
-  te_lp = log(log(bailout)/2.0);
+  ~il = 1.0/log(2.0); //Should be inverse log of power.
+  ~lp = log(log(bailout)/2.0);
 }
 
-void triangle_inequality_reset()
+void ~reset()
 {
-  te_sum = 0.0;
-  te_sum2 = 0.0;
-  te_ac = cabs(c);
+  ~sum = 0.0;
+  ~sum2 = 0.0;
+  ~ac = cabs(c);
 }
 
-void triangle_inequality_calc()
+void ~calc()
 {
-  te_sum2 = te_sum;
+  ~sum2 = ~sum;
   if (count > 0)
   {
     real az2 = cabs(z - c);
-    real lowbound = abs(az2 - te_ac);
-    te_sum += (cabs(z) - lowbound) / (az2 + te_ac - lowbound);
+    real lowbound = abs(az2 - ~ac);
+    ~sum += (cabs(z) - lowbound) / (az2 + ~ac - lowbound);
   }
 }
 
-real triangle_inequality_result()
+real ~result()
 {
-  te_sum /= real(count);
-  te_sum2 /= real(count - 1);
-  real f = te_il * (te_lp - log(log(cabs(z))));
-  real idx = te_sum2 + (te_sum - te_sum2) * (f+1.0);
+  ~sum /= real(count);
+  ~sum2 /= real(count - 1);
+  real f = ~il * (~lp - log(log(cabs(z))));
+  real idx = ~sum2 + (~sum - ~sum2) * (f+1.0);
   return idx * real(iterations);
 }
 

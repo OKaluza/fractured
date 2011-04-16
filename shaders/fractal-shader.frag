@@ -1,10 +1,14 @@
 //////////////////////////////////////////////////////////////////////////
 
 //Default functions for use when no colouring algorithm selected
-void none_init() {}
-void none_reset() {} 
-void none_calc() {}
-real none_result() { return 0.0; }
+void none_in_init() {}
+void none_in_reset() {} 
+void none_in_calc() {}
+real none_in_result() { return 0.0; }
+void none_out_init() {}
+void none_out_reset() {} 
+void none_out_calc() {}
+real none_out_result() { return 0.0; }
 
 void main()
 {
@@ -19,10 +23,10 @@ void main()
   //Variable iterations?
   if (vary > 0.0)
   {
-    //Hard coded for now to a 300 pixel radius circle
+    //Vary in circle of 1/2 pixelsize radius
     real dim = dims.x;
     if (dims.y < dim) dim = dims.y;
-    complex radius = dim * complex(pixelsize, pixelsize);
+    complex radius = 0.5 * dim * complex(pixelsize, pixelsize);
     complex dist = (coord - origin) / radius;
     real len = cabs(dist);
     //if (len > 1.0) discard; //--circle limit
@@ -69,17 +73,18 @@ void main()
         //Save previous z value
         zoldold = zold;
         zold = z;
+
         //Run next calc step
         count = i;
         runstep();
         transform();
+
+        //Check bailout condition
+        if (bailed()) break;
         
         //Colour calc...
         if (OUTSIDE) outColour_calc();
-        if (INSIDE && !INOUT) inColour_calc();
-
-        //Check bailout condition
-        if (bailed()) break; //return i;
+        if (INSIDE) inColour_calc();
 
         //Check iterations remain
         if (i == maxiterations) break;

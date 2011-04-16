@@ -125,6 +125,12 @@ void main(void)
           <option value="magnet3">Magnet 3</option>
           <option value="nova">Nova</option>
           <option value="novabs">Novabs</option>
+          <option value="cactus">Cactus</option>
+          <option value="phoenix">Phoenix</option>
+          <option value="stretch">Stretch</option>
+          <option value="gm">GM</option>
+          <option value="gmm">GMM</option>
+          <option value="quadra">Quadra</option>
           </select>
           <input type="button" value="Edit" onclick="fractal.editFormula('fractal');" />
         </div>
@@ -144,13 +150,11 @@ void main(void)
           <select id="outside_colour_formula" onchange="fractal.selectFormula('outside_colour', this.value)">
           <option value="none"></option>
           <option value="default" selected>Default</option>
-          <option value="smooth1">Smooth 1</option>
-          <option value="smooth2">Smooth 2</option>
-          <option value="exp_diverge">Exponential Smooth (Diverge)</option>
-          <option value="exp2_diverge">Exponential Smooth 2 (Diverge)</option>
-          <option value="exp_converge">Exponential Smooth (Converge)</option>
-          <option value="exp_combined">Exponential Smooth (Combined)</option>
+          <option value="smooth">Smooth</option>
+          <option value="exp_smooth">Exponential Smoothing</option>
           <option value="triangle_inequality">Triangle Inequality</option>
+          <option value="orbit_traps">Orbit Traps</option>
+          <option value="gaussian_integers">Gaussian Integers</option>
           </select>
           <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');" />
         </div>
@@ -158,16 +162,30 @@ void main(void)
         <div class="field">
           <select id="inside_colour_formula" onchange="fractal.selectFormula('inside_colour', this.value)">
           <option value="none"></option>
-          <option value="smooth1">Smooth 1</option>
-          <option value="smooth2">Smooth 2</option>
-          <option value="exp_diverge">Exponential Smooth (Diverge)</option>
-          <option value="exp2_diverge">Exponential Smooth 2 (Diverge)</option>
-          <option value="exp_converge">Exponential Smooth (Converge)</option>
-          <option value="exp_combined">Exponential Smooth (Combined)</option>
+          <option value="smooth">Smooth</option>
+          <option value="exp_smooth">Exponential Smoothing</option>
           <option value="triangle_inequality">Triangle Inequality</option>
+          <option value="orbit_traps">Orbit Traps</option>
+          <option value="gaussian_integers">Gaussian Integers</option>
           </select>
           <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');" />
         </div>
+
+            <div class="row">
+              <div class="label">Left-click Action</div>
+              <div class="field">
+                <select id="left_click" onchange="alert(this.value)">
+                <option value="none">Set Origin</option>
+                </select>
+              </div>
+              <div class="label">Right-click Action</div>
+              <div class="field">
+                <select id="right_click" onchange="alert(this.value)">
+                <option value="none">Set Selected</option>
+                </select>
+              </div>
+            </div>
+
 
       </div>
 

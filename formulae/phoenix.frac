@@ -1,0 +1,52 @@
+@bailout = real(4);   //Bailout
+@power = real(2);    //Power
+@power2 = real(0);    //Power 2
+@distort = complex(1);    //Distortion
+
+complex savez;
+
+//Init, called once at start of render
+void init()
+{
+}
+
+//Reset, called once for each pixel before iterating
+void reset()
+{
+  savez = C(0.0);
+  z = pixel;
+}
+
+//Get next z(n+1), performs an iteration step
+void runstep()
+{
+  complex cf;
+  complex newz;
+  
+  if (power2 == 0.0)
+    cf = c;
+  else 
+    if (power2 == 1.0)
+      cf = mul(z,c);
+    else 
+      if (power2 == 2.0)
+        cf = mul(mul(z,z),c);
+      else
+        cf = mul(cpow(z, power), c);
+  
+  if (power == 2.0)
+    newz = mul(z,z) + cf + mul(distort, savez);
+  else
+    newz = cpow(z, power)+ cf + mul(distort, savez);
+    
+  savez = z;
+  z = newz;
+}
+
+//Check bailout condition and return true if bailed out
+bool bailed()
+{
+  if (norm(z) > bailout) return true;
+  return false;
+}
+

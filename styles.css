@@ -22,6 +22,7 @@ div.row span.field   {display: inline; float: left; text-align: left; margin: 0p
 .divider{
   clear: both; margin: 0px 0px 3px; padding: 0px 0px 3px; 
   border-bottom: dotted 1px; color: #aaaaaa;
+  font-size: 8pt;
 }
 
 textarea{

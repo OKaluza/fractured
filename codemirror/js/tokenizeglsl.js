@@ -110,7 +110,7 @@ var tokenizeGLSL = (function() {
   // Some helper regexps
   var isOperatorChar = /[+\-*&%=<>!?|]/;
   var isHexDigit = /[0-9A-Fa-f]/;
-  var isWordChar = /[\w\$_]/;
+  var isWordChar = /[\w\$_~]/;  //!!!Added ~ for formula hack
   // Wrapper around glslToken that helps maintain parser state (whether
   // we are inside of a multi-line comment and whether the next token
   // could be a regular expression).

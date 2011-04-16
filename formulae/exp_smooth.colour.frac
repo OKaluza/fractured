@@ -1,0 +1,43 @@
+//Exponential smoothing
+@~diverge = bool(true);    //Divergent
+@~converge = bool(false);  //Convergent
+@~use_zold = bool(false);   //Use previous z
+
+real ~sum = 0.0;
+real ~csum = 0.0;
+
+void ~init() {}
+
+void ~reset()
+{
+  ~sum = 0.0;
+  ~csum = 0.0;  
+}
+
+void ~calc()
+{
+  if (~diverge)
+  {
+    if (~use_zold)
+      ~sum += exp(-cabs(zold - z));
+    else
+      ~sum += exp(-cabs(z));
+  }
+
+  if (~converge)
+  {
+    if (~use_zold)
+      ~csum += exp(-1.0/cabs(zold - z));  
+    else
+      ~csum += exp(-1.0/cabs(z));  
+  }
+}
+
+real ~result()
+{
+  if (!~diverge || ~converge && converged)
+    return ~csum;
+    
+  return ~sum;
+}
+

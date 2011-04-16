@@ -1,6 +1,7 @@
 @bailout = real(100);   //Bailout
 @bailoutc = real(0.00005);   //Converge Bailout
-//power = complex(2);    //Power
+@power = real(2);    //Power
+@power2 = real(2);    //Power 2
 
 //Init, called once at start of render
 void init()
@@ -15,9 +16,16 @@ void reset()
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
-  //Magnet: z = sqr( (z^2 + pixel - 1) / (2*z + pixel - 2) )
-  z = div(mul(z,z) + (c-C(1.0)), 2.0*z + (c-C(2.0)));
-  z = mul(z,z);
+  //Magnet: z = ((z^b + c - 1) / (b*z + c - 2))^a
+  if (power2 == 2.0)
+    z = div(mul(z,z) + (c-C(1.0)), 2.0*z + (c-C(2.0)));
+  else
+    z = div(cpow(z,power2) + (c-C(1.0)), power2 * cpow(z, power2-1.0) + (c-C(2.0)));
+    
+  if (power == 2.0)  
+    z = mul(z,z);
+  else
+    z = cpow(z, power);
 }
 
 //Check bailout conditions and return true if bailed out

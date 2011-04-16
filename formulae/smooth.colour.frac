@@ -1,0 +1,32 @@
+//Smooth colouring algorithm
+@~usepower = bool(true);  //Use power
+@~type2 = bool(false);  //Type 2
+
+real ~il, ~lp;
+
+void ~init()
+{
+  if (~usepower)
+    ~il = 1.0/log(power);  //Inverse log of (power).  
+  else
+    ~il = 1.0/log(2.0);    //Inverse log(2)
+ 
+  //Additional for Smooth 2
+  ~lp = log(2.0 * log(sqrt(bailout))) * ~il;
+  ////ln(2 * ln bailout) / ln(2).
+}
+
+void ~reset() {}
+void ~calc() {}
+
+real ~result()
+{
+  if (~type2)
+    //Smooth2 colouring
+    return real(count) + ~lp - log(log(cabs(z))) * ~il;
+
+  //Smooth1 colouring
+  return real(count+1) - log(log(cabs(z))) * ~il;
+}
+
+
