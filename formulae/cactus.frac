@@ -1,5 +1,5 @@
 @bailout = real(4);   //Bailout
-@power = real(2);    //Power
+@power = real(3);    //Power
 
 //Init, called once at start of render
 void init()
@@ -9,16 +9,23 @@ void init()
 //Reset, called once for each pixel before iterating
 void reset()
 {
+  //Reset fractal, standard doesn't work with this algorithm
+  z = pixel;
+  if (julia)
+    z = selected;
+  else
+    if (perturb) z = C(0.0);
 }
 
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
   if (power == 2.0)
-    //(default mandelbrot)
-    z = mul(z,z) + c;
+    z = mul(z,z) + mul(z, pixel - C(1.0)) - pixel;
+  else if (power == 3.0)
+    z = mul(mul(z,z),z) + mul(z, pixel - C(1.0)) - pixel;
   else
-    z = cpow(z, power) + c;
+    z = cpow(z, power) + mul(pixel - C(1.0), z) - pixel;
 }
 
 //Check bailout condition and return true if bailed out

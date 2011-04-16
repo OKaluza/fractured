@@ -1,8 +1,8 @@
 //Default colouring algorithm, does nothing but return the count
-void default_init() {}
-void default_reset() {} 
-void default_calc() {}
-real default_result()
+void ~init() {}
+void ~reset() {} 
+void ~calc() {}
+real ~result()
 {
   return real(count);
 }

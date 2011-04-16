@@ -29,18 +29,22 @@ var lineOffset; //line numbering offset count
     sources["formulae/magnet3.frac"] = "";
     sources["formulae/nova.frac"] = "";
     sources["formulae/novabs.frac"] = "";
+    sources["formulae/cactus.frac"] = "";
+    sources["formulae/phoenix.frac"] = "";
+    sources["formulae/stretch.frac"] = "";
+    sources["formulae/gm.frac"] = "";
+    sources["formulae/gmm.frac"] = "";
+    sources["formulae/quadra.frac"] = "";
 
     sources["formulae/abs.transform.frac"] = "";
     sources["formulae/fractured.transform.frac"] = "";
 
     sources["formulae/default.colour.frac"] = "";
-    sources["formulae/smooth1.colour.frac"] = "";
-    sources["formulae/smooth2.colour.frac"] = "";
-    sources["formulae/exp_diverge.colour.frac"] = "";
-    sources["formulae/exp2_diverge.colour.frac"] = "";
-    sources["formulae/exp_converge.colour.frac"] = "";
-    sources["formulae/exp_combined.colour.frac"] = "";
+    sources["formulae/smooth.colour.frac"] = "";
+    sources["formulae/exp_smooth.colour.frac"] = "";
     sources["formulae/triangle_inequality.colour.frac"] = "";
+    sources["formulae/orbit_traps.colour.frac"] = "";
+    sources["formulae/gaussian_integers.colour.frac"] = "";
 
     loadSources();
 
@@ -467,7 +471,8 @@ var editorFilename;
 
   function saveImage() {
     var canvas = document.getElementById("fractal-canvas");
-    window.open(canvas.toDataURL());
+    //window.open(canvas.toDataURL());
+    window.open(canvas.toDataURL("image/jpeg"));
     //addImage(canvas.toDataURL("image/png"));
   }
 

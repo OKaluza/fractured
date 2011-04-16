@@ -14,11 +14,14 @@ void reset()
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
+  //(diagonally stretched)
+  //z = x + yi
+  //x(n+1) = y(n) + x(c)
+  //y(n+1) = y(n)^2 - x(n)^2 + y(c)
   if (power == 2.0)
-    //(default mandelbrot)
-    z = mul(z,z) + c;
+    z = complex(z.y + c.x, z.y * z.y - z.x * z.x + c.y);
   else
-    z = cpow(z, power) + c;
+     z = complex(z.y + c.x, pow(z.y, power) - pow(z.x, power) + c.y);
 }
 
 //Check bailout condition and return true if bailed out

@@ -192,7 +192,36 @@ complex csqrt(in complex z)
     return complex(abs(z.y / t), z.y > 0.0 ? u : -u);
 }
 
-bool equals(complex z1, complex z2, real tolerance) 
+bool equals(in complex z1, in complex z2, real tolerance) 
 {
   return distance(z1, z2) <= abs(tolerance);
+}
+
+complex ctrunc(in complex z)
+{
+  int re = int(z.x);
+  int im = int(z.y);
+  return complex(real(re), real(im));
+}
+
+complex cfloor(in complex z)
+{
+  return complex(floor(z.x), floor(z.y));
+}
+
+complex cciel(in complex z)
+{
+  return complex(ceil(z.x), ceil(z.y));
+}
+
+complex cround(in complex z)
+{
+  int re = int(z.x + (z.x < 0.0 ? -0.5 : 0.5));
+  int im = int(z.y + (z.y < 0.0 ? -0.5 : 0.5));
+  return complex(real(re), real(im));
+}
+
+complex cflip(in complex z)
+{
+  return complex(z.y, z.x);
 }

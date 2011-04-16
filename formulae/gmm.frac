@@ -19,16 +19,14 @@ void reset()
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
-  //Magnet3
-  // similar to kleinien group / mobius transform arangement:
-  // Mobius transorm z = az^2 + b / cz^2 + d
   complex z2;
   if (power == 2.0)
     z2 = mul(z,z);
   else
     z2 = cpow(z,power);
 
-  z = div(mul(A, z2) + B, mul(C, z2) - D) + c;
+  //Derived from Gumowski-Mira eqn f(x) = ax + 2(1-a)x^2 / (1 + x)
+  z = mul(A, z) + div(mul(C, mul(D - B, z2)), D + z2) + c;
 }
 
 //Check bailout conditions and return true if bailed out
