@@ -560,7 +560,7 @@
   }
 
   //Conversion/parser for my old fractal ini files
-  Fractal.prototype.iniParser = function(source) {
+  Fractal.prototype.iniParser = function(source, paletteonly) {
     var saved = {};
 
     function convertFormulaName(name) {
@@ -608,6 +608,7 @@
       if (section == "[Palette]") {
         paletteSource += line + "\n";
       } else if (section == "[Parameters]" || section == "[ExtraParams]" || section == "[Fractal]") {
+        if (paletteonly) continue;
         //Parameters/ExtraParams: parse into attrib=value pairs and add to form
         var pair = line.split("=");
 
@@ -716,6 +717,10 @@
           //this.params[this.formula["fractal"]][pair[0]] = new Param(pair[1], pair[0]);
       }
     }
+
+    //Process the palette data
+    readPalette(paletteSource);
+    if (paletteonly) return;
     
     //Create parameter sets
     this.params[this.formula["fractal"]] = new ParameterSet();
@@ -848,9 +853,6 @@
       }
     }
 
-    //Process the palette data
-    readPalette(paletteSource);
-
     //Update parameters to form
     this.loadParams();
   }
@@ -875,6 +877,8 @@
   Fractal.prototype.applyChanges = function() {
     //Resize canvas if size settings changed
     var canvas = document.getElementById('fractal-canvas');
+    this.width = parseInt(document.getElementById("widthInput").value);
+    this.height = parseInt(document.getElementById("heightInput").value);
     if (this.width != canvas.width || this.height != canvas.height) {
       canvas.width = this.width;
       canvas.height = this.height;
