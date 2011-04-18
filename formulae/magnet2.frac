@@ -1,6 +1,7 @@
 @bailout = real(100);   //Bailout
 @bailoutc = real(0.00005);   //Converge Bailout
-//power = complex(2);    //Power
+@bailfunc = bailout_function(norm);   //Bailout Function
+@power = complex(2);    //Power
 
 //Init, called once at start of render
 void init()
@@ -22,16 +23,19 @@ void runstep()
   complex c1c2 = mul(c1, c2);
   z = div(mul(z2,z) + 3.0*mul(z, c1) + c1c2,
           3.0*z2 + 3.0*mul(z, c2) + c1c2 + C(1.0));
-  z = mul(z,z);
+  if (power == C(2.0))
+    z = sqr(z);
+  else
+    z = cpow(z,power);
 }
 
 //Check bailout conditions and return true if bailed out
 bool bailed()
 {
   //Divergent bailout
-  if (norm(z) > bailout) return true;
+  if (bailfunc(z) > bailout) return true;
   //Convergent bailout
-  if (norm(z - C(1.0)) <= bailoutc)
+  if (bailfunc(z - C(1.0)) <= bailoutc)
   {
     converged = true;
     return true;

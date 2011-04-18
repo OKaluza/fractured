@@ -1,9 +1,17 @@
   //Regular expressions
-  var paramreg = /@([A-Za-z0-9_]*) *= *(bool|int|uint|real|float|complex)\((.*)\); *(\/\/(.*))?(?:\r\n|[\r\n])/gi;
-  var numreg = /([-+]?([0-9]*\.)?[0-9]+),? *([-+]?([0-9]*\.)?[0-9]+)?/;
+  var paramreg = /@(\w*) *= *(bool|int|uint|real|float|complex|list|real_function|complex_function|bailout_function)\((.*)\); *(\/\/(.*))?(?:\r\n|[\r\n])/gi;
+  var numreg = /([-+]?(\d*\.)?\d+)/; //real/int
   var boolreg = /(true|false)/i;
-  var listreg = /("([A-Za-z0-9_]*\|?)*")/i;
-  var complexreg = /\(([-+]?([0-9]*\.)?[0-9]+), *([-+]?([0-9]*\.)?[0-9]+)\)/;
+  var listreg = /["'](([^'"|]*\|?)*)["']/i;
+  var complexreg = /\(?([-+]?(\d*\.)?\d+)\w*,\w*([-+]?(\d*\.)?\d+)\)?/;
+
+  //Take complex or real, return real?
+  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cotan", "cotanh", "cexp", "real", "imag", "ident", "loge", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
+  //Take complex, return complex?
+  var cplxfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil", "conj", "cos", "cosh", "cotan", "cotanh", "cexp", "flip", "floor", "ident", "loge", "inv", "round", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "trunc", "czero"];
+  //Take complex, return real, 
+  var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
+  //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan... provide access to componentwise versions too??)
 
   function Aspect(re, im, rotation, zoom) {
     this.re = re;
@@ -110,6 +118,12 @@
           this.typeid = 1;
         }
       }
+      if (isNaN(this.value)) {
+        //Function, copy value as string
+        this.type = 'function'
+        this.value = value;
+        this.typeid = 4;
+      }
     } else if (typeof(value) == 'number') {
       this.value = value;
       this.type = 'real';
@@ -148,20 +162,24 @@
 
   Param.prototype.declare = function(key) {
     //Return GLSL const declaration for this parameter
+    type = this.type;
+    if (this.type == 'list') type = 'int';
     if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
-    return "const " + this.type + " " + key + " = " + this.toGLSL() + ";\n";
+    if (this.type == 'function') return "#define " + key + "(args) " + this.value + "(args)\n";
+    return "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
   }
 
   Param.prototype.setFromElement = function(key) {
     //Get param value from associated form field
-    //var field = document.getElementById(key);
-    //if (this.typeid != 2 && !field) alert("No field found for: + " + key);
+    var field = document.getElementById(key);
+    if (this.typeid != 2 && !field) {consoleWrite("No field found for: " + key); return;}
     switch (this.typeid)
     {
       case -1: //Boolean = checkbox
         this.value = document.getElementById(key).checked;
         break;
       case 0: //Integer = entry
+      case 3: //Integer from list
         this.value = parseInt(document.getElementById(key).value);
         break;
       case 1: //real = entry
@@ -170,6 +188,9 @@
       case 2: //complex = 2 x entry
         this.value.re = parseFloat(document.getElementById(key + "_re").value);
         this.value.im = parseFloat(document.getElementById(key + "_im").value);
+        break;
+      case 4: //Function name
+        this.value = document.getElementById(key).value;
         break;
     }
   }
@@ -228,49 +249,79 @@
       var label = match[5];
       if (!label) label = name; //Default label if none provided
 
-      //Parse the value, accepts numbers including complex
+      //Parse the value by type...
       var nummatch = numreg.exec(value);
+      var complexmatch = complexreg.exec(value);
       var boolmatch = boolreg.exec(value);
-      var listmatch = listreg.exec(value);
 
-      //Only  overwrite value if already exists when type differs,
-      if (!this[name] || (this[name] && this[name].type != type)) {
-        if (nummatch) {
-          var val1 = nummatch[1];
-          var val2 = nummatch[3];
-          if (!val2) val2 = 0;      //Default 2nd val for complex if none
-
-          if (type == "complex")
-            this[name] = new Param([val1, val2], label);
-          else if (type == "real" || type == "real")
-            this[name] = new Param(parseFloat(val1), label);
-          else if (type == "int" || type == "uint")
-            this[name] = new Param(val1, label);
-          else if (type == "bool")
-            this[name] = new Param(parseInt(val1) != 0, label);
-
-        } else if (boolmatch) {
-          this[name] = new Param(boolmatch[1].toLowerCase() == "true", label);
-        } else if (listmatch) {
-          alert("List match: " + value);
-          //List = int(entry=value|entry=value)
-            this[name] = new Param("0", label); //Create int param
-        } else {
-          alert("No match for parameter (" + name + ") value: " + value);
-        }
+      //Save any existing value if same type
+      var saved = undefined;
+      if (this[name]) {
+        if (this[name].type == type)
+          saved = this[name].value
+        else
+          consoleWrite("!! Type mismatch: " + this[name].type + " != " + type + " -- " + name + ", discarded: " + value);
+        consoleWrite("Saved value for " + name + " : " + saved);
       }
 
-      //Overwrite the comment label
-      this[name].label = label;
+      if (type == "real_function") {
+        this[name] = new Param(value, label); //Create function param
+        this[name].functions = realfunctions;
+      } else if (type == "complex_function") {
+        this[name] = new Param(value, label); //Create function param
+        this[name].functions = cplxfunctions;
+      } else if (type == "bailout_function") {
+        this[name] = new Param(value, label); //Create function param
+        this[name].functions = bailfunctions;
+      } else if (type == "list") {
+        var listmatch = listreg.exec(value);
+          if (!listmatch) alert("List match failure: " + value);
+        this[name] = new Param("0", label); //Create int param, selected value index 0
+        this[name].type = 'list'; //Override type
+        this[name].typeid = 3; //Override type id
+        //@Listparam = list('entry=value|entry=value')
+        var num = 0;
+        var items = listmatch[1].split("|");
+        this[name].list = {};
+        for (var i = 0; i < items.length; i++) {
+          var vals = items[i].split("=");
+          if (vals[1]) num = parseInt(vals[1]);
+          //if (vals[0]) items[i] = vals[0];
+          this[name].list[vals[0]] = num;
+          num++;
+        }
+      } else if (complexmatch) {
+        this[name] = new Param([complexmatch[1], complexmatch[3]], label);
+      } else if (nummatch) {
+        if (type == "real" || type == "float")
+          this[name] = new Param(parseFloat(nummatch[1]), label);
+        else if (type == "int" || type == "uint")
+          this[name] = new Param(nummatch[1], label);
+        else if (type == "bool")
+          this[name] = new Param(parseInt(nummatch[1]) != 0, label);
+      } else if (boolmatch) {
+        this[name] = new Param(boolmatch[1].toLowerCase() == "true", label);
+      } else {
+        alert("No match for parameter (" + name + ") value: " + value);
+      }
+
+      //Overwrite value with previous
+      if (saved) this[name].value = saved;
     };
   }
 
   //Add fields for all our parameters dynamically to the page
-  ParameterSet.prototype.createFields = function(type) {
+  ParameterSet.prototype.createFields = function(type, name) {
     var field_area = document.getElementById(type + "_params");
     var divider = document.createElement("div");
     divider.className = "divider";
-      divider.appendChild(divider.ownerDocument.createTextNode(type));
+    sectionnames = {"base" : "", "fractal" : "Fractal", "transform" : "Transform", 
+                    "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
+    var label = "";
+    if (name != "base") {
+      label = labels[name];
+      divider.appendChild(divider.ownerDocument.createTextNode(sectionnames[type] + ": " + label));
+    }
 
     for (key in this)
     {
@@ -311,6 +362,7 @@
           input.value = this[key].value;
           break;
         case 2: //complex (2xreal)
+          alert(key + " == " + this[key].value);
           input.id = key + "_re";
           input.name = input.id;
           input.type = "number"; //Type of field - can be any valid input type like text,file,checkbox etc.
@@ -322,6 +374,24 @@
           input.name = input.id;
           input.type = "number"; //Type of field - can be any valid input type like text,file,checkbox etc.
           input.value = this[key].value.im;
+          break;
+        case 3: 
+          //List of integer values (label=value|etc...)
+          input = document.createElement("select");
+          input.id = key;
+          input.name = key;
+          for (k in this[key].list)
+            input.options[input.options.length] = new Option(k, this[key].list[k]);
+          input.value = this[key].value;
+          break;
+        case 4: 
+          //Drop list of functions
+          input = document.createElement("select");
+          input.id = key;
+          input.name = key;
+          for (var i=0; i<this[key].functions.length; i++)
+            input.options[input.options.length] = new Option(this[key].functions[i], this[key].functions[i]);
+          input.value = this[key].value;
           break;
         default:
           continue;
@@ -387,16 +457,18 @@
 
     if (this.formula[type] != "none") {
       var code = this.getFormulaCode(type);
+      if (name == "fractured" && this.params[name]) alert("1-----\n" + this.params[name]);
       //Load the parameter set for selected formula
       this.params[name].parseFormula(code);
+      if (name == "fractured" && this.params[name]) alert("2-----\n" + this.params[name]);
       //Update the fields
-      this.params[name].createFields(type);
+      this.params[name].createFields(type, name);
     }
   }
 
   Fractal.prototype.getFormulaCode = function(type) {
     var name = this.formula[type];
-    if (name == "none") return "";
+    if (name == "none" || name == "same") return "";
     var code = sources[this.formulaFilename(type)];
     //Colour formula? First replace any ~ symbols 
     // with name_in_ or name_out_
@@ -470,7 +542,7 @@
     var buffer = "";
     var collect = false;
     var collectDone;
-    var types = {};
+    var formulas = {};
 
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i].trim();
@@ -493,7 +565,7 @@
           //Collect lines into formula code
           var pair1 = section.split(".");
           var formula = pair1[1];
-          var filename = this.formulaFilename(types[formula]);
+          var filename = this.formulaFilename(formulas[formula]);
           collect = true;
           buffer = "";
           collectDone = function() {sources[filename] = buffer;}
@@ -526,7 +598,7 @@
           //Formula name
           this.selectFormula(pair[0], pair[1]);
           //this.formula[pair[0]] = pair[1];
-          types[pair[1]] = pair[0]; //Save for a reverse lookup
+          formulas[pair[1]] = pair[0]; //Save for a reverse lookup
         }
       } else if (section.slice(0, 7) == "params."){
         var pair1 = section.split(".");
@@ -534,23 +606,29 @@
         var pair2 = line.split("=");
         if (this.params[formula][pair2[0]]) {
           //Preserve type
+          //////////////////////
+          var savetype = this.params[formula][pair2[0]].type;
           if (this.params[formula][pair2[0]].typeid == 1)
             //Parse as float first or can be interpreted as int
             this.params[formula][pair2[0]].parse(parseFloat(pair2[1]));
-          else  //Parse ints/floats as strings
+          else  //Parse ints/floats/complex as strings
             this.params[formula][pair2[0]].parse(pair2[1]);
+          //////////////////////
+          this.params[formula][pair2[0]].type = savetype;
         } else
           //Not defined in formula, skip
           consoleWrite("Skipped param, not declared: " + section + "--- this.params[" + formula + "][" + pair2[0] + "]=" + pair2[1]);
 
       }
     }
+    alert("val == " + this.params["fractured"]["induct"].value);
 
     //Process selected formulae
     this.selectFormula('fractal');
     this.selectFormula('transform');
     this.selectFormula('outside_colour');
     this.selectFormula('inside_colour');
+    alert("val == " + this.params["fractured"]["induct"].value);
 
     //Process the palette data
     if (buffer) readPalette(buffer);
@@ -790,20 +868,33 @@
       this.params["fractured"] = new ParameterSet();
       //this.selectFormula("transform", this.formula["transform"]);
 
-      this.params["fractured"]["re_fn"] = new Param("" + saved["re_fn"], "Real function");
-      this.params["fractured"]["im_fn"] = new Param("" + saved["im_fn"], "Imag function");
-      this.params["fractured"]["inductop"] = new Param("" + saved["inductop"], "Induct op");
+      var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", ""];
+
+      this.params["fractured"]["re_fn"] = new Param(fns[parseInt(saved["re_fn"])], "Real function");
+      this.params["fractured"]["im_fn"] = new Param(fns[parseInt(saved["im_fn"])], "Imag function");
+
+          this.params["fractured"]["re_fn"].functions = realfunctions;
+          this.params["fractured"]["im_fn"].functions = realfunctions;
+
+      this.params["fractured"]["induct_on"] = new Param("" + saved["inductop"], "Induct op");
+          this.params["fractured"]["induct_on"].typeid = 3;
+          this.params["fractured"]["induct_on"].type = 'list';
+
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
         this.params["fractured"]["induct"] = new Param([saved["induct"].re, saved["induct"].im], "Induct");
       else if (saved["param1"])
         this.params["fractured"]["induct"] = new Param([saved["param1"].re, saved["param1"].im], "Induct");
 
-      if (this.params["fractured"]["inductop"].value >= 10) {
+      if (this.params["fractured"]["induct_on"].value >= 10) {
         //Double induct, same effect as induct with re*2
-        this.params["fractured"]["inductop"].value -= 10;
+        this.params["fractured"]["induct_on"].value -= 10;
         this.params["fractured"]["induct"].value.re *= 2.0;
       }
+      if (this.params["fractured"]["induct_on"].value == 1)
+        this.params["fractured"]["induct_on"].value = 2;
+      if (this.params["fractured"]["induct_on"].value == 3)
+        this.params["fractured"]["induct_on"].value = 1;
     }
 
     //Colour formulae
@@ -946,22 +1037,26 @@
     var transformcode = this.getFormulaCode("transform");
     if (transformcode == "") transformcode = "void transform() {}";
 
-    //These defines will be generated based on parameters used in loops
-    //that must be constants and the colouring methods selected
+    //Generate defines based on colouring methods selected
     var defines = 
       "#define OUTSIDE " + (this.formula["outside_colour"] == "none" ? "false" : "true") + "\n" +  
-      "#define INSIDE " + (this.formula["inside_colour"] == "none" ? "false" : "true") + "\n" +  
-      "\n" + 
+      "#define INSIDE " + (this.formula["inside_colour"] == "none" ? "false" : "true") + "\n\n" +  
       "#define outColour_init " + this.formula["outside_colour"] + "_out_init\n" +  
       "#define outColour_reset " + this.formula["outside_colour"] + "_out_reset\n" +  
       "#define outColour_calc " + this.formula["outside_colour"] + "_out_calc\n" +  
-      "#define outColour_result " + this.formula["outside_colour"] + "_out_result\n" +  
-      "\n" + 
+      "#define outColour_result " + this.formula["outside_colour"] + "_out_result\n\n" 
+
+    if (this.formula["inside_colour"] == "same") {
+      defines += "#define inColour_init none_in_init\n" +
+      "#define inColour_reset none_in_reset\n#define inColour_calc none_in_calc\n" + 
+      "#define inColour_result " + this.formula["outside_colour"] + "_out_result\n\n";
+    } else {
+      defines += 
       "#define inColour_init " + this.formula["inside_colour"] + "_in_init\n" +  
       "#define inColour_reset " + this.formula["inside_colour"] + "_in_reset\n" +  
       "#define inColour_calc " + this.formula["inside_colour"] + "_in_calc\n" +  
-      "#define inColour_result " + this.formula["inside_colour"] + "_in_result\n" +  
-      "\n";
+      "#define inColour_result " + this.formula["inside_colour"] + "_in_result\n\n";  
+    }
 
     //Define param constants now we have complete list
     var constants = this.getParamDeclarations();

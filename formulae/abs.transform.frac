@@ -1,4 +1,0 @@
-void transform()
-{
-    z = abs(z);
-}
