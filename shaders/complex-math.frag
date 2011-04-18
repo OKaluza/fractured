@@ -14,12 +14,28 @@ complex div(in complex z, in complex w)
 complex inv(in complex z)
 {
   //1.0 / z
-  return complex(z.x, -z.y) / dot(z,z);
+  //return complex(z.x, -z.y) / dot(z,z);
+  return conj(z) / norm(z);
+}
+
+real inv(in real r)
+{
+  return 1.0/r;
 }
 
 complex loge(in complex z)
 {
   return complex(log(cabs(z)), arg(z));
+}
+
+complex log10(in complex z)
+{
+  return loge(z) / loge(C(10.0));
+}
+
+real log10(in real r)
+{
+  return log(r) / log(10.0);
 }
 
 complex loge(in real r)
@@ -30,6 +46,11 @@ complex loge(in real r)
     return complex(log(r), 0.0);
 }
 
+real manhattan(in complex z)
+{
+  return abs(z.x) + abs(z.y);
+}
+
 real norm(in complex z)
 {
   return dot(z,z);
@@ -38,7 +59,7 @@ real norm(in complex z)
 //complex abs = length/magnitude = sqrt(norm) = sqrt(dot(z,z))
 real cabs(in complex z)
 {
-  return sqrt(dot(z,z));
+  return length(z); //sqrt(dot(z,z));
 }
 
 real arg(in complex z)
@@ -192,36 +213,43 @@ complex csqrt(in complex z)
     return complex(abs(z.y / t), z.y > 0.0 ? u : -u);
 }
 
-bool equals(in complex z1, in complex z2, real tolerance) 
+bool equals(in complex z1, in complex z2, real tolerance)
 {
   return distance(z1, z2) <= abs(tolerance);
 }
 
-complex ctrunc(in complex z)
+real trunc(in real x)
 {
-  int re = int(z.x);
-  int im = int(z.y);
-  return complex(real(re), real(im));
+  return real(int(x));
 }
 
-complex cfloor(in complex z)
+complex trunc(in complex z)
 {
-  return complex(floor(z.x), floor(z.y));
+  return complex(trunc(z.x), trunc(z.y));
 }
 
-complex cciel(in complex z)
+real round(in real x)
 {
-  return complex(ceil(z.x), ceil(z.y));
+  return real(int(x + (x < 0.0 ? -0.5 : 0.5)));
 }
 
-complex cround(in complex z)
+complex round(in complex z)
 {
-  int re = int(z.x + (z.x < 0.0 ? -0.5 : 0.5));
-  int im = int(z.y + (z.y < 0.0 ? -0.5 : 0.5));
-  return complex(real(re), real(im));
+  return complex(round(z.x), round(z.y));
 }
 
-complex cflip(in complex z)
+complex flip(in complex z)
 {
   return complex(z.y, z.x);
 }
+
+complex sqr(in complex z)
+{
+  return complex(z.x*z.x - z.y*z.y, z.x*z.y + z.y*z.x);
+}
+
+real imag(in complex z)
+{
+  return z.y;
+}
+

@@ -7,6 +7,7 @@ var colours = [];
 var gradientTexture;
 //Source files list
 var sources = {};
+var labels = {};
 var lineOffset; //line numbering offset count
 
   function pageStart() {
@@ -22,29 +23,50 @@ var lineOffset; //line numbering offset count
 
     sources["formulae/base.frac"] = "";
 
-    sources["formulae/mandelbrot.frac"] = "";
-    sources["formulae/burningship.frac"] = "";
-    sources["formulae/magnet1.frac"] = "";
-    sources["formulae/magnet2.frac"] = "";
-    sources["formulae/magnet3.frac"] = "";
-    sources["formulae/nova.frac"] = "";
-    sources["formulae/novabs.frac"] = "";
-    sources["formulae/cactus.frac"] = "";
-    sources["formulae/phoenix.frac"] = "";
-    sources["formulae/stretch.frac"] = "";
-    sources["formulae/gm.frac"] = "";
-    sources["formulae/gmm.frac"] = "";
-    sources["formulae/quadra.frac"] = "";
+    function addFractalFormula(name, label) {
+      sources["formulae/" + name + ".frac"] = "";
+      labels[name] = label;
+      select = $("fractal_formula");
+      select.options[select.length] = new Option(label, name);
+    }
+    function addTransformFormula(name, label) {
+      sources["formulae/" + name + ".transform.frac"] = "";
+      labels[name] = label;
+      select = $("transform_formula");
+      select.options[select.length] = new Option(label, name);
+    }
+    function addColourFormula(name, label) {
+      sources["formulae/" + name + ".colour.frac"] = "";
+      labels[name] = label;
+      select = $("outside_colour_formula");
+      select.options[select.length] = new Option(label, name);
+      select = $("inside_colour_formula");
+      select.options[select.length] = new Option(label, name);
+    }
 
-    sources["formulae/abs.transform.frac"] = "";
-    sources["formulae/fractured.transform.frac"] = "";
+    addFractalFormula("mandelbrot", "Mandelbrot");
+    addFractalFormula("burningship", "Burning Ship");
+    addFractalFormula("magnet1", "Magnet 1");
+    addFractalFormula("magnet2", "Magnet 2");
+    addFractalFormula("magnet3", "Magnet 3");
+    addFractalFormula("nova", "Nova");
+    addFractalFormula("novabs", "Novabs");
+    addFractalFormula("cactus", "Cactus");
+    addFractalFormula("phoenix", "Phoenix");
+    addFractalFormula("stretch", "Stretch");
+    addFractalFormula("gm", "GM");
+    addFractalFormula("gmm", "GMM");
+    addFractalFormula("quadra", "Quadra");
 
-    sources["formulae/default.colour.frac"] = "";
-    sources["formulae/smooth.colour.frac"] = "";
-    sources["formulae/exp_smooth.colour.frac"] = "";
-    sources["formulae/triangle_inequality.colour.frac"] = "";
-    sources["formulae/orbit_traps.colour.frac"] = "";
-    sources["formulae/gaussian_integers.colour.frac"] = "";
+    addTransformFormula("functions", "Functions");
+    addTransformFormula("fractured", "Fractured");
+
+    addColourFormula("default", "Default");
+    addColourFormula("smooth", "Smooth");
+    addColourFormula("exp_smooth", "Exponential Smoothing");
+    addColourFormula("triangle_inequality", "Triangle Inequality");
+    addColourFormula("orbit_traps", "Orbit Traps");
+    addColourFormula("gaussian_integers", "Gaussian Integers");
 
     loadSources();
 
@@ -171,16 +193,14 @@ var lineOffset; //line numbering offset count
           select0.value = fractal.origin.re + point.re;
           var select1 = document.getElementById("ySelInput");
           select1.value = fractal.origin.im + point.im;
-
-          fractal.savePos = fractal.origin.clone();
-          //fractal.resetZoom();  //TODO: Save and restore julia set zoom level
-          fractal.origin.re = 0;
-          fractal.origin.im = 0;
-          fractal.origin.zoom = 0.5;
-       } else {
+       } else
           fractal.julia = false;
-          fractal.origin = fractal.savePos.clone();
-       }
+
+       //Switch saved views
+       var tempPos = fractal.origin.clone();
+       fractal.origin = fractal.savePos.clone();
+       fractal.savePos = tempPos;
+
     } else {
       //Middle button, no action
       return;
@@ -191,6 +211,7 @@ var lineOffset; //line numbering offset count
 
   function canvasMouseMove(event) {
     //Mouseover processing
+    if (!fractal) return;
     if (this.x >= 0 && this.y >= 0 && this.x <= this.element.width && this.y <= this.element.height)
     {
       //Convert mouse coords into fractal coords

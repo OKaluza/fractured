@@ -1,5 +1,6 @@
 @power = real(3);    //Power
 @bailout = real(0.00001);   //Bailout
+@bailfunc = bailout_function(norm);   //Bailout Function
 @relax = complex(1,0);  //Relax
 
 //Init, called once at start of render
@@ -35,7 +36,7 @@ void runstep()
 bool bailed()
 {
   //Check bailout condition and return true if bailed out...
-  if (norm(z-zold) < bailout) return true; //Nova bailout
+  if (bailfunc(z-zold) < bailout) return true; //Nova bailout
   return false;
 }
 

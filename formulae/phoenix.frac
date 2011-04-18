@@ -1,4 +1,5 @@
 @bailout = real(4);   //Bailout
+@bailfunc = bailout_function(norm);   //Bailout Function
 @power = real(2);    //Power
 @power2 = real(0);    //Power 2
 @distort = complex(1);    //Distortion
@@ -46,7 +47,7 @@ void runstep()
 //Check bailout condition and return true if bailed out
 bool bailed()
 {
-  if (norm(z) > bailout) return true;
+  if (bailfunc(z) > bailout) return true;
   return false;
 }
 

@@ -1,5 +1,6 @@
 @bailout = real(100);   //Bailout
 @bailoutc = real(0.00005);   //Converge Bailout
+@bailfunc = bailout_function(norm);   //Bailout Function
 @power = real(2);    //Power
 @power2 = real(2);    //Power 2
 
@@ -32,9 +33,9 @@ void runstep()
 bool bailed()
 {
   //Divergent bailout
-  if (norm(z) > bailout) return true;
+  if (bailfunc(z) > bailout) return true;
   //Convergent bailout
-  if (norm(z - C(1.0)) <= bailoutc) 
+  if (bailfunc(z - C(1.0)) <= bailoutc) 
   {
     converged = true;
     return true;

@@ -1,13 +1,16 @@
-@re_fn = int(1);  //Real function
-@im_fn = int(1);  //Imag function
-@inductop = int(1);       //Induct operator
+@z_fn = complex_function(ident);  //Z function
+@re_fn = real_function(abs);  //Real function
+@im_fn = real_function(abs);  //Imag function
+@induct_on = list('|z(n-1)|z(n-2)'); //Induct on
 @induct = complex(1,0);    //Induction
+@N = int(1);  //N (apply every)
 
 bool mod0(in int a, in int b)
 {
   return mod(float(a),float(b)) == 0.0;
 }  
 
+#if 0
 void transform_component(in int fn, inout real val)
 {
   if (fn == 0) return;
@@ -18,38 +21,33 @@ void transform_component(in int fn, inout real val)
   else if (fn == 5) val = asin(val);
   else if (fn == 6) val = acos(val);
   else if (fn == 7) val = atan(val);
-  else if (fn == 8) val = float(int(val));
+  else if (fn == 8) val = trunc(val);
   else if (fn == 9) val = log(val);
   else if (fn == 10) val = log(val) / log(10.0);
   else if (fn == 11) val = sqrt(val);
+  else if (fn == 12) val = flip(val);  
   else if (fn == 13) val = 1.0/val;
   else if (fn == 14 && mod0(count,2)) val = abs(val);
   else if (fn == 15 && z.x < z.y) val = abs(val);
 }
+#endif
 
 void transform()
 {
+  //Apply every N steps
+  if (N > 1 && !mod0(count,N)) return;
+  
   //Apply induction, available operators are 1(*) and 3(@)
-  if (inductop > 0)
+  if (induct_on > 0)
   {
-    if (inductop == 1)
+    if (induct_on == 1)
+      z += mul(zold, induct);
+    else if (induct_on == 2)
       z += mul(zoldold, induct);
-    else if (inductop == 3)
-      z+= mul(zold, induct);
   }
 
   //Apply functions to real and/or imaginary components
-  if (re_fn == 0 && im_fn == 0)
-    return;
-  if (re_fn == 1 && im_fn == 1)
-    z = abs(z);
-  else
-  {
-    if (re_fn == 12 || im_fn == 12)
-      z = complex(z.y, z.x);     //Swap
-   
-    transform_component(re_fn, z.x);
-    transform_component(im_fn, z.y);
-  }
+  z = z_fn(z);
+  z = complex(re_fn(z.x), im_fn(z.y));
 }
 

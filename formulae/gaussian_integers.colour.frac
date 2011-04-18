@@ -1,8 +1,9 @@
 //Gaussian integers
-@~mode = int(0); //Round/Trunc/Floor/Ciel
-@~colourby = int(0); //Colour by
-@~normalise = int(0);  //Normalisation
+@~mode = list('round|trunc|floor|ceil'); //Mode
+@~colourby = list('min dist|iteration @ min|angle @ min|max dist|iteration @ max|angle @ max|avg dist|min/mean/max angle|max/min ratio'); //Colour by
+@~normalise = list('none|pixel|factor|f(z)');  //Normalisation
 @~normfact = complex(1,0);  //Norm factor
+@~normfunc = complex_function(ident);  //Norm function
 
 complex ~zmin, ~zmax, ~normfac;
 real ~rmin, ~rmax, ~rave, ~total, ~itermin, ~itermax;
@@ -30,7 +31,7 @@ void ~reset()
   if (~normalise == 2)
     ~normfac = ~normfact; //factor normalisation
   if (~normalise == 3)
-    ~normfac = ~normfact; //f(z) normalisation  //Need to add function support: normfunc(z)
+    ~normfac = ~normfunc(z); //f(z) normalisation
 }
 
 void ~calc()
@@ -39,13 +40,13 @@ void ~calc()
 
   //Mode = round/truncate/floor/ceiling
   if (~mode == 0)
-     temp = cround(div(z,~normfac));
+     temp = round(div(z,~normfac));
   if (~mode == 1)
-     temp = ctrunc(div(z,~normfac));
+     temp = trunc(div(z,~normfac));
   if (~mode == 2)
-     temp = cfloor(div(z,~normfac));
+     temp = floor(div(z,~normfac));
   if (~mode == 3)
-     temp = cciel(div(z,~normfac));
+     temp = ceil(div(z,~normfac));
 
   remain = z - mul(temp, ~normfac);
   real r = cabs(remain);
