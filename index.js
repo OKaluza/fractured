@@ -327,7 +327,7 @@ var lineOffset; //line numbering offset count
       if (this.x > palette.width-1) this.x = palette.width-1;
       //Move to adjusted position and redraw
       colours[this.slider].position = this.x / palette.width;
-      drawPalette(572, 24); //GUI size
+      drawPalette(document.getElementById('palette'), 572, 24, true); //GUI size
     }
   }
 
@@ -335,9 +335,12 @@ var lineOffset; //line numbering offset count
   }
 
   function paletteUpdate() {
-    drawPalette(1024, 1);  //WebGL Texture size (power of 2)
+       //var prev = document.getElementById('palette_preview');
+       drawPalette(undefined, 360, 16, false);
+    var pal = document.getElementById('palette');
+    drawPalette(pal, 1024, 1, false);  //WebGL Texture size (power of 2)
     updateTexture(gradientTexture);
-    drawPalette(572, 24); //GUI size
+    drawPalette(pal, 572, 24, true); //GUI size
   }
 
 
@@ -361,7 +364,7 @@ var lineOffset; //line numbering offset count
       else if (pair[0][0] == "C") { //ColourX=
         //Colour constructor handles html format colours, if no # or rgb/rgba assumes integer format
         colours.push(new ColourPos(pair[1], position));
-        //Some palettes had extra colours at end which screws things up so check for last 
+        //Some old palettes had extra colours at end which screws things up so check end position
         if (position == 1.0) break;
       } else if (pair[0])
         //New style: position=value
@@ -384,7 +387,15 @@ var lineOffset; //line numbering offset count
 /////////////////////////////////////////////////////////////////////////
 //Colour palette rendering 
 
-  function drawPalette(width, height){  
+  function drawPalette(canvas, width, height, ui){  
+    if (!canvas) {
+      var area = document.getElementById("palettes");
+      canvas = document.createElement("canvas");
+      canvas.width = 360;
+      canvas.height = 16;
+      area.appendChild(canvas);
+    }
+
     if (colours.length == 0)
     {
       colours.push(new ColourPos("#ffffff", -1)); //Background
@@ -392,7 +403,6 @@ var lineOffset; //line numbering offset count
       colours.push(new ColourPos("#ffffff", 1));
     }
 
-    var canvas = document.getElementById('palette');
     if (canvas.getContext){  
       canvas.width = width;
       canvas.height = height;
@@ -408,7 +418,7 @@ var lineOffset; //line numbering offset count
       var bg = document.getElementById('backgroundCUR');
       bg.style.background = colours[0].colour.html();
 
-      if (height == 1) return;  //GL texture render, skip drawing slider interface
+      if (!ui) return;  //Skip drawing slider interface
 
       for (var i = 2; i < colours.length-1; i++)
       {
@@ -543,7 +553,7 @@ function filesProcess(files, callback) {
     //  continue;
     //}
 
-    new ajaxUploadFile(file, loadFile);
+    new ajaxUploadFile(file, callback);
   }
 }
 
@@ -552,5 +562,12 @@ function loadFile(filename, source) {
     fractal.iniParser(source);
   else
     fractal.load(source);
+}
+
+function loadPalette(filename, source) {
+  if (filename.indexOf(".ini") > -1)
+    fractal.iniParser(source, true);
+  else
+    readPalette(source);
 }
 
