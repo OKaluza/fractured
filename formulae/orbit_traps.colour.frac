@@ -1,10 +1,6 @@
 //Orbit traps
 real ~closest;
 
-void ~init()
-{
-}
-
 void ~reset()
 {
   ~closest = 1000000.0;

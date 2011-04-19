@@ -3,11 +3,6 @@
 @bailfunc = bailout_function(norm);   //Bailout Function
 @relax = complex(1,0);  //Relax
 
-//Init, called once at start of render
-void init()
-{
-}
-
 //Reset, called once for each pixel before iterating
 void reset()
 {

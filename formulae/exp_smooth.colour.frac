@@ -6,8 +6,6 @@
 real ~sum = 0.0;
 real ~csum = 0.0;
 
-void ~init() {}
-
 void ~reset()
 {
   ~sum = 0.0;

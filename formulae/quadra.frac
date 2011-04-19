@@ -5,16 +5,6 @@
 @a = complex(1,0); //a
 @b = complex(1,0); //b
 
-//Init, called once at start of render
-void init()
-{
-}
-
-//Reset, called once for each pixel before iterating
-void reset()
-{
-}
-
 //Get next z(n+1), performs an iteration step
 void runstep()
 {

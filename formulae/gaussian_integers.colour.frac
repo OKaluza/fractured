@@ -8,10 +8,6 @@
 complex ~zmin, ~zmax, ~normfac;
 real ~rmin, ~rmax, ~rave, ~total, ~itermin, ~itermax;
 
-void ~init()
-{
-}
-
 void ~reset()
 {
   ~rmin = 1.0e12;

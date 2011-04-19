@@ -16,9 +16,6 @@ void ~init()
   ////ln(2 * ln bailout) / ln(2).
 }
 
-void ~reset() {}
-void ~calc() {}
-
 real ~result()
 {
   if (~type2)

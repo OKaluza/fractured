@@ -4,16 +4,6 @@
 @power = real(2);    //Power
 @a = complex(1,0); //a
 
-//Init, called once at start of render
-void init()
-{
-}
-
-//Reset, called once for each pixel before iterating
-void reset()
-{
-}
-
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
