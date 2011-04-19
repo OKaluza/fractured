@@ -1,6 +1,5 @@
   //Regular expressions
   var paramreg = /@(\w*) *= *(bool|int|uint|real|float|complex|list|real_function|complex_function|bailout_function)\((.*)\); *(\/\/(.*))?(?:\r\n|[\r\n])/gi;
-  var numreg = /([-+]?(\d*\.)?\d+)/; //real/int
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+)\w*,\w*([-+]?(\d*\.)?\d+)\)?/;
@@ -90,57 +89,98 @@
     }
   }
 
-  function Param(value, label) {
+  function Param(value, type, label) {
     //A parameter object
     //TODO: type param in constructor, declare types rather than detect
+    this.type = type;
     this.label = label;
     this.touched = false;
     this.parse(value);
   }
 
   Param.prototype.parse = function(value) {
-    //Convert passed value to value and type
-    //"int" must be passed as a string or will interpret as a real
-    if (typeof(value) == 'string') {
-      //Parser for complex, int or real parameters passed as strings
-      var match = complexreg.exec(value);
-      if (match && match[1] && match[3]) {
-        this.value = new Complex(match[1], match[3]);
-        this.type = 'complex';
-        this.typeid = 2;
-      } else {
-        if (value.indexOf('.') == -1) {
-          this.value = parseInt(value);
-          this.type = 'int';
-          this.typeid = 0;
-        } else {
-          this.value = parseFloat(value);
-          this.type = 'real';
-          this.typeid = 1;
-        }
-      }
-      if (isNaN(this.value)) {
-        //Function, copy value as string
-        this.type = 'function'
-        this.value = value;
-        this.typeid = 4;
-      }
-    } else if (typeof(value) == 'number') {
-      this.value = value;
-      this.type = 'real';
-      this.typeid = 1;
-    } else if (typeof(value) == 'boolean') {
-      this.value = value;
-      this.type = 'bool';
+    //Parse a value based on type string
+    if (this.type == 'bool') {
       this.typeid = -1;
-    } else if (typeof(value) == 'object') {
-      if (value.length == 2)
-        this.value = new Complex(value[0], value[1]);
-      else
-        this.value = value; //Assume is a Complex already
-      this.type = 'complex';
-      this.typeid = 2;
+      if (typeof(value) == 'boolean')
+        this.value = value;
+      if (typeof(value) == 'number')
+        this.value = value != 0;
+      if (typeof(value) == 'string')
+        this.value = (/^true$/i).test(value);
     }
+
+    if (this.type == 'int' || this.type == 'uint') {
+      this.typeid = 0;
+      if (typeof(value) == 'number')
+        this.value = value | 0; //Bitwise ops convert to integers
+      if (typeof(value) == 'string')
+        this.value = parseInt(value);
+    }
+
+    if (this.type == 'float' || this.type == 'real') {
+      this.typeid = 1;
+      if (typeof(value) == 'number')
+        this.value = value;
+      if (typeof(value) == 'string')
+        this.value = parseFloat(value);
+    }
+
+    if (this.type == 'complex') {
+      this.typeid = 2;
+      if (typeof(value) == 'number')
+        this.value = new Complex(value, 0);
+      if (typeof(value) == 'object') {
+        if (value.length == 2)
+          this.value = new Complex(value[0], value[1]);
+        else
+          this.value = value; //Assume is a Complex already
+      }
+      if (typeof(value) == 'string') {
+        var match = complexreg.exec(value);
+        if (match && match[1] && match[3])
+          this.value = new Complex(match[1], match[3]);
+      }
+    }
+
+    if (this.type == 'real_function') {
+      this.typeid = 4;
+      this.value = value;
+      this.functions = realfunctions;
+    }
+    if (this.type == 'complex_function') {
+      this.typeid = 4;
+      this.value = value;
+      this.functions = cplxfunctions;
+    }
+    if (this.type == 'bailout_function') {
+      this.typeid = 4;
+      this.value = value;
+      this.functions = bailfunctions;
+    }
+
+    if (this.type == 'list') {
+      this.typeid = 3;
+      var listmatch = listreg.exec(value);
+      if (!listmatch) {
+        //Assume parsing a selection value into a prefined list
+        this.value = value;
+      } else {
+        //Populate list items...
+        //'entry=value|entry=value'
+        var num = 0;
+        var items = listmatch[1].split("|");
+        this.list = {};
+        for (var i = 0; i < items.length; i++) {
+          var vals = items[i].split("=");
+          if (vals[1]) num = parseInt(vals[1]);
+          this.list[vals[0]] = num;
+          num++;
+        }
+        this.value = 0; //Initial selection
+      }
+    }
+    //consoleWrite(this.label + " parsed as " + this.type + " value = " + this.value);
   }
 
   Param.prototype.toGLSL = function() {
@@ -166,7 +206,7 @@
     type = this.type;
     if (this.type == 'list') type = 'int';
     if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
-    if (this.type == 'function') return "#define " + key + "(args) " + this.value + "(args)\n";
+    if (this.type.indexOf('function') > 0) return "#define " + key + "(args) " + this.value + "(args)\n";
     return "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
   }
 
@@ -250,67 +290,19 @@
       var label = match[5];
       if (!label) label = name; //Default label if none provided
 
-      //Parse the value by type...
-      var nummatch = numreg.exec(value);
-      var complexmatch = complexreg.exec(value);
-      var boolmatch = boolreg.exec(value);
+      var param = new Param(value, type, label);
 
-      //Save any existing value if same type
-      var saved = undefined;
+      //Restore existing value if same type
       if (this[name]) {
         if (this[name].type == type)
-          saved = this[name].value
+          param.value = this[name].value
         else
           consoleWrite("!! Type mismatch: " + this[name].type + " != " + type + " -- " + name + ", discarded: " + value);
-        consoleWrite("Saved value for " + name + " : " + saved);
-      }
-      //consoleWrite(type + " " + name + " = " + value);
-
-      if (type == "real_function") {
-        this[name] = new Param(value, label); //Create function param
-        this[name].functions = realfunctions;
-      } else if (type == "complex_function") {
-        this[name] = new Param(value, label); //Create function param
-        this[name].functions = cplxfunctions;
-      } else if (type == "bailout_function") {
-        this[name] = new Param(value, label); //Create function param
-        this[name].functions = bailfunctions;
-      } else if (type == "list") {
-        var listmatch = listreg.exec(value);
-          if (!listmatch) alert("List match failure: " + value);
-        this[name] = new Param("0", label); //Create int param, selected value index 0
-        this[name].type = 'list'; //Override type
-        this[name].typeid = 3; //Override type id
-        //@Listparam = list('entry=value|entry=value')
-        var num = 0;
-        var items = listmatch[1].split("|");
-        this[name].list = {};
-        for (var i = 0; i < items.length; i++) {
-          var vals = items[i].split("=");
-          if (vals[1]) num = parseInt(vals[1]);
-          //if (vals[0]) items[i] = vals[0];
-          this[name].list[vals[0]] = num;
-          num++;
-        }
-      } else if (complexmatch) {
-        this[name] = new Param([complexmatch[1], complexmatch[3]], label);
-      } else if (nummatch) {
-        if (type == "complex")   //Allow complex with real part only provided
-          this[name] = new Param([parseFloat(nummatch[1]), 0.0], label);
-        else if (type == "real" || type == "float")
-          this[name] = new Param(parseFloat(nummatch[1]), label);
-        else if (type == "int" || type == "uint")
-          this[name] = new Param(nummatch[1], label);
-        else if (type == "bool")
-          this[name] = new Param(parseInt(nummatch[1]) != 0, label);
-      } else if (boolmatch) {
-        this[name] = new Param(boolmatch[1].toLowerCase() == "true", label);
-      } else {
-        alert("No match for parameter (" + name + ") value: " + value);
+        //consoleWrite("Restored value for " + name + " : " + saved);
       }
 
-      //Overwrite value with previous
-      if (saved) this[name].value = saved;
+      this[name] = param;
+      //consoleWrite(type + " " + name + " = " + this[name].value + " (" + value + ")");
     };
   }
 
@@ -357,26 +349,25 @@
       switch (this[key].typeid)
       {
         case -1: //Boolean
-          input.type = "checkbox"; //Type of field - can be any valid input type like text,file,checkbox etc.
+          input.type = "checkbox";
           input.checked = this[key].value;
           break;
         case 0: //Integer
         case 1: //real
-          input.type = "number"; //Type of field - can be any valid input type like text,file,checkbox etc.
+          input.type = "number";
           input.value = this[key].value;
           break;
         case 2: //complex (2xreal)
-          alert(key + " == " + this[key].value);
           input.id = key + "_re";
           input.name = input.id;
-          input.type = "number"; //Type of field - can be any valid input type like text,file,checkbox etc.
+          input.type = "number";
           input.value = this[key].value.re;
           spanin.appendChild(input);
           //Create second field
           input = document.createElement("input");
           input.id = key + "_im";
           input.name = input.id;
-          input.type = "number"; //Type of field - can be any valid input type like text,file,checkbox etc.
+          input.type = "number";
           input.value = this[key].value.im;
           break;
         case 3: 
@@ -461,10 +452,8 @@
 
     if (this.formula[type] != "none") {
       var code = this.getFormulaCode(type);
-      if (name == "fractured" && this.params[name]) alert("1-----\n" + this.params[name]);
       //Load the parameter set for selected formula
       this.params[name].parseFormula(code);
-      if (name == "fractured" && this.params[name]) alert("2-----\n" + this.params[name]);
       //Update the fields
       this.params[name].createFields(type, name);
     }
@@ -561,6 +550,20 @@
     ajaxWriteFile("saved.fractal", code, fileSaved);
   }
 
+  Fractal.prototype.loadPalette = function(source) {
+    var lines = source.split("\n"); // split on newlines
+    var buffer = "";
+    var section = "";
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (line[0] == "[")
+        section = line.slice(1, line.length-1);
+      else if (section == "palette")
+        buffer += lines[i] + "\n";
+    }
+    readPalette(buffer);
+  }
+
   //Load fractal from file
   Fractal.prototype.load = function(source) {
     //1. Load fixed params as key=value: origin, selected, julia, perturb, 
@@ -632,40 +635,23 @@
           //this.formula[pair[0]] = pair[1];
           formulas[pair[1]] = pair[0]; //Save for a reverse lookup
         }
-      } else if (section.slice(0, 7) == "params."){
+      } else if (section.slice(0, 7) == "params.") {
         var pair1 = section.split(".");
         var formula = pair1[1];
         var pair2 = line.split("=");
-        if (this.params[formula][pair2[0]]) {
-          //Preserve type
-          //////////////////////
-          var savetype = this.params[formula][pair2[0]].type;
-          if (this.params[formula][pair2[0]].typeid == 1)
-            //Parse as float first or can be interpreted as int
-            this.params[formula][pair2[0]].parse(parseFloat(pair2[1]));
-          else  //Parse ints/floats/complex as strings
-            this.params[formula][pair2[0]].parse(pair2[1]);
-          //////////////////////
-          this.params[formula][pair2[0]].type = savetype;
-        } else
-          //Not defined in formula, skip
+        if (this.params[formula][pair2[0]])
+          this.params[formula][pair2[0]].parse(pair2[1]);
+        else //Not defined in formula, skip
           consoleWrite("Skipped param, not declared: " + section + "--- this.params[" + formula + "][" + pair2[0] + "]=" + pair2[1]);
 
       }
     }
-    alert("val == " + this.params["fractured"]["induct"].value);
-
-    //Process selected formulae
-    this.selectFormula('fractal');
-    this.selectFormula('transform');
-    this.selectFormula('outside_colour');
-    this.selectFormula('inside_colour');
-    alert("val == " + this.params["fractured"]["induct"].value);
 
     //Process the palette data
     if (buffer) readPalette(buffer);
 
-    //Update parameters
+    //Select formulae and update parameters
+    consoleWrite("RESELECTING----------");
     this.loadParams();
   }
 
@@ -766,11 +752,11 @@
           this.selected.im = parseFloat(pair[1]);
         else if (pair[0] == "PaletteRepeat") {
           //Initially copy to both repeat params
-          this.params["base"]["outrepeat"].parse(parseFloat(pair[1]));
-          this.params["base"]["inrepeat"].parse(parseFloat(pair[1]));
+          this.params["base"]["outrepeat"].parse(pair[1]);
+          this.params["base"]["inrepeat"].parse(pair[1]);
         }
         else if (pair[0] == "PaletteRepeatIn")
-          this.params["base"]["inrepeat"].parse(parseFloat(pair[1]));
+          this.params["base"]["inrepeat"].parse(pair[1]);
         else if (pair[0] == "Outside") {
           saved["outside"] = pair[1];
           this.formula['outside_colour'] = convertFormulaName(pair[1]);
@@ -780,7 +766,7 @@
           this.formula['inside_colour'] = convertFormulaName(pair[1]);
         }
         else if (pair[0] == "VariableIterations")
-          this.params["base"]["vary"].parse(parseFloat(pair[1]));
+          this.params["base"]["vary"].parse(pair[1]);
 
         //Following parameters need to be created rather than just set values, save for processing later
         else if (pair[0] == "Bailout")
@@ -830,92 +816,80 @@
     readPalette(paletteSource);
     if (paletteonly) return;
     
-    //Create parameter sets
-    this.params[this.formula["fractal"]] = new ParameterSet();
-    this.params[this.formula["transform"]] = new ParameterSet();
-    this.params[this.formula["inside_colour"]] = new ParameterSet();
-    this.params[this.formula["outside_colour"]] = new ParameterSet();
-    //this.loadParams();
+    /* Load formulae */
+    this.formula["transform"] = "fractured";
+    this.loadParams();
 
     //Bailout and power used by most formulae
     if (saved["bailout"])
-      this.params[this.formula["fractal"]]["bailout"] = new Param(saved["bailout"], "Bailout");
+      this.params[this.formula["fractal"]]["bailout"].parse(saved["bailout"]);
     if (saved["power"])
-      this.params[this.formula["fractal"]]["power"] = new Param(saved["power"], "Power");
+      this.params[this.formula["fractal"]]["power"].parse(saved["power"]);
 
     //Formula specific param parsing
     if (this.formula["fractal"] == "magnet1") {
       if (saved["power2"])
-        this.params["magnet1"]["power2"] = new Param(saved["power2"], "Power 2");
+        this.params["magnet1"]["power2"].parse(saved["power2"]);
     }
 
     if (this.formula["fractal"] == "magnet3") {
-      this.params["magnet3"]["A"] = new Param([saved["param1"].re, saved["param1"].im], "A");
-      this.params["magnet3"]["B"] = new Param([saved["param3"].re, saved["param3"].im], "B");
-      this.params["magnet3"]["C"] = new Param([saved["param2"].re, saved["param2"].im], "C");
-      this.params["magnet3"]["D"] = new Param([saved["param3"].re, saved["param3"].im], "D");
+      this.params["magnet3"]["A"].parse([saved["param1"].re, saved["param1"].im]);
+      this.params["magnet3"]["B"].parse([saved["param3"].re, saved["param3"].im]);
+      this.params["magnet3"]["C"].parse([saved["param2"].re, saved["param2"].im]);
+      this.params["magnet3"]["D"].parse([saved["param3"].re, saved["param3"].im]);
     }
 
     if (this.formula["fractal"] == "gmm") {
-      this.params["gmm"]["A"] = new Param([saved["param1"].re, saved["param1"].im], "A");
-      this.params["gmm"]["B"] = new Param([saved["param2"].re, saved["param2"].im], "B");
-      this.params["gmm"]["C"] = new Param([saved["param3"].re, saved["param3"].im], "C");
-      this.params["gmm"]["D"] = new Param([saved["param4"].re, saved["param4"].im], "D");
+      this.params["gmm"]["A"].parse([saved["param1"].re, saved["param1"].im]);
+      this.params["gmm"]["B"].parse([saved["param2"].re, saved["param2"].im]);
+      this.params["gmm"]["C"].parse([saved["param3"].re, saved["param3"].im]);
+      this.params["gmm"]["D"].parse([saved["param4"].re, saved["param4"].im]);
     }
 
     if (this.formula["fractal"] == "quadra") {
-      this.params["quadra"]["a"] = new Param([saved["param1"].re, saved["param1"].im], "a");
-      this.params["quadra"]["b"] = new Param([saved["param2"].re, saved["param2"].im], "b");
+      this.params["quadra"]["a"].parse([saved["param1"].re, saved["param1"].im]);
+      this.params["quadra"]["b"].parse([saved["param2"].re, saved["param2"].im]);
     }
 
     if (this.formula["fractal"] == "phoenix") {
       if (saved["power2"])
-        this.params["phoenix"]["power2"] = new Param([saved["power2"], 0.0], "Power 2");
-      this.params["phoenix"]["distort"] = new Param([saved["param1"].re, saved["param1"].im], "Distortion");
+        this.params["phoenix"]["power2"].parse([saved["power2"], 0.0]);
+      this.params["phoenix"]["distort"].parse([saved["param1"].re, saved["param1"].im]);
     }
 
     if (this.formula["fractal"] == "nova") {
-      this.params["nova"]["relax"] = new Param([saved["param2"].re, saved["param2"].im], "Relax");
+      this.params["nova"]["relax"].parse([saved["param2"].re, saved["param2"].im]);
     }
 
     if (this.formula["fractal"] == "novabs") {
-      this.params["novabs"]["relax"] = new Param([saved["param2"].re, saved["param2"].im], "Relax");
+      this.params["novabs"]["relax"].parse([saved["param2"].re, saved["param2"].im]);
     }
 
     if (this.formula["outside_colour"] == "gaussian_integers") {
-      this.params["gaussian_integers"]["gaussian_integers_out_mode"] = new Param("" + saved["param2"].re, "Mode");
-      this.params["gaussian_integers"]["gaussian_integers_out_colourby"] = new Param("" + saved["param2"].im, "Colour by");
+      this.params["gaussian_integers"]["gaussian_integers_out_mode"].parse(saved["param2"].re);
+      this.params["gaussian_integers"]["gaussian_integers_out_colourby"].parse(saved["param2"].im);
     }
     if (this.formula["inside_colour"] == "gaussian_integers") {
-      this.params["gaussian_integers"]["gaussian_integers_in_mode"] = new Param("" + saved["param2"].re, "Mode");
-      this.params["gaussian_integers"]["gaussian_integers_in_colourby"] = new Param("" + saved["param2"].im, "Colour by");
+      this.params["gaussian_integers"]["gaussian_integers_in_mode"].parse(saved["param2"].re);
+      this.params["gaussian_integers"]["gaussian_integers_in_colourby"].parse(saved["param2"].im);
     }
 
     //Functions and ops
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
       if (!saved["inductop"]) saved["inductop"] = "0";
-      this.formula["transform"] = "fractured";
-      this.params["fractured"] = new ParameterSet();
-      //this.selectFormula("transform", this.formula["transform"]);
 
       var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", ""];
 
-      this.params["fractured"]["re_fn"] = new Param(fns[parseInt(saved["re_fn"])], "Real function");
-      this.params["fractured"]["im_fn"] = new Param(fns[parseInt(saved["im_fn"])], "Imag function");
-
-          this.params["fractured"]["re_fn"].functions = realfunctions;
-          this.params["fractured"]["im_fn"].functions = realfunctions;
-
-      this.params["fractured"]["induct_on"] = new Param("" + saved["inductop"], "Induct op");
-          this.params["fractured"]["induct_on"].typeid = 3;
-          this.params["fractured"]["induct_on"].type = 'list';
+      this.params["fractured"]["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
+      this.params["fractured"]["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
-        this.params["fractured"]["induct"] = new Param([saved["induct"].re, saved["induct"].im], "Induct");
+        this.params["fractured"]["induct"].parse([saved["induct"].re, saved["induct"].im]);
       else if (saved["param1"])
-        this.params["fractured"]["induct"] = new Param([saved["param1"].re, saved["param1"].im], "Induct");
+        this.params["fractured"]["induct"].parse([saved["param1"].re, saved["param1"].im]);
 
+      this.params["fractured"]["induct_on"].value = saved["inductop"];
       if (this.params["fractured"]["induct_on"].value >= 10) {
         //Double induct, same effect as induct with re*2
         this.params["fractured"]["induct_on"].value -= 10;
@@ -929,22 +903,22 @@
 
     //Colour formulae
     if (this.formula["outside_colour"] == "smooth") {
-      this.params["smooth"]["smooth_out_usepower"] = new Param(false, "Use power");
-      this.params["smooth"]["smooth_out_type2"] = new Param(false, "Type 2");
+      this.params["smooth"]["smooth_out_usepower"].value = false;
+      this.params["smooth"]["smooth_out_type2"].value = false;
       if (saved["outside"] == "Smooth 2")
         this.params["smooth"]["smooth_out_type2"].value = true;
     }
     if (this.formula["inside_colour"] == "smooth") {
-      this.params["smooth"]["smooth_in_usepower"] = new Param(false, "Use power");
-      this.params["smooth"]["smooth_in_type2"] = new Param(false, "Type 2");
+      this.params["smooth"]["smooth_in_usepower"].value = false;
+      this.params["smooth"]["smooth_in_type2"].value = false;
       if (saved["inside"] == "Smooth 2")
         this.params["smooth"]["smooth_in_type2"].value = true;
     }
 
     if (this.formula["outside_colour"] == "exp_smooth") {
-      this.params["exp_smooth"]["exp_smooth_out_diverge"] = new Param(true, "Diverge");
-      this.params["exp_smooth"]["exp_smooth_out_converge"] = new Param(false, "Converge");
-      this.params["exp_smooth"]["exp_smooth_out_use_zold"] = new Param(false, "Use previous z");
+      this.params["exp_smooth"]["exp_smooth_out_diverge"].value = true;
+      this.params["exp_smooth"]["exp_smooth_out_converge"].value = false;
+      this.params["exp_smooth"]["exp_smooth_out_use_zold"].value = false;
       if (saved["outside"] == "Exp. Smoothing - Xdiverge")
         this.params["exp_smooth"]["exp_smooth_out_use_zold"].value = true;
       if (saved["outside"] == "Exp. Smoothing - converge") {
@@ -958,9 +932,9 @@
       }
     }
     if (this.formula["inside_colour"] == "exp_smooth") {
-      this.params["exp_smooth"]["exp_smooth_in_diverge"] = new Param(true, "Diverge");
-      this.params["exp_smooth"]["exp_smooth_in_converge"] = new Param(false, "Converge");
-      this.params["exp_smooth"]["exp_smooth_in_use_zold"] = new Param(false, "Use previous z");
+      this.params["exp_smooth"]["exp_smooth_in_diverge"].value = true;
+      this.params["exp_smooth"]["exp_smooth_in_converge"].value = false;
+      this.params["exp_smooth"]["exp_smooth_in_use_zold"].value = false;
       if (saved["inside"] == "Exp. Smoothing - Xdiverge")
         this.params["exp_smooth"]["exp_smooth_in_use_zold"].value = true;
       if (saved["inside"] == "Exp. Smoothing - converge") {

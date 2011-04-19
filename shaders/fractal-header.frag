@@ -4,9 +4,9 @@ precision highp float;
 #define C(x) vec2(x,0.0) 
 #define rgb vec3 
 #define rgba vec4 
-#define ident(arg) arg
-#define zero(arg) 0
-#define czero(arg) C(0.0)
+#define ident(args) args
+#define zero(args) 0
+#define czero(args) C(0.0)
 
 //Complex number library functions
 const real PI = 3.1415926536;

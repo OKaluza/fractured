@@ -5,39 +5,12 @@
 @induct = complex(1,0);    //Induction
 @N = int(1);  //N (apply every)
 
-bool mod0(in int a, in int b)
-{
-  return mod(float(a),float(b)) == 0.0;
-}  
-
-#if 0
-void transform_component(in int fn, inout real val)
-{
-  if (fn == 0) return;
-  else if (fn == 1) val = abs(val);
-  else if (fn == 2) val = sin(val);
-  else if (fn == 3) val = cos(val);
-  else if (fn == 4) val = tan(val);
-  else if (fn == 5) val = asin(val);
-  else if (fn == 6) val = acos(val);
-  else if (fn == 7) val = atan(val);
-  else if (fn == 8) val = trunc(val);
-  else if (fn == 9) val = log(val);
-  else if (fn == 10) val = log(val) / log(10.0);
-  else if (fn == 11) val = sqrt(val);
-  else if (fn == 12) val = flip(val);  
-  else if (fn == 13) val = 1.0/val;
-  else if (fn == 14 && mod0(count,2)) val = abs(val);
-  else if (fn == 15 && z.x < z.y) val = abs(val);
-}
-#endif
-
 void transform()
 {
   //Apply every N steps
-  if (N > 1 && !mod0(count,N)) return;
+  if (N > 1 && mod(real(count),real(N)) != 0.0) return;
   
-  //Apply induction, available operators are 1(*) and 3(@)
+  //Apply induction, on z(n-1) (*) or z(n-2) (@)
   if (induct_on > 0)
   {
     if (induct_on == 1)
