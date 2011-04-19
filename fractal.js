@@ -92,6 +92,7 @@
 
   function Param(value, label) {
     //A parameter object
+    //TODO: type param in constructor, declare types rather than detect
     this.label = label;
     this.touched = false;
     this.parse(value);
@@ -822,8 +823,6 @@
           saved["version"] = pair[1];
         else
           alert("Unknown param: " + pair[0] + " == " + pair[1]);
-          //Let the Param parser decide the type
-          //this.params[this.formula["fractal"]][pair[0]] = new Param(pair[1], pair[0]);
       }
     }
 

@@ -21,11 +21,11 @@ void ~reset()
   ~zmax = C(0.0);
 
   if (~normalise == 0)
-    ~normfac = C(1.0); //no normalisation
+    ~normfac = C(1.0);       //no normalisation
   if (~normalise == 1)
-    ~normfac = pixel;  //pixel normalisation
+    ~normfac = pixel;        //pixel normalisation
   if (~normalise == 2)
-    ~normfac = ~normfact; //factor normalisation
+    ~normfac = ~normfact;    //factor normalisation
   if (~normalise == 3)
     ~normfac = ~normfunc(z); //f(z) normalisation
 }
@@ -65,44 +65,50 @@ void ~calc()
 real ~result()
 {
   real index, t;
-
+  
+  // minimum distance
   if (~colourby == 0)
-    // minimum distance
     index = ~rmin;
+  // iteration @ min
   if (~colourby == 1)
-    index = 0.01 * ~itermin; // iteration @ min
+    index = 0.01 * ~itermin;
+  // angle @ min
   if (~colourby == 2)
   {
-    // angle @ min
     t = arg(~zmin);
     t = t/PI;
     if (t < 0.0) t = t + 2.0;
     index = 0.5 * t;
   }
+  // maximum distance  
   if (~colourby == 3)
-    index = ~rmax;      // maximum distance
+    index = ~rmax;
+  // iteration @ max
   if (~colourby == 4)
-    index = 0.01 * ~itermax;   // iteration @ max
+    index = 0.01 * ~itermax;
+  // angle @ max
   if (~colourby == 5)
   {
-    // angle @ max
     t = arg(~zmax);
     t = t/PI;
     if (t < 0.0) t = t + 2.0;
     index = 0.5 * t;
   }
+  // average distance
   if (~colourby == 6)
-    index = ~rave;      // average distance
+    index = ~rave;
+  // min/mean/max angle
   if (~colourby == 7)
-  {  // min/mean/max angle
+  {
      ~zmax = complex(~rave - ~rmin, ~rmax - ~rave);
      t = arg(~zmax);
      t = t/PI;
      if (t < 0.0) t = t + 2.0;
      index = 0.5 * t;
   }
+  // max/min ratio
   if (~colourby == 8)
-    index = ~rmax / (~rmin + 1.e-12);        // max/min ratio
+    index = ~rmax / (~rmin + 1.e-12);
 
   return index * real(iterations);
 }
