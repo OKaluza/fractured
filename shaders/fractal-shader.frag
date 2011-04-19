@@ -1,15 +1,4 @@
 //////////////////////////////////////////////////////////////////////////
-
-//Default functions for use when no colouring algorithm selected
-void none_in_init() {}
-void none_in_reset() {} 
-void none_in_calc() {}
-real none_in_result() { return 0.0; }
-void none_out_init() {}
-void none_out_reset() {} 
-void none_out_calc() {}
-real none_out_result() { return 0.0; }
-
 void main()
 {
   //gl_FragColor = rgba(1, 1, 1, 0); //background.a);

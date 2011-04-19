@@ -263,6 +263,7 @@
           consoleWrite("!! Type mismatch: " + this[name].type + " != " + type + " -- " + name + ", discarded: " + value);
         consoleWrite("Saved value for " + name + " : " + saved);
       }
+      //consoleWrite(type + " " + name + " = " + value);
 
       if (type == "real_function") {
         this[name] = new Param(value, label); //Create function param
@@ -293,7 +294,9 @@
       } else if (complexmatch) {
         this[name] = new Param([complexmatch[1], complexmatch[3]], label);
       } else if (nummatch) {
-        if (type == "real" || type == "float")
+        if (type == "complex")   //Allow complex with real part only provided
+          this[name] = new Param([parseFloat(nummatch[1]), 0.0], label);
+        else if (type == "real" || type == "float")
           this[name] = new Param(parseFloat(nummatch[1]), label);
         else if (type == "int" || type == "uint")
           this[name] = new Param(nummatch[1], label);
@@ -468,15 +471,43 @@
 
   Fractal.prototype.getFormulaCode = function(type) {
     var name = this.formula[type];
-    if (name == "none" || name == "same") return "";
-    var code = sources[this.formulaFilename(type)];
-    //Colour formula? First replace any ~ symbols 
-    // with name_in_ or name_out_
-    // (~ reserved but not used in glsl)
+    if (name == "same") return "";
+    var code = "";
+    if (name != "none") code = sources[this.formulaFilename(type)];
+
+    //Check code for required functions
+    var initreg = /void\s*~?init\(\)/g;
+    var resetreg = /void\s*~?reset\(\)/g;
+    var runstepreg = /void\s*runstep\(\)/g;
+    var bailedreg = /bool\s*bailed\(\)/g;
+    var calcreg = /void\s*~calc\(\)/g;
+    var resultreg = /real\s*~result\(\)/g;
+    var transformreg = /void\s*transform\(\)/g;
+
+    if (type == "fractal") {
+      if (!initreg.exec(code)) code += "\nvoid init() {}\n"
+      if (!resetreg.exec(code)) code += "\nvoid reset() {}\n"
+      if (!runstepreg.exec(code)) code += "\nvoid runstep() {z = mul(z,z)+c;}\n"
+      if (!bailedreg.exec(code)) code += "\nbool bailed() {if (norm(z) > 4.0) return true;\nreturn false;}\n"
+    } else if (type == "transform") {
+      if (!transformreg.exec(code)) code += "void transform() {}\n"
+    } else {
+      if (!initreg.exec(code)) code += "\nvoid ~init() {}\n"
+      if (!resetreg.exec(code)) code += "\nvoid ~reset() {}\n"
+      if (!calcreg.exec(code)) code += "\nvoid ~calc() {}\n"
+      if (!resultreg.exec(code)) code += "\nreal ~result() {return 0.0;}\n"
+    }
+
+    //Replace any ~ symbols with formula name and "_"
+    //(to prevent namespace clashes in globals/function names/params)
+    //If colour formula, use "name_in_" / "name_out_"
+    //(~ is reserved but not used in glsl)
     if (type == "inside_colour")
       code = code.replace(/~/g, name + "_in_");
     else if (type == "outside_colour")
       code = code.replace(/~/g, name + "_out_");
+    else
+      code = code.replace(/~/g, name + "_");
     return code;
   }
 
@@ -1035,7 +1066,6 @@
 
     //Code for selected transform
     var transformcode = this.getFormulaCode("transform");
-    if (transformcode == "") transformcode = "void transform() {}";
 
     //Generate defines based on colouring methods selected
     var defines = 
