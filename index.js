@@ -253,20 +253,24 @@ var lineOffset; //line numbering offset count
 
   function canvasMouseWheel(event) {
     //alert(event.spin);
-    if (event.ctrlKey)
+    if (event.ctrlKey) {
       /* Zoom */
       if (event.spin < 0)
          fractal.origin.zoom *= (1/(-event.spin * 1.1));
       else
          fractal.origin.zoom *= (event.spin * 1.1);
-    else if (event.shiftKey)
+    } else if (event.shiftKey) {
       /* SHIFT + scroll */
       fractal.origin.rotate += 10 * event.spin;
-    else if (event.altKey)
+    } else if (event.altKey) {
       /* ALT + scroll -> rotate */
       fractal.origin.rotate += event.spin;
-    else
+    } else
       return;
+
+    //Limit to range [0-360)
+    if (fractal.origin.rotate < 0) fractal.origin.rotate += 360;
+    fractal.origin.rotate %= 360;
 
     fractal.copyToForm();
     fractal.draw();
