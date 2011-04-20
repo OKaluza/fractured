@@ -13,7 +13,6 @@ void ~init()
  
   //Additional for Smooth 2
   ~lp = log(2.0 * log(sqrt(bailout))) * ~il;
-  ////ln(2 * ln bailout) / ln(2).
 }
 
 real ~result()

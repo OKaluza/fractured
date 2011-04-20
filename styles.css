@@ -159,6 +159,7 @@ nav li:hover {
 }
 
 aside {
+     /*position: fixed;*/
   height: 99%;
   margin: 3px;
   float: left;
@@ -166,6 +167,8 @@ aside {
 }
 
 #main {
+      /*position:absolute;   
+      left: 400px;*/
   float: left;
   margin-left: 3px;
   width: 2px;
