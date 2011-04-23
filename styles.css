@@ -44,9 +44,13 @@ canvas {
   /*box-shadow: 1px 1px 1px #333;*/
 }
 
+/* Colour select */
+.colourbg { margin:1px; width: 100px; height: 20px; border: solid 1px; background-image: url("media/bg.png"); border-radius: 4px;}
+.colour { width: 100px; height: 20px; background: "#fff"; border-radius: 4px;}
+
 /* Background colour */
-#backgroundBG { float: left; width: 24px; height: 24px; margin-right: 2px; border: solid 1px; background-image: url("media/bg.png"); border-radius: 4px; /*box-shadow: 1px 1px 1px #333;*/}
-#backgroundCUR { float: left; width: 24px; height: 24px; background: "#fff"; margin-right: 2px; border-radius: 4px;}
+#backgroundBG { margin: 0px 2px 0px 0px; float: left; width: 24px; height: 24px;}
+#backgroundCUR { float: left; width: 24px; height: 24px;}
 
 /* Image area selection */
 #select {
@@ -90,7 +94,7 @@ canvas {
 }
 
 #coords {
-  float: left; background-color: #cb9; padding: 1px; margin: 3px;
+  float: left; background-color: #cb9; padding: 0px 5px; margin: 3px; border-radius: 4px;
 }
 
 section, header, aside, nav, article{

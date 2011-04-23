@@ -137,26 +137,44 @@ complex cpow(in complex base, in complex exponent)
   //return complex(scalar * cos(temp.y), scalar * sin(temp.y));
 }
 
-/// COSH Function (Hyperbolic Cosine)
-real cosh(in real val)
+// Hyperbolic Sine (e^x - e^-x) / 2
+real sinh(in real x)
 {
-  real tmp = exp(val);
+  real tmp = exp(x);
+  return 0.5 * (tmp - 1.0 / tmp);
+}
+
+/// Hyperbolic Cosine (e^x + e^-x) / 2
+real cosh(in real x)
+{
+  real tmp = exp(x);
   return 0.5 * (tmp + 1.0 / tmp);
 }
 
-// TANH Function (Hyperbolic Tangent)
-real tanh(in real val)
+// Hyperbolic Tangent (sinh / cosh)
+real tanh(in real x)
 {
-  real tmp = exp(val);
+  real tmp = exp(x);
   real invtmp = 1.0 / tmp;
   return (tmp - invtmp) / (tmp + invtmp);
 }
 
-// SINH Function (Hyperbolic Sine)
-real sinh(in real val)
+// Hyperbolic arc sine log(x+sqrt(1+x^2))
+real asinh(in real x)
 {
-  real tmp = exp(val);
-  return 0.5 * (tmp - 1.0 / tmp);
+  return log(x + sqrt(1.0+x*x));
+}
+
+// Hyperbolic arc cosine 2log(sqrt((x+1)/2) + sqrt((x-1)/2))
+real acosh(in real x)
+{
+  return 2.0 * log(sqrt(0.5*x+0.5) + sqrt(0.5*x-0.5));
+}
+
+// Hyperbolic arc tangent (log (1+x) - log (1-x))/2 
+real atanh(in real x)
+{
+  return (log(1.0+x) - log(1.0-x)) / 2.0;
 }
 
 complex cexp(in complex z) 
@@ -187,7 +205,75 @@ complex ccos(in complex z)
 //     tan(z)  =  sin(z) / cos(z)
 complex ctan(in complex z)
 {
-  return div(sin(z), cos(z));
+  return div(csin(z), ccos(z));
+}
+
+// Returns the principal arc sine of a complex number.
+//     asin(z)  =  -i * log(i*z + sqrt(1 - z*z))
+complex casin(in complex z)
+{
+  complex a = sqrt(C(1) - mul(z,z));
+  a += complex(-z.y, z.x); //z * i + a
+  a = loge(a);
+  return complex(a.y, -a.x);  // a * -i
+}
+
+// Returns the principal arc cosine of a complex number.
+//     acos(z)  =  -i * log( z + i * sqrt(1 - z*z) )
+complex cacos(in complex z)
+{
+  complex a = sqrt(C(1) - mul(z,z));
+  a = z + complex(-a.y, a.x); //z + i * a
+  a = loge(a);
+  return complex(a.y, -a.x);  // a * -i
+}
+
+// Returns the principal arc tangent of a complex number.
+//     atan(z)  =  -i/2 * log( (i-z)/(i+z) )
+complex catan(in complex z)
+{
+  complex a = div(I-z, I+z);
+  return mul(CI(-0.5), loge(a));  //-i/2 * log(a)
+}
+
+complex csinh(in complex z)
+{
+  //sinh(a+bi) = sinh(a) cos(b) + i(cosh(a) sin(b))
+  return complex(sinh(z.x) * cos(z.y), cosh(z.x) * sin(z.y));
+}
+
+complex ccosh(in complex z)
+{
+  //cosh(a+bi) = cosh(a) cos(b) + i(sinh(a) sin(b))
+  return complex(cosh(z.x) * cos(z.y), sinh(z.x) * sin(z.y));
+}
+
+complex ctanh(in complex z)
+{
+  //tanh(z)  =  sinh(z) / cosh(z)
+  return div(csinh(z), ccosh(z));
+}
+
+// Returns the principal inverse hyperbolic sine of a complex number.
+//     asinh(z)  =  log(z + sqrt(z*z + 1))
+complex casinh(in complex z)
+{
+  return loge(z + sqrt(mul(z,z) + C(1)));
+}
+
+// Returns the principal inverse hyperbolic cosine of a complex number.
+//     acosh(z)  =  log(z + sqrt(z*z - 1))
+complex cacosh(in complex z)
+{
+  return loge(z + sqrt(mul(z,z) - C(1)));
+}
+
+// Returns the principal inverse hyperbolic tangent of a complex number.
+//     atanh(z)  =  1/2 * log( (1+z)/(1-z) )
+complex catanh(in complex z)
+{
+  complex a = div(I+z, I-z);
+  return mul(C(0.5), loge(a));
 }
 
 complex csqrt(in complex z)
@@ -253,3 +339,12 @@ real imag(in complex z)
   return z.y;
 }
 
+complex gamma(in complex z)
+{
+  //An approximation of the gamma function
+  complex a = sqrt(div(C(TWO_PI), z));
+  complex b = mul(C(12), z) - div(C(1), mul(C(10), z));
+  complex c = z + div(C(1), b);
+  complex d = mul(C(1.0/E), c);
+  return mul(a, d);
+}

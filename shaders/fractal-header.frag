@@ -1,7 +1,9 @@
 precision highp float;
 #define real float
 #define complex vec2
-#define C(x) vec2(x,0.0) 
+#define C(x) complex(real(x),0.0) 
+#define CI(x) complex(0.0,real(x)) 
+#define I complex(0.0,1.0) 
 #define rgb vec3 
 #define rgba vec4 
 #define ident(args) args
@@ -11,6 +13,7 @@ precision highp float;
 //Complex number library functions
 const real PI = 3.1415926536;
 const real TWO_PI = 2.0 * PI;
+const real E = 2.71828183;
 complex mul(in complex a, in complex b);
 complex div (in complex z, in complex w);
 complex inv(in complex z);
@@ -29,13 +32,25 @@ real arg(in complex z);
 complex neg(in complex z);
 complex conj(in complex z);
 complex polar(in real r, in real theta);
-real cosh(in real val);
-real tanh(in real val);
-real sinh(in real val);
+real cosh(in real x);
+real tanh(in real x);
+real sinh(in real x);
+real acosh(in real x);
+real atanh(in real x);
+real asinh(in real x);
 complex cexp(in complex z);
 complex csin(in complex z);
 complex ccos(in complex z);
 complex ctan(in complex z);
+complex casin(in complex z);
+complex cacos(in complex z);
+complex catan(in complex z);
+complex csinh(in complex z);
+complex ccosh(in complex z);
+complex ctanh(in complex z);
+complex casinh(in complex z);
+complex cacosh(in complex z);
+complex catanh(in complex z);
 complex csqrt(in complex z);
 complex csqrt2(in complex z);
 bool equals(complex z1, complex z2, real tolerance);
@@ -46,6 +61,7 @@ complex round(in complex z);
 complex flip(in complex z);
 complex sqr(in complex z);
 real imag(in complex z);
+complex gamma(in complex z);
 
 //Globals
 complex z;

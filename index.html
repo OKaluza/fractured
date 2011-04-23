@@ -67,7 +67,7 @@ void main(void)
 
         <!--hr-->
 
-        <div id="formscroll">
+        <div id="formscroll" onmousedown="handleFormMouseDown(event)">
           <form name="inputs" class="formbox">
             <div class="row">
               <span class="label">Size</span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
@@ -197,7 +197,9 @@ void main(void)
 
       <div id="fractal">
         <div id="minwidth">
-          <div id="backgroundBG"><div id="backgroundCUR" onmousedown="bgColourMouseClick();"></div></div>
+          <div id="backgroundBG" class="colourbg">
+            <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
+          </div>
           <canvas id="palette" width="572" height="24"></canvas>
         </div>
         <div id="select" style="display: none"></div>

@@ -66,6 +66,8 @@
     this.alpha = ((intcolour&0xff000000) >>> 24) / 255.0;
   }
 
+  Colour.prototype.toString = function() {return this.html();}
+
   Colour.prototype.html = function() {
     return "rgba(" + this.red + "," + this.green + "," + this.blue + "," + this.alpha + ")";
   }
@@ -73,6 +75,11 @@
   Colour.prototype.rgbaGL = function() {
     var arr = new Array(this.red/255.0, this.green/255.0, this.blue/255.0, this.alpha);
     return new Float32Array(arr);
+  }
+
+  Colour.prototype.rgbaGLSL = function() {
+    var c = this.rgbaGL();
+    return "rgba(" + c[0].toFixed(4) + "," + c[1].toFixed(4) + "," + c[2].toFixed(4) + "," + c[3].toFixed(4) + ")";
   }
 
   Colour.prototype.rgba = function() {
