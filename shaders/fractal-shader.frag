@@ -44,11 +44,11 @@ void main()
         if (perturb) 
           z = selected; //Perturbation
         else
-          z = complex(0,0);
+          z = C(0);
         c = pixel;
       }
-      zoldold = C(0.0);
-      zold = C(0.0);
+      zoldold = C(0);
+      zold = C(0);
 
       //Formula specific reset...
       reset();
@@ -57,6 +57,7 @@ void main()
 
       //Iterate the fractal formula
       //(Loop counter can only be compared to constant in GL ES 2.0)
+      bool in_set = true;
       for (int i=0; i <= iterations*2; i++)
       {
         //Save previous z value
@@ -69,8 +70,12 @@ void main()
         transform();
 
         //Check bailout condition
-        if (bailed()) break;
-        
+        if (bailed())
+        {
+          in_set = false;
+          break;
+        }
+
         //Colour calc...
         if (OUTSIDE) outColour_calc();
         if (INSIDE) inColour_calc();
@@ -78,14 +83,16 @@ void main()
         //Check iterations remain
         if (i == maxiterations) break;
       }
+      //count++;
 
-      if (count < maxiterations)
+      //if (count > maxiterations)
+      if (in_set)
       {
-        //Outside colour
-        if (OUTSIDE)
+        //Inside colour
+        if (INSIDE)
         {
           //Normalised colour index [0,1]
-          real mu = outColour_result() * outrepeat / real(maxiterations);
+          real mu = inColour_result() * inrepeat / real(maxiterations);
           colour += texture2D(palette, vec2(mu, 0.0));
         }
         else
@@ -93,11 +100,11 @@ void main()
       }
       else
       {
-        //Inside colour
-        if (INSIDE)
+        //Outside colour
+        if (OUTSIDE)
         {
           //Normalised colour index [0,1]
-          real mu = inColour_result() * inrepeat / real(maxiterations);
+          real mu = outColour_result() * outrepeat / real(maxiterations);
           colour += texture2D(palette, vec2(mu, 0.0));
         }
         else

@@ -1,16 +1,16 @@
   //Regular expressions
-  var paramreg = /@(\w*) *= *(bool|int|uint|real|float|complex|list|real_function|complex_function|bailout_function)\((.*)\); *(\/\/(.*))?(?:\r\n|[\r\n])/gi;
+  var paramreg = /@(\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function)\((.*)\);\s*(\/\/(.*))?(?:\r\n|[\r\n])/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
-  var complexreg = /\(?([-+]?(\d*\.)?\d+)\w*,\w*([-+]?(\d*\.)?\d+)\)?/;
+  var complexreg = /\(?([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)?/;
 
   //Take complex or real, return real?
-  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cotan", "cotanh", "cexp", "real", "imag", "ident", "loge", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
+  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cexp", "real", "imag", "ident", "loge", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
   //Take complex, return complex?
-  var cplxfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil", "conj", "cos", "cosh", "cotan", "cotanh", "cexp", "flip", "floor", "ident", "loge", "inv", "round", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "trunc", "czero"];
+  var cplxfunctions = ["abs", "cacos", "cacosh", "casin", "casinh", "catan", "catanh", "ceil", "conj", "ccos", "ccosh", "cexp", "flip", "floor", "ident", "loge", "inv", "round", "csin", "csinh", "sqr", "sqrt", "ctan", "ctanh", "trunc", "czero"];
   //Take complex, return real, 
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
-  //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan... provide access to componentwise versions too??)
+  //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
   function Aspect(re, im, rotation, zoom) {
     this.re = re;
@@ -180,6 +180,12 @@
         this.value = 0; //Initial selection
       }
     }
+
+    if (this.type == 'rgba') {
+      this.typeid = 5;
+      this.value = new Colour('rgba(' + value + ')');
+    }
+
     //consoleWrite(this.label + " parsed as " + this.type + " value = " + this.value);
   }
 
@@ -193,10 +199,12 @@
         return strval;
     }
 
-    if (this.type == 'real')
+    if (this.typeid == 1) //real/float
       return realStr(this.value);
-    else if (this.type == 'complex')
+    else if (this.typeid == 2) //complex
       return "complex(" + realStr(this.value.re) + "," + realStr(this.value.im) + ")";
+    else if (this.typeid == 5) //'rgba'
+      return this.value.rgbaGLSL();
     else
       return "" + this.value;
   }
@@ -212,26 +220,39 @@
 
   Param.prototype.setFromElement = function(key) {
     //Get param value from associated form field
-    var field = document.getElementById(key);
-    if (this.typeid != 2 && !field) {consoleWrite("No field found for: " + key); return;}
+    var field, field_re, field_im;
+    if (this.typeid == 2) {
+      field_re = document.getElementById(key + "_re");
+      field_im = document.getElementById(key + "_im");
+      if (!field_re || !field_im) return;
+    } else {
+      field = document.getElementById(key);
+      if (!field) return;
+    }
+    //if (this.typeid != 2 && !field) {consoleWrite("No field found for: " + key); return;}
     switch (this.typeid)
     {
       case -1: //Boolean = checkbox
-        this.value = document.getElementById(key).checked;
+        this.value = field.checked;
         break;
       case 0: //Integer = entry
       case 3: //Integer from list
-        this.value = parseInt(document.getElementById(key).value);
+        this.value = parseInt(field.value);
         break;
       case 1: //real = entry
-        this.value = parseFloat(document.getElementById(key).value);
+        this.value = parseFloat(field.value);
         break;
       case 2: //complex = 2 x entry
-        this.value.re = parseFloat(document.getElementById(key + "_re").value);
-        this.value.im = parseFloat(document.getElementById(key + "_im").value);
+        if (document.getElementById(key + "_re")) {
+          this.value.re = parseFloat(field_re.value);
+          this.value.im = parseFloat(field_im.value);
+        }
         break;
       case 4: //Function name
-        this.value = document.getElementById(key).value;
+        this.value = field.value;
+        break;
+      case 5: //RGBA colour
+        this.value = new Colour(field.style.backgroundColor);
         break;
     }
   }
@@ -323,6 +344,7 @@
     {
       if (typeof(this[key]) != 'object') continue;
 
+      //Prevent creating duplicate fields when same colouring used for in & out
       if (type == "outside_colour" && key.indexOf("_out_") < 0) continue;
       if (type == "inside_colour" && key.indexOf("_in_") < 0) continue;
 
@@ -342,22 +364,36 @@
       var spanin = document.createElement("span");
       spanin.className = "field";
 
-      var input = document.createElement("input");
-      input.id = key;
-      input.name = key;
+      //Add to row div
+      row.appendChild(label);
+      row.appendChild(spanin);
+      //Add row to area div
+      field_area.appendChild(row);
 
+      //Create the input fields
       switch (this[key].typeid)
       {
         case -1: //Boolean
+          var input = document.createElement("input");
+          input.id = key;
+          input.name = key;
           input.type = "checkbox";
           input.checked = this[key].value;
+          spanin.appendChild(input);
           break;
         case 0: //Integer
         case 1: //real
+          var input = document.createElement("input");
+          input.id = key;
+          input.name = key;
           input.type = "number";
           input.value = this[key].value;
+          spanin.appendChild(input);
           break;
         case 2: //complex (2xreal)
+          var input = document.createElement("input");
+          input.id = key;
+          input.name = key;
           input.id = key + "_re";
           input.name = input.id;
           input.type = "number";
@@ -369,6 +405,7 @@
           input.name = input.id;
           input.type = "number";
           input.value = this[key].value.im;
+          spanin.appendChild(input);
           break;
         case 3: 
           //List of integer values (label=value|etc...)
@@ -378,6 +415,7 @@
           for (k in this[key].list)
             input.options[input.options.length] = new Option(k, this[key].list[k]);
           input.value = this[key].value;
+          spanin.appendChild(input);
           break;
         case 4: 
           //Drop list of functions
@@ -387,18 +425,21 @@
           for (var i=0; i<this[key].functions.length; i++)
             input.options[input.options.length] = new Option(this[key].functions[i], this[key].functions[i]);
           input.value = this[key].value;
+          spanin.appendChild(input);
           break;
-        default:
-          continue;
+        case 5: 
+          //Colour picker
+          var input = document.createElement("div");
+          input.className = "colourbg";
+          var cinput = document.createElement("div");
+          cinput.className = "colour";
+          cinput.id = key;
+          cinput.name = key;
+          cinput.style.backgroundColor = this[key].value.html();
+          input.appendChild(cinput);
+          spanin.appendChild(input);
+          break;
       }   
-
-      spanin.appendChild(input);
-
-      //Add to row div
-      row.appendChild(label);
-      row.appendChild(spanin);
-      //Add row to area div
-      field_area.appendChild(row);
     }
   }
 
@@ -730,13 +771,14 @@
           {if (pair[1] == 0) this.origin.zoom = 0.5;}
         else if (pair[0] == "UnitsPerPixel")
         {
+          //Old files provide units per pixel and top left coord (already saved in origin)
           var upp = parseFloat(pair[1]);
           var fwidth = this.width * upp;
           var fheight = this.height * upp;
+          //Use largest zoom calculated from units per pixel * pixels in each dimension
           var zoomx = 2.0 / fwidth;
           var zoomy = 2.0 / fheight;
-          //alert(upp + "(upp) -> zoom (x,y) = " + zoomx + "," + zoomy);
-          this.origin.zoom = zoomx;
+          this.origin.zoom = zoomx > zoomy ? zoomx : zoomy;
           //Convert top-left coords into origin coord
           this.origin.re += fwidth * 0.5;
           this.origin.im += fheight * 0.5;
@@ -865,20 +907,11 @@
       this.params["novabs"]["relax"].parse([saved["param2"].re, saved["param2"].im]);
     }
 
-    if (this.formula["outside_colour"] == "gaussian_integers") {
-      this.params["gaussian_integers"]["gaussian_integers_out_mode"].parse(saved["param2"].re);
-      this.params["gaussian_integers"]["gaussian_integers_out_colourby"].parse(saved["param2"].im);
-    }
-    if (this.formula["inside_colour"] == "gaussian_integers") {
-      this.params["gaussian_integers"]["gaussian_integers_in_mode"].parse(saved["param2"].re);
-      this.params["gaussian_integers"]["gaussian_integers_in_colourby"].parse(saved["param2"].im);
-    }
-
     //Functions and ops
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
       if (!saved["inductop"]) saved["inductop"] = "0";
 
-      var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", ""];
+      var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
 
       this.params["fractured"]["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
       this.params["fractured"]["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
@@ -901,52 +934,46 @@
         this.params["fractured"]["induct_on"].value = 1;
     }
 
-    //Colour formulae
-    if (this.formula["outside_colour"] == "smooth") {
-      this.params["smooth"]["smooth_out_usepower"].value = false;
-      this.params["smooth"]["smooth_out_type2"].value = false;
-      if (saved["outside"] == "Smooth 2")
-        this.params["smooth"]["smooth_out_type2"].value = true;
-    }
-    if (this.formula["inside_colour"] == "smooth") {
-      this.params["smooth"]["smooth_in_usepower"].value = false;
-      this.params["smooth"]["smooth_in_type2"].value = false;
-      if (saved["inside"] == "Smooth 2")
-        this.params["smooth"]["smooth_in_type2"].value = true;
+    //Colour formulae param conversion
+    function convertColourParams(type, formula, params) {
+      var inout;
+      if (type == "outside") inout = "_out_"; else inout = "_in_";
+
+      if (formula[type + "_colour"] == "smooth") {
+        var prefix = "smooth" + inout;
+        params["smooth"][prefix + "usepower"].value = false;
+        params["smooth"][prefix + "type2"].value = false;
+        if (saved[type] == "Smooth 2")
+          params["smooth"][prefix + "type2"].value = true;
+      }
+
+      if (formula[type + "_colour"] == "exp_smooth") {
+        var prefix = "exp_smooth" + inout;
+        params["exp_smooth"][prefix + "diverge"].value = true;
+        params["exp_smooth"][prefix + "converge"].value = false;
+        params["exp_smooth"][prefix + "use_zold"].value = false;
+        if (saved[type] == "Exp. Smoothing - Xdiverge")
+          params["exp_smooth"][prefix + "use_zold"].value = true;
+        if (saved[type] == "Exp. Smoothing - converge") {
+          params["exp_smooth"][prefix + "diverge"].value = false;
+          params["exp_smooth"][prefix + "converge"].value = true;
+          params["exp_smooth"][prefix + "use_zold"].value = true;
+        }
+        if (saved[type] == "Exp. Smoothing - Both") {
+          params["exp_smooth"][prefix + "converge"].value = true;
+          params["exp_smooth"][prefix + "use_zold"].value = true;
+        }
+      }
+
+      if (formula[type + "_colour"] == "gaussian_integers") {
+        var prefix = "gaussian_integers" + inout;
+        params["gaussian_integers"][prefix + "mode"].parse(saved["param2"].re);
+        params["gaussian_integers"][prefix + "colourby"].parse(saved["param2"].im);
+      }
     }
 
-    if (this.formula["outside_colour"] == "exp_smooth") {
-      this.params["exp_smooth"]["exp_smooth_out_diverge"].value = true;
-      this.params["exp_smooth"]["exp_smooth_out_converge"].value = false;
-      this.params["exp_smooth"]["exp_smooth_out_use_zold"].value = false;
-      if (saved["outside"] == "Exp. Smoothing - Xdiverge")
-        this.params["exp_smooth"]["exp_smooth_out_use_zold"].value = true;
-      if (saved["outside"] == "Exp. Smoothing - converge") {
-        this.params["exp_smooth"]["exp_smooth_out_diverge"].value = false;
-        this.params["exp_smooth"]["exp_smooth_out_converge"].value = true;
-        this.params["exp_smooth"]["exp_smooth_out_use_zold"].value = true;
-      }
-      if (saved["outside"] == "Exp. Smoothing - Both") {
-        this.params["exp_smooth"]["exp_smooth_out_converge"].value = true;
-        this.params["exp_smooth"]["exp_smooth_out_use_zold"].value = true;
-      }
-    }
-    if (this.formula["inside_colour"] == "exp_smooth") {
-      this.params["exp_smooth"]["exp_smooth_in_diverge"].value = true;
-      this.params["exp_smooth"]["exp_smooth_in_converge"].value = false;
-      this.params["exp_smooth"]["exp_smooth_in_use_zold"].value = false;
-      if (saved["inside"] == "Exp. Smoothing - Xdiverge")
-        this.params["exp_smooth"]["exp_smooth_in_use_zold"].value = true;
-      if (saved["inside"] == "Exp. Smoothing - converge") {
-        this.params["exp_smooth"]["exp_smooth_in_diverge"].value = false;
-        this.params["exp_smooth"]["exp_smooth_in_converge"].value = true;
-        this.params["exp_smooth"]["exp_smooth_in_use_zold"].value = true;
-      }
-      if (saved["inside"] == "Exp. Smoothing - Both") {
-        this.params["exp_smooth"]["exp_smooth_in_converge"].value = true;
-        this.params["exp_smooth"]["exp_smooth_in_use_zold"].value = true;
-      }
-    }
+    convertColourParams("outside", this.formula, this.params);
+    convertColourParams("inside", this.formula, this.params);
 
     //Update parameters to form
     this.loadParams();

@@ -520,8 +520,15 @@ var editorFilename;
 
 /////////////////////////////////////////////////////////////////////////
 //Colour picker functions
+handleFormMouseDown = function(e) {
+  //Event delegation from form
+  e = e || window.event;
+  var elementId = e.target.id;
+  if (e.target.className == "colour") colourPickerElement(e.target);
+}
 
 var editColour = -1;
+var editElement = null;
 function colourPickerOK(val) { 
   if (editColour >= 0)
   {
@@ -530,7 +537,14 @@ function colourPickerOK(val) {
     colours[editColour].colour.setHSV(val);
     paletteUpdate();
   }
+  else if (editElement) {
+    var col = new Colour(0);
+    col.setHSV(val);
+    editElement.style.backgroundColor = col.html();
+  }
+
   editColour = -1;
+  editElement = null;
 }
 function colourPickerX() { 
   //If adding a new colour, delete it
@@ -545,6 +559,20 @@ function colourPickerAbort() {
     colours.splice(editColour,1);
     paletteUpdate();
   }
+}
+
+function colourPickerElement(el) { 
+  //Open colour picker for element, not using colour array
+  editElement = el;
+  var col = new Colour(el.style.backgroundColor)
+  HSVupdate(col.HSVA());
+
+    loadSV(); //Shouldn't call these except first load!
+    loadA();
+  
+    $S('plugin').left=el.offsetLeft+'px';
+    $S('plugin').top=el.offsetTop+'px';
+    $S('plugin').display='block';
 }
 
 function colourPicker(i, x, y) { 

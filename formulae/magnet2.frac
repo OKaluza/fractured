@@ -1,7 +1,7 @@
 @bailout = real(100);   //Bailout
 @bailoutc = real(0.00005);   //Converge Bailout
 @bailfunc = bailout_function(norm);   //Bailout Function
-@power = complex(2);    //Power
+@power = real(2);    //Power
 
 //Get next z(n+1), performs an iteration step
 void runstep()
@@ -13,7 +13,7 @@ void runstep()
   complex c1c2 = mul(c1, c2);
   z = div(mul(z2,z) + 3.0*mul(z, c1) + c1c2,
           3.0*z2 + 3.0*mul(z, c2) + c1c2 + C(1.0));
-  if (power == C(2.0))
+  if (power == 2.0)
     z = sqr(z);
   else
     z = cpow(z,power);
