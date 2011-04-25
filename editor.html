@@ -25,7 +25,8 @@ html, body {
 }
 #code{
   position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;
-  background: #dadad6;
+  /*background: #dadad6;*/
+  background: #312922;
 }
 #editor{
   width: 100%; height: 100%;
@@ -33,8 +34,12 @@ html, body {
 
 .CodeMirror-line-numbers {
   width: 2.2em;
+  color: #888;
+  background-color: #443;
+  /*
   color: #aaa;
   background-color: #eee;
+  */
   text-align: right;
   padding: .4em;
   margin: 0;
@@ -76,6 +81,7 @@ var formula;
     var query = decodeURI(window.location.href).split("?")[1]; //will get the whole querystring with the ?
     var param = query ? query.split("=")[1] : "";
 
+    type = "";
     if (param.indexOf('.') == -1) {
       type = param;
       filename = window.opener.fractal.formulaFilename(type);
@@ -92,7 +98,7 @@ var formula;
       path: "codemirror/js/",
       saveFunction: saveEditor,
       lineNumbers: true,
-      firstLineNumber: window.opener.lineOffset,
+      firstLineNumber: window.opener.formulaOffsets[type],
       textWrapping: false,
       indentUnit: 2,
       enterMode: "keep",
