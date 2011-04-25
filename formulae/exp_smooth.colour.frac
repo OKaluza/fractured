@@ -31,11 +31,14 @@ void ~calc()
   }
 }
 
-real ~result()
+rgba ~result(in real repeat)
 {
+  real mu;
   if (!~diverge || ~converge && converged)
-    return ~csum;
+    mu =  ~csum;
+  else 
+    mu = ~sum;
     
-  return ~sum;
+  return gradient(repeat * mu / real(maxiterations));
 }
 

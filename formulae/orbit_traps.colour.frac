@@ -12,8 +12,7 @@ void ~calc()
   if (d < ~closest) ~closest = d;  
 }
 
-real ~result()
+rgba ~result(in real repeat)
 {
-  return ~closest * real(iterations);
+  return gradient(repeat * ~closest);
 }
-

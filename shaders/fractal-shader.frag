@@ -6,8 +6,8 @@ void main()
   rgba colour = rgba(0.0,0.0,0.0,0.0);
   //if (background.a < 0.01) discard;
   init();
-  inColour_init();
-  outColour_init();
+  inside_colour_init();
+  outside_colour_init();
     
   //Variable iterations?
   if (vary > 0.0)
@@ -52,8 +52,8 @@ void main()
 
       //Formula specific reset...
       reset();
-      inColour_reset();
-      outColour_reset();
+      inside_colour_reset();
+      outside_colour_reset();
 
       //Iterate the fractal formula
       //(Loop counter can only be compared to constant in GL ES 2.0)
@@ -76,40 +76,26 @@ void main()
           break;
         }
 
-        //Colour calc...
-        if (OUTSIDE) outColour_calc();
-        if (INSIDE) inColour_calc();
+        //Colour calcs...
+        outside_colour_calc();
+        inside_colour_calc();
 
         //Check iterations remain
         if (i == maxiterations) break;
       }
-      //count++;
 
-      //if (count > maxiterations)
+      //This hack forces same results as old program...
+      #ifdef COMPAT
+        count++;
+        if (count > maxiterations) in_set = true;
+      #endif
+
       if (in_set)
-      {
-        //Inside colour
-        if (INSIDE)
-        {
-          //Normalised colour index [0,1]
-          real mu = inColour_result() * inrepeat / real(maxiterations);
-          colour += texture2D(palette, vec2(mu, 0.0));
-        }
-        else
-          colour += background;
-      }
+        //Inside colour: normalised colour index [0,1]
+        colour += inside_colour_result(inrepeat);
       else
-      {
-        //Outside colour
-        if (OUTSIDE)
-        {
-          //Normalised colour index [0,1]
-          real mu = outColour_result() * outrepeat / real(maxiterations);
-          colour += texture2D(palette, vec2(mu, 0.0));
-        }
-        else
-          colour += background;
-      }
+        //Outside colour: normalised colour index [0,1]
+        colour += outside_colour_result(outrepeat);
     }
   }
   //if (colour == background) discard;

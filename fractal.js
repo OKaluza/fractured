@@ -443,23 +443,26 @@
     }
   }
 
-  function Fractal(re, im, rotation, zoom) {
+  function Fractal() {
+    //Construct a new default fractal object
+    this.resetDefaults();
+  }
+
+  Fractal.prototype.resetDefaults = function() {
+    //Default aspect, parameters and formulae:
     this.width = 600;
     this.height = 600;
-    this.origin = new Aspect(re, im, rotation, zoom); 
+    this.origin = new Aspect(0, 0, 0, 0.5); 
     this.savePos = this.origin;
     this.selected = new Complex(0, 0);
     this.julia = false;
     this.perturb = false;
 
     this.params = {};
-    this.formula = {};
-
-    this.selectFormula("base", "base"); //Dummy formula to hold base params
-    this.selectFormula("fractal", "mandelbrot");
-    this.selectFormula("transform", "none");
-    this.selectFormula("outside_colour", "default");
-    this.selectFormula("inside_colour", "none");
+    this.formula = {"base" : "base", "fractal" : "mandelbrot", "transform" : "none",
+                    "outside_colour": "default", "inside_colour": "none"};
+    //Load parameters for default formula selections
+    this.loadParams();
   }
 
   Fractal.prototype.formulaFilename = function(type) {
@@ -502,7 +505,13 @@
 
   Fractal.prototype.getFormulaCode = function(type) {
     var name = this.formula[type];
-    if (name == "same") return "";
+    if (name == "same") {
+      //Don't load code for this formula, replace with dummy defines
+      var defines = "#define inside_colour_init()\n" +
+      "#define inside_colour_reset()\n#define inside_colour_calc()\n" + 
+      "#define inside_colour_result " + this.formula["outside_colour"] + "_out_result\n";
+      return defines;
+    }
     var code = "";
     if (name != "none") code = sources[this.formulaFilename(type)];
 
@@ -512,21 +521,23 @@
     var runstepreg = /void\s*runstep\(\)/g;
     var bailedreg = /bool\s*bailed\(\)/g;
     var calcreg = /void\s*~calc\(\)/g;
-    var resultreg = /real\s*~result\(\)/g;
+    var resultreg = /rgba\s*~result\(in\s*real\s*repeat\s*\)/g;
     var transformreg = /void\s*transform\(\)/g;
 
+    //Create defines for formula entry points
+    code += "\n";
     if (type == "fractal") {
-      if (!initreg.exec(code)) code += "\nvoid init() {}\n"
-      if (!resetreg.exec(code)) code += "\nvoid reset() {}\n"
-      if (!runstepreg.exec(code)) code += "\nvoid runstep() {z = mul(z,z)+c;}\n"
-      if (!bailedreg.exec(code)) code += "\nbool bailed() {if (norm(z) > 4.0) return true;\nreturn false;}\n"
+      if (!initreg.exec(code)) code += "#define init()\n";
+      if (!resetreg.exec(code)) code += "#define reset()\n";
+      if (!runstepreg.exec(code)) code += "#define runstep() z = mul(z,z)+c\n";
+      if (!bailedreg.exec(code)) code += "#define bailed() (norm(z) > 4.0)\n";
     } else if (type == "transform") {
-      if (!transformreg.exec(code)) code += "void transform() {}\n"
+      if (!transformreg.exec(code)) code += "#define transform()\n"
     } else {
-      if (!initreg.exec(code)) code += "\nvoid ~init() {}\n"
-      if (!resetreg.exec(code)) code += "\nvoid ~reset() {}\n"
-      if (!calcreg.exec(code)) code += "\nvoid ~calc() {}\n"
-      if (!resultreg.exec(code)) code += "\nreal ~result() {return 0.0;}\n"
+      code += "#define " + type + "_init" + (initreg.exec(code) ? " ~init\n" : "()\n");
+      code += "#define " + type + "_reset" + (resetreg.exec(code) ? " ~reset\n" : "()\n");
+      code += "#define " + type + "_calc" + (calcreg.exec(code) ? " ~calc\n" : "()\n");
+      code += "#define " + type + "_result" + (resultreg.exec(code) ? " ~result\n" : "(A) background\n");
     }
 
     //Replace any ~ symbols with formula name and "_"
@@ -539,6 +550,7 @@
       code = code.replace(/~/g, name + "_out_");
     else
       code = code.replace(/~/g, name + "_");
+
     return code;
   }
 
@@ -607,6 +619,8 @@
 
   //Load fractal from file
   Fractal.prototype.load = function(source) {
+    //Reset everything...
+    this.resetDefaults();
     //1. Load fixed params as key=value: origin, selected, julia, perturb, 
     //2. Load selected formula names
     //3. Load code for each selected formula (including "base")
@@ -644,7 +658,9 @@
           var filename = this.formulaFilename(formulas[formula]);
           collect = true;
           buffer = "";
-          collectDone = function() {sources[filename] = buffer;}
+          ////TODO: reenable this to load formula code, disabled for now as formulae are changing frequently
+          ////collectDone = function() {sources[filename] = buffer;}
+            collectDone = function() {}
         }
         continue;
       }
@@ -698,6 +714,12 @@
 
   //Conversion/parser for my old fractal ini files
   Fractal.prototype.iniParser = function(source, paletteonly) {
+    //Reset everything...
+    this.resetDefaults();
+    //this.params = {};
+    //this.formula = {};
+    //this.selectFormula("base", "base"); //Dummy formula to hold base params
+
     var saved = {};
 
     function convertFormulaName(name) {
@@ -792,6 +814,8 @@
           this.selected.re = parseFloat(pair[1]);
         else if (pair[0] == "CYstart")
           this.selected.im = parseFloat(pair[1]);
+        else if (pair[0] == "Smooth")
+          saved["smooth"] = pair[1];
         else if (pair[0] == "PaletteRepeat") {
           //Initially copy to both repeat params
           this.params["base"]["outrepeat"].parse(pair[1]);
@@ -858,7 +882,15 @@
     readPalette(paletteSource);
     if (paletteonly) return;
     
-    /* Load formulae */
+    if (saved["smooth"]) {
+      //Really old
+      if (parseInt(saved["smooth"]) == 1)
+        this.formula["outside_colour"] = "smooth";
+      else
+        this.formula["outside_colour"] = "default";
+    }
+
+    // Load formulae
     this.formula["transform"] = "fractured";
     this.loadParams();
 
@@ -1057,36 +1089,15 @@
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
 
-    //Code for selected colouring algorithms
-    var colourcode = this.getFormulaCode("outside_colour")
-                   + this.getFormulaCode("inside_colour");
-
     //Code for selected formula
     var code = this.getFormulaCode("fractal");
 
     //Code for selected transform
     var transformcode = this.getFormulaCode("transform");
 
-    //Generate defines based on colouring methods selected
-    var defines = 
-      "#define OUTSIDE " + (this.formula["outside_colour"] == "none" ? "false" : "true") + "\n" +  
-      "#define INSIDE " + (this.formula["inside_colour"] == "none" ? "false" : "true") + "\n\n" +  
-      "#define outColour_init " + this.formula["outside_colour"] + "_out_init\n" +  
-      "#define outColour_reset " + this.formula["outside_colour"] + "_out_reset\n" +  
-      "#define outColour_calc " + this.formula["outside_colour"] + "_out_calc\n" +  
-      "#define outColour_result " + this.formula["outside_colour"] + "_out_result\n\n" 
-
-    if (this.formula["inside_colour"] == "same") {
-      defines += "#define inColour_init none_in_init\n" +
-      "#define inColour_reset none_in_reset\n#define inColour_calc none_in_calc\n" + 
-      "#define inColour_result " + this.formula["outside_colour"] + "_out_result\n\n";
-    } else {
-      defines += 
-      "#define inColour_init " + this.formula["inside_colour"] + "_in_init\n" +  
-      "#define inColour_reset " + this.formula["inside_colour"] + "_in_reset\n" +  
-      "#define inColour_calc " + this.formula["inside_colour"] + "_in_calc\n" +  
-      "#define inColour_result " + this.formula["inside_colour"] + "_in_result\n\n";  
-    }
+    //Code for selected colouring algorithms
+    var outcolourcode = this.getFormulaCode("outside_colour");
+    var incolourcode = this.getFormulaCode("inside_colour");
 
     //Define param constants now we have complete list
     var constants = this.getParamDeclarations();
@@ -1095,14 +1106,22 @@
     var shader = sources["shaders/fractal-shader.frag"];
     var complex = sources["shaders/complex-math.frag"];
 
-    //Combine header with defines & constant params
-    header = header + defines + constants;
+    //Combine into final shader, saving line offsets
+    var fragmentShader = header + constants;
+    formulaOffsets["fractal"] = fragmentShader.split("\n").length;
+    fragmentShader += code;
+    formulaOffsets["transform"] = fragmentShader.split("\n").length;
+    fragmentShader += transformcode;
+    formulaOffsets["outside_colour"] = fragmentShader.split("\n").length;
+    fragmentShader += outcolourcode;
+    formulaOffsets["inside_colour"] = fragmentShader.split("\n").length;
+    fragmentShader += incolourcode + shader + complex;
 
-    //Use number of newlines for line numbering offset
-    lineOffset = header.split("\n").length;
+    //Remove param declarations, replace with newline to preserve line numbers
+    fragmentShader = fragmentShader.replace(paramreg, "//(Param removed)\n");
 
-    //Combine into final shader (removing param declarations)
-    var fragmentShader = (header + colourcode + transformcode + code + shader + complex).replace(paramreg, "");
+    //Finally replace any @ symbols used to reference params in code
+    fragmentShader = fragmentShader.replace(/@/g, "");
 
     //Save for debugging
     sources["gen-shader.frag"] = fragmentShader;

@@ -34,12 +34,12 @@ void ~calc()
   }
 }
 
-real ~result()
+rgba ~result(in real repeat)
 {
   ~sum /= real(count);
   ~sum2 /= real(count - 1);
   real f = ~il * (~lp - log(log(cabs(z))));
-  real idx = ~sum2 + (~sum - ~sum2) * (f+1.0);
-  return idx * real(iterations);
+  real idx = ~sum2 + (~sum - ~sum2) * (f+1.0);  
+  return gradient(repeat * idx);
 }
 
