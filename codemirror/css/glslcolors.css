@@ -8,11 +8,11 @@ html {
   font-family: 'Droid Sans Mono',monospace;
   font-size: 10pt;
   line-height: 1.1em;
-  color: black;
+  color: beige;
 }
 
 pre.code, .editbox {
-  color: #666666;
+  color: #333;
 }
 
 .editbox p {
@@ -20,11 +20,11 @@ pre.code, .editbox {
 }
 
 span.glsl-punctuation {
-  color: black;
+  color: beige;
 }
 
 span.glsl-operator {
-  color: purple;
+  color: darkorange;
 }
 
 span.glsl-modifier {
@@ -32,12 +32,12 @@ span.glsl-modifier {
 }
 
 span.glsl-keyword {
-  color: #7f0055;
+  color: #8f6500;
   font-weight:bold;
 }
 
 span.glsl-stdlib {
-  color: #000088;
+  color: #ba0;
   font-weight:bold;
 }
 
@@ -47,33 +47,28 @@ span.glsl-stdvar {
 }
 
 span.glsl-atom {
-  color: brown;
+  color: limegreen;
 }
 /*Custom*/
 span.glsl-param {
-  color: #000000;
+  color: khaki;
   font-weight:bold;
 }
 
 span.glsl-variable {
-  color: black;
+  color: beige;
 }
 
 span.glsl-property {
-  color: black;
+  color: beige;
 }
 
 span.glsl-comment {
-  color: green;
-}
-
-span.glsldoc-comment {
-  color: #3e5797;
-  font-weight:bold;
+  color: seagreen;
 }
 
 span.glsl-type {
-  color: blue;
+  color: aqua;
 }
 
 span.glsl-define{

@@ -60,7 +60,8 @@ var tokenizeGLSL = (function() {
       "sampler2DShadow": type, "sampler3D": type, "samplerCube": type, 
       "vec2": type, "vec3": type, "vec4": type, "void": type, "struct": type,
       //Custom types for fractals
-      "param": type, "complex": type, "C": type, "real": type, "rgb": type, "rgba": type,
+      "param": type, "complex": type, "real": type, "rgb": type, "rgba": type,
+      "C": type, "CI": type, "I": type,
 
       "abs": stdlib, "acos": stdlib, "all": stdlib, "any": stdlib, "asin": stdlib, "atan": stdlib, 
       "ceil": stdlib, "clamp": stdlib, "cos": stdlib, "cross": stdlib, "dFdx": stdlib, "dFdy": stdlib, 
