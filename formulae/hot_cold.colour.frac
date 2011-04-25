@@ -1,0 +1,35 @@
+//Hot & Cold
+// 2 colors - on each orbit, the closer we are to 0, the more hot,
+// the closer we are to bailout, the more cold. Compute an average 
+// over all iterations 
+@~bailout = real(4);   //Bailout
+@~fardist = real(1.0);  //Far distance
+@~closedist = real(0.2);  //Close distance
+@~hotcolour = rgba(255, 120, 5, 1.0);  //Hot colour
+@~coldcolour = rgba(127, 200, 250, 1.0);  //Cold colour
+
+int ~closecalls;
+int ~farcalls;
+
+void ~reset()
+{
+  ~closecalls=0;
+  ~farcalls=0;
+}
+
+void ~calc()
+{
+  real dist = norm(z);
+  if (dist < @~closedist)
+    ~closecalls++;
+  else if (@~bailout - dist < @~fardist)
+    ~farcalls++;
+}
+
+rgba ~result(in real repeat)
+{
+  //return gradient(repeat * real(~closecalls) / real(count));
+  rgba hcolour = @~hotcolour * (real(~closecalls)/real(count));
+  rgba ccolour = @~coldcolour * (real(~farcalls)/real(count));
+  return rgba(hcolour.rgb + ccolour.xyz, 1.0);
+}

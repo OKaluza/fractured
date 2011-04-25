@@ -62,7 +62,7 @@ void ~calc()
   }
 }
 
-real ~result()
+rgba ~result(in real repeat)
 {
   real index, t;
   
@@ -110,6 +110,6 @@ real ~result()
   if (~colourby == 8)
     index = ~rmax / (~rmin + 1.e-12);
 
-  return index * real(iterations);
+  return gradient(repeat * index);
 }
 

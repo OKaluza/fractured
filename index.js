@@ -8,9 +8,12 @@ var gradientTexture;
 //Source files list
 var sources = {};
 var labels = {};
-var lineOffset; //line numbering offset count
+var formulaOffsets = {}; //line numbering offset counts for each formula
 
   function pageStart() {
+    //Default editor line offset
+    formulaOffsets[""] = 1;
+
     //Preload some images
     ajaxReadFile("media/SatVal.png");
 
@@ -67,6 +70,7 @@ var lineOffset; //line numbering offset count
     addColourFormula("triangle_inequality", "Triangle Inequality");
     addColourFormula("orbit_traps", "Orbit Traps");
     addColourFormula("gaussian_integers", "Gaussian Integers");
+    addColourFormula("hot_cold", "Hot & Cold");
 
     loadSources();
 
@@ -98,8 +102,6 @@ var lineOffset; //line numbering offset count
 
     //Start webGL
     initGL("fractal-canvas");
-    //Create a fractal object
-    fractal = new Fractal(0, 0, 0, 0.5);
 
     //Load texture data and draw palette
     gradientTexture = gl.createTexture();
@@ -107,8 +109,9 @@ var lineOffset; //line numbering offset count
     //updateTexture(gradientTexture);
     readPalette(sources["default.palette"]);
 
+    //Create a fractal object
+    fractal = new Fractal();
     //Load shader program and draw
-    fractal.loadParams();
     fractal.writeShader();
     fractal.draw();
 

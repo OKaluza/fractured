@@ -1,14 +1,20 @@
 precision highp float;
+
+#define COMPAT
+
 #define real float
 #define complex vec2
 #define C(x) complex(real(x),0.0) 
 #define CI(x) complex(0.0,real(x)) 
 #define I complex(0.0,1.0) 
-#define rgb vec3 
+#define RGB vec3 
 #define rgba vec4 
 #define ident(args) args
 #define zero(args) 0
 #define czero(args) C(0.0)
+
+//Palette lookup mu = [0,1]
+#define gradient(mu) texture2D(palette, vec2(mu, 0.0))
 
 //Complex number library functions
 const real PI = 3.1415926536;
@@ -87,4 +93,3 @@ uniform rgba background;
 
 //Current complex coordinate
 varying complex coord;
-

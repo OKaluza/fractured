@@ -15,14 +15,17 @@ void ~init()
   ~lp = log(2.0 * log(sqrt(bailout))) * ~il;
 }
 
-real ~result()
+rgba ~result(in real repeat)
 {
+  real mu;
   if (~type2)
     //Smooth2 colouring
-    return real(count) + ~lp - log(log(cabs(z))) * ~il;
-
-  //Smooth1 colouring
-  return real(count+1) - log(log(cabs(z))) * ~il;
+    mu = real(count) + ~lp - log(log(cabs(z))) * ~il;
+  else
+    //Smooth1 colouring
+    mu = real(count+1) - log(log(cabs(z))) * ~il;
+    
+  return gradient(repeat * mu / real(maxiterations));
 }
 
 
