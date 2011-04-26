@@ -72,7 +72,7 @@ complex gamma(in complex z);
 //Globals
 complex z;
 complex c;
-complex pixel;      //Coord calculating for
+complex pixel;      //Current pixel coord
 complex zold;       //Previous value of z
 complex zoldold;    //Previous previous value of z
 int maxiterations;  //Number of iterations to perform
