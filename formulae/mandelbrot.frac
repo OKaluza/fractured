@@ -6,7 +6,6 @@
 void runstep()
 {
   if (power == 2.0)
-    //(default mandelbrot)
     z = mul(z,z) + c;
   else
     z = cpow(z, power) + c;

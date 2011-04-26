@@ -779,8 +779,7 @@
         else if (pair[0] == "PerturbFlag")
           this.perturb = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "Iterations")
-          //Subtract 2, seems correct if old system count was out
-          this.params["base"]["iterations"].value = parseInt(pair[1]) - 2; 
+          this.params["base"]["iterations"].value = parseInt(pair[1]); 
         else if (pair[0] == "Xstart")
           this.origin.re = parseFloat(pair[1]);
         else if (pair[0] == "Ystart")
@@ -891,7 +890,6 @@
     }
 
     // Load formulae
-    this.formula["transform"] = "fractured";
     this.loadParams();
 
     //Bailout and power used by most formulae
@@ -932,16 +930,19 @@
     }
 
     if (this.formula["fractal"] == "nova") {
-      this.params["nova"]["relax"].parse([saved["param2"].re, saved["param2"].im]);
+      var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
+      this.params["nova"]["relax"].parse([relax.re, relax.im]);
     }
 
     if (this.formula["fractal"] == "novabs") {
-      this.params["novabs"]["relax"].parse([saved["param2"].re, saved["param2"].im]);
+      var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
+      this.params["novabs"]["relax"].parse([relax.re, relax.im]);
     }
 
     //Functions and ops
+    if (!saved["inductop"]) saved["inductop"] = "0";
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
-      if (!saved["inductop"]) saved["inductop"] = "0";
+      this.selectFormula("transform", "fractured");
 
       var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
 
