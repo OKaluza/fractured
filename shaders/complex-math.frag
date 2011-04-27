@@ -30,7 +30,7 @@ complex loge(in complex z)
 
 complex log10(in complex z)
 {
-  return loge(z) / loge(C(10.0));
+  return loge(z) / loge(C(10));
 }
 
 real log10(in real r)
@@ -92,7 +92,7 @@ complex polar(in real r, in real theta)
 
 complex cpow(in real base, in complex exponent)
 {
-  if (base == 0.0) return C(0.0);
+  if (base == 0.0) return C(0);
 
   real re = log(abs(base));
   real im = atan(0.0, base);
@@ -107,7 +107,7 @@ complex cpow(in real base, in complex exponent)
 
 complex cpow(in complex base, in real exponent) 
 {
-  if (base == C(0.0)) return C(0.0);
+  if (base == C(0)) return C(0);
   real re = exponent * log(cabs(base));
   real im = exponent * arg(base);
 
@@ -118,9 +118,9 @@ complex cpow(in complex base, in real exponent)
 
 complex cpow(in complex base, in complex exponent)
 {
-  if (base == C(0.0)) return C(0.0);
-  if (exponent == C(0.0)) return C(1.0);
-  if (exponent == C(1.0)) return base;
+  if (base == C(0)) return C(0);
+  if (exponent == C(0)) return C(1);
+  if (exponent == C(1)) return base;
   if (exponent.y == 0.0) return cpow(base, exponent.x);
 
   real re =  log(cabs(base));

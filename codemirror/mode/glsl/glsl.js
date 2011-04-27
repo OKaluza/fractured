@@ -162,11 +162,11 @@ CodeMirror.defineMode("glsl", function(config, parserConfig) {
   }
   var Keywords = "if while else do discard return break continue for switch case default";
   var Modifiers = "attribute const in inout out varying uniform";
-  var Atoms = "true false PI TWO_PI E";
+  var Atoms = "true false PI TWO_PI E C CI I";
   var Types = "bool bvec2 bvec3 bvec4 float  int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 
       "sampler1D sampler1DShadow sampler2D sampler2DShadow sampler3D samplerCube " + 
       "vec2 vec3 vec4 void struct " + 
-      "param complex real RGB rgba C CI I " + //Custom types for fractals 
+      "param complex real RGB rgba " + //Custom types for fractals 
       "list real_function complex_function";
   var Stdlib = 
       "abs acos all any asin atan " +

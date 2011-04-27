@@ -10,18 +10,18 @@ void reset()
   if (julia)
     z = selected;
   else
-    if (perturb) z = C(0.0);
+    if (perturb) z = C(0);
 }
 
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
   if (power == 2.0)
-    z = mul(z,z) + mul(z, pixel - C(1.0)) - pixel;
+    z = mul(z,z) + mul(z, pixel - C(1)) - pixel;
   else if (power == 3.0)
-    z = mul(mul(z,z),z) + mul(z, pixel - C(1.0)) - pixel;
+    z = mul(mul(z,z),z) + mul(z, pixel - C(1)) - pixel;
   else
-    z = cpow(z, power) + mul(pixel - C(1.0), z) - pixel;
+    z = cpow(z, power) + mul(pixel - C(1), z) - pixel;
 }
 
 //Check bailout condition and return true if bailed out
