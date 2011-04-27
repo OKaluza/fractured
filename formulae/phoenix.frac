@@ -9,7 +9,7 @@ complex ~savez;
 //Reset, called once for each pixel before iterating
 void reset()
 {
-  ~savez = C(0.0);
+  ~savez = C(0);
   z = pixel;
 }
 

@@ -6,7 +6,7 @@
 //Reset, called once for each pixel before iterating
 void reset()
 {
-  if (!julia) z = complex(1.0,0.0);  //Nova init
+  if (!julia && !perturb) z = C(1);  //Nova init
   converged = true;  //Always converges
 }
 
@@ -14,16 +14,16 @@ void reset()
 void runstep()
 {
   //Novabs: z = abs(z - (relax * (z^p - 1)) / (p * z^(p-1))) + c
-  if (power == C(3.0))
+  if (power == 3.0)
   {
     complex zsquared = mul(z,z);
     complex zcubed = mul(zsquared,z);
-    z = abs(z - div(mul(relax, zcubed - C(1.0)), mul(zsquared, C(3.0)))) + c;
+    z = abs(z - div(mul(relax, zcubed - C(1)), mul(zsquared, C(3)))) + c;
   }
   else
   {
     //Any power - generic version, requires cpow
-    z = abs(z - div(mul(relax, (cpow(z, power)) - C(1.0)),
+    z = abs(z - div(mul(relax, (cpow(z, power)) - C(1)),
                (mul(C(power), cpow(z, power-1.0))))) + c;
   }
 }

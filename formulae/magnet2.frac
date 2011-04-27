@@ -8,11 +8,11 @@ void runstep()
 {
   //Magnet2
   complex z2 = mul(z,z);
-  complex c1 = c - C(1.0);
-  complex c2 = c - C(2.0);
+  complex c1 = c - C(1);
+  complex c2 = c - C(2);
   complex c1c2 = mul(c1, c2);
   z = div(mul(z2,z) + 3.0*mul(z, c1) + c1c2,
-          3.0*z2 + 3.0*mul(z, c2) + c1c2 + C(1.0));
+          3.0*z2 + 3.0*mul(z, c2) + c1c2 + C(1));
   if (power == 2.0)
     z = sqr(z);
   else
@@ -25,7 +25,7 @@ bool bailed()
   //Divergent bailout
   if (bailfunc(z) > bailout) return true;
   //Convergent bailout
-  if (bailfunc(z - C(1.0)) <= bailoutc)
+  if (bailfunc(z - C(1)) <= bailoutc)
   {
     converged = true;
     return true;
