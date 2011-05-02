@@ -4,11 +4,11 @@
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)?/;
 
-  //Take complex or real, return real?
-  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cexp", "real", "imag", "ident", "loge", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
-  //Take complex, return complex?
-  var cplxfunctions = ["abs", "cacos", "cacosh", "casin", "casinh", "catan", "catanh", "ceil", "conj", "ccos", "ccosh", "cexp", "flip", "floor", "ident", "loge", "inv", "round", "csin", "csinh", "sqr", "sqrt", "ctan", "ctanh", "trunc", "czero"];
-  //Take complex, return real, 
+  //Take real, return real
+  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "ident", "log", "log10", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
+  //Take complex, return complex
+  var complexfunctions = ["abs", "cacos", "cacosh", "casin", "casinh", "catan", "catanh", "ceil", "conj", "ccos", "ccosh", "cexp", "flip", "floor", "ident", "loge", "neg", "inv", "round", "csin", "csinh", "sqr", "sqrt", "ctan", "ctanh", "trunc", "czero"];
+  //Take complex, return real
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
@@ -140,6 +140,8 @@
         var match = complexreg.exec(value);
         if (match && match[1] && match[3])
           this.value = new Complex(match[1], match[3]);
+        else
+          this.value = new Complex(parseFloat(value), 0);
       }
     }
 
@@ -151,7 +153,7 @@
     if (this.type == 'complex_function') {
       this.typeid = 4;
       this.value = value;
-      this.functions = cplxfunctions;
+      this.functions = complexfunctions;
     }
     if (this.type == 'bailout_function') {
       this.typeid = 4;
@@ -457,6 +459,7 @@
     this.selected = new Complex(0, 0);
     this.julia = false;
     this.perturb = false;
+    this.compatibility = false;
 
     this.params = {};
     this.formula = {"base" : "base", "fractal" : "mandelbrot", "transform" : "none",
@@ -604,6 +607,7 @@
   }
 
   Fractal.prototype.loadPalette = function(source) {
+    //Parse out palette section only, works with old and new file formats
     var lines = source.split("\n"); // split on newlines
     var buffer = "";
     var section = "";
@@ -611,7 +615,7 @@
       var line = lines[i].trim();
       if (line[0] == "[")
         section = line.slice(1, line.length-1);
-      else if (section == "palette")
+      else if (section.toLowerCase() == "palette")
         buffer += lines[i] + "\n";
     }
     readPalette(buffer);
@@ -708,18 +712,14 @@
     if (buffer) readPalette(buffer);
 
     //Select formulae and update parameters
-    consoleWrite("RESELECTING----------");
     this.loadParams();
   }
 
   //Conversion/parser for my old fractal ini files
-  Fractal.prototype.iniParser = function(source, paletteonly) {
+  Fractal.prototype.iniParser = function(source) {
     //Reset everything...
     this.resetDefaults();
-    //this.params = {};
-    //this.formula = {};
-    //this.selectFormula("base", "base"); //Dummy formula to hold base params
-
+    this.compatibility = true;  //Set compatibility mode
     var saved = {};
 
     function convertFormulaName(name) {
@@ -728,7 +728,7 @@
       if (name == "Nova") return "nova";
       if (name == "Nova BS" || name == "NovaBS") return "novabs";
       if (name == "Burning Ship" || name == "BurningShip") return "burningship";
-      if (name == "Magnet1") return "magnet1";
+      if (name == "Magnet1" || name == "MagnetX") return "magnet1";
       if (name == "Magnet2") return "magnet2";
       if (name == "Magnet3") return "magnet3";
       if (name == "Cactus") return "cactus";
@@ -767,7 +767,6 @@
       if (section == "[Palette]") {
         paletteSource += line + "\n";
       } else if (section == "[Parameters]" || section == "[ExtraParams]" || section == "[Fractal]") {
-        if (paletteonly) continue;
         //Parameters/ExtraParams: parse into attrib=value pairs and add to form
         var pair = line.split("=");
 
@@ -879,7 +878,6 @@
 
     //Process the palette data
     readPalette(paletteSource);
-    if (paletteonly) return;
     
     if (saved["smooth"]) {
       //Really old
@@ -932,11 +930,13 @@
     if (this.formula["fractal"] == "nova") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
       this.params["nova"]["relax"].parse([relax.re, relax.im]);
+      this.params["nova"]["bailout"].value = 0.00001;
     }
 
     if (this.formula["fractal"] == "novabs") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
       this.params["novabs"]["relax"].parse([relax.re, relax.im]);
+      this.params["novabs"]["bailout"].value = 0.00001;
     }
 
     //Functions and ops
@@ -957,13 +957,14 @@
 
       this.params["fractured"]["induct_on"].value = saved["inductop"];
       if (this.params["fractured"]["induct_on"].value >= 10) {
-        //Double induct, same effect as induct with re*2
+        //Double induct, same effect as induct*2
         this.params["fractured"]["induct_on"].value -= 10;
         this.params["fractured"]["induct"].value.re *= 2.0;
+        this.params["fractured"]["induct"].value.im *= 2.0;
       }
       if (this.params["fractured"]["induct_on"].value == 1)
         this.params["fractured"]["induct_on"].value = 2;
-      if (this.params["fractured"]["induct_on"].value == 3)
+      if (this.params["fractured"]["induct_on"].value > 1)
         this.params["fractured"]["induct_on"].value = 1;
     }
 
@@ -1089,6 +1090,7 @@
 
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
+    if (this.compatibility) header += "\n#define COMPAT\n";
 
     //Code for selected formula
     var code = this.getFormulaCode("fractal");

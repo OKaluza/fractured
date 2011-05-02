@@ -5,11 +5,11 @@
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
+  //Burning ship with subtracted pixel coord (mirrored)
   if (power == 2.0)
-    //(default mandelbrot)
-    z = abs(mul(z,z) + c);
+    z = sqr(abs(z)) - c;
   else
-    z = abs(cpow(z, power) + c);
+    z = cpow(abs(z), power) - c;
 }
 
 //Check bailout condition and return true if bailed out
