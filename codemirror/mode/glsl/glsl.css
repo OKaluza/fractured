@@ -5,6 +5,6 @@ span.glsl-stdlib {color: #ba0; font-weight:bold;}
 span.glsl-stdvar {color: #9d5; font-weight:bold;}
 span.glsl-atom {color: limegreen;}
 span.glsl-param {color: khaki; font-weight:bold;}
-span.glsl-comment {color: seagreen; font-style: italic;}
+span.glsl-comment {color: gray; font-style: italic;}
 span.glsl-type {color: aqua;}
-span.glsl-preprocessor{color: gray;}
+span.glsl-preprocessor{color: seagreen;}

@@ -621,9 +621,6 @@ function loadFile(filename, source) {
 }
 
 function loadPalette(filename, source) {
-  if (filename.indexOf(".ini") > -1)
-    fractal.iniParser(source, true);
-  else
-    fractal.loadPalette(source);
+  fractal.loadPalette(source);
 }
 

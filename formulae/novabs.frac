@@ -7,7 +7,6 @@
 void reset()
 {
   if (!julia && !perturb) z = C(1);  //Nova init
-  converged = true;  //Always converges
 }
 
 //Get next z(n+1), performs an iteration step
@@ -31,6 +30,7 @@ void runstep()
 bool bailed()
 {
   //Check bailout condition and return true if bailed out...
+  converged = true;  //Always converges
   if (bailfunc(z-zold) < bailout) return true; //Nova bailout
   return false;
 }

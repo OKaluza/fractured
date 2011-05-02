@@ -67,6 +67,16 @@ real arg(in complex z)
   return atan(z.y,z.x);
 }
 
+real neg(in real x)
+{
+  return -x;
+}
+
+real sqr(in real x)
+{
+  return x*x;
+}
+
 complex neg(in complex z)
 {
   return z * -1.0;

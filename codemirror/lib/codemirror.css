@@ -19,23 +19,29 @@
   min-width: 2em;
   height: 100%;
 }
+
 .CodeMirror-gutter-text {
   color: #888;
   /*color: #aaa;*/
   text-align: right;
   padding: .4em .2em .4em .4em;
 }
+
 .CodeMirror-lines {
   padding: .4em;
 }
 
 .CodeMirror pre {
-  -moz-border-radius: 0px;
-  -webkit-border-radius: 0px;
-  -o-border-radius: 0px;
-  border-radius: 0px;
+  -moz-border-radius: 0;
+  -webkit-border-radius: 0;
+  -o-border-radius: 0;
+  border-radius: 0;
   border-width: 0; margin: 0; padding: 0; background: transparent;
   font-family: inherit;
+}
+
+.CodeMirror textarea {
+  font-family: monospace !important;
 }
 
 .CodeMirror-cursor {
@@ -43,7 +49,6 @@
   position: absolute;
   visibility: hidden;
   border-left: 1px solid white !important;
-  /*border-left: 1px solid black !important;*/
 }
 .CodeMirror-focused .CodeMirror-cursor {
   visibility: visible;
