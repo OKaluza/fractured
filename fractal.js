@@ -6,8 +6,8 @@
 
   //Take real, return real
   var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "ident", "log", "log10", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
-  //Take complex, return complex
-  var complexfunctions = ["abs", "cacos", "cacosh", "casin", "casinh", "catan", "catanh", "ceil", "conj", "ccos", "ccosh", "cexp", "flip", "floor", "ident", "loge", "neg", "inv", "round", "csin", "csinh", "sqr", "sqrt", "ctan", "ctanh", "trunc", "czero"];
+  //Take complex, return complex (including real functions that work component-wise)
+  var complexfunctions = ["abs", "acos", "cacos", "cacosh", "asin", "casin", "casinh", "atan", "catan", "catanh", "ceil", "conj", "cos", "ccos", "ccosh", "exp", "cexp", "flip", "floor", "ident", "log", "loge", "neg", "inv", "round", "sin", "csin", "csinh", "sqr", "sqrt", "tan", "ctan", "ctanh", "trunc", "czero"];
   //Take complex, return real
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
