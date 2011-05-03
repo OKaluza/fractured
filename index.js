@@ -510,8 +510,9 @@ var editorFilename;
   function saveImage() {
     var canvas = document.getElementById("fractal-canvas");
     //window.open(canvas.toDataURL());
-    window.open(canvas.toDataURL("image/jpeg"));
+    //window.open(canvas.toDataURL("image/jpeg"));
     //addImage(canvas.toDataURL("image/png"));
+    addImage(canvas.toDataURL("image/jpeg"));
   }
 
   function addImage(url){
