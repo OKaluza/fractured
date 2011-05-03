@@ -177,7 +177,10 @@ void main(void)
 
 
       <div class="panel" id="panel4" style="display: none">
-        <textarea id="console" style="width: 99%" spellcheck="false">
+        <input type="button" value="Edit Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
+        <input type="button" value="Edit Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
+        <input type="button" value="Edit Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')">
+        <textarea id="console" style="width: 99%; height: 95%" spellcheck="false">
         </textarea>
       </div>
 

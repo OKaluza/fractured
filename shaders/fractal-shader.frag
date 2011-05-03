@@ -48,6 +48,7 @@ void main()
       }
       zoldold = C(0);
       zold = C(0);
+      converged = false;
 
       //Formula specific reset...
       reset();
