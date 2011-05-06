@@ -727,30 +727,25 @@
       if (name == "Mandelbrot") return "mandelbrot";
       if (name == "Nova") return "nova";
       if (name == "Nova BS" || name == "NovaBS") return "novabs";
-      if (name == "Burning Ship" || name == "BurningShip") return "burningship";
-      if (name == "Magnet1" || name == "MagnetX") return "magnet1";
+      if (name.indexOf("Burning") == 0) return "burningship";
       if (name == "Magnet2") return "magnet2";
       if (name == "Magnet3") return "magnet3";
+      if (name.indexOf("Magnet") == 0) return "magnet1";
       if (name == "Cactus") return "cactus";
       if (name == "Phoenix") return "phoenix";
       if (name == "Stretched") return "stretch";
       if (name == "Gumball") return "gmm";
       if (name == "Quadra") return "quadra";
-
       //Colour formulae
-      if (name == "None") return "none";
       if (name == "Default") return "default";
-      if (name == "Smooth") return "smooth";
-      if (name == "Smooth 2") return "smooth";
-      if (name == "Exp. Smoothing - diverge") return "exp_smooth";
-      if (name == "Exp. Smoothing - Xdiverge") return "exp_smooth";
-      if (name == "Exp. Smoothing - converge") return "exp_smooth";
-      if (name == "Exp. Smoothing - Both") return "exp_smooth";
+      if (name.indexOf("Smooth") == 0) return "smooth";
+      if (name.indexOf("Exp") == 0) return "exp_smooth";
       if (name == "Triangle Inequality") return "triangle_inequality";
       if (name == "Orbit Traps") return "orbit_traps";
       if (name == "Gaussian Integers") return "gaussian_integers";
       return "none";  //Fallback
     }
+
     var lines = source.split("\n"); // split on newlines
     var section = "";
 
