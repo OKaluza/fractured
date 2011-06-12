@@ -1,6 +1,6 @@
 void main()
 {
-  //gl_FragColor = rgba(1, 1, 1, 0); //background.a);
+  //gl_FragColor = background;
   //return;
   rgba colour = rgba(0.0,0.0,0.0,0.0);
   //if (background.a < 0.01) discard;

@@ -91,7 +91,6 @@
 
   function Param(value, type, label) {
     //A parameter object
-    //TODO: type param in constructor, declare types rather than detect
     this.type = type;
     this.label = label;
     this.touched = false;
@@ -168,8 +167,7 @@
         //Assume parsing a selection value into a prefined list
         this.value = value;
       } else {
-        //Populate list items...
-        //'entry=value|entry=value'
+        //Populate list items...'entry=value|entry=value'
         var num = 0;
         var items = listmatch[1].split("|");
         this.list = {};
@@ -179,7 +177,7 @@
           this.list[vals[0]] = num;
           num++;
         }
-        this.value = 0; //Initial selection
+        this.value = 0; //Initial selection is first item
       }
     }
 
@@ -1126,7 +1124,7 @@
     ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
 
     //Load a default shader setup
-    //defaultProgram = initProgram(defaultProgram, getShader(gl, "default-vs"), getShader(gl, "default-fs"));
+    //defaultProgram = initProgram(defaultProgram, sources("default.vert"), sources("default.frag"));
     //textureProgram(defaultProgram); //Setup as texture program
 
     currentProgram = initProgram(currentProgram, vertexShader, fragmentShader);
@@ -1139,8 +1137,11 @@
       //Enable this to render frame to texture 
       //gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
 
-    var bg = colours[0].colour.rgbaGL();
-    gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
+    //var bg = colours[0].colour.rgbaGL();
+    //gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
+    gl.clearColor(0, 0, 0, 0);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.enable(gl.BLEND);
 
     //if (!fractal.julia) {
       gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);

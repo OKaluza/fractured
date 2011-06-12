@@ -19,30 +19,6 @@
 <!-- Colour picker -->
 <script type="text/javascript" src="colourPicker.js"></script>
 
-<script id="default-vs" type="x-shader/x-vertex">
-precision highp float;
-attribute vec3 aVertexPosition;
-attribute vec2 aTextureCoord;
-varying vec2 vTextureCoord;
-void main(void)
-{
-  //Scale 3/4, for testing
-  gl_Position = vec4(0.75 * aVertexPosition, 1.0);
-  vTextureCoord = aTextureCoord;  
-}
-</script>
-
-<script id="default-fs" type="x-shader/x-fragment">
-//Basic texturing shader
-precision highp float;
-varying vec2 vTextureCoord;
-uniform sampler2D texture;
-void main(void)
-{
-  gl_FragColor = texture2D(texture, vec2(vTextureCoord.s, vTextureCoord.t));
-}
-</script>
-
 </head>
 
 <body onload="pageStart();" id="body">
