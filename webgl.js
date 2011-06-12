@@ -5,15 +5,7 @@ var defaultProgram;
   function initGL(elementid) {
     try {
       var canvas = document.getElementById(elementid);
-      gl = canvas.getContext("experimental-webgl");
-
-      //try { gl = canvas.getContext("experimental-webgl");
-      //} catch(e) {}
-      //if ( !gl ) {alert(err + "WebGL"); return;}
-      //var ext;
-      //try { ext = gl.getExtension("OES_texture_float");
-      //} catch(e) {}
-      //if ( !ext ) {alert(err + "OES_texture_float extension"); return;}
+      gl = canvas.getContext("experimental-webgl", { alpha: true } );
 
       gl.viewportWidth = canvas.width;
       gl.viewportHeight = canvas.height;
@@ -47,25 +39,6 @@ var defaultProgram;
     }
     return shader;
   }
-
-  //Load a shader from doc element by id
-  function getShader(gl, id) {
-    var shaderScript = document.getElementById(id);
-    if (!shaderScript) {
-      return null;
-    }
-
-    var str = "";
-    var k = shaderScript.firstChild;
-    while (k) {
-      if (k.nodeType == 3) {
-        str += k.textContent;
-      }
-      k = k.nextSibling;
-    }
-    return str;
-  }
-
 
   function initProgram(program) {
     //Pass in program, vertex shader, fragment shaders...
