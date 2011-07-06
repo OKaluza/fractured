@@ -4,7 +4,33 @@
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
 
+<!-- CodeMirror-->
+<script src="codemirror/lib/codemirror.js"></script>
+<link rel="stylesheet" href="codemirror/lib/codemirror.css">
+<script src="codemirror/mode/clike/clike.js"></script>
+<link rel="stylesheet" href="codemirror/theme/fractured.css">
+
 <style type="text/css">
+/* Override some codemirror defaults */
+.CodeMirror {
+  color: beige; /* Base text colour */
+  font-family: 'Droid Sans Mono',monospace;
+  font-size: 10pt;
+  line-height: 1.1em;
+}
+.CodeMirror-scroll {
+  height: 100%;
+}
+.CodeMirror-gutter {
+  background-color: #443;
+}
+.CodeMirror-gutter-text {
+  color: #888;
+}
+.CodeMirror-cursor {
+  border-left: 1px solid white !important;
+}
+
 body {
   background: #ffe;
   font-family: 'Droid Sans Mono',monospace;
@@ -34,11 +60,6 @@ html, body {
 
 </style>
 
-<!-- CodeMirror-->
-<script src="codemirror/lib/codemirror.js"></script>
-<link rel="stylesheet" href="codemirror/lib/codemirror.css">
-<script src="codemirror/mode/glsl/glsl.js"></script>
-<link rel="stylesheet" href="codemirror/mode/glsl/glsl.css">
 
 <script type="text/javascript">
 var editor;
@@ -65,7 +86,7 @@ var formula;
     //Copy for fallback to code
     code = document.getElementById('editor');
 
-    var query = decodeURI(window.location.href).split("?")[1]; //will get the whole querystring with the ?
+    var query = decodeURI(window.location.href).split("?")[1]; //whole querystring including ?
     var param = query ? query.split("=")[1] : "";
 
     type = "";
@@ -78,8 +99,8 @@ var formula;
     code.value = window.opener.sources[filename];
 
     editor = new CodeMirror.fromTextArea(code, {
+      mode: "text/x-glsl",
       height: "100%",
-      mode: "text/x-glslsrc",
       saveFunction: saveEditor,
       lineNumbers: true,
       firstLineNumber: window.opener.formulaOffsets[type],
