@@ -13,23 +13,11 @@
 <style type="text/css">
 /* Override some codemirror defaults */
 .CodeMirror {
-  color: beige; /* Base text colour */
   font-family: 'Droid Sans Mono',monospace;
   font-size: 10pt;
   line-height: 1.1em;
 }
-.CodeMirror-scroll {
-  height: 100%;
-}
-.CodeMirror-gutter {
-  background-color: #443;
-}
-.CodeMirror-gutter-text {
-  color: #888;
-}
-.CodeMirror-cursor {
-  border-left: 1px solid white !important;
-}
+.CodeMirror-scroll {height: 100%;}
 
 body {
   background: #ffe;
@@ -51,8 +39,6 @@ html, body {
 }
 #code{
   position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;
-  /*background: #dadad6;*/
-  background: #312922;
 }
 #editor{
   width: 100%; height: 100%;
@@ -100,6 +86,7 @@ var formula;
 
     editor = new CodeMirror.fromTextArea(code, {
       mode: "text/x-glsl",
+      theme: "fracturedlight",
       height: "100%",
       saveFunction: saveEditor,
       lineNumbers: true,
@@ -111,6 +98,10 @@ var formula;
     });
   };
 
+  function selectTheme(node) {
+    var theme = "fractured" + node.options[node.selectedIndex].innerHTML;
+    editor.setOption("theme", theme);
+  }
 </script>
 
 </head>
@@ -118,7 +109,11 @@ var formula;
 <body onload="loadEditor()" onUnload="window.opener.closeEditor();" >
 
 <div id="buttons">
-<input type="button" value="Update" onclick="updateEditor()"><input type="button" value="Save" onclick="saveEditor()">
+  <input type="button" value="Update" onclick="updateEditor()"><input type="button" value="Save" onclick="saveEditor()">
+    <select style="float: right" onchange="selectTheme(this)">
+        <option selected>light</option>
+        <option>dark</option>
+    </select>
 </div>
 
 <div id="code">
