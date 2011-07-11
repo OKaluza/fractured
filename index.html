@@ -1,6 +1,6 @@
 <!doctype html>
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>Fractal WebGL</title>
+<title>Fractured - WebGL Fractal Art Studio</title>
 
 <link rel="stylesheet" type="text/css" href="styles.css">
 
@@ -23,13 +23,28 @@
 
 <body onload="pageStart();" id="body">
 
-  <!--header id="header"><h2>Fractal WebGL</h2></header-->
+  <header id="header">
+    <h2>Fractured v0.1</h2>
+    <nav>
+        <ul>
+          <li> 
+            <a href="/">Home</a>
+          </li> 
+          <li> 
+            <a href="/about">About</a>
+          </li> 
+          <li> 
+            <a href="/contact">Contact</a>
+          </li> 
+        </ul>
+    </nav>
+  </header>
 
   <section id="middle">  
 
     <aside id="sidebar">
 
-      <nav id="navbar">
+      <nav id="tabs">
         <ul>
         <li onmousedown="return event.returnValue = showPanel(this, 'panel1');" id="tab1" >Parameters</li>
         <li onmousedown="return event.returnValue = showPanel(this, 'panel2');" >Formula</li>
@@ -89,13 +104,13 @@
 
       <div class="panel" id="panel2" style="display: none">
         File upload:<br>
-        <input name="file" type="file"onchange="filesProcess(this.files, loadFile)"/><br />
+        <input name="file" type="file"onchange="filesProcess(this.files, loadFile)"><br>
 
         <div class="label">Fractal</div>
         <div class="field">
           <select id="fractal_formula" onchange="fractal.selectFormula('fractal', this.value)">
           </select>
-          <input type="button" value="Edit" onclick="fractal.editFormula('fractal');" />
+          <input type="button" value="Edit" onclick="fractal.editFormula('fractal');">
         </div>
 
         <div class="label">Transform</div>
@@ -103,7 +118,7 @@
           <select id="transform_formula" onchange="fractal.selectFormula('transform', this.value)">
           <option value="none"></option>
           </select>
-          <input type="button" value="Edit" onclick="fractal.editFormula('transform');" />
+          <input type="button" value="Edit" onclick="fractal.editFormula('transform');">
         </div>
 
         <div class="label">Outside Colour</div>
@@ -112,7 +127,7 @@
           <option value="none"></option>
 
           </select>
-          <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');" />
+          <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
         </div>
         <div class="label">Inside Colour</div>
         <div class="field">
@@ -120,7 +135,7 @@
           <option value="none"></option>
           <option value="same">As above</option>
           </select>
-          <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');" />
+          <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
         </div>
 
             <div class="row">
@@ -143,9 +158,10 @@
 
       <div class="panel" id="panel3" style="display: none">
         <input type="button" value="Palette Edit" onClick="openPaletteEditor()">
+        <input type="button" value="Set Default Palette"  onClick="savePalette()">
         <hr>
         File upload:<br>
-        <input name="palfile" type="file"onchange="filesProcess(this.files, loadPalette);"/><br />
+        <input name="palfile" type="file"onchange="filesProcess(this.files, loadPalette);"><br>
         <hr>
          <div id="palettes">
          </div>
@@ -153,9 +169,10 @@
 
 
       <div class="panel" id="panel4" style="display: none">
-        <input type="button" value="Edit Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
-        <input type="button" value="Edit Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
-        <input type="button" value="Edit Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')">
+        <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
+        <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
+        <input type="button" value="Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
+        <input type="button" value="Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')">
         <textarea id="console" style="width: 99%; height: 95%" spellcheck="false">
         </textarea>
       </div>
@@ -169,25 +186,25 @@
       </div>
 
     </aside>
-    <section id="main">
-      <div id="controls">
-        <input type="button" id="hideshow" value="<<" onClick="toggleParams()"><input type="button" value="Apply & Redraw" onclick="fractal.applyChanges()"><input type="button" value="Edit source" onClick="lineOffset=1; openEditor('gen-shader.frag')"><input type="button" value="Save Palette"  onClick="savePalette()"><input type="button" value="Save Image"  onClick="saveImage()"><input type="button" value="Save..."  onClick="fractal.save();">
-      </div>
 
-      <div id="fractal">
-        <div id="minwidth">
-          <div id="backgroundBG" class="colourbg">
-            <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
-          </div>
-          <canvas id="palette" width="572" height="24"></canvas>
-        </div>
-        <div id="select" style="display: none"></div>
-        <canvas id="fractal-canvas" width="600" height="600"></canvas>
-      </div>
-
-    </section>
 
   </section>
+
+  <section id="controls">
+      <div id="minwidth">
+        <input type="button" id="hideshow" value="<<" onClick="toggleParams()"><input type="button" value="Apply" onclick="fractal.applyChanges()"><!--input type="button" value="Save Image"  onClick="saveImage()"--><input type="button" value="Save..."  onClick="fractal.save();">
+        <div id="backgroundBG" class="colourbg">
+          <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
+        </div>
+        <canvas id="palette" width="572" height="24"></canvas>
+      </div>
+  </section>
+
+  <section id="main">
+    <canvas id="fractal-canvas" width="600" height="600"></canvas>
+  </section>
+
+  <div id="select" style="display: none"></div>
 
   <!-- Colour picker -->
   <div id="plugin" onmousedown="HSVslide('drag','plugin',event)">
@@ -196,19 +213,19 @@
     <div id="plugCLOSE" onmousedown="toggle('plugin'); colourPickerX()">X</div>
     <div id="plugOK" onmousedown="toggle('plugin'); colourPickerOK(picked);">OK</div><br>
     <div id="SV" onmousedown="HSVslide('SVslide','plugin',event)" title="Saturation + Value">
-     <div id="SVslide"><br/></div>
+     <div id="SVslide"><br></div>
     </div>
     <form id="H" onmousedown="HSVslide('Hslide','plugin',event)" title="Hue">
-     <div id="Hslide"><br/></div>
+     <div id="Hslide"><br></div>
      <div id="Hmodel"></div>
     </form>
     <form id="O" onmousedown="HSVslide('Oslide','plugin',event)" title="Opacity">
-     <div id="Oslide"><br/></div>
+     <div id="Oslide"><br></div>
      <div id="Omodel"></div>
     </form>
   </div>
 
-  <img src="media/slider.png" id="slider" style="display: none;"/>
+  <img src="media/slider.png" id="slider" style="display: none;">
 
 </body>
 </html>
