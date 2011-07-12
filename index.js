@@ -142,24 +142,48 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
 
   function toggleParams() {
     var sidebar = document.getElementById("sidebar");
-    var btn = document.getElementById("hideshow");
+    var hide = document.getElementById("hide");
+    var show = document.getElementById("show");
+    var main = document.getElementById("main");
     if (sidebar.style.display == 'none') {
         sidebar.style.display = 'block';
-        btn.value = '<<';
+        hide.style.display = 'inline-block';
+        show.style.display = 'none';
+        main.style.left = '386px';
     } else {
         sidebar.style.display = 'none';
-        btn.value = '>>';
+        hide.style.display = 'none';
+        show.style.display = 'inline-block';
+        main.style.left = '1px';
     }
   }
 
 /////////////////////////////////////////////////////////////////////////
 //Mouse event handling
   function canvasMouseClick(event) {
+    if (event.button > 0) return;
 
     //Convert mouse coords into fractal coords
     var point = fractal.origin.convert(this.x, this.y, this.element);
 
-    if (event.button == 0) {
+    if (event.ctrlKey) {
+       //CTRL-click: julia set switch
+       if (!fractal.julia) {
+          fractal.julia = true;
+          fractal.selected.re = fractal.origin.re + point.re;
+          fractal.selected.im = fractal.origin.im + point.im;
+          var select0 = document.getElementById("xSelInput");
+          select0.value = fractal.origin.re + point.re;
+          var select1 = document.getElementById("ySelInput");
+          select1.value = fractal.origin.im + point.im;
+       } else
+          fractal.julia = false;
+
+       //Switch saved views
+       var tempPos = fractal.origin.clone();
+       fractal.origin = fractal.savePos.clone();
+       fractal.savePos = tempPos;
+    } else {
       //Selection box?
       var select = document.getElementById("select");
       if (select.style.display == 'block') {
@@ -186,27 +210,6 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
         fractal.origin.re += point.re;
         fractal.origin.im += point.im;
       }
-    } else if (event.button == 2) {
-       //Right-click: julia set switch
-       if (!fractal.julia) {
-          fractal.julia = true;
-          fractal.selected.re = fractal.origin.re + point.re;
-          fractal.selected.im = fractal.origin.im + point.im;
-          var select0 = document.getElementById("xSelInput");
-          select0.value = fractal.origin.re + point.re;
-          var select1 = document.getElementById("ySelInput");
-          select1.value = fractal.origin.im + point.im;
-       } else
-          fractal.julia = false;
-
-       //Switch saved views
-       var tempPos = fractal.origin.clone();
-       fractal.origin = fractal.savePos.clone();
-       fractal.savePos = tempPos;
-
-    } else {
-      //Middle button, no action
-      return;
     }
     fractal.copyToForm();
     fractal.draw();
@@ -507,11 +510,42 @@ var editorFilename;
 /////////////////////////////////////////////////////////////////////////
 //Saving result images 
 
+  function hrefImage() {
+    var canvas = document.getElementById("fractal-canvas");
+    document.location.href = canvas.toDataURL("image/jpeg");
+  }
+/*
+function saveViaAJAX()
+{
+    var testCanvas = document.getElementById("testCanvas");
+    var canvasData = testCanvas.toDataURL("image/png");
+    var postData = "canvasData="+canvasData;
+    var debugConsole= document.getElementById("debugConsole");
+
+    //alert("canvasData ="+canvasData );
+
+    var ajax = new XMLHttpRequest();
+    ajax.open("POST",'testSave.php',true);
+    ajax.setRequestHeader('Content-Type', 'canvas/upload');
+
+    ajax.onreadystatechange=function()
+    {
+        if (ajax.readyState == 4)
+        {
+            //alert(ajax.responseText);
+            // Write out the filename.
+            window.location.href="test-download-html5-canvas-image.php?path="+ajax.responseText;
+        }
+    }
+    ajax.send(postData);
+}*/
+
   function saveImage() {
     var canvas = document.getElementById("fractal-canvas");
     //window.open(canvas.toDataURL());
     //window.open(canvas.toDataURL("image/jpeg"));
-    addImage(canvas.toDataURL("image/png"));
+    //addImage(canvas.toDataURL("image/png"));
+    return canvas.toDataURL("image/jpeg");
   }
 
   function addImage(url){
