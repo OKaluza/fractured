@@ -25,19 +25,24 @@
 
   <header id="header">
     <h2>Fractured v0.1</h2>
-    <nav>
+
+      <section id="controls">
+        <div id="backgroundBG" class="colourbg">
+          <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
+        </div>
+        <canvas id="palette" width="572" height="24"></canvas>
+      </section>
+
+      <nav>
         <ul>
-          <li> 
-            <a href="/">Home</a>
-          </li> 
-          <li> 
-            <a href="/about">About</a>
-          </li> 
-          <li> 
-            <a href="/contact">Contact</a>
-          </li> 
+          <li><a id="hide" href="javascript:toggleParams();">&uarr;</a></li> 
+          <li><a id="show" style="display:none" href="javascript:toggleParams();">&darr;</a></li> 
+          <li><a href="javascript:fractal.applyChanges();">Apply</a></li> 
+          <li><a href="javascript:fractal.save();">Save</a></li> 
+          <!--input type="button" value="Save Image"  onClick="saveImage()"-->
+          <li><a href="/about">About</a></li> 
         </ul>
-    </nav>
+      </nav>
   </header>
 
   <section id="middle">  
@@ -190,15 +195,7 @@
 
   </section>
 
-  <section id="controls">
-      <div id="minwidth">
-        <input type="button" id="hideshow" value="<<" onClick="toggleParams()"><input type="button" value="Apply" onclick="fractal.applyChanges()"><!--input type="button" value="Save Image"  onClick="saveImage()"--><input type="button" value="Save..."  onClick="fractal.save();">
-        <div id="backgroundBG" class="colourbg">
-          <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
-        </div>
-        <canvas id="palette" width="572" height="24"></canvas>
-      </div>
-  </section>
+
 
   <section id="main">
     <canvas id="fractal-canvas" width="600" height="600"></canvas>

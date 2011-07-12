@@ -20,7 +20,7 @@
     if (element.addEventListener) element.addEventListener ("DOMMouseScroll", handleMouseWheel, false);
     element.onmousedown = handleMouseDown;
     element.onmousewheel = handleMouseWheel;
-    element.oncontextmenu = function() { return false; }      
+    //element.oncontextmenu = function() { return false; }      
   }
 
   Mouse.prototype.update = function(e) {
