@@ -3,7 +3,7 @@
 var fractal;
 var defaultMouse;
 var palette;
-var picker;
+var colours;
 var gradientTexture;
 //Source files list
 var sources = {};
@@ -122,7 +122,7 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
     //fractal.draw();
     drawFractal();
 
-    picker = new ColourPicker();
+    colours = new ColourEditor();
   }
 
   function drawFractal() {
@@ -310,8 +310,7 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
   }
 
   function bgColourMouseClick() {
-    editColour = 0;
-    picker.pick(palette.colours[0].colour, $("backgroundBG").offsetLeft, 30); 
+    colours.edit(0, $("backgroundBG").offsetLeft, 30);
   }
 
   function paletteMouseClick(event) {
@@ -328,7 +327,7 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
     }
     var pal = document.getElementById('palette');
     if (pal.getContext){
-      colourPickerAbort();  //Abort any current edit first
+      colours.cancel();  //Abort any current edit first
       var context = pal.getContext('2d'); 
       var slider = document.getElementById("slider");
 
@@ -337,8 +336,7 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
       if (i > 0) {
         if (event.button == 0) {
           //Edit colour on left click
-          editColour = i;
-          picker.pick(palette.colours[i].colour, event.clientX-128, 30);
+          colours.edit(i, event.clientX-128, 30);
         } else if (event.button == 2) {
           //Delete on right click
           palette.remove(i);
@@ -346,12 +344,7 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
         }
       } else {
         //Clicked elsewhere, add new colour
-        var position = this.x / pal.width;
-        var col = new Colour();
-        editColour = palette.newColour(position, col)
-        palette.draw(document.getElementById('palette'), true);
-        //Edit new colour
-        picker.pick(col, event.clientX-128, 30);
+        colours.insert(this.x / pal.width, event.clientX-128, 30);
       }
     }
   }
@@ -372,7 +365,8 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
       if (i>1) this.slider = i;
     }
 
-    if (this.slider == null) this.isdown = false; //Abort action if not on slider
+    if (this.slider == null)
+      this.isdown = false; //Abort action if not on slider
     else {
       if (this.x < 1) this.x = 1;
       if (this.x > pal.width-1) this.x = pal.width-1;
@@ -460,44 +454,69 @@ function saveViaAJAX()
 handleFormMouseDown = function(e) {
   //Event delegation from form
   e = e || window.event;
-  if (e.target.className == "colour") colourPickerElement(e.target);
+  if (e.target.className == "colour") colours.edit(e.target);
 }
 
-var editColour = -1;
-var editElement = null;
-function colourPickerOK(val) { 
-  if (editColour >= 0)
+
+function ColourEditor() {
+  this.inserting = false;
+  this.editing = -1;
+  this.element = null;
+  this.picker = new ColourPicker(saveColour, abortColour);
+}
+
+function saveColour(val) {colours.save(val);}
+function abortColour() {colours.cancel();}
+
+ColourEditor.prototype.insert = function(position, x, y) {
+  //Flag unsaved new colour
+  this.inserting = true;
+  var col = new Colour();
+  this.editing = palette.newColour(position, col)
+  palette.draw(document.getElementById('palette'), true);
+  //Edit new colour
+  this.picker.pick(col, x, y);
+}
+
+ColourEditor.prototype.edit = function(val, x, y) {
+  if (typeof(val) == 'number') {
+    this.editing = val;
+    this.picker.pick(palette.colours[val].colour, x, y);
+  } else if (typeof(val) == 'object') {
+    //Edit element
+    this.element = val;
+    var col = new Colour(val.style.backgroundColor)
+    this.picker.pick(col, val.offsetLeft, val.offsetTop);
+  }
+}
+
+ColourEditor.prototype.save = function(val) {
+  if (this.editing >= 0)
   {
     //Update colour with selected
-    palette.colours[editColour].insert = false; //Clear insert flag
-    palette.colours[editColour].colour.setHSV(val);
+    palette.colours[this.editing].colour.setHSV(val);
     palette.draw(document.getElementById('palette'), true);
   }
-  else if (editElement) {
+  else if (this.element) {
     var col = new Colour(0);
     col.setHSV(val);
-    editElement.style.backgroundColor = col.html();
+    this.element.style.backgroundColor = col.html();
   }
-  editColour = -1;
-  editElement = null;
+  this.inserting = false;
+  this.editing = -1;
+  this.element = null;
 }
 
-function colourPickerAbort() { 
+ColourEditor.prototype.cancel = function() {
   //If aborting a new colour add, delete it
-  if (editColour >= 0 && palette.colours[editColour].insert)
+  if (this.editing >= 0 && this.inserting)
   {
-    palette.remove(editColour);
+    palette.remove(this.editing);
     palette.draw(document.getElementById('palette'), true);
   }
-  editColour = -1;
-  editElement = null;
-}
-
-function colourPickerElement(el) { 
-  //Open colour picker for element, not using colour array
-  editElement = el;
-  var col = new Colour(el.style.backgroundColor)
-  picker.pick(col, el.offsetLeft, el.offsetTop);
+  this.inserting = false;
+  this.editing = -1;
+  this.element = null;
 }
 
 /////////////////////////////////////////////////////////////////////////

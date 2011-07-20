@@ -1,4 +1,3 @@
-
   function Palette(source) {
     //Colour palette array
     this.colours = [];
@@ -39,7 +38,6 @@
 
   Palette.prototype.newColour = function(position, colour) {
     var col = new ColourPos(colour, position);
-    col.insert = true;  //Flag newly inserted, not yet saved
     this.colours.push(col);
     this.colours.sort(function(a,b){return a.position - b.position})
     for (var i = 2; i < this.colours.length-1; i++)
@@ -133,13 +131,11 @@
     //Stores colour as rgba and position as real [0,1]
     this.position = parseFloat(pos);
     if (colour) {
-      this.insert = false;
       if (typeof(colour) == 'object')
         this.colour = colour;
       else
         this.colour = new Colour(colour);
     } else {
-      this.insert = true;
       this.colour = new Colour("#000000");
     }
   }

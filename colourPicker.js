@@ -7,7 +7,9 @@ function toggle(v) { $S(v).display=($S(v).display=='none'?'block':'none'); }
 function scale(val, range, min, max) {return clamp(max * val / range, min, max);}
 function clamp(val, min, max) {return Math.max(min, Math.min(max, val));}
 
-function ColourPicker() {
+function ColourPicker(savefn, abortfn) {
+  this.savefn = savefn;
+  this.abortfn = abortfn;
   this.size=170.0; //H,S & V range in pixels
   this.sv=5;   //Half size of SV selector
   this.oh=2;   //Half size of H & O selectors
@@ -17,6 +19,7 @@ function ColourPicker() {
   //Mouse processing:
   this.mouse = new Mouse($("plugin"), this.mouseClick, this.mouseMove, this.mouseWheel)
   this.mouse.moveUpdate = true;
+  this.mouse.picker = this; //Self reference for mouse events
   $("plugin").mouse = this.mouse;
 
   //Load hue strip
@@ -58,17 +61,17 @@ ColourPicker.prototype.pick = function(colour, x, y) {
 
 ColourPicker.prototype.mouseClick = function(e) {
   if (this.elementId == "plugCLOSE") {
-    colourPickerAbort();
+    this.picker.abortfn();
     toggle('plugin'); 
   } else if (this.elementId == "plugOK") {
-    colourPickerOK(picker.picked);
+    this.picker.savefn(this.picker.picked);
     toggle('plugin'); 
   } else if (this.elementId=='SV') 
-    picker.setSV(this);
+    this.picker.setSV(this);
   else if (this.elementId == 'Hslide' || this.elementClass=='hue')
-    picker.setHue(this);
+    this.picker.setHue(this);
   else if (this.elementId == 'Oslide' || this.elementClass=='opacity')
-    picker.setOpacity(this);
+    this.picker.setOpacity(this);
 }
 
 ColourPicker.prototype.mouseMove = function(e) {
@@ -82,15 +85,15 @@ ColourPicker.prototype.mouseMove = function(e) {
     ds.top = parseInt(ds.top) + this.deltaY + 'px';
     return;
   } else if (this.elementId=='SV') 
-    picker.setSV(this);
+    this.picker.setSV(this);
   else if (this.elementId == 'Hslide' || this.elementClass=='hue')
-    picker.setHue(this);
+    this.picker.setHue(this);
   else if (this.elementId == 'Oslide' || this.elementClass=='opacity')
-    picker.setOpacity(this);
+    this.picker.setOpacity(this);
 }
 
 ColourPicker.prototype.mouseWheel = function(e) {
-  picker.incHue(-e.spin);
+  this.picker.incHue(-e.spin);
 }
 
 ColourPicker.prototype.setSV = function(mouse) {
