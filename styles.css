@@ -48,7 +48,7 @@ canvas {
 
 /* Colour select */
 .colourbg { margin:1px; width: 100px; height: 20px; border: solid 1px; background-image: url("media/bg.png"); border-radius: 4px;}
-.colour { width: 100px; height: 20px; background: "#fff"; border-radius: 4px;}
+.colour { width: 100px; height: 20px; background: #fff; border-radius: 4px;}
 
 /* Background colour */
 #backgroundBG { float: left; margin: 0px 2px 0px 0px; width: 24px; height: 24px;}
@@ -204,33 +204,30 @@ aside {
 
 #main {
   z-index: 0;
-      position:absolute;   
-      left: 386px;
-      top: 28px;  /* Space for header */
+  position:absolute;   
+  left: 386px;
+  top: 28px;  /* Space for header */
 }
 
 /* colourPicker.js plugin */
-#plugin { display:none; top: 58px; z-index: 20; background: #0d0d0d; color: #aaa; cursor: move; font-family: arial; font-size: 11px; padding: 7px 10px 11px 10px; position: absolute; width: 229px; border-radius: 5px;}
+#plugin { display:none; top: 58px; z-index: 20; background: #0d0d0d; color: #aaa; cursor: move; font-family: arial; font-size: 11px; padding: 7px 10px 11px 10px; position: fixed; width: 229px; border-radius: 5px; border: 1px solid #444; }
 #plugin br { clear: both; margin: 0; padding: 0;  }
 #plugin select { border: 1px solid #333; background: #fff; position: relative; top: 4px; }
 
-#plugHEX { float: left; position: relative; top: -1px; }
+#plugRGB { float: left; position: relative; top: -1px; }
 #plugOK { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; user-select: none; }
 #plugCLOSE { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; user-select: none; }
-#plugHEX:hover,#plugCLOSE:hover,#plugOK:hover { color: #FFD000;  }
+#plugRGB:hover,#plugCLOSE:hover,#plugOK:hover { color: #FFD000;  }
 
 #plugCURBG { float: left; width: 12px; height: 12px; margin-right: 3px; background-image: url("media/bg.png"); }
 #plugCUR { float: left; width: 12px; height: 12px; background: #fff; margin-right: 3px;}
 
 #SV { background: #ff0000 url('media/SatVal.png'); position: relative; cursor: crosshair; float: left; height: 170px; width: 170px; margin-right: 10px; user-select: none; }
-#SVslide {top: -4px; left: -4px; background: url('media/slide.png'); height: 9px; width: 9px; position: absolute; }
+#SVslide {background: url('media/slide.png'); height: 9px; width: 9px; position: absolute; cursor: crosshair; }
 
-#H { cursor: crosshair; float: left; height: 170px; position: relative; width: 19px; padding: 0; top: 0px; user-select: none; }
-#Hslide { top: 0px; left: -5px; background: url('media/slideHue.png'); height: 5px; width: 29px; position: absolute; }
-#Hmodel { position: relative; }
-#Hmodel div { height: 1px; width: 19px; margin: 0; padding: 0; }
+.slider { cursor: crosshair; float: left; height: 170px; position: relative; width: 19px; padding: 0; user-select: none; }
+.sliderControl { top: 0px; left: -5px; background: url('media/slideHue.png'); height: 5px; width: 29px; position: absolute; }
+.sliderBG { position: relative; }
+.sliderBG div { background: #000; height: 1px; width: 19px; margin: 0; padding: 0; }
 
-#O { border: 1px solid #888; cursor: crosshair; float: left; height: 170px; position: relative; width: 19px; padding: 0; top: 0px; left: 8px; user-select: none; background-image: url("media/bg.png"); }
-#Oslide { top: 0px; left: -5px; background: url('media/slideHue.png'); height: 5px; width: 29px; position: absolute; }
-#Omodel { position: relative;  }
-#Omodel div { height: 1px; width: 19px; margin: 0; padding: 0; background: #000;}
+#O {border: 1px solid #888; left: 9px; background-image: url("media/bg.png"); }

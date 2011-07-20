@@ -1,20 +1,155 @@
 
+  function Palette(source) {
+    //Colour palette array
+    this.colours = [];
+    this.changed = true;
+
+    //Palette data parser
+    var lines = source.split("\n"); // split on newlines
+    var position;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+
+      //Palette: parse into attrib=value pairs
+      var pair = line.split("=");
+      if (pair[0] == "Background")
+        this.colours.push(new ColourPos(pair[1], -1));
+      else if (pair[0][0] == "P") //PositionX=
+        position = parseFloat(pair[1]);
+      else if (pair[0][0] == "C") { //ColourX=
+        //Colour constructor handles html format colours, if no # or rgb/rgba assumes integer format
+        this.colours.push(new ColourPos(pair[1], position));
+        //Some old palettes had extra colours at end which screws things up so check end position
+        if (position == 1.0) break;
+      } else if (pair[0])
+        //New style: position=value
+        this.colours.push(new ColourPos(pair[1], pair[0]));
+    }
+
+    //Check for all-transparent palette and fix
+    var opaque = false;
+    for (var c = 0; c < this.colours.length; c++)
+      if (this.colours[c].colour.alpha > 0) opaque = true;
+    if (!opaque) {
+      for (var c = 0; c < this.colours.length; c++)
+        this.colours[c].colour.alpha = 255;
+    }
+  }
+
+  Palette.prototype.newColour = function(position, colour) {
+    var col = new ColourPos(colour, position);
+    col.insert = true;  //Flag newly inserted, not yet saved
+    this.colours.push(col);
+    this.colours.sort(function(a,b){return a.position - b.position})
+    for (var i = 2; i < this.colours.length-1; i++)
+      if (this.colours[i].position == position) return i;
+    return -1;
+  }
+
+  Palette.prototype.inRange = function(pos, range, length) {
+    for (var i = 1; i < this.colours.length; i++)
+    {
+      var x = this.colours[i].position * length;
+      if (pos == x || (range > 1 && pos >= x - range / 2 && pos <= x + range / 2))
+        return i;
+    }
+    return 0;
+  }
+
+  Palette.prototype.inDragRange = function(pos, range, length) {
+    for (var i = 2; i < this.colours.length-1; i++)
+    {
+      var x = this.colours[i].position * length;
+      if (pos == x || (range > 1 && pos >= x - range / 2 && pos <= x + range / 2))
+        return i;
+    }
+    return 0;
+  }
+
+  Palette.prototype.remove = function(i) {
+    this.colours.splice(i,1);
+  }
+
+  Palette.prototype.toString = function() {
+    var paletteData = 'Background=' + this.colours[0].colour.html();
+    for (var i = 1; i < this.colours.length; i++)
+      paletteData += '\n' + this.colours[i].position.toFixed(6) + '=' + this.colours[i].colour.html();
+    return paletteData;
+  }
+
+  //Palette draw to canvas
+  Palette.prototype.draw = function(canvas, ui) {
+    this.changed = true;
+    if (this.colours.length == 0)
+    {
+      this.colours.push(new ColourPos("#ffffff", -1)); //Background
+      this.colours.push(new ColourPos("#000000", 0));
+      this.colours.push(new ColourPos("#ffffff", 1));
+    }
+
+    if (canvas.getContext){  
+      var width = canvas.width;
+      var height = canvas.height;
+      var context = canvas.getContext('2d');  
+      context.clearRect(0, 0, width, height);
+      var slider = document.getElementById("slider");
+      var my_gradient = context.createLinearGradient(0, 0, width, 0);
+      for (var i = 1; i < this.colours.length; i++) {
+        if (this.colours[i].position > 1.0) alert(i + "POSITION ERROR! " + this.colours[i].position);
+        //consoleWrite(this.colours[i].position + ", " + this.colours[i].colour.html());
+        my_gradient.addColorStop(this.colours[i].position, this.colours[i].colour.html());
+      }
+
+      context.fillStyle = my_gradient;
+      context.fillRect(0, 0, width, height);
+
+      var bg = document.getElementById('backgroundCUR');
+      bg.style.background = this.colours[0].colour.html();
+
+      if (!ui) return;  //Skip drawing slider interface
+
+      for (var i = 2; i < this.colours.length-1; i++)
+      {
+        var x = Math.floor(width * this.colours[i].position) + 0.5;
+        var HSV = this.colours[i].colour.HSV();
+        if (HSV.V > 50)
+          context.strokeStyle = "black";
+        else
+          context.strokeStyle = "white";
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x, canvas.height);
+        context.closePath();
+        context.stroke();
+        x -= (slider.width / 2);
+        context.drawImage(slider, x, 0);  
+      } 
+    }
+  }
+
+
   function ColourPos(colour, pos) {
     //Stores colour as rgba and position as real [0,1]
     this.position = parseFloat(pos);
     if (colour) {
       this.insert = false;
-      this.colour = new Colour(colour);
+      if (typeof(colour) == 'object')
+        this.colour = colour;
+      else
+        this.colour = new Colour(colour);
     } else {
       this.insert = true;
-      this.colour = new Colour("#ff0000");
+      this.colour = new Colour("#000000");
     }
   }
   
   function Colour(colour) {
     //Construct... stores colour as r,g,b,a values
     //Can pass in html colour string, HSV object or integer rgba
-    if (typeof(colour) == 'string')
+    if (typeof colour == "undefined")
+      this.set("#ffffff")
+    else if (typeof(colour) == 'string')
       this.set(colour);
     else if (typeof(colour) == 'object')
     {
@@ -48,7 +183,7 @@
 
     } else if (val.charAt(0) == "#") {
       var hex = val.substring(1,7);
-      this.alpha = 255;
+      this.alpha = 1.0;
       this.red = parseInt(hex.substring(0,2),16);
       this.green = parseInt(hex.substring(2,4),16);
       this.blue = parseInt(hex.substring(4,6),16);
@@ -93,7 +228,11 @@
   }
 
   Colour.prototype.print = function() {
-    consoleWrite('R:' + this.red + ' G:' + this.green + ' B:' + this.blue + ' A:' + this.alpha);
+    consoleWrite(this.printString(true));
+  }
+
+  Colour.prototype.printString = function(alpha) {
+    return 'R:' + this.red + ' G:' + this.green + ' B:' + this.blue + (alpha ? ' A:' + this.alpha : '');
   }
 
   Colour.prototype.htmlHex=function(o) { 

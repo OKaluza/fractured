@@ -2,8 +2,8 @@
 //Globals
 var fractal;
 var defaultMouse;
-//Colour palette array (global for now...)
-var colours = [];
+var palette;
+var picker;
 var gradientTexture;
 //Source files list
 var sources = {};
@@ -105,19 +105,46 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
 
     //Load texture data and draw palette
     gradientTexture = gl.createTexture();
-    gradientTexture.image = document.getElementById('palette');
+    gradientTexture.image = document.getElementById('gradient');
     //updateTexture(gradientTexture);
-    readPalette(sources["default.palette"]);
+    palette = new Palette(sources["default.palette"]);
+    //Update palette colours
+    var pal = document.getElementById('palette');
+    palette.draw(pal, true);
+    //Event handling for palette
+    pal.mouse = new Mouse(pal, paletteMouseClick, paletteMouseMove, paletteMouseWheel);
+    pal.mouse.ignoreScroll = true;
 
     //Create a fractal object
     fractal = new Fractal();
     //Load shader program and draw
     fractal.writeShader();
-    fractal.draw();
+    //fractal.draw();
+    drawFractal();
 
-    //Event handling for palette
-    var palette = document.getElementById('palette');
-    palette.mouse = new Mouse(palette, paletteMouseClick, paletteMouseMove, paletteMouseWheel);
+    picker = new ColourPicker();
+  }
+
+  function drawFractal() {
+    //Update palette history
+    if (palette.changed) {
+      var area = document.getElementById("palettes");
+      var canvas = document.createElement("canvas");
+      canvas.width = 360;
+      canvas.height = 16;
+      area.appendChild(canvas);
+      palette.draw(canvas, false);  //Save history
+      palette.changed = false;
+    }
+    var pal = document.getElementById('palette');
+    palette.draw(pal, true);
+
+    //Update gradient texture
+    var pal = document.getElementById('gradient');
+    palette.draw(pal, false);  //WebGL Texture size (power of 2)
+    updateTexture(gradientTexture);
+
+    fractal.applyChanges();
   }
 
 
@@ -283,53 +310,48 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
   }
 
   function bgColourMouseClick() {
-    colourPicker(0, $("backgroundBG").offsetLeft, 60); 
+    editColour = 0;
+    picker.pick(palette.colours[0].colour, $("backgroundBG").offsetLeft, 30); 
   }
 
   function paletteMouseClick(event) {
+    //Use non-scrolling position
+    this.x = this.clientx;
+    this.x = this.clientx;
+
     if (this.slider != null)
     {
       //Slider moved, update texture
       this.slider = null;
-      paletteUpdate();
+      palette.draw(document.getElementById('palette'), true);
       return;
     }
-    var palette = document.getElementById('palette');
-    if (palette.getContext){
+    var pal = document.getElementById('palette');
+    if (pal.getContext){
       colourPickerAbort();  //Abort any current edit first
-      var context = palette.getContext('2d'); 
+      var context = pal.getContext('2d'); 
       var slider = document.getElementById("slider");
 
-      for (var i = 1; i < colours.length; i++)
-      {
-        var x = colours[i].position * palette.width;
-        if (this.x >= x - slider.width / 2 && this.x <= x + slider.width / 2) {
-          if (event.button == 0) {
-            //Edit colour on left click
-            colourPicker(i, this.absoluteX-128, 60); //this.absoluteY);
-            return;
-          } else if (event.button == 2) {
-            //Delete on right click
-            colours.splice(i,1);
-            paletteUpdate();
-            return;
-          }
+      //Get selected colour
+      var i = palette.inRange(this.x, slider.width, pal.width);
+      if (i > 0) {
+        if (event.button == 0) {
+          //Edit colour on left click
+          editColour = i;
+          picker.pick(palette.colours[i].colour, event.clientX-128, 30);
+        } else if (event.button == 2) {
+          //Delete on right click
+          palette.remove(i);
+          palette.draw(document.getElementById('palette'), true);
         }
-      }
-
-      //Clicked elsewhere, add new colour
-      var position = this.x / palette.width;
-      colours.push(new ColourPos(null, position));
-      colours.sort(function(a,b){return a.position - b.position})
-            paletteUpdate();
-      for (var i = 1; i < colours.length; i++)
-      {
-        if (colours[i].position == position)
-        {
-          //Edit new colour
-          colourPicker(i, this.absoluteX-128, 60); //this.absoluteY);
-          return;
-        }
+      } else {
+        //Clicked elsewhere, add new colour
+        var position = this.x / pal.width;
+        var col = new Colour();
+        editColour = palette.newColour(position, col)
+        palette.draw(document.getElementById('palette'), true);
+        //Edit new colour
+        picker.pick(col, event.clientX-128, 30);
       }
     }
   }
@@ -337,152 +359,38 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
   function paletteMouseMove(event) {
     if (!this.isdown) return;
 
-    var palette = document.getElementById('palette');
+    //Use non-scrolling position
+    this.x = this.clientx;
+    this.x = this.clientx;
+
+    var pal = document.getElementById('palette');
     var slider = document.getElementById("slider");
 
     if (this.slider == null) {
       //Colour slider dragged on?
-      for (var i = 2; i < colours.length-1; i++) {
-         var oldx = this.x + this.deltaX;
-         var x = colours[i].position * palette.width;
-         if (oldx >= x - slider.width / 2 && oldx <= x + slider.width / 2) {
-           this.slider = i; //Save index
-           break;
-         }
-      }
+      var i = palette.inDragRange(this.x, slider.width, pal.width);
+      if (i>1) this.slider = i;
     }
 
     if (this.slider == null) this.isdown = false; //Abort action if not on slider
     else {
       if (this.x < 1) this.x = 1;
-      if (this.x > palette.width-1) this.x = palette.width-1;
+      if (this.x > pal.width-1) this.x = pal.width-1;
       //Move to adjusted position and redraw
-      colours[this.slider].position = this.x / palette.width;
-      drawPalette(document.getElementById('palette'), 572, 24, true); //GUI size
+      palette.colours[this.slider].position = this.x / pal.width;
+      palette.draw(document.getElementById('palette'), true);
     }
   }
 
   function paletteMouseWheel(event) {
   }
 
-  function paletteUpdate() {
-       //var prev = document.getElementById('palette_preview');
-       drawPalette(undefined, 360, 16, false);
-    var pal = document.getElementById('palette');
-    drawPalette(pal, 1024, 1, false);  //WebGL Texture size (power of 2)
-    updateTexture(gradientTexture);
-    drawPalette(pal, 572, 24, true); //GUI size
-  }
-
-
-/////////////////////////////////////////////////////////////////////////
-//Palette parser
-  function readPalette(source) {
-    delete colours; //Clear existing colour list
-    colours = new Array();
-    var lines = source.split("\n"); // split on newlines
-    var position;
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (!line) continue;
-
-      //Palette: parse into attrib=value pairs
-      var pair = line.split("=");
-      if (pair[0] == "Background")
-        colours.push(new ColourPos(pair[1], -1));
-      else if (pair[0][0] == "P") //PositionX=
-        position = parseFloat(pair[1]);
-      else if (pair[0][0] == "C") { //ColourX=
-        //Colour constructor handles html format colours, if no # or rgb/rgba assumes integer format
-        colours.push(new ColourPos(pair[1], position));
-        //Some old palettes had extra colours at end which screws things up so check end position
-        if (position == 1.0) break;
-      } else if (pair[0])
-        //New style: position=value
-        colours.push(new ColourPos(pair[1], pair[0]));
-    }
-
-    //Check for all-transparent palette and fix
-    var opaque = false;
-    for (var c = 0; c < colours.length; c++)
-      if (colours[c].colour.alpha > 0) opaque = true;
-    if (!opaque) {
-      for (var c = 0; c < colours.length; c++)
-        colours[c].colour.alpha = 255;
-    }
-
-    //Update palette colours
-    paletteUpdate();
-  }
-
-/////////////////////////////////////////////////////////////////////////
-//Colour palette rendering 
-
-  function drawPalette(canvas, width, height, ui){  
-    if (!canvas) {
-      var area = document.getElementById("palettes");
-      canvas = document.createElement("canvas");
-      canvas.width = 360;
-      canvas.height = 16;
-      area.appendChild(canvas);
-    }
-
-    if (colours.length == 0)
-    {
-      colours.push(new ColourPos("#ffffff", -1)); //Background
-      colours.push(new ColourPos("#000000", 0));
-      colours.push(new ColourPos("#ffffff", 1));
-    }
-
-    if (canvas.getContext){  
-      canvas.width = width;
-      canvas.height = height;
-      var context = canvas.getContext('2d');  
-      var slider = document.getElementById("slider");
-      var my_gradient = context.createLinearGradient(0, 0, width, 0);
-      for (var i = 1; i < colours.length; i++)
-         my_gradient.addColorStop(colours[i].position, colours[i].colour.html());
-
-      context.fillStyle = my_gradient;
-      context.fillRect(0, 0, width, height);
-
-      var bg = document.getElementById('backgroundCUR');
-      bg.style.background = colours[0].colour.html();
-
-      if (!ui) return;  //Skip drawing slider interface
-
-      for (var i = 2; i < colours.length-1; i++)
-      {
-        var x = Math.floor(width * colours[i].position) + 0.5;
-        var HSV = colours[i].colour.HSV();
-        if (HSV.V > 50)
-          context.strokeStyle = "black";
-        else
-          context.strokeStyle = "white";
-        context.beginPath();
-        context.moveTo(x, 0);
-        context.lineTo(x, canvas.height);
-        context.closePath();
-        context.stroke();
-        x -= (slider.width / 2);
-        context.drawImage(slider, x, 0);  
-      } 
-    }  
-  }
 
 /////////////////////////////////////////////////////////////////////////
 //Editor windows & data passing 
 
-var paletteWindow;
 var editorWindow;
 var editorFilename;
-
-  function openPaletteEditor() {
-    paletteWindow = window.open("paletteeditor.html", "PaletteEditor", "toolbar=0,scrollbars=0,location=0,statusbar=0,menubar=0,resizable=1,width=400,height=500");
-  }
-  function closePaletteEditor() {
-    //paletteWindow = null;
-  }
 
   function openEditor(filename) {
     if (!filename) return;
@@ -495,17 +403,9 @@ var editorFilename;
 
   //Save palette
   function savePalette(){
-    var paletteData = getPalette();
+    var paletteData = palette.toString();
     ajaxWriteFile("default.palette", paletteData, consoleWrite);
   }
-  //Get palette
-  function getPalette(){
-    var paletteData = 'Background=' + colours[0].colour.html();
-    for (var i = 1; i < colours.length; i++)
-      paletteData += '\n' + colours[i].position.toFixed(6) + '=' + colours[i].colour.html();
-    return paletteData;
-  }
-
 
 /////////////////////////////////////////////////////////////////////////
 //Saving result images 
@@ -560,7 +460,6 @@ function saveViaAJAX()
 handleFormMouseDown = function(e) {
   //Event delegation from form
   e = e || window.event;
-  var elementId = e.target.id;
   if (e.target.className == "colour") colourPickerElement(e.target);
 }
 
@@ -570,64 +469,35 @@ function colourPickerOK(val) {
   if (editColour >= 0)
   {
     //Update colour with selected
-    colours[editColour].insert = false; //Clear insert flag
-    colours[editColour].colour.setHSV(val);
-    paletteUpdate();
+    palette.colours[editColour].insert = false; //Clear insert flag
+    palette.colours[editColour].colour.setHSV(val);
+    palette.draw(document.getElementById('palette'), true);
   }
   else if (editElement) {
     var col = new Colour(0);
     col.setHSV(val);
     editElement.style.backgroundColor = col.html();
   }
-
   editColour = -1;
   editElement = null;
 }
-function colourPickerX() { 
-  //If adding a new colour, delete it
-  colourPickerAbort();
-  editColour = -1;
-}
 
 function colourPickerAbort() { 
-  //If adding a new colour, delete it
-  if (editColour >= 0 && colours[editColour].insert)
+  //If aborting a new colour add, delete it
+  if (editColour >= 0 && palette.colours[editColour].insert)
   {
-    colours.splice(editColour,1);
-    paletteUpdate();
+    palette.remove(editColour);
+    palette.draw(document.getElementById('palette'), true);
   }
+  editColour = -1;
+  editElement = null;
 }
 
 function colourPickerElement(el) { 
   //Open colour picker for element, not using colour array
   editElement = el;
   var col = new Colour(el.style.backgroundColor)
-  HSVupdate(col.HSVA());
-
-    loadSV(); //Shouldn't call these except first load!
-    loadA();
-  
-    $S('plugin').left=el.offsetLeft+'px';
-    $S('plugin').top=el.offsetTop+'px';
-    $S('plugin').display='block';
-}
-
-function colourPicker(i, x, y) { 
-
-  HSVupdate(colours[i].colour.HSVA());
-
-  //Open/position picker unless already open
-  if (editColour < 0)
-  {
-    loadSV(); //Shouldn't call these except first load!
-    loadA();
-
-    $S('plugin').left=x+'px';
-    $S('plugin').top=y+'px';
-    $S('plugin').display='block';
-  }
-
-  editColour = i;
+  picker.pick(col, el.offsetLeft, el.offsetTop);
 }
 
 /////////////////////////////////////////////////////////////////////////
