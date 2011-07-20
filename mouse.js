@@ -15,6 +15,8 @@
     this.lastY = 0;
     this.slider = null;
     this.spin = 0;
+    this.wheelTimer = false;  //Timer before triggering wheel callback
+    this.moveUpdate = false;  //Save mouse move origin once on mousedown or every move
 
     // for mouse scrolling in Firefox
     if (element.addEventListener) element.addEventListener ("DOMMouseScroll", handleMouseWheel, false);
@@ -44,7 +46,9 @@
     //Convert coords to position relative to element
     this.x -= offset[0];
     this.y -= offset[1];
-    //this.y = this.element.height - this.y; //Flip y coords to match opengl
+    //Save position without scrolling, only checked in ff5 & chrome12
+    this.clientx = e.clientX - offset[0];
+    this.clienty = e.clientY - offset[1];
   }
 
   /* Get offset of element */
@@ -60,6 +64,10 @@
   }
 
   function handleMouseDown(event) {
+      //Event delegation details
+      var e = event || window.event;
+      this.mouse.elementId = e.target.id;
+      this.mouse.elementClass = e.target.className;
     this.mouse.update(event);
     if (!this.mouse.isdown) {
       this.mouse.lastX = this.mouse.absoluteX;
@@ -98,6 +106,12 @@
     this.mouse.deltaY = this.mouse.absoluteY - this.mouse.lastY;
     this.mouse.move(event);
 
+    if (this.mouse.moveUpdate) {
+      //Constant update of last position
+      this.mouse.lastX = this.mouse.absoluteX;
+      this.mouse.lastY = this.mouse.absoluteY;
+    }
+
     if ( event.preventDefault ) event.preventDefault();  // Mozilla FireFox
     event.returnValue = false;  // cancel default action
   }
@@ -114,14 +128,18 @@
 
     event.spin = nDelta > 0 ? 1 : -1;
 
+    document.mouse.event = event; //Save event
+
     //Set timer for 1/8 sec and accumulate spin
-    if (this.mouse.spin == 0) {
+    if (this.mouse.wheelTimer && this.mouse.spin == 0) {
       //document.body.style.cursor = "wait";
       //setTimeout('mouseWheelTimout(document.mouse);', 125);
       setTimeout('mouseWheelTimout(document.mouse);', 50);
     }
     this.mouse.spin += event.spin;
-    this.mouse.event = event; //Save event
+
+    if (!this.mouse.wheelTimer && this.mouse.spin != 0)
+      this.mouse.wheel(event);
 
     if ( event.preventDefault ) event.preventDefault();  // Mozilla FireFox
     event.returnValue = false;  // cancel default action

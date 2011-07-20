@@ -1,9 +1,12 @@
 <!doctype html>
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <title>Fractured - WebGL Fractal Art Studio</title>
 
 <link rel="stylesheet" type="text/css" href="styles.css">
 
+<script type="text/javascript" src="colourPicker.js"></script>
 <script type="text/javascript" src="index.js"></script>
 <script type="text/javascript" src="utils.js"></script>
 <script type="text/javascript" src="ajax.js"></script>
@@ -15,9 +18,6 @@
 <script type="text/javascript" src="sylvester.js"></script>
 <script type="text/javascript" src="glUtils.js"></script>
 <script type="text/javascript" src="matrix.js"></script>
-
-<!-- Colour picker -->
-<script type="text/javascript" src="colourPicker.js"></script>
 
 </head>
 
@@ -37,7 +37,7 @@
         <ul>
           <li><a id="hide" href="javascript:toggleParams();">&uarr;</a></li> 
           <li><a id="show" style="display:none" href="javascript:toggleParams();">&darr;</a></li> 
-          <li><a href="javascript:fractal.applyChanges();">Apply</a></li> 
+          <li><a href="javascript:drawFractal();">Draw</a></li> 
           <li><a href="javascript:fractal.save();">Save</a></li> 
           <!--input type="button" value="Save Image"  onClick="saveImage()"-->
           <li><a href="/about">About</a></li> 
@@ -162,7 +162,6 @@
       </div>
 
       <div class="panel" id="panel3" style="display: none">
-        <input type="button" value="Palette Edit" onClick="openPaletteEditor()">
         <input type="button" value="Set Default Palette"  onClick="savePalette()">
         <hr>
         File upload:<br>
@@ -192,37 +191,37 @@
 
     </aside>
 
-
   </section>
-
-
 
   <section id="main">
     <canvas id="fractal-canvas" width="600" height="600"></canvas>
   </section>
 
+  <!-- Hidden -->
   <div id="select" style="display: none"></div>
-
-  <!-- Colour picker -->
-  <div id="plugin" onmousedown="HSVslide('drag','plugin',event)">
-    <div id="plugCURBG"><div id="plugCUR"></div></div>
-    <div id="plugHEX" onmousedown="stop=0; setTimeout('stop=1',100);">FFFFFF</div>
-    <div id="plugCLOSE" onmousedown="toggle('plugin'); colourPickerX()">X</div>
-    <div id="plugOK" onmousedown="toggle('plugin'); colourPickerOK(picked);">OK</div><br>
-    <div id="SV" onmousedown="HSVslide('SVslide','plugin',event)" title="Saturation + Value">
-     <div id="SVslide"><br></div>
-    </div>
-    <form id="H" onmousedown="HSVslide('Hslide','plugin',event)" title="Hue">
-     <div id="Hslide"><br></div>
-     <div id="Hmodel"></div>
-    </form>
-    <form id="O" onmousedown="HSVslide('Oslide','plugin',event)" title="Opacity">
-     <div id="Oslide"><br></div>
-     <div id="Omodel"></div>
-    </form>
+  <div id="hide" style="display: none">
+    <img src="media/slider.png" id="slider">
+    <canvas id="gradient" width="1024" height="1"></canvas>
   </div>
 
-  <img src="media/slider.png" id="slider" style="display: none;">
+  <!-- Colour picker -->
+  <div id="plugin">
+    <div id="plugCURBG"><div id="plugCUR"></div></div>
+    <div id="plugRGB">R: 255 G: 255 B: 255</div>
+    <div id="plugCLOSE">X</div>
+    <div id="plugOK">OK</div><br>
+    <div id="SV">
+     <div id="SVslide"></div>
+    </div>
+    <div id="H" class="slider">
+     <div id="Hmodel" class="sliderBG"></div>
+     <div id="Hslide" class="sliderControl"></div>
+    </div>
+    <div id="O" class="slider">
+     <div id="Omodel" class="sliderBG"></div>
+     <div id="Oslide" class="sliderControl"></div>
+    </div>
+  </div>
 
 </body>
 </html>

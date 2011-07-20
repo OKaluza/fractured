@@ -599,7 +599,7 @@
                 sources[this.formulaFilename(type)];
       }
     }
-    code += "\n[palette]\n" + getPalette();
+    code += "\n[palette]\n" + palette;
     function fileSaved() {window.open("saved.fractal");}
     ajaxWriteFile("saved.fractal", code, fileSaved);
   }
@@ -616,7 +616,8 @@
       else if (section.toLowerCase() == "palette")
         buffer += lines[i] + "\n";
     }
-    readPalette(buffer);
+    palette = new Palette(buffer);
+    palette.draw(document.getElementById('palette'), true);
   }
 
   //Load fractal from file
@@ -652,7 +653,8 @@
           //Collect lines into palette data
           collect = true;
           buffer = "";
-          collectDone = readPalette; 
+          //collectDone = palette.read; 
+          collectDone = function(data) {palette = new Palette(data);}
         } else if (section.slice(0, 8) == "formula.") {
           //Collect lines into formula code
           var pair1 = section.split(".");
@@ -707,7 +709,7 @@
     }
 
     //Process the palette data
-    if (buffer) readPalette(buffer);
+    if (buffer) palette = new Palette(buffer);
 
     //Select formulae and update parameters
     this.loadParams();
@@ -870,7 +872,7 @@
     }
 
     //Process the palette data
-    readPalette(paletteSource);
+    palette = new Palette(paletteSource);
     
     if (saved["smooth"]) {
       //Really old
@@ -1175,7 +1177,7 @@
     //Uniform variables (julia, background, origin, selected, dims, pixel size)
     gl.uniform1i(currentProgram.juliaUniform, this.julia);
     gl.uniform1i(currentProgram.perturbUniform, this.perturb);
-    gl.uniform4fv(currentProgram.backgroundUniform, colours[0].colour.rgbaGL());
+    gl.uniform4fv(currentProgram.backgroundUniform, palette.colours[0].colour.rgbaGL());
     gl.uniform2f(currentProgram.originUniform, this.origin.re, this.origin.im);
     gl.uniform2f(currentProgram.selectedUniform, this.selected.re, this.selected.im);
     gl.uniform2f(currentProgram.dimsUniform, canvas.width, canvas.height);
