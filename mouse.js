@@ -38,6 +38,7 @@
       this.y = e.clientY + document.body.scrollTop +
                document.documentElement.scrollTop;
     }
+
     //Save doc relative coords
     this.absoluteX = this.x;
     this.absoluteY = this.y;
@@ -134,7 +135,8 @@
     if (this.mouse.wheelTimer && this.mouse.spin == 0) {
       //document.body.style.cursor = "wait";
       //setTimeout('mouseWheelTimout(document.mouse);', 125);
-      setTimeout('mouseWheelTimout(document.mouse);', 50);
+      //setTimeout('mouseWheelTimout(document.mouse);', 50);
+      setTimeout('mouseWheelTimout(document.mouse);', 25);
     }
     this.mouse.spin += event.spin;
 
