@@ -2,9 +2,8 @@ var gl;
 var currentProgram;
 var defaultProgram;
 
-  function initGL(elementid) {
+  function initGL(canvas) {
     try {
-      var canvas = document.getElementById(elementid);
       gl = canvas.getContext("experimental-webgl", { alpha: true } );
 
       gl.viewportWidth = canvas.width;
@@ -15,12 +14,6 @@ var defaultProgram;
 
       initBuffers();
 
-      //WebGL canvas event handling
-      canvas.mouse = new Mouse(canvas, canvasMouseClick, canvasMouseMove, canvasMouseWheel);
-      document.mouse = canvas.mouse;
-      defaultMouse = canvas.mouse;
-      document.onmouseup = handleMouseUp;
-      document.onmousemove = handleMouseMove;
     } catch(e) {
     }
 

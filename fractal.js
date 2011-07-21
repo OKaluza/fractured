@@ -450,8 +450,8 @@
 
   Fractal.prototype.resetDefaults = function() {
     //Default aspect, parameters and formulae:
-    this.width = 600;
-    this.height = 600;
+    this.width = window.innerWidth - (showparams ? 390 : 4);
+    this.height = window.innerHeight - 34;
     this.origin = new Aspect(0, 0, 0, 0.5); 
     this.savePos = this.origin;
     this.selected = new Complex(0, 0);
@@ -599,7 +599,7 @@
                 sources[this.formulaFilename(type)];
       }
     }
-    code += "\n[palette]\n" + palette;
+    code += "\n[palette]\n" + colours.palette;
     function fileSaved() {window.open("saved.fractal");}
     ajaxWriteFile("saved.fractal", code, fileSaved);
   }
@@ -616,8 +616,7 @@
       else if (section.toLowerCase() == "palette")
         buffer += lines[i] + "\n";
     }
-    palette = new Palette(buffer);
-    palette.draw(document.getElementById('palette'), true);
+    colours.read(buffer);
   }
 
   //Load fractal from file
@@ -653,8 +652,8 @@
           //Collect lines into palette data
           collect = true;
           buffer = "";
-          //collectDone = palette.read; 
-          collectDone = function(data) {palette = new Palette(data);}
+          //collectDone = colours.read; 
+          collectDone = function(data) {colours.read(data);}
         } else if (section.slice(0, 8) == "formula.") {
           //Collect lines into formula code
           var pair1 = section.split(".");
@@ -709,7 +708,7 @@
     }
 
     //Process the palette data
-    if (buffer) palette = new Palette(buffer);
+    if (buffer) colours.read(buffer);
 
     //Select formulae and update parameters
     this.loadParams();
@@ -872,7 +871,7 @@
     }
 
     //Process the palette data
-    palette = new Palette(paletteSource);
+    colours.read(paletteSource);
     
     if (saved["smooth"]) {
       //Really old
@@ -1026,6 +1025,8 @@
 
   //Apply any changes to parameters or formula selections and redraw
   Fractal.prototype.applyChanges = function() {
+    //Update palette
+    colours.update();
     //Resize canvas if size settings changed
     var canvas = document.getElementById('fractal-canvas');
     this.width = parseInt(document.getElementById("widthInput").value);
@@ -1177,14 +1178,14 @@
     //Uniform variables (julia, background, origin, selected, dims, pixel size)
     gl.uniform1i(currentProgram.juliaUniform, this.julia);
     gl.uniform1i(currentProgram.perturbUniform, this.perturb);
-    gl.uniform4fv(currentProgram.backgroundUniform, palette.colours[0].colour.rgbaGL());
+    gl.uniform4fv(currentProgram.backgroundUniform, colours.palette.colours[0].colour.rgbaGL());
     gl.uniform2f(currentProgram.originUniform, this.origin.re, this.origin.im);
     gl.uniform2f(currentProgram.selectedUniform, this.selected.re, this.selected.im);
     gl.uniform2f(currentProgram.dimsUniform, canvas.width, canvas.height);
     gl.uniform1f(currentProgram.pixelsizeUniform, this.origin.pixelSize(canvas));
 
     //Gradient texture
-    gl.bindTexture(gl.TEXTURE_2D, gradientTexture);
+    gl.bindTexture(gl.TEXTURE_2D, colours.gradientTexture);
     gl.uniform1i(currentProgram.paletteUniform, 0);
 
     //Rotation & translation matrix

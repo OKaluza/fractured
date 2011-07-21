@@ -1,7 +1,6 @@
   function Palette(source) {
     //Colour palette array
     this.colours = [];
-    this.changed = true;
 
     //Palette data parser
     var lines = source.split("\n"); // split on newlines
@@ -78,7 +77,6 @@
 
   //Palette draw to canvas
   Palette.prototype.draw = function(canvas, ui) {
-    this.changed = true;
     if (this.colours.length == 0)
     {
       this.colours.push(new ColourPos("#ffffff", -1)); //Background

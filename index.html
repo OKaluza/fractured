@@ -37,7 +37,7 @@
         <ul>
           <li><a id="hide" href="javascript:toggleParams();">&uarr;</a></li> 
           <li><a id="show" style="display:none" href="javascript:toggleParams();">&darr;</a></li> 
-          <li><a href="javascript:drawFractal();">Draw</a></li> 
+          <li><a href="javascript:fractal.applyChanges();">Draw</a></li> 
           <li><a href="javascript:fractal.save();">Save</a></li> 
           <!--input type="button" value="Save Image"  onClick="saveImage()"-->
           <li><a href="/about">About</a></li> 
@@ -66,7 +66,7 @@
         <div id="formscroll" onmousedown="handleFormMouseDown(event)">
           <form name="inputs" class="formbox">
             <div class="row">
-              <span class="label">Size</span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
+              <span class="label">Size (Auto:<input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);">)</span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
             </div>
 
             <div class="row">
@@ -162,7 +162,7 @@
       </div>
 
       <div class="panel" id="panel3" style="display: none">
-        <input type="button" value="Set Default Palette"  onClick="savePalette()">
+        <input type="button" value="Set Default Palette"  onClick="colours.savePalette()">
         <hr>
         File upload:<br>
         <input name="palfile" type="file"onchange="filesProcess(this.files, loadPalette);"><br>

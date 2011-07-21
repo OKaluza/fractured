@@ -17,9 +17,8 @@ function ColourPicker(savefn, abortfn) {
   this.max={'H':360,'S':100,'V':100, 'A':1.0};
 
   //Mouse processing:
-  this.mouse = new Mouse($("plugin"), this.mouseClick, this.mouseMove, this.mouseWheel)
+  this.mouse = new Mouse($("plugin"), this);
   this.mouse.moveUpdate = true;
-  this.mouse.picker = this; //Self reference for mouse events
   $("plugin").mouse = this.mouse;
 
   //Load hue strip
@@ -59,41 +58,42 @@ ColourPicker.prototype.pick = function(colour, x, y) {
     $S('plugin').top=(window.innerHeight - h - 20) + 'px';
 }
 
-ColourPicker.prototype.mouseClick = function(e) {
-  if (this.elementId == "plugCLOSE") {
-    this.picker.abortfn();
+//Mouse event handling
+ColourPicker.prototype.click = function(e, mouse) {
+  if (mouse.elementId == "plugCLOSE") {
+    this.abortfn();
     toggle('plugin'); 
-  } else if (this.elementId == "plugOK") {
-    this.picker.savefn(this.picker.picked);
+  } else if (mouse.elementId == "plugOK") {
+    this.savefn(this.picked);
     toggle('plugin'); 
-  } else if (this.elementId=='SV') 
-    this.picker.setSV(this);
-  else if (this.elementId == 'Hslide' || this.elementClass=='hue')
-    this.picker.setHue(this);
-  else if (this.elementId == 'Oslide' || this.elementClass=='opacity')
-    this.picker.setOpacity(this);
+  } else if (mouse.elementId=='SV') 
+    this.setSV(mouse);
+  else if (mouse.elementId == 'Hslide' || mouse.elementClass=='hue')
+    this.setHue(mouse);
+  else if (mouse.elementId == 'Oslide' || mouse.elementClass=='opacity')
+    this.setOpacity(mouse);
 }
 
-ColourPicker.prototype.mouseMove = function(e) {
-  if (!this.isdown) return;
-  if (this.button > 0) return; //Process left drag only
+ColourPicker.prototype.move = function(e, mouse) {
+  if (!mouse.isdown) return;
+  if (mouse.button > 0) return; //Process left drag only
 
-  if (this.elementId == 'plugin' || this.elementId == 'plugCUR' || this.elementId == 'plugRGB') {
+  if (mouse.elementId == 'plugin' || mouse.elementId == 'plugCUR' || mouse.elementId == 'plugRGB') {
     //Drag position
     var ds=$S('plugin');
-    ds.left = parseInt(ds.left) + this.deltaX + 'px';
-    ds.top = parseInt(ds.top) + this.deltaY + 'px';
+    ds.left = parseInt(ds.left) + mouse.deltaX + 'px';
+    ds.top = parseInt(ds.top) + mouse.deltaY + 'px';
     return;
-  } else if (this.elementId=='SV') 
-    this.picker.setSV(this);
-  else if (this.elementId == 'Hslide' || this.elementClass=='hue')
-    this.picker.setHue(this);
-  else if (this.elementId == 'Oslide' || this.elementClass=='opacity')
-    this.picker.setOpacity(this);
+  } else if (mouse.elementId=='SV') 
+    this.setSV(mouse);
+  else if (mouse.elementId == 'Hslide' || mouse.elementClass=='hue')
+    this.setHue(mouse);
+  else if (mouse.elementId == 'Oslide' || mouse.elementClass=='opacity')
+    this.setOpacity(mouse);
 }
 
-ColourPicker.prototype.mouseWheel = function(e) {
-  this.picker.incHue(-e.spin);
+ColourPicker.prototype.wheel = function(e, mouse) {
+  this.incHue(-e.spin);
 }
 
 ColourPicker.prototype.setSV = function(mouse) {
