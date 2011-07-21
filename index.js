@@ -2,13 +2,13 @@
 //Globals
 var fractal;
 var defaultMouse;
-var palette;
 var colours;
-var gradientTexture;
 //Source files list
 var sources = {};
 var labels = {};
 var formulaOffsets = {}; //line numbering offset counts for each formula
+var autosize = true;
+var showparams = true;
 
   function pageStart() {
     //Default editor line offset
@@ -94,59 +94,57 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
       if (sources[filename].length == 0) remain++;
 
     if (remain == 0)
-      appInit();
+      appInit();  //All data loaded, call init
   }
 
+  //Once we have source data, app can be initialised
   function appInit() {
-    //Have source data, init
-
     //Start webGL
-    initGL("fractal-canvas");
+    var canvas = document.getElementById("fractal-canvas");
+    initGL(canvas);
 
-    //Load texture data and draw palette
-    gradientTexture = gl.createTexture();
-    gradientTexture.image = document.getElementById('gradient');
-    //updateTexture(gradientTexture);
-    palette = new Palette(sources["default.palette"]);
-    //Update palette colours
-    var pal = document.getElementById('palette');
-    palette.draw(pal, true);
-    //Event handling for palette
-    pal.mouse = new Mouse(pal, paletteMouseClick, paletteMouseMove, paletteMouseWheel);
-    pal.mouse.ignoreScroll = true;
+    //Fractal canvas event handling
+    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseMove, canvasMouseWheel));
+    defaultMouse = document.mouse = canvas.mouse;
+    document.onmouseup = handleMouseUp;
+    document.onmousemove = handleMouseMove;
+
+    //Colour editing and palette management
+    colours = new ColourEditor(sources["default.palette"]);
 
     //Create a fractal object
     fractal = new Fractal();
-    //Load shader program and draw
-    fractal.writeShader();
-    //fractal.draw();
-    drawFractal();
-
-    colours = new ColourEditor();
-  }
-
-  function drawFractal() {
-    //Update palette history
-    if (palette.changed) {
-      var area = document.getElementById("palettes");
-      var canvas = document.createElement("canvas");
-      canvas.width = 360;
-      canvas.height = 16;
-      area.appendChild(canvas);
-      palette.draw(canvas, false);  //Save history
-      palette.changed = false;
-    }
-    var pal = document.getElementById('palette');
-    palette.draw(pal, true);
-
-    //Update gradient texture
-    var pal = document.getElementById('gradient');
-    palette.draw(pal, false);  //WebGL Texture size (power of 2)
-    updateTexture(gradientTexture);
-
     fractal.applyChanges();
+
+    window.onresize = autoResize;
+    document.inputs.elements["autosize"].checked = autosize;
   }
 
+var rztimeout = undefined;
+
+  function autoResize(newval) {
+    if (rztimeout) clearTimeout(rztimeout);
+    var timer = false;
+    if (typeof(newval) == 'boolean')
+      autosize = newval;
+    else
+      timer = true;
+
+    if (autosize) {
+      fractal.width = window.innerWidth - (showparams ? 390 : 4);
+      fractal.height = window.innerHeight - 34;
+      fractal.copyToForm();
+      var canvas = document.getElementById('fractal-canvas');
+      canvas.width = fractal.width-1;
+      canvas.height = fractal.height-1;
+
+      if (timer) {
+        document.body.style.cursor = "wait";
+        rztimeout = setTimeout('fractal.applyChanges(); document.body.style.cursor = "default";', 150);
+      } else
+        fractal.applyChanges();
+    }
+  }
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
@@ -183,15 +181,17 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
         show.style.display = 'inline-block';
         main.style.left = '1px';
     }
+    showparams = (sidebar.style.display == 'block');
+    autoResize(autosize);
   }
 
 /////////////////////////////////////////////////////////////////////////
-//Mouse event handling
-  function canvasMouseClick(event) {
+//Fractal canvas mouse event handling
+  function canvasMouseClick(event, mouse) {
     if (event.button > 0) return;
 
     //Convert mouse coords into fractal coords
-    var point = fractal.origin.convert(this.x, this.y, this.element);
+    var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
 
     if (event.ctrlKey) {
        //CTRL-click: julia set switch
@@ -219,17 +219,17 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
         //Ignore if too small a region selected
         if (select.w > 5 && select.h > 5) {
           //Get element offset in document
-          var offset = findElementPos(this.element);
+          var offset = findElementPos(mouse.element);
           //Convert coords to position relative to element
           select.x -= offset[0];
           select.y -= offset[1];
           //Get centre of selection in fractal coords
-          var centre = fractal.origin.convert(select.x + select.w/2, select.y + select.h/2, this.element);
+          var centre = fractal.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
           //Adjust centre position to match mouse left click
           fractal.origin.re += centre.re;
           fractal.origin.im += centre.im;
           //Adjust zoom by factor of element width to selection
-          var ratio = this.element.width / select.w;
+          var ratio = mouse.element.width / select.w;
           fractal.origin.zoom *= ratio;
         }
       } else {
@@ -242,38 +242,38 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
     fractal.draw();
   }
 
-  function canvasMouseMove(event) {
+  function canvasMouseMove(event, mouse) {
     //Mouseover processing
     if (!fractal) return;
-    if (this.x >= 0 && this.y >= 0 && this.x <= this.element.width && this.y <= this.element.height)
+    if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
     {
       //Convert mouse coords into fractal coords
-      var point = fractal.origin.convert(this.x, this.y, this.element);
+      var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
       point.re += fractal.origin.re;
       point.im += fractal.origin.im;
       document.getElementById("coords").innerHTML = "&nbsp;re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8);
     }
-    if (!this.isdown) return;
-    if (this.button > 0) return; //Process left drag only
+    if (!mouse.isdown) return;
+    if (mouse.button > 0) return; //Process left drag only
 
     //Drag processing
     var select = document.getElementById("select");
     select.style.display = 'block';
 
     //Constrain selection size to canvas aspect ratio
-    select.w = Math.abs(this.deltaX)
-    var ratio = this.element.width / select.w;
-    select.h = this.element.height / ratio;
+    select.w = Math.abs(mouse.deltaX)
+    var ratio = mouse.element.width / select.w;
+    select.h = mouse.element.height / ratio;
 
-    if (this.deltaX < 0)
-      select.x = this.absoluteX;
+    if (mouse.deltaX < 0)
+      select.x = mouse.absoluteX;
     else
-      select.x = this.absoluteX - select.w;
+      select.x = mouse.absoluteX - select.w;
 
-    if (this.deltaY < 0)
-      select.y = this.lastY - select.h;
+    if (mouse.deltaY < 0)
+      select.y = mouse.lastY - select.h;
     else
-      select.y = this.lastY;
+      select.y = mouse.lastY;
 
     //Copy to style to set positions
     select.style.left = select.x + "px";
@@ -284,7 +284,7 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
     document.getElementById("coords").innerHTML = select.style.width + "," + select.style.height;
   }
 
-  function canvasMouseWheel(event) {
+  function canvasMouseWheel(event, mouse) {
     //alert(event.spin);
     if (event.ctrlKey) {
       /* Zoom */
@@ -313,75 +313,9 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
     colours.edit(0, $("backgroundBG").offsetLeft, 30);
   }
 
-  function paletteMouseClick(event) {
-    //Use non-scrolling position
-    this.x = this.clientx;
-    this.x = this.clientx;
-
-    if (this.slider != null)
-    {
-      //Slider moved, update texture
-      this.slider = null;
-      palette.draw(document.getElementById('palette'), true);
-      return;
-    }
-    var pal = document.getElementById('palette');
-    if (pal.getContext){
-      colours.cancel();  //Abort any current edit first
-      var context = pal.getContext('2d'); 
-      var slider = document.getElementById("slider");
-
-      //Get selected colour
-      var i = palette.inRange(this.x, slider.width, pal.width);
-      if (i > 0) {
-        if (event.button == 0) {
-          //Edit colour on left click
-          colours.edit(i, event.clientX-128, 30);
-        } else if (event.button == 2) {
-          //Delete on right click
-          palette.remove(i);
-          palette.draw(document.getElementById('palette'), true);
-        }
-      } else {
-        //Clicked elsewhere, add new colour
-        colours.insert(this.x / pal.width, event.clientX-128, 30);
-      }
-    }
-  }
-
-  function paletteMouseMove(event) {
-    if (!this.isdown) return;
-
-    //Use non-scrolling position
-    this.x = this.clientx;
-    this.x = this.clientx;
-
-    var pal = document.getElementById('palette');
-    var slider = document.getElementById("slider");
-
-    if (this.slider == null) {
-      //Colour slider dragged on?
-      var i = palette.inDragRange(this.x, slider.width, pal.width);
-      if (i>1) this.slider = i;
-    }
-
-    if (this.slider == null)
-      this.isdown = false; //Abort action if not on slider
-    else {
-      if (this.x < 1) this.x = 1;
-      if (this.x > pal.width-1) this.x = pal.width-1;
-      //Move to adjusted position and redraw
-      palette.colours[this.slider].position = this.x / pal.width;
-      palette.draw(document.getElementById('palette'), true);
-    }
-  }
-
-  function paletteMouseWheel(event) {
-  }
-
 
 /////////////////////////////////////////////////////////////////////////
-//Editor windows & data passing 
+//Editor windows, data passing, saving & loading
 
 var editorWindow;
 var editorFilename;
@@ -394,15 +328,6 @@ var editorFilename;
   function closeEditor() {
     //editorWindow = null;
   }
-
-  //Save palette
-  function savePalette(){
-    var paletteData = palette.toString();
-    ajaxWriteFile("default.palette", paletteData, consoleWrite);
-  }
-
-/////////////////////////////////////////////////////////////////////////
-//Saving result images 
 
   function hrefImage() {
     var canvas = document.getElementById("fractal-canvas");
@@ -451,29 +376,75 @@ function saveViaAJAX()
 
 /////////////////////////////////////////////////////////////////////////
 //Colour picker functions
+
 handleFormMouseDown = function(e) {
-  //Event delegation from form
+  //Event delegation from parameters form to edit colour params
   e = e || window.event;
   if (e.target.className == "colour") colours.edit(e.target);
-}
-
-
-function ColourEditor() {
-  this.inserting = false;
-  this.editing = -1;
-  this.element = null;
-  this.picker = new ColourPicker(saveColour, abortColour);
 }
 
 function saveColour(val) {colours.save(val);}
 function abortColour() {colours.cancel();}
 
+function ColourEditor(source) {
+  this.inserting = false;
+  this.editing = -1;
+  this.element = null;
+  this.picker = new ColourPicker(saveColour, abortColour);
+  this.editcanvas = document.getElementById('palette')
+  this.gradientcanvas = document.getElementById('gradient')
+
+  //Load texture data and draw palette
+  this.gradientTexture = gl.createTexture();
+  this.gradientTexture.image = this.gradientcanvas;
+  //Update palette colours
+  this.changed = true;
+  this.palette = new Palette(source);
+  this.palette.draw(this.editcanvas, true);
+  //Event handling for palette
+  this.editcanvas.mouse = new Mouse(this.editcanvas, this);
+  this.editcanvas.mouse.ignoreScroll = true;
+}
+
+//Palette management
+ColourEditor.prototype.read = function(source) {
+  //Read a new palette from source data
+  this.palette = new Palette(source);
+  this.reset();
+  this.changed = true;
+  this.palette.draw(this.editcanvas, true);
+}
+
+ColourEditor.prototype.update = function() {
+  //Update gradient from palette
+  if (this.changed) {
+   //Update palette history
+    var area = document.getElementById("palettes");
+    var canvas = document.createElement("canvas");
+    canvas.width = 360;
+    canvas.height = 16;
+    area.appendChild(canvas);
+    this.palette.draw(canvas, false);  //Save history
+    this.changed = false;
+  }
+  this.palette.draw(this.editcanvas, true);
+
+  //Update gradient texture
+  this.palette.draw(this.gradientcanvas, false);  //WebGL texture size (power of 2)
+  updateTexture(this.gradientTexture);
+}
+
+ColourEditor.prototype.savePalette = function() {
+  //Write palette source data (to default only for now)
+  ajaxWriteFile("default.palette", this.palette.toString(), consoleWrite);
+}
+
 ColourEditor.prototype.insert = function(position, x, y) {
   //Flag unsaved new colour
   this.inserting = true;
   var col = new Colour();
-  this.editing = palette.newColour(position, col)
-  palette.draw(document.getElementById('palette'), true);
+  this.editing = this.palette.newColour(position, col)
+  this.palette.draw(this.editcanvas, true);
   //Edit new colour
   this.picker.pick(col, x, y);
 }
@@ -481,7 +452,7 @@ ColourEditor.prototype.insert = function(position, x, y) {
 ColourEditor.prototype.edit = function(val, x, y) {
   if (typeof(val) == 'number') {
     this.editing = val;
-    this.picker.pick(palette.colours[val].colour, x, y);
+    this.picker.pick(this.palette.colours[val].colour, x, y);
   } else if (typeof(val) == 'object') {
     //Edit element
     this.element = val;
@@ -494,30 +465,114 @@ ColourEditor.prototype.save = function(val) {
   if (this.editing >= 0)
   {
     //Update colour with selected
-    palette.colours[this.editing].colour.setHSV(val);
-    palette.draw(document.getElementById('palette'), true);
+    this.palette.colours[this.editing].colour.setHSV(val);
+    this.palette.draw(this.editcanvas, true);
+    this.changed = true;
   }
   else if (this.element) {
     var col = new Colour(0);
     col.setHSV(val);
     this.element.style.backgroundColor = col.html();
   }
-  this.inserting = false;
-  this.editing = -1;
-  this.element = null;
+  this.reset();
 }
 
 ColourEditor.prototype.cancel = function() {
   //If aborting a new colour add, delete it
   if (this.editing >= 0 && this.inserting)
   {
-    palette.remove(this.editing);
-    palette.draw(document.getElementById('palette'), true);
+    this.palette.remove(this.editing);
+    this.palette.draw(this.editcanvas, true);
   }
+  this.reset();
+}
+
+ColourEditor.prototype.reset = function() {
+  //Reset editing data
   this.inserting = false;
   this.editing = -1;
   this.element = null;
 }
+
+//Mouse event handling
+ColourEditor.prototype.click = function(event, mouse) {
+  //Use non-scrolling position
+  mouse.x = mouse.clientx;
+  mouse.x = mouse.clientx;
+
+  if (mouse.slider != null)
+  {
+    //Slider moved, update texture
+    mouse.slider = null;
+    this.palette.draw(this.editcanvas, true);
+    return;
+  }
+  var pal = document.getElementById('palette');
+  if (pal.getContext){
+    this.cancel();  //Abort any current edit first
+    var context = pal.getContext('2d'); 
+    var slider = document.getElementById("slider");
+
+    //Get selected colour
+    var i = this.palette.inRange(mouse.x, slider.width, pal.width);
+    if (i > 0) {
+      if (event.button == 0) {
+        //Edit colour on left click
+        this.edit(i, event.clientX-128, 30);
+      } else if (event.button == 2) {
+        //Delete on right click
+        this.palette.remove(i);
+        this.palette.draw(this.editcanvas, true);
+        this.changed = true;
+      }
+    } else {
+      //Clicked elsewhere, add new colour
+      this.insert(mouse.x / pal.width, event.clientX-128, 30);
+    }
+  }
+}
+
+ColourEditor.prototype.move = function(event, mouse) {
+  if (!mouse.isdown) return;
+
+  //Use non-scrolling position
+  mouse.x = mouse.clientx;
+  mouse.x = mouse.clientx;
+
+  var slider = document.getElementById("slider");
+
+  if (mouse.slider == null) {
+    //Colour slider dragged on?
+    var i = this.palette.inDragRange(mouse.x, slider.width, this.editcanvas.width);
+    if (i>1) mouse.slider = i;
+  }
+
+  if (mouse.slider == null)
+    mouse.isdown = false; //Abort action if not on slider
+  else {
+    if (mouse.x < 1) mouse.x = 1;
+    if (mouse.x > this.editcanvas.width-1) mouse.x = this.editcanvas.width-1;
+    //Move to adjusted position and redraw
+    this.palette.colours[mouse.slider].position = mouse.x / this.editcanvas.width;
+    this.changed = true;
+    this.palette.draw(this.editcanvas, true);
+  }
+}
+
+ColourEditor.prototype.wheel = function(event, mouse) {
+  //Shift all colours cyclically
+  for (var i = 2; i < this.palette.colours.length-1; i++)
+  {
+    var x = this.palette.colours[i].position;
+    x += 0.01 * event.spin;
+    if (x <= 0) x += 1.0;
+    if (x >= 1.0) x -= 1.0;
+    this.palette.colours[i].position = x;
+    this.changed = true;
+  }
+  this.palette.draw(this.editcanvas, true);
+}
+
 
 /////////////////////////////////////////////////////////////////////////
 //File upload handling

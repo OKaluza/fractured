@@ -1,9 +1,16 @@
-  function Mouse(element, click, move, wheel) {
-    this.element = element;
-    //Custom implementation functions for mouse actions...
+  //Handler class from passed functions
+  function MouseEventHandler(click, move, wheel) {
+    //All these functions should take (event, mouse)
     this.click = click;
     this.move = move;
     this.wheel = wheel;
+  }
+
+  function Mouse(element, handler) {
+    this.element = element;
+    //Custom handler for mouse actions...
+    //requires members: click(event, mouse), move(event, mouse) and wheel(event, mouse)
+    this.handler = handler;
 
     this.isdown = false;
     this.button = null;
@@ -90,7 +97,7 @@
     if (this.mouse.isdown) 
     {
       this.mouse.update(event);
-      this.mouse.click(event);
+      this.mouse.handler.click(event, this.mouse);
       this.mouse.isdown = false;
       this.mouse.button = null;
     }
@@ -105,7 +112,7 @@
     this.mouse.update(event);
     this.mouse.deltaX = this.mouse.absoluteX - this.mouse.lastX;
     this.mouse.deltaY = this.mouse.absoluteY - this.mouse.lastY;
-    this.mouse.move(event);
+    this.mouse.handler.move(event, this.mouse);
 
     if (this.mouse.moveUpdate) {
       //Constant update of last position
@@ -129,10 +136,9 @@
 
     event.spin = nDelta > 0 ? 1 : -1;
 
-    document.mouse.event = event; //Save event
-
     //Set timer for 1/8 sec and accumulate spin
     if (this.mouse.wheelTimer && this.mouse.spin == 0) {
+      document.mouse.event = event; //Save event
       //document.body.style.cursor = "wait";
       //setTimeout('mouseWheelTimout(document.mouse);', 125);
       //setTimeout('mouseWheelTimout(document.mouse);', 50);
@@ -141,7 +147,7 @@
     this.mouse.spin += event.spin;
 
     if (!this.mouse.wheelTimer && this.mouse.spin != 0)
-      this.mouse.wheel(event);
+      this.mouse.handler.wheel(event, this.mouse);
 
     if ( event.preventDefault ) event.preventDefault();  // Mozilla FireFox
     event.returnValue = false;  // cancel default action
@@ -153,7 +159,7 @@
     mouse.event.spin = mouse.spin;
     mouse.spin = 0;
     //Call implementation handler if changed..
-    if (mouse.event.spin != 0) mouse.wheel(mouse.event);
+    if (mouse.event.spin != 0) mouse.handler.wheel(mouse.event, mouse);
   }
 
 
