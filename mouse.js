@@ -142,7 +142,7 @@
       //document.body.style.cursor = "wait";
       //setTimeout('mouseWheelTimout(document.mouse);', 125);
       //setTimeout('mouseWheelTimout(document.mouse);', 50);
-      setTimeout('mouseWheelTimout(document.mouse);', 25);
+      setTimeout('mouseWheelTimout(document.mouse);', 50);
     }
     this.mouse.spin += event.spin;
 

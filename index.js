@@ -10,6 +10,8 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
 var autosize = true;
 var showparams = true;
 
+var formulae = {};
+
   function pageStart() {
     //Default editor line offset
     formulaOffsets[""] = 1;
@@ -24,57 +26,56 @@ var showparams = true;
     sources["shaders/complex-math.frag"] = "";
     sources["shaders/shader2d.vert"] = "";
 
-    sources["formulae/base.frac"] = "";
+    //Base parameters for all formulae defined in here
+    sources["formulae/base.base.formula"] = "";
 
-    function addFractalFormula(name, label) {
-      sources["formulae/" + name + ".frac"] = "";
-      labels[name] = label;
-      select = $("fractal_formula");
-      select.options[select.length] = new Option(label, name);
-    }
-    function addTransformFormula(name, label) {
-      sources["formulae/" + name + ".transform.frac"] = "";
-      labels[name] = label;
-      select = $("transform_formula");
-      select.options[select.length] = new Option(label, name);
-    }
-    function addColourFormula(name, label) {
-      sources["formulae/" + name + ".colour.frac"] = "";
-      labels[name] = label;
-      select = $("outside_colour_formula");
-      select.options[select.length] = new Option(label, name);
-      select = $("inside_colour_formula");
-      select.options[select.length] = new Option(label, name);
-    }
+    formulae["fractal"] = ["Mandelbrot", "Burning Ship", "Magnet 1", "Magnet 2", "Magnet 3", 
+                           "Nova", "Novabs", "Cactus", "Phoenix", "Stretch", "GM", "GMM", "Quadra"];
+    formulae["transform"] = ["Functions", "Fractured"];
+    formulae["colour"] = ["Default", "Smooth", "Exponential Smoothing", "Triangle Inequality", 
+                          "Orbit Traps", "Gaussian Integers", "Hot and Cold"];
 
-    addFractalFormula("mandelbrot", "Mandelbrot");
-    addFractalFormula("burningship", "Burning Ship");
-    addFractalFormula("magnet1", "Magnet 1");
-    addFractalFormula("magnet2", "Magnet 2");
-    addFractalFormula("magnet3", "Magnet 3");
-    addFractalFormula("nova", "Nova");
-    addFractalFormula("novabs", "Novabs");
-    addFractalFormula("cactus", "Cactus");
-    addFractalFormula("phoenix", "Phoenix");
-    addFractalFormula("stretch", "Stretch");
-    addFractalFormula("gm", "GM");
-    addFractalFormula("gmm", "GMM");
-    addFractalFormula("quadra", "Quadra");
-
-    addTransformFormula("functions", "Functions");
-    addTransformFormula("fractured", "Fractured");
-
-    addColourFormula("default", "Default");
-    addColourFormula("smooth", "Smooth");
-    addColourFormula("exp_smooth", "Exponential Smoothing");
-    addColourFormula("triangle_inequality", "Triangle Inequality");
-    addColourFormula("orbit_traps", "Orbit Traps");
-    addColourFormula("gaussian_integers", "Gaussian Integers");
-    addColourFormula("hot_cold", "Hot & Cold");
+    for (type in formulae)
+      reloadFormulae(type);
 
     loadSources();
 
     showPanel(document.getElementById('tab1'), 'panel1');   //Show first tab
+  }
+
+  function reloadFormulae(type) {
+    for (i in formulae[type])
+      addFormula(type, formulae[type][i]);
+  }
+
+  function getNameFromLabel(label) {
+    if (!label) return undefined;
+    var name = label.replace(/[^\w]+/g,'_').toLowerCase();
+    if (labels[name] != undefined) {
+      alert("Formula: " + name + " already exists!");
+      return undefined;
+    }
+    return name;
+  }
+
+  function addToSelect(type, name, label) {
+    select = $(type + "_formula");
+    select.options[select.length] = new Option(label, name);
+  }
+
+  function addFormula(type, label) {
+    var name = getNameFromLabel(label);
+    if (!labels[name]) {
+      //Source not yet loaded
+      sources["formulae/" + name + "." + type + ".formula"] = "";
+      labels[name] = label;
+    }
+    if (type.indexOf("colour") > -1) {
+      addToSelect("outside_colour", name, label);
+      addToSelect("inside_colour", name, label);
+    } else
+      addToSelect(type, name, label);
+    return name;
   }
 
   function loadSources() {
@@ -105,6 +106,7 @@ var showparams = true;
 
     //Fractal canvas event handling
     canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseMove, canvasMouseWheel));
+    canvas.mouse.wheelTimer = true;
     defaultMouse = document.mouse = canvas.mouse;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
@@ -147,8 +149,39 @@ var rztimeout = undefined;
   }
 
 /////////////////////////////////////////////////////////////////////////
+//Save/load in local storage
+function supports_html5_storage() {
+  try {
+    return 'localStorage' in window && window['localStorage'] !== null;
+  } catch (e) {
+    return false;
+  }
+}
+
+function saveState(source) {
+  if (!supports_html5_storage()) return;
+  localStorage["fractured.current.fractal"] = source;
+}
+
+function loadState() {
+  if (!supports_html5_storage()) return;
+  fractal.load(localStorage["fractured.current.fractal"]);
+}
+
+function savePaletteLocal(source) {
+  if (!supports_html5_storage()) return;
+  localStorage["fractured.current.palette"] = source;
+}
+
+function loadPaletteLocal() {
+  if (!supports_html5_storage()) return;
+  colours.read(localStorage["fractured.current.palette"]);
+}
+
+
+/////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = new Array('panel1', 'panel2', 'panel3', 'panel4', 'panel5');
+  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
   var selectedTab = null;
   function showPanel(tab, name)
   {
