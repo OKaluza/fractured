@@ -467,16 +467,79 @@
   }
 
   Fractal.prototype.formulaFilename = function(type) {
-    var extension = ".frac";
-    if (type == "transform") extension = ".transform.frac";
-    if (type.indexOf("colour") > -1) extension = ".colour.frac";
-    return "formulae/" + this.formula[type] + extension;
+    var ext = type;
+    if (type.indexOf("colour") > -1) ext = "colour";
+    return "formulae/" + this.formula[type] + "." + ext + ".formula";
   }
 
   Fractal.prototype.editFormula = function(type) {
     if (this.formula[type] != "none")
       openEditor(type);
       //openEditor(this.formulaFilename(type));
+  }
+
+  Fractal.prototype.newFormula = function(select) {
+    var type = select;
+    if (type == 'inside_colour' || type == 'outside_colour')
+      type = 'colour';
+
+    var label = prompt("Please enter name for new " + type + " formula", "");
+    if (!label) return;
+
+    //Add the formula
+    formulae[type].push(label);
+
+    var name = addFormula(type, formulae[type][formulae[type].length-1]);
+
+    //Template, default source
+    var def;
+    if (type == 'fractal')
+      def = sources["formulae/mandelbrot.fractal.formula"];
+    else if (type == 'transform')
+      def = sources["formulae/functions.transform.formula"];
+    else
+      def = sources["formulae/default.colour.formula"];
+
+    //alert(select + '_formula' + " ==> " + $(select + '_formula').value + " == " + this.formula[select])
+    sources["formulae/" + name + "." + type + ".formula"] = def;
+
+    this.formula[select] = name;
+    $(select + '_formula').value = this.formula[select];
+    this.editFormula(select);
+  }
+
+  Fractal.prototype.deleteFormula = function(select) {
+    //formulae[type].splice(label);
+    var type = select;
+    if (type == 'inside_colour' || type == 'outside_colour')
+      type = 'colour';
+
+    var sel = $(select + '_formula');
+    sel.options = []; //Clear all
+    //formulae[type][];
+    reloadFormulae(type);
+
+/*
+
+    sources[this.formulaFilename(select)] = null;
+    labels[this.formula[select]] = null;
+    sel.options[sel.selectedIndex] = null;
+    this.selectFormula(select, sel.options[0].value);
+    //inside/outside?
+    if (select.indexOf("colour") > -1) {
+      if (select == 'outside_colour_formula') {
+        var insel = $('inside_colour_formula');
+        insel.options[sel.selectedIndex] = null;
+        if (insel.options[insel.selectedIndex+1] == null)
+          this.selectFormula('inside_colour', insel.options[0].value);
+      } else if (select == 'inside_colour_formula') {
+        var outsel = $('outside_colour_formula');
+        outsel.options[sel.selectedIndex-1] = null;
+        if (outsel.options[outsel.selectedIndex] == null)
+          this.selectFormula('outside_colour', outsel.options[0].value);
+      }
+    }
+*/
   }
 
   Fractal.prototype.selectFormula = function(type, name) {
@@ -602,6 +665,7 @@
     code += "\n[palette]\n" + colours.palette;
     function fileSaved() {window.open("saved.fractal");}
     ajaxWriteFile("saved.fractal", code, fileSaved);
+    //saveState(code);
   }
 
   Fractal.prototype.loadPalette = function(source) {
@@ -628,6 +692,10 @@
     //3. Load code for each selected formula (including "base")
     //4. For each formula, load formula params into params[formula]
     //5. Load palette
+    //Name change fixes... TODO: run a sed script on all fractals then remove these lines
+    source = source.replace(/exp_smooth/g, "exponential_smoothing");
+    source = source.replace(/magnet(\d)/g, "magnet_$1");
+    source = source.replace(/burningship/g, "burning_ship");
     var lines = source.split("\n"); // split on newlines
     var section = "";
 
@@ -671,7 +739,7 @@
       if (collect) {
         buffer += lines[i] + "\n";
         continue;
-      }this.params["base"]["inrepeat"]
+      }
       if (!line) continue;
 
       if (section == "fractal") {
@@ -726,10 +794,10 @@
       if (name == "Mandelbrot") return "mandelbrot";
       if (name == "Nova") return "nova";
       if (name == "Nova BS" || name == "NovaBS") return "novabs";
-      if (name.indexOf("Burning") == 0) return "burningship";
-      if (name == "Magnet2") return "magnet2";
-      if (name == "Magnet3") return "magnet3";
-      if (name.indexOf("Magnet") == 0) return "magnet1";
+      if (name.indexOf("Burning") == 0) return "burning_ship";
+      if (name == "Magnet2") return "magnet_2";
+      if (name == "Magnet3") return "magnet_3";
+      if (name.indexOf("Magnet") == 0) return "magnet_1";
       if (name == "Cactus") return "cactus";
       if (name == "Phoenix") return "phoenix";
       if (name == "Stretched") return "stretch";
@@ -738,7 +806,7 @@
       //Colour formulae
       if (name == "Default") return "default";
       if (name.indexOf("Smooth") == 0) return "smooth";
-      if (name.indexOf("Exp") == 0) return "exp_smooth";
+      if (name.indexOf("Exp") == 0) return "exponential_smoothing";
       if (name == "Triangle Inequality") return "triangle_inequality";
       if (name == "Orbit Traps") return "orbit_traps";
       if (name == "Gaussian Integers") return "gaussian_integers";

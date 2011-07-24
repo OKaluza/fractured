@@ -202,7 +202,7 @@
   }
 
   Colour.prototype.rgbaGL = function() {
-    var arr = new Array(this.red/255.0, this.green/255.0, this.blue/255.0, this.alpha);
+    var arr = [this.red/255.0, this.green/255.0, this.blue/255.0, this.alpha];
     return new Float32Array(arr);
   }
 
@@ -212,7 +212,7 @@
   }
 
   Colour.prototype.rgba = function() {
-    var rgba = new Array(this.red, this.green, this.blue, this.alpha);
+    var rgba = [this.red, this.green, this.blue, this.alpha];
     return rgba;
   }
 
