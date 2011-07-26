@@ -17,7 +17,7 @@ function ajaxWriteFile(filename, data, callback) {
       if (http.status == 200)
         callback(http.responseText); //Supply response to callback fn
       else
-        alert("Error: returned status code " + http.status + " " + http.statusText);
+        consoleWrite("Ajax Write File Error: returned status code " + http.status + " " + http.statusText);
   }
   http.send(params);
 }
@@ -35,7 +35,7 @@ function ajaxReadFile(filename, callback)
         if (callback)
           callback(filename, http.responseText);
       } else  
-        alert("Error: returned status code " + http.status + " " + http.statusText);
+        consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
   } 
   //Add date to url to prevent caching
   var d = new Date();

@@ -40,7 +40,8 @@
           <li><a id="hide" href="javascript:toggleParams();">&uarr;</a></li> 
           <li><a id="show" style="display:none" href="javascript:toggleParams();">&darr;</a></li> 
           <li><a href="javascript:fractal.applyChanges();">Draw</a></li> 
-          <li><a href="javascript:fractal.save();">Save</a></li> 
+          <li><a href="javascript:fractal.save(false);">Export</a></li> 
+          <li><a href="javascript:fractal.save(true);">Save</a></li> 
           <li><a href="javascript:loadState();">Load</a></li> 
           <!--input type="button" value="Save Image"  onClick="saveImage()"-->
           <li><a href="/about">About</a></li> 
@@ -69,7 +70,8 @@
         <div id="formscroll" onmousedown="handleFormMouseDown(event)">
           <form name="inputs" class="formbox">
             <div class="row">
-              <span class="label">Size (Auto:<input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);">)</span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
+              <span class="label">Size (<label for="autosize">Auto:</label><input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);">)
+</span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
             </div>
 
             <div class="row">
@@ -89,8 +91,14 @@
             </div>
             <div class="row">
               <span class="label"></span>
-              <span class="field"><input type="checkbox" id="julia" checked="unchecked">Julia</span>
-              <span class="field"><input type="checkbox" id="perturb" checked="unchecked">Perturb</span>
+              <span class="field">
+                <input type="checkbox" id="julia" checked="unchecked">
+                <label for="julia">Julia</label>
+              </span>
+              <span class="field">
+                &nbsp; <input type="checkbox" id="perturb" checked="unchecked">
+                <label for="perturb">Perturb</label>
+              </span>
             </div>
 
             <div class="clear"></div>
@@ -140,7 +148,6 @@
         <div class="label">Outside Colour</div>
         <div class="field">
           <select id="outside_colour_formula" onchange="fractal.selectFormula('outside_colour', this.value)">
-            <option value="none"></option>
           </select>
           <div class="right">
             <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
@@ -151,8 +158,6 @@
         <div class="label">Inside Colour</div>
         <div class="field">
           <select id="inside_colour_formula" onchange="fractal.selectFormula('inside_colour', this.value)">
-            <option value="none"></option>
-            <option value="same">As above</option>
           </select>
           <div class="right">
             <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
@@ -161,6 +166,12 @@
           </div>
         </div>
 
+        <hr>
+            <input type="button" value="Save Formula State" onclick="saveFormulae();">
+            <input type="button" value="Load Formula State" onclick="loadFormulae();">
+            <input type="button" value="Reset Formula State" onclick="resetFormulae();">
+            <select id="stored" onchange="alert(this.value)">
+            </select>
         <hr>
             <div class="row">
               <div class="label">Left-click Action</div>
