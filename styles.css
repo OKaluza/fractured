@@ -11,9 +11,10 @@ html, body {
 /* Data entry form layout */
 form.formbox {padding: 5px;}
 div.row      {clear: both; }
-div.row span.label   {display: inline; float: left; width: 124px; text-align: right; margin: 3px}
+div.row span.label   {display: inline; float: left; width: 124px; text-align: right; margin: 3px; }
 div.row span.field   {display: inline; float: left; text-align: left; margin: 0px} 
 .formbox textarea    {width: 100%}
+input[type=checkbox] {position: relative; top: 2px;} /* Hack to stop checkboxes floating above text */
 
 /* Floating divs */
 .left       {float: left}

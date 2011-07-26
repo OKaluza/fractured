@@ -359,7 +359,9 @@
 
       var label = document.createElement("span");
       label.className = "label";
-      label.appendChild(label.ownerDocument.createTextNode(this[key].label));
+      //Label text, skip for checkbox, has own label element
+      if (this[key].typeid >= 0)
+        label.appendChild(label.ownerDocument.createTextNode(this[key].label));
 
       var spanin = document.createElement("span");
       spanin.className = "field";
@@ -380,6 +382,11 @@
           input.type = "checkbox";
           input.checked = this[key].value;
           spanin.appendChild(input);
+          //Checkbox label
+          var lab = document.createElement("label");
+          lab.setAttribute("for", key);
+          lab.appendChild(lab.ownerDocument.createTextNode(this[key].label));
+          spanin.appendChild(lab);
           break;
         case 0: //Integer
         case 1: //real
@@ -467,9 +474,7 @@
   }
 
   Fractal.prototype.formulaFilename = function(type) {
-    var ext = type;
-    if (type.indexOf("colour") > -1) ext = "colour";
-    return "formulae/" + this.formula[type] + "." + ext + ".formula";
+    return formulaFilename(type, this.formula[type]);
   }
 
   Fractal.prototype.editFormula = function(type) {
@@ -631,7 +636,7 @@
   }
 
   //Save fractal (write param/source file)
-  Fractal.prototype.save = function() {
+  Fractal.prototype.save = function(local) {
     code = "[fractal]\n" + this + "\n"; 
     code += "\n[params.base]\n" + this.params["base"];
     var types;
@@ -652,9 +657,12 @@
       }
     }
     code += "\n[palette]\n" + colours.palette;
-    function fileSaved() {window.open("saved.fractal");}
-    ajaxWriteFile("saved.fractal", code, fileSaved);
-    //saveState(code);
+    if (local)
+      saveState(code);
+    else {
+      function fileSaved() {window.open("saved.fractal");}
+      ajaxWriteFile("saved.fractal", code, fileSaved);
+    }
   }
 
   Fractal.prototype.loadPalette = function(source) {
