@@ -54,15 +54,15 @@
 
       <nav id="tabs">
         <ul>
-        <li onmousedown="return event.returnValue = showPanel(this, 'panel1');" id="tab1" >Parameters</li>
-        <li onmousedown="return event.returnValue = showPanel(this, 'panel2');" >Formula</li>
-        <li onmousedown="return event.returnValue = showPanel(this, 'panel3');" >Palette</li>
-        <li onmousedown="return event.returnValue = showPanel(this, 'panel4');" >Console</li>
-        <li onmousedown="return event.returnValue = showPanel(this, 'panel5');" >Images</li>
+        <li onmousedown="showPanel(this, 'panel1');" id="tab1" >Parameters</li>
+        <li onmousedown="showPanel(this, 'panel2');" class="gradient">Formula</li>
+        <li onmousedown="showPanel(this, 'panel3');" class="gradient">Palette</li>
+        <li onmousedown="showPanel(this, 'panel4');" class="gradient">Console</li>
+        <li onmousedown="showPanel(this, 'panel5');" class="gradient">Images</li>
         </ul>
       </nav>
 
-      <div class="panel" id="panel1" style="display: block">
+      <div class="panel" id="panel1" class="gradient" style="display: block">
 
         <!--hr-->
 

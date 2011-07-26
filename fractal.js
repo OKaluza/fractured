@@ -487,9 +487,7 @@
     if (!label) return;
 
     //Add the formula
-    formulae[type].push(label);
-
-    var name = addFormula(type, formulae[type][formulae[type].length-1]);
+    var name = addFormula(type, label);
 
     //Template, default source
     var def;
@@ -509,37 +507,28 @@
   }
 
   Fractal.prototype.deleteFormula = function(select) {
-    //formulae[type].splice(label);
-    var type = select;
-    if (type == 'inside_colour' || type == 'outside_colour')
-      type = 'colour';
-
     var sel = $(select + '_formula');
-    sel.options = []; //Clear all
-    //formulae[type][];
-    reloadFormulae(type);
-
-/*
-
-    sources[this.formulaFilename(select)] = null;
-    labels[this.formula[select]] = null;
-    sel.options[sel.selectedIndex] = null;
-    this.selectFormula(select, sel.options[0].value);
+    var selidx = sel.selectedIndex;
     //inside/outside?
     if (select.indexOf("colour") > -1) {
-      if (select == 'outside_colour_formula') {
+      if (select == 'outside_colour') {
+        if (selidx < 1) return;
         var insel = $('inside_colour_formula');
-        insel.options[sel.selectedIndex] = null;
+        insel.options.remove(selidx+1);
         if (insel.options[insel.selectedIndex+1] == null)
           this.selectFormula('inside_colour', insel.options[0].value);
-      } else if (select == 'inside_colour_formula') {
+      } else if (select == 'inside_colour') {
+        if (selidx < 2) return;
         var outsel = $('outside_colour_formula');
-        outsel.options[sel.selectedIndex-1] = null;
+        outsel.options.remove(selidx-1);
         if (outsel.options[outsel.selectedIndex] == null)
           this.selectFormula('outside_colour', outsel.options[0].value);
       }
     }
-*/
+    sel.remove(selidx);
+    this.selectFormula(select, sel.options[0].value);
+    sources[this.formulaFilename(select)] = null;
+    labels[this.formula[select]] = null;
   }
 
   Fractal.prototype.selectFormula = function(type, name) {

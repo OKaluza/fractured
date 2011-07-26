@@ -10,8 +10,6 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
 var autosize = true;
 var showparams = true;
 
-var formulae = {};
-
   function pageStart() {
     //Default editor line offset
     formulaOffsets[""] = 1;
@@ -29,23 +27,22 @@ var formulae = {};
     //Base parameters for all formulae defined in here
     sources["formulae/base.base.formula"] = "";
 
+    //Standard formulae library
+    var formulae = {};
     formulae["fractal"] = ["Mandelbrot", "Burning Ship", "Magnet 1", "Magnet 2", "Magnet 3", 
                            "Nova", "Novabs", "Cactus", "Phoenix", "Stretch", "GM", "GMM", "Quadra"];
     formulae["transform"] = ["Functions", "Fractured"];
     formulae["colour"] = ["Default", "Smooth", "Exponential Smoothing", "Triangle Inequality", 
                           "Orbit Traps", "Gaussian Integers", "Hot and Cold"];
-
+    //Load the lists
     for (type in formulae)
-      reloadFormulae(type);
+      for (i in formulae[type])
+        addFormula(type, formulae[type][i]);
 
+    //Load the content from files
     loadSources();
 
     showPanel(document.getElementById('tab1'), 'panel1');   //Show first tab
-  }
-
-  function reloadFormulae(type) {
-    for (i in formulae[type])
-      addFormula(type, formulae[type][i]);
   }
 
   function getNameFromLabel(label) {
@@ -187,10 +184,12 @@ function loadPaletteLocal() {
   {
     if (selectedTab) 
     {
-      selectedTab.style.backgroundColor = '';
       selectedTab.style.paddingTop = '';
+      selectedTab.className = 'gradient';
+      selectedTab.style.backgroundColor = '';
     }
     selectedTab = tab;
+      selectedTab.className = '';
     selectedTab.style.backgroundColor = '#e9e4cc';
     selectedTab.style.paddingTop = '2px';
     for(i = 0; i < panels.length; i++)
