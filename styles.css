@@ -10,11 +10,20 @@ html, body {
 
 /* Data entry form layout */
 form.formbox {padding: 5px;}
-div.row      {clear: both; }
-div.row span.label   {display: inline; float: left; width: 124px; text-align: right; margin: 3px; }
+div.row      {clear: both;}
+div.row span.label   {display: inline; float: left; width: 124px; text-align: right; margin: 1px 3px; }
 div.row span.field   {display: inline; float: left; text-align: left; margin: 0px} 
 .formbox textarea    {width: 100%}
 input[type=checkbox] {position: relative; top: 2px;} /* Hack to stop checkboxes floating above text */
+input, select{  
+    margin: 1px;  
+    padding: 0px;  
+    font-size: 10pt;
+}
+textarea{width: 98%; height: 98%;}
+input[type="button"] {margin: 0px}
+input[type="number"] {width: 100px;}
+input[type="text"] {width: 100px;}
 
 /* Floating divs */
 .left       {float: left}
@@ -28,23 +37,16 @@ input[type=checkbox] {position: relative; top: 2px;} /* Hack to stop checkboxes 
   color: #777;
 }
 
-textarea{
-  width: 98%;
-  height: 98%;
-}
-
-input[type="number"] {
-  width: 100px;
-}
-
 canvas {
   z-index: 0;
   margin:0px;
   padding:0px;
-  border: solid 1px;
   /*background: rgba(1,1,1,0);*/
   background-image: url("media/bg.png");
+  border:1px solid #000;
   border-radius: 4px;
+    -webkit-border-radius: 4px;  
+    -moz-border-radius: 4px;  
   /*box-shadow: 1px 1px 1px #333;*/
 }
 
@@ -146,18 +148,10 @@ header h2 {
 }
 /* Alpha+black gradient */
 #tabs .gradient {
-  background-image: -webkit-gradient(
-    linear,
-    left bottom,
-    left top,
-    color-stop(0.0, rgba(0,0,0,0.5)),
-    color-stop(0.6, rgba(0,0,0,0.0)),
-  );
-  background-image: -moz-linear-gradient(
-    center bottom,
-    rgba(0,0,0,0.5) 0%,
-    rgba(0,0,0,0.0) 60%
-  );
+  background-image: -webkit-gradient(linear, left bottom, left top,
+    from(rgba(0,0,0,0.5)), color-stop(60%, rgba(0,0,0,0.0)));
+  background-image: -moz-linear-gradient(center bottom, 
+    rgba(0,0,0,0.5), rgba(0,0,0,0.0) 60%);
 }
 
 header nav {
@@ -176,7 +170,8 @@ header nav ul li {
   margin: 0px;
   padding: 0px;
 }
-header nav ul li a {
+header nav ul li a, 
+header nav ul li span {
   background: #ba6033;
   border-radius: 5px;
   display: inline-block;
@@ -187,7 +182,8 @@ header nav ul li a {
   position: relative;
   cursor: pointer;
 }
-header nav ul li a:hover {
+header nav ul li a:hover, 
+header nav ul li span:hover {
   background-color: #fb7d0f;
 }
 

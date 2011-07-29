@@ -1,168 +1,449 @@
-var gl;
-var currentProgram;
-var defaultProgram;
+  function WebGL(canvas) {
+    this.program = null;
+    this.modelView = new ModelView();
 
-  function initGL(canvas) {
     try {
-      gl = canvas.getContext("experimental-webgl", { alpha: true } );
+      this.gl = canvas.getContext("experimental-webgl", { alpha: true } );
 
-      gl.viewportWidth = canvas.width;
-      gl.viewportHeight = canvas.height;
+      this.gl.viewportWidth = canvas.width;
+      this.gl.viewportHeight = canvas.height;
 
       //Create an off-screen render buffer
       //initTextureFramebuffer(canvas.width, canvas.height);
 
-      initBuffers();
+      this.initBuffers();
 
     } catch(e) {
     }
 
-    if (!gl) {
+    if (!this.gl) {
       alert("Could not initialise WebGL, sorry :-(");
     }
   }
 
-  function compileShader(gl, source, type) {
-    var shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      alert(gl.getShaderInfoLog(shader));
+  WebGL.prototype.draw = function() {
+      //Enable this to render frame to texture 
+      //this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, rttFramebuffer);
+
+    //var bg = colours[0].colour.rgbaGL();
+    //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
+    this.gl.clearColor(0, 0, 0, 0);
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+    this.gl.enable(this.gl.BLEND);
+
+    //if (!fractal.julia) {
+      this.gl.viewport(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+    //} else
+    //  this.gl.viewport(50, 50, 200, 200);
+
+    /* This is a test to show transparency bug in webgl:
+    this.gl.clearColor(0.1, 0.1, 0, 0.0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+    return;*/
+
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexPositionBuffer);
+    this.gl.vertexAttribPointer(this.program.vertexPositionAttribute, this.vertexPositionBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+
+    //Rotation & translation matrix
+    this.gl.uniformMatrix4fv(this.program.mvMatrixUniform, false, this.modelView.get());
+
+    //Draw!
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
+
+    return; //Below is to display rendered texture
+/*
+    //Draw result
+    gl.uniform1i(defaultProgram.textureUniform, 0);
+    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    gl.useProgram(defaultProgram);
+
+    //Enable texture coord array
+    gl.enableVertexAttribArray(defaultProgram.textureCoordAttribute);
+
+    //Re-apply rotation & translation matrix
+    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    loadIdentity();
+    //setMatrixUniforms(defaultProgram);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
+    gl.vertexAttribPointer(defaultProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+    gl.vertexAttribPointer(defaultProgram.textureCoordAttribute, textureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    //Draw rendered texture!
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexPositionBuffer.numItems);
+
+    gl.disableVertexAttribArray(defaultProgram.textureCoordAttribute);
+*/
+  }
+
+  WebGL.prototype.compileShader = function(source, type) {
+    var shader = this.gl.createShader(type);
+    this.gl.shaderSource(shader, source);
+    this.gl.compileShader(shader);
+    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+      alert(this.gl.getShaderInfoLog(shader));
       return null;
     }
     return shader;
   }
 
-  function initProgram(program) {
-    //Pass in program, vertex shader, fragment shaders...
+  WebGL.prototype.initProgram = function() {
+    //Pass in vertex shader, fragment shaders...
     var args = arguments;
-    var vertexShaderSource = args[1];
+    var vertexShaderSource = args[0];
 
-    if (gl.isProgram(program))
+    if (this.gl.isProgram(this.program))
     {
       //Clean up previous shader set
-      for (var i=0; i<program.shaders.length; i++)
+      for (var i=0; i<this.program.shaders.length; i++)
       {
-        var shader = program.shaders[i];
-        if (gl.isShader(shader))
+        var shader = this.program.shaders[i];
+        if (this.gl.isShader(shader))
         {
-          gl.detachShader(program, shader);
-          gl.deleteShader(shader);
+          this.gl.detachShader(this.program, shader);
+          this.gl.deleteShader(shader);
         }
       }
     }
     else
-       program = gl.createProgram();
+       this.program = this.gl.createProgram();
 
-    program.shaders = new Array();
+    this.program.shaders = new Array();
 
-    program.shaders.push(compileShader(gl, args[1], gl.VERTEX_SHADER));
-    for (i=2; i<args.length; i++)
-      program.shaders.push(compileShader(gl, args[i], gl.FRAGMENT_SHADER));
+    this.program.shaders.push(this.compileShader(args[0], this.gl.VERTEX_SHADER));
+    for (i=1; i<args.length; i++)
+      this.program.shaders.push(this.compileShader(args[i], this.gl.FRAGMENT_SHADER));
 
-    for (i=0; i<program.shaders.length; i++)
-      gl.attachShader(program, program.shaders[i]);
+    for (i=0; i<this.program.shaders.length; i++)
+      this.gl.attachShader(this.program, this.program.shaders[i]);
 
-    gl.linkProgram(program);
+    this.gl.linkProgram(this.program);
 
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      alert("Could not initialise shaders: " + gl.getProgramInfoLog(program));
+    if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+      alert("Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program));
     }
-    return program;
   }
 
-  //Setup and load uniforms specific the fractal program
-  function fractalProgram(program) {
-    program.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition");
-    gl.enableVertexAttribArray(program.vertexPositionAttribute);
+  //Setup and load uniforms specific to the fractal program
+  WebGL.prototype.setupProgram = function(uniforms) {
+    this.program.vertexPositionAttribute = this.gl.getAttribLocation(this.program, "aVertexPosition");
+    this.gl.enableVertexAttribArray(this.program.vertexPositionAttribute);
+    //this.program.textureCoordAttribute = this.gl.getAttribLocation(this.program, "aTextureCoord");
 
-    //Hard coded (view / palette)
-    program.mvMatrixUniform = gl.getUniformLocation(program, "uMVMatrix");
-    program.paletteUniform = gl.getUniformLocation(program, "palette");
-    program.juliaUniform = gl.getUniformLocation(program, "julia");
-    program.perturbUniform = gl.getUniformLocation(program, "perturb");
-    program.originUniform = gl.getUniformLocation(program, "origin");
-    program.selectedUniform = gl.getUniformLocation(program, "selected");
-    program.dimsUniform = gl.getUniformLocation(program, "dims");
-    program.pixelsizeUniform = gl.getUniformLocation(program, "pixelsize");
-    program.backgroundUniform = gl.getUniformLocation(program, "background");
-    return program;
+    this.program.uniforms = {};
+    for (i in uniforms)
+      this.program.uniforms[uniforms[i]] = this.gl.getUniformLocation(this.program, uniforms[i]);
+    this.program.mvMatrixUniform = this.gl.getUniformLocation(this.program, "uMVMatrix");
   }
 
-  //Setup and load uniforms specific the texture display program
-  function textureProgram(program) {
-    program.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition");
-    gl.enableVertexAttribArray(program.vertexPositionAttribute);
+  WebGL.prototype.initTextureFramebuffer = function(width, height) {
+    this.rttFramebuffer = this.gl.createFramebuffer();
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.rttFramebuffer);
+    this.rttFramebuffer.width = width;
+    this.rttFramebuffer.height = height;
 
-    program.textureCoordAttribute = gl.getAttribLocation(program, "aTextureCoord");
+    this.rttTexture = this.gl.createTexture();
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.rttTexture);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+    //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_NEAREST);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+    //this.gl.generateMipmap(this.gl.TEXTURE_2D);
 
-    program.mvMatrixUniform = gl.getUniformLocation(program, "uMVMatrix");
-    program.textureUniform = gl.getUniformLocation(program, "texture");
-    return program;
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.rttFramebuffer.width, this.rttFramebuffer.height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
+
+    //var renderbuffer = this.gl.createRenderbuffer();
+    //this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, renderbuffer);
+    //this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, this.rttFramebuffer.width, this.rttFramebuffer.height);
+
+    this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.rttTexture, 0);
+    //this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, renderbuffer);
+
+    this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+    //this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
   }
 
-  var rttFramebuffer;
-  var rttTexture;
-  function initTextureFramebuffer(width, height) {
-    rttFramebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-    rttFramebuffer.width = width;
-    rttFramebuffer.height = height;
-
-    rttTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    //gl.generateMipmap(gl.TEXTURE_2D);
-
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, rttFramebuffer.width, rttFramebuffer.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
-    //var renderbuffer = gl.createRenderbuffer();
-    //gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
-    //gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, rttFramebuffer.width, rttFramebuffer.height);
-
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rttTexture, 0);
-    //gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderbuffer);
-
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    //gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  }
-
-
-  function consoleWrite(str) {
-    var console = document.getElementById('console');
-    console.value = str + "\n" + console.value;
-  }
-
-
-  var vertexPositionBuffer;
-  var textureCoordBuffer;
-  function initBuffers() {
+  WebGL.prototype.initBuffers = function() {
     //All output drawn onto a single 2x2 quad
-    vertexPositionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
+    this.vertexPositionBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexPositionBuffer);
     var vertexPositions = [1.0,1.0,  -1.0,1.0,  1.0,-1.0,  -1.0,-1.0];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositions), gl.STATIC_DRAW);
-    vertexPositionBuffer.itemSize = 2;
-    vertexPositionBuffer.numItems = 4;
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertexPositions), this.gl.STATIC_DRAW);
+    this.vertexPositionBuffer.itemSize = 2;
+    this.vertexPositionBuffer.numItems = 4;
 
     //Texture coords for rendered texture
-    textureCoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+    textureCoordBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, textureCoordBuffer);
     var textureCoords = [1.0, 1.0,  0.0, 1.0,  1.0, 0.0,  0.0, 0.0];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-    textureCoordBuffer.itemSize = 2;
-    textureCoordBuffer.numItems = 4;
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(textureCoords), this.gl.STATIC_DRAW);
+    this.textureCoordBuffer.itemSize = 2;
+    this.textureCoordBuffer.numItems = 4;
   }
 
-  function updateTexture(texture) {
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP);
-    gl.bindTexture(gl.TEXTURE_2D, null);
+  WebGL.prototype.updateTexture = function(texture) {
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, texture.image);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, null);
   }
 
+  function ModelView() {
+    this.matrix
+    this.stack = [];
+  }
+
+  ModelView.prototype.get = function() {
+    return new Float32Array(matrix.flatten())
+  }
+
+  ModelView.prototype.push = function(m) {
+    if (m) {
+      this.stack.push(m.dup());
+      matrix = m.dup();
+    } else {
+      stack.push(matrix.dup());
+    }
+  }
+
+  ModelView.prototype.pop = function() {
+    if (stack.length == 0) {
+      throw "Matrix stack underflow";
+    }
+    matrix = stack.pop();
+    return matrix;
+  }
+
+  ModelView.prototype.mult = function(m) {
+    matrix = matrix.x(m);
+  }
+
+  ModelView.prototype.identity = function() {
+    matrix = Matrix.I(4);
+  }
+
+  ModelView.prototype.scale = function(v) {
+    var m = Matrix.Scale($V([v[0], v[1], v[2]])).ensure4x4();
+    this.mult(m);
+  }
+
+  ModelView.prototype.translate = function(v) {
+    var m = Matrix.Translation($V([v[0], v[1], v[2]])).ensure4x4();
+    this.mult(m);
+  }
+
+  ModelView.prototype.createRotationMatrix = function(angle, v) {
+    var arad = angle * Math.PI / 180.0;
+    return Matrix.Rotation(arad, $V([v[0], v[1], v[2]])).ensure4x4();
+  }
+
+  ModelView.prototype.rotate = function(angle,v) {
+    this.mult(this.createRotationMatrix(angle, v));
+  }
+
+  function setMatrixUniforms(gl, program) {
+  }
+
+//From learning webgl?
+// augment Sylvester some
+Matrix.Translation = function (v)
+{
+  if (v.elements.length == 2) {
+    var r = Matrix.I(3);
+    r.elements[2][0] = v.elements[0];
+    r.elements[2][1] = v.elements[1];
+    return r;
+  }
+
+  if (v.elements.length == 3) {
+    var r = Matrix.I(4);
+    r.elements[0][3] = v.elements[0];
+    r.elements[1][3] = v.elements[1];
+    r.elements[2][3] = v.elements[2];
+    return r;
+  }
+
+  throw "Invalid length for Translation";
+}
+
+Matrix.Scale = function (v)
+{
+  if (v.elements.length == 2) {
+    var r = Matrix.I(3);
+    r.elements[0][0] = v.elements[0];
+    r.elements[1][1] = v.elements[1];
+    return r;
+  }
+
+  if (v.elements.length == 3) {
+    var r = Matrix.I(4);
+    r.elements[0][0] = v.elements[0];
+    r.elements[1][1] = v.elements[1];
+    r.elements[2][2] = v.elements[2];
+    return r;
+  }
+
+  throw "Invalid length for Translation";
+}
+
+Matrix.prototype.flatten = function ()
+{
+    var result = [];
+    if (this.elements.length == 0)
+        return [];
+
+
+    for (var j = 0; j < this.elements[0].length; j++)
+        for (var i = 0; i < this.elements.length; i++)
+            result.push(this.elements[i][j]);
+    return result;
+}
+
+Matrix.prototype.ensure4x4 = function()
+{
+    if (this.elements.length == 4 &&
+        this.elements[0].length == 4)
+        return this;
+
+    if (this.elements.length > 4 ||
+        this.elements[0].length > 4)
+        return null;
+
+    for (var i = 0; i < this.elements.length; i++) {
+        for (var j = this.elements[i].length; j < 4; j++) {
+            if (i == j)
+                this.elements[i].push(1);
+            else
+                this.elements[i].push(0);
+        }
+    }
+
+    for (var i = this.elements.length; i < 4; i++) {
+        if (i == 0)
+            this.elements.push([1, 0, 0, 0]);
+        else if (i == 1)
+            this.elements.push([0, 1, 0, 0]);
+        else if (i == 2)
+            this.elements.push([0, 0, 1, 0]);
+        else if (i == 3)
+            this.elements.push([0, 0, 0, 1]);
+    }
+
+    return this;
+};
+
+Matrix.prototype.make3x3 = function()
+{
+    if (this.elements.length != 4 ||
+        this.elements[0].length != 4)
+        return null;
+
+    return Matrix.create([[this.elements[0][0], this.elements[0][1], this.elements[0][2]],
+                          [this.elements[1][0], this.elements[1][1], this.elements[1][2]],
+                          [this.elements[2][0], this.elements[2][1], this.elements[2][2]]]);
+};
+
+Vector.prototype.flatten = function ()
+{
+    return this.elements;
+};
+
+function mht(m) {
+    var s = "";
+    if (m.length == 16) {
+        for (var i = 0; i < 4; i++) {
+            s += "<span style='font-family: monospace'>[" + m[i*4+0].toFixed(4) + "," + m[i*4+1].toFixed(4) + "," + m[i*4+2].toFixed(4) + "," + m[i*4+3].toFixed(4) + "]</span><br>";
+        }
+    } else if (m.length == 9) {
+        for (var i = 0; i < 3; i++) {
+            s += "<span style='font-family: monospace'>[" + m[i*3+0].toFixed(4) + "," + m[i*3+1].toFixed(4) + "," + m[i*3+2].toFixed(4) + "]</font><br>";
+        }
+    } else {
+        return m.toString();
+    }
+    return s;
+}
+
+//
+// gluLookAt
+//
+function makeLookAt(ex, ey, ez,
+                    cx, cy, cz,
+                    ux, uy, uz)
+{
+    var eye = $V([ex, ey, ez]);
+    var center = $V([cx, cy, cz]);
+    var up = $V([ux, uy, uz]);
+
+    var mag;
+
+    var z = eye.subtract(center).toUnitVector();
+    var x = up.cross(z).toUnitVector();
+    var y = z.cross(x).toUnitVector();
+
+    var m = $M([[x.e(1), x.e(2), x.e(3), 0],
+                [y.e(1), y.e(2), y.e(3), 0],
+                [z.e(1), z.e(2), z.e(3), 0],
+                [0, 0, 0, 1]]);
+
+    var t = $M([[1, 0, 0, -ex],
+                [0, 1, 0, -ey],
+                [0, 0, 1, -ez],
+                [0, 0, 0, 1]]);
+    return m.x(t);
+}
+
+//
+// gluPerspective
+//
+function makePerspective(fovy, aspect, znear, zfar)
+{
+    var ymax = znear * Math.tan(fovy * Math.PI / 360.0);
+    var ymin = -ymax;
+    var xmin = ymin * aspect;
+    var xmax = ymax * aspect;
+
+    return makeFrustum(xmin, xmax, ymin, ymax, znear, zfar);
+}
+
+//
+// glFrustum
+//
+function makeFrustum(left, right,
+                     bottom, top,
+                     znear, zfar)
+{
+    var X = 2*znear/(right-left);
+    var Y = 2*znear/(top-bottom);
+    var A = (right+left)/(right-left);
+    var B = (top+bottom)/(top-bottom);
+    var C = -(zfar+znear)/(zfar-znear);
+    var D = -2*zfar*znear/(zfar-znear);
+
+    return $M([[X, 0, A, 0],
+               [0, Y, B, 0],
+               [0, 0, C, D],
+               [0, 0, -1, 0]]);
+}
+
+//
+// glOrtho
+//
+function makeOrtho(left, right, bottom, top, znear, zfar)
+{
+    var tx = - (right + left) / (right - left);
+    var ty = - (top + bottom) / (top - bottom);
+    var tz = - (zfar + znear) / (zfar - znear);
+
+    return $M([[2 / (right - left), 0, 0, tx],
+           [0, 2 / (top - bottom), 0, ty],
+           [0, 0, -2 / (zfar - znear), tz],
+           [0, 0, 0, 1]]);
+}
