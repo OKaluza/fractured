@@ -45,6 +45,7 @@
       this.y = e.clientY + document.body.scrollTop +
                document.documentElement.scrollTop;
     }
+    //Note: screen relative coords are only that are consistent (e.screenX/Y)
 
     //Save doc relative coords
     this.absoluteX = this.x;
@@ -59,15 +60,15 @@
     this.clienty = e.clientY - offset[1];
   }
 
-  /* Get offset of element */
+  // Get offset of element
   function findElementPos(obj) {
    var curleft = curtop = 0;
-    if (obj.offsetParent) {
+    //if (obj.offsetParent) { //Fix for chrome not getting actual object's offset here
       do {
          curleft += obj.offsetLeft;
          curtop += obj.offsetTop;
       } while (obj = obj.offsetParent);
-    }
+    //}
     return [curleft,curtop];
   }
 
