@@ -10,6 +10,11 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
 var autosize = true;
 var showparams = true;
 
+  function consoleWrite(str) {
+    var console = document.getElementById('console');
+    console.value = str + "\n" + console.value;
+  }
+
   function pageStart() {
     //Default editor line offset
     formulaOffsets[""] = 1;
@@ -93,9 +98,8 @@ var showparams = true;
       }
       localStorage["fractured.formulae"] = JSON.stringify(formulae);
     } catch(e) {
-      if (e == QUOTA_EXCEEDED_ERR) {
-        alert('Quota exceeded!'); //data wasn’t successfully saved due to quota exceed so throw an error
-      }
+      //data wasn’t successfully saved due to quota exceed so throw an error
+      alert('Quota exceeded! ' + e);
     }
   }
 
@@ -157,26 +161,27 @@ var showparams = true;
 
   //Once we have source data, app can be initialised
   function appInit() {
-    //Start webGL
-    var canvas = document.getElementById("fractal-canvas");
-    initGL(canvas);
-
     //Fractal canvas event handling
+    var canvas = document.getElementById("fractal-canvas");
     canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseMove, canvasMouseWheel));
     canvas.mouse.wheelTimer = true;
     defaultMouse = document.mouse = canvas.mouse;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
+    window.onresize = autoResize;
+    document.inputs.elements["autosize"].checked = autosize;
+
+    //Init WebGL
+    var webgl = new WebGL(canvas);
+
+    //Create a fractal object
+    fractal = new Fractal(canvas, webgl);
 
     //Colour editing and palette management
     colours = new ColourEditor(sources["default.palette"]);
 
-    //Create a fractal object
-    fractal = new Fractal();
+    //Draw & update
     fractal.applyChanges();
-
-    window.onresize = autoResize;
-    document.inputs.elements["autosize"].checked = autosize;
   }
 
 /////////////////////////////////////////////////////////////////////////
@@ -191,11 +196,19 @@ function supports_html5_storage() {
 
 function saveState(source) {
   if (!supports_html5_storage()) return;
+  for (var s=0; s<100000; s++) {
   var stored_str = localStorage["fractured.fractals"];
   var stored = (stored_str ? parseInt(stored_str) : 0);
   stored++;
-  localStorage["fractured.fractal." + stored] = source;
-  localStorage["fractured.fractals"] = stored;
+  try {
+    localStorage["fractured.fractal." + stored] = source;
+    localStorage["fractured.fractals"] = stored;
+  } catch(e) {
+    //data wasn’t successfully saved due to quota exceed so throw an error
+    alert('Quota exceeded! ' + stored + " ... Local storage length = " + JSON.stringify(localStorage).length);
+      return;
+  }
+  }
 }
 
 function loadState() {
@@ -213,7 +226,6 @@ function loadStateList() {
   var stored_str = localStorage["fractured.fractals"];
   if (stored_str) {
     var stored = parseInt(stored_str);
-    alert(stored);
     for (var i=1; i<=stored; i++)
       $("stored").options[$("stored").length] = new Option(i, localStorage["fractured.fractal." + stored]);
   }
@@ -221,7 +233,12 @@ function loadStateList() {
 
 function savePaletteLocal(source) {
   if (!supports_html5_storage()) return;
-  localStorage["fractured.current.palette"] = source;
+  try {
+    localStorage["fractured.current.palette"] = source;
+  } catch(e) {
+    //data wasn’t successfully saved due to quota exceed so throw an error
+    alert('Quota exceeded! ' + e);
+  }
 }
 
 function loadPaletteLocal() {
@@ -475,7 +492,7 @@ handleFormMouseDown = function(e) {
 function saveColour(val) {colours.save(val);}
 function abortColour() {colours.cancel();}
 
-function ColourEditor(source) {
+function ColourEditor(source, gl) {
   this.inserting = false;
   this.editing = -1;
   this.element = null;
@@ -484,8 +501,7 @@ function ColourEditor(source) {
   this.gradientcanvas = document.getElementById('gradient')
 
   //Load texture data and draw palette
-  this.gradientTexture = gl.createTexture();
-  this.gradientTexture.image = this.gradientcanvas;
+  fractal.gradientTexture.image = this.gradientcanvas;
   //Update palette colours
   this.changed = true;
   this.palette = new Palette(source);
@@ -520,7 +536,7 @@ ColourEditor.prototype.update = function() {
 
   //Update gradient texture
   this.palette.draw(this.gradientcanvas, false);  //WebGL texture size (power of 2)
-  updateTexture(this.gradientTexture);
+  fractal.updateTexture();
 }
 
 ColourEditor.prototype.savePalette = function() {

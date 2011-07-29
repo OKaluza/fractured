@@ -394,6 +394,7 @@
           input.id = key;
           input.name = key;
           input.type = "number";
+          if (this[key].type == 1) input.setAttribute("step", 0.1);
           input.value = this[key].value;
           spanin.appendChild(input);
           break;
@@ -404,6 +405,7 @@
           input.id = key + "_re";
           input.name = input.id;
           input.type = "number";
+          input.setAttribute("step", 0.1);
           input.value = this[key].value.re;
           spanin.appendChild(input);
           //Create second field
@@ -411,6 +413,7 @@
           input.id = key + "_im";
           input.name = input.id;
           input.type = "number";
+          input.setAttribute("step", 0.1);
           input.value = this[key].value.im;
           spanin.appendChild(input);
           break;
@@ -450,9 +453,17 @@
     }
   }
 
-  function Fractal() {
+  function Fractal(canvas, webgl) {
     //Construct a new default fractal object
+    this.canvas = canvas;
+    this.webgl = webgl;
+    this.gl = webgl.gl;
+    this.gradientTexture = this.gl.createTexture();
     this.resetDefaults();
+  }
+
+  Fractal.prototype.updateTexture = function() {
+    this.webgl.updateTexture(this.gradientTexture);
   }
 
   Fractal.prototype.resetDefaults = function() {
@@ -623,8 +634,8 @@
   }
 
   Fractal.prototype.toString = function() {
-    return "width=" + gl.viewportWidth + "\n" +
-           "height=" + gl.viewportHeight + "\n" +
+    return "width=" + this.gl.viewportWidth + "\n" +
+           "height=" + this.gl.viewportHeight + "\n" +
            this.origin +
            "selected=" + this.selected + "\n" +
            "julia=" + this.julia + "\n" +
@@ -689,7 +700,7 @@
     //3. Load code for each selected formula (including "base")
     //4. For each formula, load formula params into params[formula]
     //5. Load palette
-    //Name change fixes... TODO: run a sed script on all fractals then remove these lines
+    //Name change fixes... TODO: run a sed script on all existing saved fractals then can remove these lines
     source = source.replace(/exp_smooth/g, "exponential_smoothing");
     source = source.replace(/magnet(\d)/g, "magnet_$1");
     source = source.replace(/burningship/g, "burning_ship");
@@ -1093,16 +1104,15 @@
     //Update palette
     colours.update();
     //Resize canvas if size settings changed
-    var canvas = document.getElementById('fractal-canvas');
-    this.width = parseInt(document.getElementById("widthInput").value);
-    this.height = parseInt(document.getElementById("heightInput").value);
-    if (this.width != canvas.width || this.height != canvas.height) {
-      canvas.width = this.width;
-      canvas.height = this.height;
-      canvas.setAttribute("width", this.width);
-      canvas.setAttribute("height", this.height);
-      gl.viewportWidth = this.width;
-      gl.viewportHeight = this.height;
+    this.width = this.canvas.width; //parseInt(document.getElementById("widthInput").value);
+    this.height = this.canvas.height; //parseInt(document.getElementById("heightInput").value);
+    if (this.width != this.canvas.width || this.height != this.canvas.height) {
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+      this.canvas.setAttribute("width", this.width);
+      this.canvas.setAttribute("height", this.height);
+      this.gl.viewportWidth = this.width;
+      this.gl.viewportHeight = this.height;
     }
 
     this.julia = document.inputs.elements["julia"].checked ? 1 : 0;
@@ -1192,99 +1202,44 @@
     ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
 
     //Load a default shader setup
-    //defaultProgram = initProgram(defaultProgram, sources("default.vert"), sources("default.frag"));
-    //textureProgram(defaultProgram); //Setup as texture program
+    //this.webgl.initProgram(sources("default.vert"), sources("default.frag"));
+    //this.webgl.setupProgram(["texture"]); //Setup as texture program
 
-    currentProgram = initProgram(currentProgram, vertexShader, fragmentShader);
-    fractalProgram(currentProgram); //Setup as fractal program
+    this.webgl.initProgram(vertexShader, fragmentShader);
+    //Setup uniforms for fractal program
+    var uniforms = ["palette", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
+    this.webgl.setupProgram(uniforms);
   }
 
   Fractal.prototype.draw = function() {
-    gl.useProgram(currentProgram);
+    this.gl.useProgram(this.webgl.program);
 
-      //Enable this to render frame to texture 
-      //gl.bindFramebuffer(gl.FRAMEBUFFER, rttFramebuffer);
-
-    //var bg = colours[0].colour.rgbaGL();
-    //gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
-    gl.clearColor(0, 0, 0, 0);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.enable(gl.BLEND);
-
-    //if (!fractal.julia) {
-      gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    //} else
-    //  gl.viewport(50, 50, 200, 200);
-
-    /* This is a test to show transparency bug in webgl:
-    gl.clearColor(0.1, 0.1, 0, 0.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    return;*/
-
-    loadIdentity();
-
-    var canvas = document.getElementById('fractal-canvas');
-
-    //Apply translation to origin, any rotation and scaling (inverse of zoom factor)
-    mvTranslate([this.origin.re, this.origin.im, 0])
-    mvRotate(this.origin.rotate, [0, 0, -1]);
-    //Apply zoom and flip Y to match old coord system
-    mvScale([1.0/this.origin.zoom, -1.0/this.origin.zoom, 1.0]);
-    //Scaling to preserve fractal aspect ratio
-    if (canvas.width > canvas.height)
-      mvScale([canvas.width / canvas.height, 1.0, 1.0]);  //Scale width
-    else if (canvas.height > canvas.width)
-      mvScale([1.0, canvas.height / canvas.width, 1.0]);  //Scale height
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    gl.vertexAttribPointer(currentProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    //Uniform variables (julia, background, origin, selected, dims, pixel size)
-    gl.uniform1i(currentProgram.juliaUniform, this.julia);
-    gl.uniform1i(currentProgram.perturbUniform, this.perturb);
-    gl.uniform4fv(currentProgram.backgroundUniform, colours.palette.colours[0].colour.rgbaGL());
-    gl.uniform2f(currentProgram.originUniform, this.origin.re, this.origin.im);
-    gl.uniform2f(currentProgram.selectedUniform, this.selected.re, this.selected.im);
-    gl.uniform2f(currentProgram.dimsUniform, canvas.width, canvas.height);
-    gl.uniform1f(currentProgram.pixelsizeUniform, this.origin.pixelSize(canvas));
+    //Uniform variables
+    this.gl.uniform1i(this.webgl.program.uniforms["julia"], this.julia);
+    this.gl.uniform1i(this.webgl.program.uniforms["perturb"], this.perturb);
+    this.gl.uniform4fv(this.webgl.program.uniforms["background"], colours.palette.colours[0].colour.rgbaGL());
+    this.gl.uniform2f(this.webgl.program.uniforms["origin"], this.origin.re, this.origin.im);
+    this.gl.uniform2f(this.webgl.program.uniforms["selected"], this.selected.re, this.selected.im);
+    this.gl.uniform2f(this.webgl.program.uniforms["dims"], this.canvas.width, this.canvas.height);
+    this.gl.uniform1f(this.webgl.program.uniforms["pixelsize"], this.origin.pixelSize(this.canvas));
 
     //Gradient texture
-    gl.bindTexture(gl.TEXTURE_2D, colours.gradientTexture);
-    gl.uniform1i(currentProgram.paletteUniform, 0);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.gradientTexture);
+    this.gl.uniform1i(this.webgl.program.paletteUniform, 0);
 
-    //Rotation & translation matrix
-    setMatrixUniforms(currentProgram);
+    this.webgl.modelView.identity()
 
-    //Draw!
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexPositionBuffer.numItems);
+    //Apply translation to origin, any rotation and scaling (inverse of zoom factor)
+    this.webgl.modelView.translate([this.origin.re, this.origin.im, 0])
+    this.webgl.modelView.rotate(this.origin.rotate, [0, 0, -1]);
+    //Apply zoom and flip Y to match old coord system
+    this.webgl.modelView.scale([1.0/this.origin.zoom, -1.0/this.origin.zoom, 1.0]);
+    //Scaling to preserve fractal aspect ratio
+    if (this.canvas.width > this.canvas.height)
+      this.webgl.modelView.scale([this.canvas.width / this.canvas.height, 1.0, 1.0]);  //Scale width
+    else if (this.canvas.height > this.canvas.width)
+      this.webgl.modelView.scale([1.0, this.canvas.height / this.canvas.width, 1.0]);  //Scale height
 
-    return; //Below is to display rendered texture
-/*
-    //Draw result
-    gl.uniform1i(defaultProgram.textureUniform, 0);
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    gl.useProgram(defaultProgram);
-
-    //Enable texture coord array
-    gl.enableVertexAttribArray(defaultProgram.textureCoordAttribute);
-
-    //Re-apply rotation & translation matrix
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    loadIdentity();
-    //setMatrixUniforms(defaultProgram);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    gl.vertexAttribPointer(defaultProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-    gl.vertexAttribPointer(defaultProgram.textureCoordAttribute, textureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    //Draw rendered texture!
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexPositionBuffer.numItems);
-
-    gl.disableVertexAttribArray(defaultProgram.textureCoordAttribute);
-*/
+    this.webgl.draw();
   }
 

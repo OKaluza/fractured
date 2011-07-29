@@ -14,12 +14,10 @@
 <script type="text/javascript" src="ajax.js"></script>
 <script type="text/javascript" src="mouse.js"></script>
 <script type="text/javascript" src="fractal.js"></script>
-<script type="text/javascript" src="webgl.js"></script>
 <script type="text/javascript" src="colour.js"></script>
 
 <script type="text/javascript" src="sylvester.js"></script>
-<script type="text/javascript" src="glUtils.js"></script>
-<script type="text/javascript" src="matrix.js"></script>
+<script type="text/javascript" src="webgl.js"></script>
 
 </head>
 
@@ -37,13 +35,13 @@
 
       <nav>
         <ul>
-          <li><a id="hide" href="javascript:toggleParams();">&uarr;</a></li> 
-          <li><a id="show" style="display:none" href="javascript:toggleParams();">&darr;</a></li> 
-          <li><a href="javascript:fractal.applyChanges();">Draw</a></li> 
-          <li><a href="javascript:fractal.save(false);">Export</a></li> 
-          <li><a href="javascript:fractal.save(true);">Save</a></li> 
-          <li><a href="javascript:loadState();">Load</a></li> 
-          <!--input type="button" value="Save Image"  onClick="saveImage()"-->
+          <li><span id="hide" onClick="toggleParams();">&uarr;</span></li> 
+          <li><span id="show" style="display:none" onClick="toggleParams();">&darr;</span></li> 
+          <li><span onClick="fractal.applyChanges();">Draw</span></li> 
+          <li><span onClick="fractal.save(false);">Export</span></li> 
+          <li><span onClick="fractal.save(true);">Save</span></li> 
+          <li><span onClick="loadState();">Load</span></li> 
+          <!--li><span onClick="saveImage();">Save Image</span></li--> 
           <li><a href="/about">About</a></li> 
         </ul>
       </nav>
@@ -76,18 +74,18 @@
 
             <div class="row">
               <span class="label">Zoom</span>
-              <span class="field"><input type="number" id="zoomLevel" value="0.5"></span>
+              <span class="field"><input type="number" id="zoomLevel" value="0.5" step="0.01" min="0.00000000001"></span>
               <div class="left"><input type="button" value="Reset" onclick="fractal.resetZoom()"></div>
             </div>
             <div class="row">
               <span class="label">Rotate&#176;</span>
-              <span class="field"><input type="number" id="rotate" value="0.0"></span>
+              <span class="field"><input type="number" id="rotate" value="0.0" min="0" max="360"></span>
             </div>
             <div class="row">
-              <span class="label">Origin</span><span class="field"><input type="number" id="xPosInput" value="0.0"></span><span class="field"><input type="number" id="yPosInput" value="0.0"></span>
+              <span class="label">Origin</span><span class="field"><input type="number" id="xPosInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="yPosInput" value="0.0" step="0.1"></span>
             </div>
             <div class="row">
-              <span class="label">Selected coord</span><span class="field"><input type="number" id="xSelInput" value="0.0"></span><span class="field"><input type="number" id="ySelInput" value="0.0"></span>
+              <span class="label">Selected coord</span><span class="field"><input type="number" id="xSelInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="ySelInput" value="0.0" step="0.1"></span>
             </div>
             <div class="row">
               <span class="label"></span>
