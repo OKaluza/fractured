@@ -478,8 +478,12 @@
     this.compatibility = false;
 
     this.params = {};
-    this.formula = {"base" : "base", "fractal" : "mandelbrot", "transform" : "none",
-                    "outside_colour": "default", "inside_colour": "none"};
+
+    this.formula = {"base" : "base", "fractal" : this.getSelected("fractal"), 
+                    "transform" : this.getSelected("transform"),
+                    "outside_colour": this.getSelected("outside_colour"), 
+                    "inside_colour": this.getSelected("inside_colour")};
+
     //Load parameters for default formula selections
     this.loadParams();
   }
@@ -492,6 +496,13 @@
     if (this.formula[type] != "none")
       openEditor(type);
       //openEditor(this.formulaFilename(type));
+  }
+
+  Fractal.prototype.getSelected = function(type) {
+    var sel = $(type + '_formula');
+    var selidx = sel.selectedIndex;
+    var name = sel.options[selidx].value;
+    return name;
   }
 
   Fractal.prototype.newFormula = function(select) {
@@ -514,10 +525,10 @@
     else
       def = sources["formulae/default.colour.formula"];
 
-    //alert(select + '_formula' + " ==> " + $(select + '_formula').value + " == " + this.formula[select])
     sources["formulae/" + name + "." + type + ".formula"] = def;
 
     this.formula[select] = name;
+      this.selectFormula(select, name);
     $(select + '_formula').value = this.formula[select];
     this.editFormula(select);
   }
@@ -525,6 +536,8 @@
   Fractal.prototype.deleteFormula = function(select) {
     var sel = $(select + '_formula');
     var selidx = sel.selectedIndex;
+    var label = labels[sel.options[selidx].value];
+    if (!label || !confirm('Really delete the "' + label + '" formula?')) return;
     //inside/outside?
     if (select.indexOf("colour") > -1) {
       if (select == 'outside_colour') {
@@ -542,9 +555,10 @@
       }
     }
     sel.remove(selidx);
-    this.selectFormula(select, sel.options[0].value);
     sources[this.formulaFilename(select)] = null;
     labels[this.formula[select]] = null;
+    //Finally, reselect
+    this.selectFormula(select, sel.options[0].value);
   }
 
   Fractal.prototype.selectFormula = function(type, name) {
@@ -582,7 +596,10 @@
       return defines;
     }
     var code = "";
-    if (name != "none") code = sources[this.formulaFilename(type)];
+    if (name != "none") {
+      code = sources[this.formulaFilename(type)];
+      if (!code) alert(type + " - " + name + " has no formula source defined!");
+    }
 
     //Check code for required functions
     var initreg = /void\s*~?init\(\)/g;
@@ -633,23 +650,21 @@
     return code;
   }
 
-  Fractal.prototype.toString = function() {
-    return "width=" + this.gl.viewportWidth + "\n" +
-           "height=" + this.gl.viewportHeight + "\n" +
-           this.origin +
-           "selected=" + this.selected + "\n" +
-           "julia=" + this.julia + "\n" +
-           "perturb=" + this.perturb + "\n" +
-           "fractal=" + this.formula["fractal"] + "\n"  +
-           "transform=" + this.formula["transform"] + "\n"  +
-           "outside_colour=" + this.formula["outside_colour"] + "\n"  +
-           "inside_colour=" + this.formula["inside_colour"];
-  }
-
   //Save fractal (write param/source file)
-  Fractal.prototype.save = function(local) {
-    code = "[fractal]\n" + this + "\n"; 
-    code += "\n[params.base]\n" + this.params["base"];
+  Fractal.prototype.toString = function() {
+    var code = "[fractal]\n" +
+               "width=" + this.gl.viewportWidth + "\n" +
+               "height=" + this.gl.viewportHeight + "\n" +
+               this.origin +
+               "selected=" + this.selected + "\n" +
+               "julia=" + this.julia + "\n" +
+               "perturb=" + this.perturb + "\n" +
+               "fractal=" + this.formula["fractal"] + "\n" +
+               "transform=" + this.formula["transform"] + "\n" +
+               "outside_colour=" + this.formula["outside_colour"] + "\n" +
+               "inside_colour=" + this.formula["inside_colour"] + "\n" +
+               "\n[params.base]\n" + this.params["base"];
+
     var types;
     if (this.formula["outside_colour"] == this.formula["inside_colour"])
       types = ["fractal", "transform", "outside_colour"];
@@ -668,12 +683,7 @@
       }
     }
     code += "\n[palette]\n" + colours.palette;
-    if (local)
-      saveState(code);
-    else {
-      function fileSaved() {window.open("saved.fractal");}
-      ajaxWriteFile("saved.fractal", code, fileSaved);
-    }
+    return code;
   }
 
   Fractal.prototype.loadPalette = function(source) {
@@ -1104,8 +1114,8 @@
     //Update palette
     colours.update();
     //Resize canvas if size settings changed
-    this.width = this.canvas.width; //parseInt(document.getElementById("widthInput").value);
-    this.height = this.canvas.height; //parseInt(document.getElementById("heightInput").value);
+    this.width = parseInt(document.getElementById("widthInput").value);
+    this.height = parseInt(document.getElementById("heightInput").value);
     if (this.width != this.canvas.width || this.height != this.canvas.height) {
       this.canvas.width = this.width;
       this.canvas.height = this.height;

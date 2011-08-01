@@ -38,9 +38,9 @@
           <li><span id="hide" onClick="toggleParams();">&uarr;</span></li> 
           <li><span id="show" style="display:none" onClick="toggleParams();">&darr;</span></li> 
           <li><span onClick="fractal.applyChanges();">Draw</span></li> 
-          <li><span onClick="fractal.save(false);">Export</span></li> 
-          <li><span onClick="fractal.save(true);">Save</span></li> 
-          <li><span onClick="loadState();">Load</span></li> 
+          <li><span onClick="saveFractal(true);">Export</span></li> 
+          <li><span onClick="saveFractal(false);">Save</span></li> 
+          <li><span onClick="loadLastFractal();">Load</span></li> 
           <!--li><span onClick="saveImage();">Save Image</span></li--> 
           <li><a href="/about">About</a></li> 
         </ul>
@@ -57,7 +57,7 @@
         <li onmousedown="showPanel(this, 'panel2');" class="gradient">Formula</li>
         <li onmousedown="showPanel(this, 'panel3');" class="gradient">Palette</li>
         <li onmousedown="showPanel(this, 'panel4');" class="gradient">Console</li>
-        <li onmousedown="showPanel(this, 'panel5');" class="gradient">Images</li>
+        <li onmousedown="showPanel(this, 'panel5');" class="gradient">Saved</li>
         </ul>
       </nav>
 
@@ -67,6 +67,10 @@
 
         <div id="formscroll" onmousedown="handleFormMouseDown(event)">
           <form name="inputs" class="formbox">
+            <div class="row">
+              <span class="label">Name</span>
+              <span class="field"><input type="text" id="namelabel" value="unnamed" style="width: 208px"></span>
+            </div>
             <div class="row">
               <span class="label">Size (<label for="autosize">Auto:</label><input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);">)
 </span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
@@ -117,9 +121,6 @@
       </div>
 
       <div class="panel" id="panel2" style="display: none">
-        File upload:<br>
-        <input name="file" type="file"onchange="filesProcess(this.files, loadFile)"><br>
-
         <div class="label">Fractal</div>
         <div class="field">
           <select id="fractal_formula" onchange="fractal.selectFormula('fractal', this.value)">
@@ -165,28 +166,8 @@
         </div>
 
         <hr>
-            <input type="button" value="Save Formula State" onclick="saveFormulae();">
-            <input type="button" value="Load Formula State" onclick="loadFormulae();">
-            <input type="button" value="Reset Formula State" onclick="resetFormulae();">
-            <select id="stored" onchange="alert(this.value)">
-            </select>
-        <hr>
-            <div class="row">
-              <div class="label">Left-click Action</div>
-              <div class="field">
-                <select id="left_click" onchange="alert(this.value)">
-                <option value="none">Set Origin</option>
-                </select>
-              </div>
-              <div class="label">Wheel Action</div>
-              <div class="field">
-                <select id="right_click" onchange="alert(this.value)">
-                <option value="none">Zoom</option>
-                </select>
-              </div>
-            </div>
-
-
+          File upload:<br>
+          <input name="file" type="file"onchange="filesProcess(this.files, loadFile)"><br>
       </div>
 
       <div class="panel" id="panel3" style="display: none">
@@ -212,6 +193,27 @@
       </div>
 
       <div class="panel" id="panel5" style="display: none">
+        <input type="button" value="Save State" onclick="saveState();">
+        <input type="button" value="Load State" onclick="loadState();">
+        <input type="button" value="Reset State" onclick="resetState();">
+        <select id="stored" onchange="fractal.load(this.value)">
+        </select>
+        <hr>
+          <div class="row">
+            <div class="label">Left-click Action</div>
+            <div class="field">
+              <select id="left_click" onchange="alert(this.value)">
+              <option value="none">Set Origin</option>
+              </select>
+            </div>
+            <div class="label">Wheel Action</div>
+            <div class="field">
+              <select id="right_click" onchange="alert(this.value)">
+              <option value="none">Zoom</option>
+              </select>
+            </div>
+          </div>
+        <hr>
         <div id="image"></div>
       </div>
 

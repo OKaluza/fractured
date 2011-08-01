@@ -9,6 +9,7 @@ var labels = {};
 var formulaOffsets = {}; //line numbering offset counts for each formula
 var autosize = true;
 var showparams = true;
+var hasChanged = false;
 
   function consoleWrite(str) {
     var console = document.getElementById('console');
@@ -32,10 +33,8 @@ var showparams = true;
     //Base parameters for all formulae defined in here
     sources["formulae/base.base.formula"] = "";
 
-    //Load the lists
-    loadFormulae();
-
-    loadStateList(); //Saved fractals...
+    //Load the last program state
+    loadState();
 
     //Load the content from files
     loadSources();
@@ -43,21 +42,121 @@ var showparams = true;
     showPanel(document.getElementById('tab1'), 'panel1');   //Show first tab
   }
 
-  function resetFormulae() {
-      localStorage.clear(); //be careful as this will clear the entire database for that user
-    //localStorage.removeItem("fractured.formulae");
-    loadFormulae();
+  function loadSources() {
+    //Load a from list of remaining source files
+    for (filename in sources)
+      if (!sources[filename]) ajaxReadFile(filename, saveSource);
   }
 
-  function loadFormulae() {
+  //Source file loaded
+  function saveSource(filename, data){
+    sources[filename] = data; //Save content
+    var remain = 0;
+    for (filename in sources)
+      if (sources[filename].length == 0) remain++;
+
+    if (remain == 0)
+      appInit();  //All data loaded, call init
+  }
+
+  //Once we have source data, app can be initialised
+  function appInit() {
+    //Fractal canvas event handling
+    var canvas = document.getElementById("fractal-canvas");
+    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseMove, canvasMouseWheel));
+    canvas.mouse.wheelTimer = true;
+    defaultMouse = document.mouse = canvas.mouse;
+    document.onmouseup = handleMouseUp;
+    document.onmousemove = handleMouseMove;
+    document.inputs.elements["autosize"].checked = autosize;
+    window.onresize = autoResize;
+    window.onbeforeunload = beforeUnload;
+
+    //Init WebGL
+    var webgl = new WebGL(canvas);
+
+    //Create a fractal object
+    fractal = new Fractal(canvas, webgl);
+
+    //Colour editing and palette management
+    colours = new ColourEditor(sources["default.palette"]);
+
+    //Draw & update
+    loadLastFractal();  //Restore last if any
+    fractal.applyChanges();
+  }
+
+/////////////////////////////////////////////////////////////////////////
+//Save/load in local storage
+  function supports_html5_storage() {
+    try {
+      return 'localStorage' in window && window['localStorage'] !== null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function saveFractal(toExport) {
+    source = fractal + "";
+    if (toExport) {
+      function fileSaved() {window.open("saved.fractal");}
+      ajaxWriteFile("saved.fractal", source, fileSaved);
+    } else {
+      //Save current fractal to list (TODO: use name)
+      if (!supports_html5_storage()) return;
+      var namestr = document.getElementById("namelabel").value;
+      var stored_str = localStorage["fractured.fractals"];
+      var stored = (stored_str ? parseInt(stored_str) : 0);
+      stored++;
+      try {
+        localStorage["fractured.names." + stored] = namestr;
+        localStorage["fractured.fractal." + stored] = source;
+        localStorage["fractured.fractals"] = stored;
+      } catch(e) {
+        //data wasn’t successfully saved due to quota exceed so throw an error
+        alert('Quota exceeded! ' + e);
+        //alert('Quota exceeded! ' + stored + " ... Local storage length = " + JSON.stringify(localStorage).length);
+      }
+    }
+  }
+
+  function savePaletteLocal(source) {
+    if (!supports_html5_storage()) return;
+    try {
+      localStorage["fractured.current.palette"] = source;
+    } catch(e) {
+      //data wasn’t successfully saved due to quota exceed so throw an error
+      alert('Quota exceeded! ' + e);
+    }
+  }
+
+  function loadPaletteLocal() {
+    if (!supports_html5_storage()) return;
+    colours.read(localStorage["fractured.current.palette"]);
+  }
+
+  function resetState() {
+      localStorage.clear(); //be careful as this will clear the entire database
+    //localStorage.removeItem("fractured.formulae");
+    loadState();
+  }
+
+  function loadState() {
     //Load formulae from local storage (or defaults from server if not found)
     var formulae;
-    var f_source = localStorage["fractured.formulae"];
-    if (f_source)
+    var selected;
+    var f_source;
+    if (supports_html5_storage()) f_source = localStorage["fractured.formulae"];
+    if (f_source) {
        formulae = JSON.parse(f_source);
-    else
+       selected = JSON.parse(localStorage["fractured.selected"]);
+    } else {
        //Standard formulae library
        formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
+
+       selected = {"base" : "base", "fractal" : "mandelbrot", "transform" : "none",
+                    "outside_colour": "default", "inside_colour": "none"};
+    }
 
     labels = {};
     $("fractal_formula").options.length = 0;
@@ -77,9 +176,39 @@ var showparams = true;
           sources[filename] = localStorage[filename];
       }
     }
+    //Set selected defaults
+    $('fractal_formula').value = selected['fractal'];
+    $('transform_formula').value = selected['transform'];
+    $('outside_colour_formula').value = selected['outside_colour'];
+    $('inside_colour_formula').value = selected['inside_colour'];
+
+    //Get list of saved fractals
+    if (!supports_html5_storage()) return;
+    var stored_str = localStorage["fractured.fractals"];
+    if (stored_str) {
+      var stored = parseInt(stored_str);
+      for (var i=1; i<=stored; i++) {
+        var namestr = localStorage["fractured.names." + i];
+        if (!namestr) namestr = "unnamed";
+        $("stored").options[$("stored").length] = new Option(namestr, localStorage["fractured.fractal." + i]);
+      }
+    }
   }
 
-  function saveFormulae() {
+  function loadLastFractal() {
+    //Load most recent fractal
+    if (!supports_html5_storage()) return;
+    var stored_str = localStorage["fractured.fractals"];
+    if (stored_str) {
+      //Load most recent
+      var stored = parseInt(stored_str);
+      fractal.load(localStorage["fractured.fractal." + stored]);
+      $("namelabel").value = localStorage["fractured.names." + stored];
+      //fractal.applyChanges();
+    }
+  }
+
+  function saveState() {
     //Read the lists
     try {
       var types = ["fractal", "transform", "colour"];
@@ -96,7 +225,13 @@ var showparams = true;
           localStorage[filename] = sources[filename];
         }
       }
+      //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formulae);
+      //Save selected formulae
+      var selected = fractal.formula;
+      localStorage["fractured.selected"] = JSON.stringify(selected);
+      //Save current fractal
+      saveFractal(false);
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);
@@ -138,113 +273,6 @@ var showparams = true;
     if (type.indexOf("colour") > -1) ext = "colour";
     return "formulae/" + name + "." + ext + ".formula";
   }
-
-  function loadSources() {
-    //Load a from list of remaining source files
-    for (filename in sources)
-      if (!sources[filename]) ajaxReadFile(filename, saveSource);
-  }
-
-  //Source file loaded
-  function saveSource(filename, data){
-    sources[filename] = data; //Save content
-
-    //consoleWrite("Source file loaded: " + filename);
-
-    var remain = 0;
-    for (filename in sources)
-      if (sources[filename].length == 0) remain++;
-
-    if (remain == 0)
-      appInit();  //All data loaded, call init
-  }
-
-  //Once we have source data, app can be initialised
-  function appInit() {
-    //Fractal canvas event handling
-    var canvas = document.getElementById("fractal-canvas");
-    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseMove, canvasMouseWheel));
-    canvas.mouse.wheelTimer = true;
-    defaultMouse = document.mouse = canvas.mouse;
-    document.onmouseup = handleMouseUp;
-    document.onmousemove = handleMouseMove;
-    window.onresize = autoResize;
-    document.inputs.elements["autosize"].checked = autosize;
-
-    //Init WebGL
-    var webgl = new WebGL(canvas);
-
-    //Create a fractal object
-    fractal = new Fractal(canvas, webgl);
-
-    //Colour editing and palette management
-    colours = new ColourEditor(sources["default.palette"]);
-
-    //Draw & update
-    fractal.applyChanges();
-  }
-
-/////////////////////////////////////////////////////////////////////////
-//Save/load in local storage
-function supports_html5_storage() {
-  try {
-    return 'localStorage' in window && window['localStorage'] !== null;
-  } catch (e) {
-    return false;
-  }
-}
-
-function saveState(source) {
-  if (!supports_html5_storage()) return;
-  for (var s=0; s<100000; s++) {
-  var stored_str = localStorage["fractured.fractals"];
-  var stored = (stored_str ? parseInt(stored_str) : 0);
-  stored++;
-  try {
-    localStorage["fractured.fractal." + stored] = source;
-    localStorage["fractured.fractals"] = stored;
-  } catch(e) {
-    //data wasn’t successfully saved due to quota exceed so throw an error
-    alert('Quota exceeded! ' + stored + " ... Local storage length = " + JSON.stringify(localStorage).length);
-      return;
-  }
-  }
-}
-
-function loadState() {
-  if (!supports_html5_storage()) return;
-  var stored_str = localStorage["fractured.fractals"];
-  if (stored_str) {
-    var stored = parseInt(stored_str);
-    fractal.load(localStorage["fractured.fractal." + stored]);
-    fractal.applyChanges();
-  }
-}
-
-function loadStateList() {
-  if (!supports_html5_storage()) return;
-  var stored_str = localStorage["fractured.fractals"];
-  if (stored_str) {
-    var stored = parseInt(stored_str);
-    for (var i=1; i<=stored; i++)
-      $("stored").options[$("stored").length] = new Option(i, localStorage["fractured.fractal." + stored]);
-  }
-}
-
-function savePaletteLocal(source) {
-  if (!supports_html5_storage()) return;
-  try {
-    localStorage["fractured.current.palette"] = source;
-  } catch(e) {
-    //data wasn’t successfully saved due to quota exceed so throw an error
-    alert('Quota exceeded! ' + e);
-  }
-}
-
-function loadPaletteLocal() {
-  if (!supports_html5_storage()) return;
-  colours.read(localStorage["fractured.current.palette"]);
-}
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -315,6 +343,10 @@ var rztimeout = undefined;
       } else
         fractal.applyChanges();
     }
+  }
+
+  function beforeUnload() {
+    if (hasChanged) return "There are un-saved changes"
   }
 
 //Fractal canvas mouse event handling
@@ -702,6 +734,7 @@ function loadFile(filename, source) {
     fractal.iniParser(source);
   else
     fractal.load(source);
+  $("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
 }
 
 function loadPalette(filename, source) {

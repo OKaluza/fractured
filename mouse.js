@@ -108,7 +108,6 @@
     //Since this is called on every mouse move event, not a good idea
       //if ( event.preventDefault ) event.preventDefault();  // Mozilla FireFox
       //event.returnValue = false;  // cancel default action
-    }
   }
 
   function handleMouseMove(event) {
