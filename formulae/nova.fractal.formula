@@ -1,4 +1,4 @@
-@znext = expression(z - (relax * (z^power - 1)) / (power * z^(power-1)) + c); //z(n+1) = 
+@znext = expression(z - (relax*(z^power-1)) / (power*z^(power-1)) + c); //z(n+1) = 
 @power = real(3);    //Power
 @bailout = real(0.00001);   //Bailout
 @bailfunc = bailout_function(norm);   //Bailout Function

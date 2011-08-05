@@ -1,3 +1,4 @@
+@znext = expression(abs(z - (relax*(z^power-1)) / (power*z^(power-1))) + c); //z(n+1) = 
 @power = real(3);    //Power
 @bailout = real(0.00001);   //Bailout
 @bailfunc = bailout_function(norm);   //Bailout Function
@@ -13,18 +14,7 @@ void reset()
 void runstep()
 {
   //Novabs: z = abs(z - (relax * (z^p - 1)) / (p * z^(p-1))) + c
-  if (power == 3.0)
-  {
-    complex zsquared = mul(z,z);
-    complex zcubed = mul(zsquared,z);
-    z = abs(z - div(mul(relax, zcubed - C(1)), mul(zsquared, C(3)))) + c;
-  }
-  else
-  {
-    //Any power - generic version, requires cpow
-    z = abs(z - div(mul(relax, (cpow(z, power)) - C(1)),
-               (mul(C(power), cpow(z, power-1.0))))) + c;
-  }
+  z = znext;
 }
 
 bool bailed()
