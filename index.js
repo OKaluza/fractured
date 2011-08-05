@@ -730,10 +730,12 @@ function filesProcess(files, callback) {
 }
 
 function loadFile(filename, source) {
-  if (filename.indexOf(".ini") > -1)
+  if (filename.indexOf(".ini") > -1) {
     fractal.iniParser(source);
-  else
+    filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
+  } else {
     fractal.load(source);
+  }
   $("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
 }
 
