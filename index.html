@@ -13,6 +13,7 @@
 <script type="text/javascript" src="utils.js"></script>
 <script type="text/javascript" src="ajax.js"></script>
 <script type="text/javascript" src="mouse.js"></script>
+<script type="text/javascript" src="parser.js"></script>
 <script type="text/javascript" src="fractal.js"></script>
 <script type="text/javascript" src="colour.js"></script>
 
@@ -188,7 +189,7 @@
         <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
         <input type="button" value="Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
         <input type="button" value="Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')">
-        <textarea id="console" style="width: 99%; height: 95%" spellcheck="false">
+        <textarea id="console" spellcheck="false">
         </textarea>
       </div>
 
@@ -196,7 +197,8 @@
         <input type="button" value="Save State" onclick="saveState();">
         <input type="button" value="Load State" onclick="loadState();">
         <input type="button" value="Reset State" onclick="resetState();">
-        <select id="stored" onchange="fractal.load(this.value)">
+        <hr>
+        <select id="stored" onchange="selectedFractal(this.value)">
         </select>
         <hr>
           <div class="row">
