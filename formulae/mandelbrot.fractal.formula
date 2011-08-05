@@ -1,3 +1,4 @@
+@znext = expression(z^power + c); //z(n+1) = 
 @bailout = real(4);   //Bailout
 @bailfunc = bailout_function(norm);   //Bailout Function
 @power = real(2);    //Power
@@ -5,10 +6,7 @@
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
-  if (power == 2.0)
-    z = mul(z,z) + c;
-  else
-    z = cpow(z, power) + c;
+  z = znext;
 }
 
 //Check bailout condition and return true if bailed out

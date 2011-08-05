@@ -1,3 +1,4 @@
+@znext = expression((z^power + (c-a)*z - c) / (z^(power-1) + c - b)); //z(n+1) = 
 @bailout = real(100);   //Bailout
 @bailoutc = real(0.00005);   //Converge Bailout
 @bailfunc = bailout_function(norm);   //Bailout Function
@@ -8,25 +9,7 @@
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
-  complex z2, z3;
-  z2 = mul(z,z);
-  if (power == 2.0)
-  {
-    z3 = z2;
-    z2 = z;
-  }
-  else 
-  {
-    if (power == 3.0)
-      z3 = mul(z, z2);
-    else
-    {
-      z3 = cpow(z,power);
-      z2 = cpow(z,power-1.0);
-    }
-  }
-
-  z = div(z3 + mul(c - a, z) - c, z2 + c - b);
+  z = znext;
 }
 
 //Check bailout conditions and return true if bailed out

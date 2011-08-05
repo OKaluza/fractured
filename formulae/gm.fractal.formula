@@ -1,3 +1,4 @@
+@znext = expression(a*z + (2*(1-a)*z^power) / (1+z) + c); //z(n+1) = 
 @bailout = real(100);   //Bailout
 @bailoutc = real(0.00005);   //Converge Bailout
 @bailfunc = bailout_function(norm);   //Bailout Function
@@ -7,14 +8,8 @@
 //Get next z(n+1), performs an iteration step
 void runstep()
 {
-  complex z2;
-  if (power == 2.0)
-    z2 = mul(z,z);
-  else
-    z2 = cpow(z,power);
-
   //Derived from Gumowski-Mira eqn f(x) = ax + 2(1-a)x^2 / (1 + x)
-  z = mul(a, z) + div(mul(C(2), mul(C(1) - a, z2)), C(1) + z) + c;
+  z = znext;
 }
 
 //Check bailout conditions and return true if bailed out

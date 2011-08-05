@@ -20,7 +20,7 @@ input, select{
     padding: 0px;  
     font-size: 10pt;
 }
-div.row textarea {height: 50px; min-width: 208px; max-width: 208px;}
+div.row textarea {height: 50px; min-width: 208px; max-width: 208px; font-family: sans; font-size: 9pt}
 div.row input[type="button"] {margin: 0px}
 div.row input[type="number"] {width: 100px;}
 div.row input[type="text"] {width: 100px;}

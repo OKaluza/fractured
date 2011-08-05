@@ -1,3 +1,4 @@
+@znext = expression(((z^power2+c-1) / (power2*z+c-2))^power); //z(n+1) = 
 @bailout = real(100);   //Bailout
 @bailoutc = real(0.00005);   //Converge Bailout
 @bailfunc = bailout_function(norm);   //Bailout Function
@@ -8,15 +9,7 @@
 void runstep()
 {
   //Magnet: z = ((z^b + c - 1) / (b*z + c - 2))^a
-  if (power2 == 2.0)
-    z = div(mul(z,z) + (c-C(1)), 2.0*z + (c-C(2)));
-  else
-    z = div(cpow(z,power2) + (c-C(1)), power2 * cpow(z, power2-1.0) + (c-C(2)));
-    
-  if (power == 2.0)  
-    z = mul(z,z);
-  else
-    z = cpow(z, power);
+  z = znext;
 }
 
 //Check bailout conditions and return true if bailed out
