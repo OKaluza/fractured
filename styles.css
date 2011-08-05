@@ -20,10 +20,12 @@ input, select{
     padding: 0px;  
     font-size: 10pt;
 }
-textarea{width: 98%; height: 98%;}
-input[type="button"] {margin: 0px}
-input[type="number"] {width: 100px;}
-input[type="text"] {width: 100px;}
+div.row textarea {height: 50px; min-width: 208px; max-width: 208px;}
+div.row input[type="button"] {margin: 0px}
+div.row input[type="number"] {width: 100px;}
+div.row input[type="text"] {width: 100px;}
+
+textarea#console {width: 99%; height: 95%;}
 
 /* Floating divs */
 .left       {float: left}

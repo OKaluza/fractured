@@ -1,7 +1,20 @@
+complex add(in complex a, in complex b) {return a + b;}
+complex add(in real a, in complex b) {return C(a) + b;}
+complex add(in complex a, in real b) {return a + C(b);}
+complex add(in real a, in real b)    {return C(a + b);}
+complex sub(in complex a, in complex b) {return a - b;}
+complex sub(in real a, in complex b) {return C(a) - b;}
+complex sub(in complex a, in real b) {return a - C(b);}
+complex sub(in real a, in real b)    {return C(a - b);}
+
 complex mul(in complex a, in complex b)
 {
   return complex(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
 }
+
+complex mul(in real a, in complex b) {return mul(C(a), b);}
+complex mul(in complex a, in real b) {return mul(a, C(b));}
+complex mul(in real a, in real b)    {return C(a * b);}
 
 complex div(in complex z, in complex w)
 {
@@ -10,6 +23,10 @@ complex div(in complex z, in complex w)
   //return res / conj;
   return complex(dot(z,w), z.y*w.x - z.x*w.y) / dot(w,w);
 }
+
+complex div(in real a, in complex b) {return div(C(a), b);}
+complex div(in complex a, in real b) {return div(a, C(b));}
+complex div(in real a, in real b)    {return C(a / b);}
 
 complex inv(in complex z)
 {

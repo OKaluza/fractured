@@ -1,5 +1,5 @@
   //Regular expressions
-  var paramreg = /@(\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function)\((.*)\);\s*(\/\/(.*))?(?:\r\n|[\r\n])/gi;
+  var paramreg = /@(\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);\s*(\/\/(.*))?(?:\r\n|[\r\n])/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)?/;
@@ -186,6 +186,11 @@
       this.value = new Colour('rgba(' + value + ')');
     }
 
+    if (this.type == 'expression') {
+      this.typeid = 6;
+      this.value = value;
+    }
+
     //consoleWrite(this.label + " parsed as " + this.type + " value = " + this.value);
   }
 
@@ -205,6 +210,8 @@
       return "complex(" + realStr(this.value.re) + "," + realStr(this.value.im) + ")";
     else if (this.typeid == 5) //'rgba'
       return this.value.rgbaGLSL();
+    else if (this.typeid == 6) //expression
+      return Parser.toString(this.value);
     else
       return "" + this.value;
   }
@@ -214,6 +221,7 @@
     type = this.type;
     if (this.type == 'list') type = 'int';
     if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
+    if (this.type == 'expression') return "#define " + key + " " + this.toGLSL() + "\n";
     if (this.type.indexOf('function') > 0) return "#define " + key + "(args) " + this.value + "(args)\n";
     return "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
   }
@@ -253,6 +261,9 @@
         break;
       case 5: //RGBA colour
         this.value = new Colour(field.style.backgroundColor);
+        break;
+      case 6: //Expression
+        this.value = field.value;
         break;
     }
   }
@@ -447,6 +458,14 @@
           cinput.name = key;
           cinput.style.backgroundColor = this[key].value.html();
           input.appendChild(cinput);
+          spanin.appendChild(input);
+          break;
+        case 6: 
+          //Expression
+          input = document.createElement("textarea");
+          input.id = key;
+          input.name = key;
+          input.value = this[key].value;
           spanin.appendChild(input);
           break;
       }   

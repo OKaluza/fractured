@@ -96,15 +96,41 @@ var hasChanged = false;
     }
   }
 
+  function selectedFractal(source) {
+    fractal.load(source);
+    //alert(colours.palette.toString());
+      //fractal.applyChanges();
+    //fractal.draw();
+  }
+
   function saveFractal(toExport) {
     source = fractal + "";
     if (toExport) {
+      //Write to disk on server
       function fileSaved() {window.open("saved.fractal");}
       ajaxWriteFile("saved.fractal", source, fileSaved);
     } else {
-      //Save current fractal to list (TODO: use name)
+      //Save current fractal to list
       if (!supports_html5_storage()) return;
       var namestr = document.getElementById("namelabel").value;
+      if (!namestr) namestr = "unnamed";
+      //Check list for dupes
+      var add = 0;
+      var checkstr = namestr;
+      var i;
+      var sel = $('stored');
+      do {
+         for (i=0; i<sel.options.length; i++) {
+            if (checkstr == sel.options[i].text) {
+               checkstr = namestr + (++add);
+               break;
+            }
+         }
+      } while (i < sel.options.length);
+      namestr = checkstr;
+      //Add to select
+      sel.options[sel.length] = new Option(namestr, source);
+
       var stored_str = localStorage["fractured.fractals"];
       var stored = (stored_str ? parseInt(stored_str) : 0);
       stored++;
@@ -137,8 +163,9 @@ var hasChanged = false;
 
   function resetState() {
       localStorage.clear(); //be careful as this will clear the entire database
+      window.location.reload(false);
     //localStorage.removeItem("fractured.formulae");
-    loadState();
+    //loadState();
   }
 
   function loadState() {
@@ -184,13 +211,16 @@ var hasChanged = false;
 
     //Get list of saved fractals
     if (!supports_html5_storage()) return;
+    $('stored').options.length = 0;  //Clear list
     var stored_str = localStorage["fractured.fractals"];
     if (stored_str) {
       var stored = parseInt(stored_str);
       for (var i=1; i<=stored; i++) {
         var namestr = localStorage["fractured.names." + i];
         if (!namestr) namestr = "unnamed";
-        $("stored").options[$("stored").length] = new Option(namestr, localStorage["fractured.fractal." + i]);
+        var source = localStorage["fractured.fractal." + i];
+        $("stored").options[$("stored").length] = new Option(namestr, source);
+
       }
     }
   }
@@ -541,6 +571,18 @@ function ColourEditor(source, gl) {
   //Event handling for palette
   this.editcanvas.mouse = new Mouse(this.editcanvas, this);
   this.editcanvas.mouse.ignoreScroll = true;
+
+      /*/Update palette history
+      var sel = $('stored');
+      for (var i=0; i<sel.options.length; i++) {
+        this.read(sel.options[i].value);
+        var area = document.getElementById("palettes");
+        var canvas = document.createElement("canvas");
+        canvas.width = 360;
+        canvas.height = 16;
+        area.appendChild(canvas);
+        this.palette.draw(canvas, false);  //Save history
+      }*/
 }
 
 //Palette management
