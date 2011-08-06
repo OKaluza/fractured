@@ -1,5 +1,5 @@
   //Regular expressions
-  var paramreg = /@(\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);\s*(\/\/(.*))?(?:\r\n|[\r\n])/gi;
+  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)?/;
@@ -211,7 +211,7 @@
     else if (this.typeid == 5) //'rgba'
       return this.value.rgbaGLSL();
     else if (this.typeid == 6) //expression
-      return Parser.toString(this.value);
+      return parser.parse(this.value);
     else
       return "" + this.value;
   }
@@ -315,11 +315,12 @@
   ParameterSet.prototype.parseFormula = function(source) {
     var match;
     while (match = paramreg.exec(source)) {
-      //name, type, value, //, Label/comment 
-      var name = match[1];
-      var type = match[2];
-      var value = match[3];
-      var label = match[5];
+      //Label/comment (optional)
+      //name, type, value
+      var label = match[2];
+      var name = match[3];
+      var type = match[4];
+      var value = match[5];
       if (!label) label = name; //Default label if none provided
 
       var param = new Param(value, type, label);
@@ -620,11 +621,15 @@
       if (!code) alert(type + " - " + name + " has no formula source defined!");
     }
 
-    //Check code for required functions
+    //Check code for required functions, where not found create defaults
+    //This allows minimal formula files by leaving out functions where they use the standard approach
     var initreg = /void\s*~?init\(\)/g;
     var resetreg = /void\s*~?reset\(\)/g;
     var runstepreg = /void\s*runstep\(\)/g;
+    var znextreg = /@znext[\s=]*expression/g;
     var bailedreg = /bool\s*bailed\(\)/g;
+    var bailoutreg = /@bailout[\s=]*real/g;
+    var bailfuncreg = /@bailfunc[\s=]*bailout_function/g;
     var calcreg = /void\s*~calc\(\)/g;
     var resultreg = /rgba\s*~result\(in\s*real\s*repeat\s*\)/g;
     var transformreg = /void\s*transform\(\)/g;
@@ -634,8 +639,17 @@
     if (type == "fractal") {
       if (!initreg.exec(code)) code += "#define init()\n";
       if (!resetreg.exec(code)) code += "#define reset()\n";
-      if (!runstepreg.exec(code)) code += "#define runstep() z = mul(z,z)+c\n";
-      if (!bailedreg.exec(code)) code += "#define bailed() (norm(z) > 4.0)\n";
+      if (!runstepreg.exec(code)) {
+        //If use znext expression as default runstep(), define if not found
+        if (!znextreg.exec(code)) code += "#define znext mul(z,z)+c\n";
+        code += "#define runstep() z = znext\n";
+      }
+      if (!bailedreg.exec(code)) {
+        //If use bailfunc and bailout params for default bailout, define if not found
+        if (!bailoutreg.exec(code)) code += "#define bailout 4.0\n";
+        if (!bailfuncreg.exec(code)) code += "#define bailfunc norm\n";
+        code += "#define bailed() (bailfunc(z) > bailout)\n";
+      }
     } else if (type == "transform") {
       if (!transformreg.exec(code)) code += "#define transform()\n"
     } else {

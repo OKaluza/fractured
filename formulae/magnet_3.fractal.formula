@@ -1,21 +1,20 @@
-@znext = expression((A*z^power+B) / (C*z^power-D) + c); //z(n+1) = 
-@bailout = real(100);   //Bailout
-@bailoutc = real(0.00005);   //Converge Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
-@A = complex(1,0); //A
-@B = complex(1,0); //B
-@C = complex(1,0); //C
-@D = complex(1,0); //D
-
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  //Magnet3
-  // similar to kleinien group / mobius transform arangement:
-  // Mobius transorm z = az^2 + b / cz^2 + d
-  z = znext;
-}
+//Magnet3
+// similar to kleinien group / mobius transform arangement:
+// Mobius transorm z = az^2 + b / cz^2 + d
+//z(n+1) =
+@znext = expression((A*z^p+B) / (C*z^p-D) + c);
+//Bailout
+@bailout = real(100);
+//Converge Bailout
+@bailoutc = real(0.00005);
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@p = real(2);
+@A = complex(1,0);
+@B = complex(1,0);
+@C = complex(1,0);
+@D = complex(1,0);
 
 //Check bailout conditions and return true if bailed out
 bool bailed()
@@ -30,4 +29,3 @@ bool bailed()
   }
   return false;
 }
-

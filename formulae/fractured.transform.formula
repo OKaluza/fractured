@@ -1,9 +1,15 @@
-@z_fn = complex_function(ident);  //Z function
-@re_fn = real_function(abs);  //Real function
-@im_fn = real_function(abs);  //Imag function
-@induct_on = list('|z(n-1)|z(n-2)'); //Induct on
-@induct = complex(1,0);    //Induction
-@N = int(1);  //N (apply every)
+//Z function
+@z_fn = complex_function(ident);
+//Real function
+@re_fn = real_function(abs);
+//Imag function
+@im_fn = real_function(abs);
+//Induct on
+@induct_on = list('|z(n-1)|z(n-2)');
+//Induction
+@induct = complex(1,0);
+//N (apply every)
+@N = int(1);
 
 void transform()
 {

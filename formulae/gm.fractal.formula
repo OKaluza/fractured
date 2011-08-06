@@ -1,16 +1,15 @@
-@znext = expression(a*z + (2*(1-a)*z^power) / (1+z) + c); //z(n+1) = 
-@bailout = real(100);   //Bailout
-@bailoutc = real(0.00005);   //Converge Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
-@a = complex(1,0); //a
-
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  //Derived from Gumowski-Mira eqn f(x) = ax + 2(1-a)x^2 / (1 + x)
-  z = znext;
-}
+//Derived from Gumowski-Mira eqn f(x) = ax + 2(1-a)x^2 / (1 + x)
+//z(n+1) =
+@znext = expression(a*z + (2*(1-a)*z^power) / (1+z) + c);
+//Bailout
+@bailout = real(100);
+//Converge Bailout
+@bailoutc = real(0.00005);
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@power = real(2);
+@a = complex(1,0);
 
 //Check bailout conditions and return true if bailed out
 bool bailed()
@@ -25,4 +24,5 @@ bool bailed()
   }
   return false;
 }
+
 

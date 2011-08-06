@@ -1,7 +1,10 @@
 //Exponential smoothing
-@~diverge = bool(true);    //Divergent
-@~converge = bool(false);  //Convergent
-@~use_zold = bool(false);   //z(n-1) - z(n)
+//Divergent
+@~diverge = bool(true);
+//Convergent
+@~converge = bool(false);
+//z(n-1) - z(n)
+@~use_zold = bool(false);
 
 real ~sum = 0.0;
 real ~csum = 0.0;

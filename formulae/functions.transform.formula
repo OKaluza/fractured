@@ -1,5 +1,6 @@
 //Simple transform that applies a function to z
-@fn = complex_function(abs);  //Function
+//Function
+@fn = complex_function(abs);
 void transform()
 {
     z = fn(z);

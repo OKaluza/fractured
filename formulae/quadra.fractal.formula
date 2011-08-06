@@ -1,16 +1,15 @@
-@znext = expression((z^power + (c-a)*z - c) / (z^(power-1) + c - b)); //z(n+1) = 
-@bailout = real(100);   //Bailout
-@bailoutc = real(0.00005);   //Converge Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
-@a = complex(1,0); //a
-@b = complex(1,0); //b
-
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  z = znext;
-}
+//z(n+1) =
+@znext = expression((z^p + (c-a)*z - c) / (z^(p-1) + c - b));
+//Bailout
+@bailout = real(100);
+//Converge Bailout
+@bailoutc = real(0.00005);
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@p = real(2);
+@a = complex(1,0);
+@b = complex(1,0);
 
 //Check bailout conditions and return true if bailed out
 bool bailed()
@@ -25,4 +24,3 @@ bool bailed()
   }
   return false;
 }
-

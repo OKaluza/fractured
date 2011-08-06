@@ -1,6 +1,11 @@
 //Base parameter definitions
-@iterations    = int(100); //Iterations
-@outrepeat     = real(1);  //Repeat (Outside)
-@inrepeat      = real(1);  //Repeat (Inside)
-@antialias     = int(1);   //Anti-alias
-@vary          = real(0);  //Vary Iterations
+//Iterations
+@iterations    = int(100);
+//Repeat (Outside)
+@outrepeat     = real(1);
+//Repeat (Inside)
+@inrepeat      = real(1);
+//Anti-alias
+@antialias     = int(1);
+//Vary Iterations
+@vary          = real(0);

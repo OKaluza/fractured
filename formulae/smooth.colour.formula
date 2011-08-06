@@ -1,6 +1,8 @@
 //Smooth colouring algorithm
-@~usepower = bool(true);  //Use power
-@~type2 = bool(false);  //Type 2
+//Use power
+@~usepower = bool(true);
+//Type 2
+@~type2 = bool(false);
 
 real ~il, ~lp;
 

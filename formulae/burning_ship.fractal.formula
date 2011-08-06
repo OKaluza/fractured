@@ -1,21 +1,9 @@
-@bailout = real(4);   //Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
-
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  //Burning ship with subtracted pixel coord (mirrored)
-  if (power == 2.0)
-    z = sqr(abs(z)) - c;
-  else
-    z = cpow(abs(z), power) - c;
-}
-
-//Check bailout condition and return true if bailed out
-bool bailed()
-{
-  if (bailfunc(z) > bailout) return true;
-  return false;
-}
-
+//Burning ship with subtracted pixel coord (mirrored)
+//z(n+1) = 
+@znext = expression(abs(z)^power - c); 
+//Bailout
+@bailout = real(4);   
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@power = real(2);

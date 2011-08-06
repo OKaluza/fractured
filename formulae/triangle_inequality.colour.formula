@@ -1,7 +1,10 @@
 //Triangle Inequality
-@~usepower = bool(true);  //Use power
-@~usebailout = bool(true);  //Use bailout
-@~bvalue = real(4);  //Alt bailout
+//Use power
+@~usepower = bool(true);
+//Use bailout
+@~usebailout = bool(true);
+//Alt bailout
+@~bvalue = real(4);
 
 real ~il, ~lp;
 real ~sum = 0.0;
