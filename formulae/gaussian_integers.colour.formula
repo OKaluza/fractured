@@ -1,9 +1,14 @@
 //Gaussian integers
-@~mode = list('round|trunc|floor|ceil'); //Mode
-@~colourby = list('min dist|iteration @ min|angle @ min|max dist|iteration @ max|angle @ max|avg dist|min/mean/max angle|max/min ratio'); //Colour by
-@~normalise = list('none|pixel|factor|f(z)');  //Normalisation
-@~normfact = complex(1,0);  //Norm factor
-@~normfunc = complex_function(ident);  //Norm function
+//Mode
+@~mode = list('round|trunc|floor|ceil');
+//Colour by
+@~colourby = list('min dist|iteration @ min|angle @ min|max dist|iteration @ max|angle @ max|avg dist|min/mean/max angle|max/min ratio');
+//Normalisation
+@~normalise = list('none|pixel|factor|f(z)');
+//Norm factor
+@~normfact = complex(1,0);
+//Norm function
+@~normfunc = complex_function(ident);
 
 complex ~zmin, ~zmax, ~normfac;
 real ~rmin, ~rmax, ~rave, ~total, ~itermin, ~itermax;

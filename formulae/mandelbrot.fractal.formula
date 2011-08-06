@@ -1,18 +1,8 @@
-@znext = expression(z^power + c); //z(n+1) = 
-@bailout = real(4);   //Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
-
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  z = znext;
-}
-
-//Check bailout condition and return true if bailed out
-bool bailed()
-{
-  if (bailfunc(z) > bailout) return true;
-  return false;
-}
-
+//z(n+1) = 
+@znext = expression(z^power + c); 
+//Bailout
+@bailout = real(4);   
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@power = real(2);

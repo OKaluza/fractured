@@ -1,6 +1,9 @@
-@bailout = real(4);   //Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
+//Bailout
+@bailout = real(4);   
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@power = real(2);
 
 //Get next z(n+1), performs an iteration step
 void runstep()
@@ -12,13 +15,6 @@ void runstep()
   if (power == 2.0)
     z = complex(z.y + c.x, z.y * z.y - z.x * z.x + c.y);
   else
-     z = complex(z.y + c.x, pow(z.y, power) - pow(z.x, power) + c.y);
-}
-
-//Check bailout condition and return true if bailed out
-bool bailed()
-{
-  if (bailfunc(z) > bailout) return true;
-  return false;
+    z = complex(z.y + c.x, pow(z.y, power) - pow(z.x, power) + c.y);
 }
 

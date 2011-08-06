@@ -1,9 +1,15 @@
-@znext = expression(z^power + z^power2*c); //z(n+1) = 
-@bailout = real(4);   //Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
-@power2 = real(0);    //Power 2
-@distort = complex(1);    //Distortion
+//z(n+1) = 
+@znext = expression(z^power + z^power2*c);
+//Bailout
+@bailout = real(4);   
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@power = real(2);
+//Power 2
+@power2 = real(0);
+//Distortion
+@distort = complex(1);
 
 complex ~savez;
 
@@ -22,11 +28,3 @@ void runstep()
   ~savez = z;
   z = newz;
 }
-
-//Check bailout condition and return true if bailed out
-bool bailed()
-{
-  if (bailfunc(z) > bailout) return true;
-  return false;
-}
-

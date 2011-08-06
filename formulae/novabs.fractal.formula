@@ -1,20 +1,20 @@
-@znext = expression(abs(z - (relax*(z^power-1)) / (power*z^(power-1))) + c); //z(n+1) = 
-@power = real(3);    //Power
-@bailout = real(0.00001);   //Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@relax = complex(1,0);  //Relax
+//Novabs: z = abs(z - (relax * (z^p - 1)) / (p * z^(p-1))) + c
+//z(n+1) = 
+@znext = expression(abs(z - (relax*(z^p-1)) / (p*z^(p-1))) + c);
+//Bailout
+@bailout = real(0.00001);
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@p = real(3);
+//Relax
+@relax = complex(1,0);
 
 //Reset, called once for each pixel before iterating
 void reset()
 {
   if (!julia && !perturb) z = C(1);  //Nova init
-}
-
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  //Novabs: z = abs(z - (relax * (z^p - 1)) / (p * z^(p-1))) + c
-  z = znext;
+  converged = true;  //Always converges
 }
 
 bool bailed()
@@ -24,4 +24,3 @@ bool bailed()
   if (bailfunc(z-zold) < bailout) return true; //Nova bailout
   return false;
 }
-

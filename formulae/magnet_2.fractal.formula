@@ -1,17 +1,20 @@
-@c1 = expression(c-1); //c1 = 
-@c2 = expression(c-2); //c2 = 
-@znext = expression(((z^3 + 3*z*c1 + c1c2) / (3*z^2 + 3*z*c2 + c1c2 + 1))^power); //z(n+1) = 
-@bailout = real(100);   //Bailout
-@bailoutc = real(0.00005);   //Converge Bailout
-@bailfunc = bailout_function(norm);   //Bailout Function
-@power = real(2);    //Power
-
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  complex c1c2 = mul(c1,c2);
-  z = znext;
-}
+//Magnet 2: z = ((z^3 + 3z(c-1) + (c-1)(c-2)) / (3*z^2 + 3z(c-2) + (c-1)(c-2)))^a
+//z(n+1) = 
+@znext = expression(((z^3 + 3*zc1 + c1c2) / (3*z^2 + 3*zc2 + c1c2 + 1))^power);
+//c1c2 =
+@c1c2 = expression((c-1).(c-2));
+//zc1 =
+@zc1 = expression(z.(c-1));
+//zc2 =
+@zc2 = expression(z.(c-2));
+//Bailout
+@bailout = real(100);
+//Converge Bailout
+@bailoutc = real(0.00005);
+//Bailout Function
+@bailfunc = bailout_function(norm);
+//Power
+@power = real(2);
 
 //Check bailout conditions and return true if bailed out
 bool bailed()
@@ -26,5 +29,3 @@ bool bailed()
   }
   return false;
 }
-
-
