@@ -12,6 +12,8 @@
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
+  savevars = {};
+
   function Aspect(re, im, rotation, zoom) {
     this.re = re;
     this.im = im;
@@ -211,7 +213,24 @@
     else if (this.typeid == 5) //'rgba'
       return this.value.rgbaGLSL();
     else if (this.typeid == 6) //expression
-      return parser.parse(this.value);
+    {
+      //Find all variables in expression and if found in param list, replace with their value
+      var expr = this.value;
+      var reg = /[_a-zA-Z][_a-zA-Z0-9]*/g;
+       var match;
+       while (match = reg.exec(expr)) {
+         if (savevars[match[0]]) {
+            //Replace the matched param with value
+            var newval = expr.slice(0, reg.lastIndex - match[0].length);
+            expr = newval + savevars[match[0]] + expr.slice(reg.lastIndex, expr.length);
+            reg.lastIndex += (savevars[match[0]] - match[0].length); //Adjust search position
+         }
+      }
+      //Replace integer constants in parsed expression with float (by adding .0)
+      var parsed = parser.parse(expr);
+      return parsed; //.replace(/([^_a-zA-Z])([0-9]+)([^.])/g, "$1$2.0$3");
+
+    }
     else
       return "" + this.value;
   }
@@ -303,6 +322,10 @@
   ParameterSet.prototype.toCode = function() {
     //Return GLSL code defining parameters
     var code = "";
+    //First scan and save floating point params for replacement when parsing expressions
+    savevars = {};
+    for (key in this)
+      if (this[key].type == 'real') savevars[key] = this[key].value;
     for (key in this)
     {
       if (typeof(this[key]) == 'object')
@@ -1003,7 +1026,7 @@
     // Load formulae
     this.loadParams();
 
-    //Bailout and power used by most formulae
+    //Bailout and power
     if (saved["bailout"])
       this.params[this.formula["fractal"]]["bailout"].parse(saved["bailout"]);
     if (saved["power"])
@@ -1022,6 +1045,18 @@
       this.params["magnet_3"]["D"].parse([saved["param3"].re, saved["param3"].im]);
     }
 
+    if (this.formula["fractal"] == "nova") {
+      var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
+      this.params["nova"]["relax"].parse([relax.re, relax.im]);
+      this.params["nova"]["bailout"].value = 0.00001;
+    }
+
+    if (this.formula["fractal"] == "novabs") {
+      var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
+      this.params["novabs"]["relax"].parse([relax.re, relax.im]);
+      this.params["novabs"]["bailout"].value = 0.00001;
+    }
+
     if (this.formula["fractal"] == "gmm") {
       this.params["gmm"]["A"].parse([saved["param1"].re, saved["param1"].im]);
       this.params["gmm"]["B"].parse([saved["param2"].re, saved["param2"].im]);
@@ -1038,18 +1073,6 @@
       if (saved["power2"])
         this.params["phoenix"]["q"].parse([saved["power2"], 0.0]);
       this.params["phoenix"]["distort"].parse([saved["param1"].re, saved["param1"].im]);
-    }
-
-    if (this.formula["fractal"] == "nova") {
-      var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-      this.params["nova"]["relax"].parse([relax.re, relax.im]);
-      this.params["nova"]["bailout"].value = 0.00001;
-    }
-
-    if (this.formula["fractal"] == "novabs") {
-      var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-      this.params["novabs"]["relax"].parse([relax.re, relax.im]);
-      this.params["novabs"]["bailout"].value = 0.00001;
     }
 
     //Functions and ops

@@ -13,19 +13,69 @@ performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate, $$, _$)
         return $$[$0 - 1];
         break;
       case 2:
-        this.$ = "add(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        var a = parseFloat($$[$0 - 2]);
+        var b = parseFloat($$[$0]);
+        if (a && b) {
+            var result = a + b + "";
+            if (result.indexOf(".") < 0) {
+                result += ".0";
+            }
+            this.$ = result;
+        } else {
+            this.$ = "add(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        }
         break;
       case 3:
-        this.$ = "sub(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        var a = parseFloat($$[$0 - 2]);
+        var b = parseFloat($$[$0]);
+        if (a && b) {
+            var result = a - b + "";
+            if (result.indexOf(".") < 0) {
+                result += ".0";
+            }
+            this.$ = result;
+        } else {
+            this.$ = "sub(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        }
         break;
       case 4:
-        this.$ = "mul(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        var a = parseFloat($$[$0 - 2]);
+        var b = parseFloat($$[$0]);
+        if (a && b) {
+            var result = a * b + "";
+            if (result.indexOf(".") < 0) {
+                result += ".0";
+            }
+            this.$ = result;
+        } else {
+            this.$ = "mul(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        }
         break;
       case 5:
-        this.$ = "div(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        var a = parseFloat($$[$0 - 2]);
+        var b = parseFloat($$[$0]);
+        if (a && b) {
+            var result = a / b + "";
+            if (result.indexOf(".") < 0) {
+                result += ".0";
+            }
+            this.$ = result;
+        } else {
+            this.$ = "div(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        }
         break;
       case 6:
-        this.$ = "cpow(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        if ($$[$0] == 0) {
+            this.$ = 1;
+        } else if ($$[$0] == 1) {
+            this.$ = $$[$0 - 2];
+        } else if ($$[$0] == 2) {
+            this.$ = "sqr(" + $$[$0 - 2] + ")";
+        } else if ($$[$0] == 3) {
+            this.$ = "cube(" + $$[$0 - 2] + ")";
+        } else {
+            this.$ = "cpow(" + $$[$0 - 2] + "," + $$[$0] + ")";
+        }
         break;
       case 7:
         this.$ = "-" + $$[$0];
@@ -34,13 +84,9 @@ performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate, $$, _$)
         this.$ = $$[$0 - 1];
         break;
       case 9:
-        this.$ = "C(" + yytext + ")";
-        break;
-      case 10:
-        this.$ = "C(E)";
-        break;
-      case 11:
-        this.$ = "C(PI)";
+        if (yytext.indexOf(".") < 0) {
+            this.$ = yytext + ".0";
+        }
         break;
       case 14:
         this.$ = $$[$0 - 3] + "(" + $$[$0 - 1] + ")";

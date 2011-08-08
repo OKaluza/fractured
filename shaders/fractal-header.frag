@@ -1,11 +1,12 @@
 precision highp float;
 #define real float
 #define complex vec2
-#define C(x) complex(real(x),0.0) 
-#define CI(x) complex(0.0,real(x)) 
-#define I complex(0.0,1.0) 
-#define RGB vec3 
-#define rgba vec4 
+#define R(x) real(x)
+#define C(x) complex(real(x),0.0)
+#define CI(x) complex(0.0,real(x))
+#define I complex(0.0,1.0)
+#define RGB vec3
+#define rgba vec4
 #define ident(args) args
 #define zero(args) 0
 #define czero(args) C(0.0)
@@ -27,6 +28,7 @@ real atanh(in real x);
 real asinh(in real x);
 real neg(in real x);
 real sqr(in real x);
+real cube(in real x);
 real trunc(in real x);
 real round(in real x);
 //Complex number functions
@@ -74,6 +76,7 @@ complex trunc(in complex z);
 complex round(in complex z);
 complex flip(in complex z);
 complex sqr(in complex z);
+complex cube(in complex z);
 complex gamma(in complex z);
 bool equals(complex z1, complex z2, real tolerance);
 real manhattan(in complex z);

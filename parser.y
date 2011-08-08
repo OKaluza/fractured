@@ -4,21 +4,21 @@
 %lex
 %%
 
-\s+                   /* skip whitespace */
-[0-9]+("."[0-9]+)?\b  return 'NUMBER'
-"*"                   return '*'
-"."                   return '*'
-"/"                   return '/'
-"-"                   return '-'
-"+"                   return '+'
-"^"                   return '^'
-"("                   return '('
-")"                   return ')'
-"PI"                  return 'PI'
-"E"                   return 'E'
-<<EOF>>               return 'EOF'
+\s+                    /* skip whitespace */
+[0-9]+("."[0-9]+)?\b   return 'NUMBER'
+"*"                    return '*'
+"."                    return '*'
+"/"                    return '/'
+"-"                    return '-'
+"+"                    return '+'
+"^"                    return '^'
+"("                    return '('
+")"                    return ')'
+"PI"                   return 'PI'
+"E"                    return 'E'
+<<EOF>>                return 'EOF'
 [_a-zA-Z][_a-zA-Z0-9]* return 'IDENTIFIER';
-.                     return 'INVALID'
+.                      return 'INVALID'
 
 /lex
 
@@ -40,25 +40,69 @@ expressions
 
 e
     : e '+' e
-        {$$ = "add(" + $1 + "," + $3 + ")";}
+        {
+          var a = parseFloat($1);
+          var b = parseFloat($3);
+          if (a && b) {
+            var result = a + b + "";
+            if (result.indexOf(".") < 0) result += ".0";
+            $$ = result;
+          } else 
+            $$ = "add(" + $1 + "," + $3 + ")";
+        }
     | e '-' e
-        {$$ = "sub(" + $1 + "," + $3 + ")";}
+        {
+          var a = parseFloat($1);
+          var b = parseFloat($3);
+          if (a && b) {
+            var result = a - b + "";
+            if (result.indexOf(".") < 0) result += ".0";
+            $$ = result;
+          } else 
+            $$ = "sub(" + $1 + "," + $3 + ")";
+        }
     | e '*' e
-        {$$ = "mul(" + $1 + "," + $3 + ")";}
+        {
+          var a = parseFloat($1);
+          var b = parseFloat($3);
+          if (a && b) {
+            var result = a * b + "";
+            if (result.indexOf(".") < 0) result += ".0";
+            $$ = result;
+          } else 
+ 
+            $$ = "mul(" + $1 + "," + $3 + ")";
+        }
     | e '/' e
-        {$$ = "div(" + $1 + "," + $3 + ")";}
+        {
+          var a = parseFloat($1);
+          var b = parseFloat($3);
+          if (a && b) {
+            var result = a / b + "";
+            if (result.indexOf(".") < 0) result += ".0";
+            $$ = result;
+          } else 
+            $$ = "div(" + $1 + "," + $3 + ")";
+        }
     | e '^' e
-        {$$ = "cpow(" + $1 + "," + $3 + ")";}
+        {
+          if ($3 == 0) $$ = 1;
+          else if ($3 == 1) $$ = $1;
+          else if ($3 == 2) $$ = "sqr(" + $1 + ")";
+          else if ($3 == 3) $$ = "cube(" + $1 + ")";
+          else $$ = "cpow(" + $1 + "," + $3 + ")";
+        }
     | '-' e %prec UMINUS
         {$$ = "-" + $2;}
     | '(' e ')'
         {$$ = $2;}
     | NUMBER
-        {$$ = "C(" + yytext + ")";}
+        {
+          if (yytext.indexOf(".") < 0) 
+            $$ = yytext + ".0"; }
+        }
     | E
-        {$$ = "C(E)";}
     | PI
-        {$$ = "C(PI)";}
     | IDENTIFIER
     | call
     ;
@@ -67,4 +111,5 @@ call
     : IDENTIFIER '(' e ')'
         {$$ = $1 + "(" + $3 + ")";}
     ;
+
 
