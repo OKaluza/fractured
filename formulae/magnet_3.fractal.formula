@@ -9,7 +9,7 @@
 @bailoutc = real(0.00005);
 //Bailout Function
 @bailfunc = bailout_function(norm);
-//Power
+//Power (p)
 @p = real(2);
 @A = complex(1,0);
 @B = complex(1,0);

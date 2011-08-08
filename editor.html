@@ -86,7 +86,7 @@ var formula;
 
     editor = new CodeMirror.fromTextArea(code, {
       mode: "text/x-glsl",
-      theme: "fracturedlight",
+      theme: "fractured" + window.opener.editorTheme,
       height: "100%",
       saveFunction: saveEditor,
       lineNumbers: true,
@@ -96,11 +96,15 @@ var formula;
       //tabMode: "classic",
       matchBrackets: true
     });
+    sel = document.getElementById('theme');
+    sel.value = window.opener.editorTheme;
   };
 
-  function selectTheme(node) {
-    var theme = "fractured" + node.options[node.selectedIndex].innerHTML;
+  function selectTheme(sel) {
+    var themename = sel.options[sel.selectedIndex].innerHTML;
+    var theme = "fractured" + themename;
     editor.setOption("theme", theme);
+    window.opener.editorTheme = themename;
   }
 </script>
 
@@ -110,7 +114,7 @@ var formula;
 
 <div id="buttons">
   <input type="button" value="Update" onclick="updateEditor()"><input type="button" value="Save" onclick="saveEditor()">
-    <select style="float: right" onchange="selectTheme(this)">
+    <select id="theme" style="float: right" onchange="selectTheme(this)">
         <option selected>light</option>
         <option>dark</option>
     </select>

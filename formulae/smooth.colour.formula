@@ -1,18 +1,15 @@
 //Smooth colouring algorithm
-//Use power
-@~usepower = bool(true);
 //Type 2
 @~type2 = bool(false);
+//Power
+@~power = real(2);
 
 real ~il, ~lp;
 
 void ~init()
 {
-  if (~usepower)
-    ~il = 1.0/log(power);  //Inverse log of (power).  
-  else
-    ~il = 1.0/log(2.0);    //Inverse log(2)
- 
+  //Inverse log of (power)
+  ~il = 1.0/log(~power);
   //Additional for Smooth 2
   ~lp = log(2.0 * log(sqrt(bailout))) * ~il;
 }

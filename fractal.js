@@ -888,7 +888,7 @@
           this.formula["fractal"] = convertFormulaName(pair[1]);
         } else if (pair[0] == "JuliaFlag")
           this.julia = parseInt(pair[1]) ? true : false;
-        else if (pair[0] == "PerturbFlag")
+        else if (pair[0] == "PerturbFlag" || pair[0] == "zFlag")
           this.perturb = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "Iterations")
           this.params["base"]["iterations"].value = parseInt(pair[1]); 
@@ -1007,12 +1007,12 @@
     if (saved["bailout"])
       this.params[this.formula["fractal"]]["bailout"].parse(saved["bailout"]);
     if (saved["power"])
-      this.params[this.formula["fractal"]]["power"].parse(saved["power"]);
+      this.params[this.formula["fractal"]]["p"].parse(saved["power"]);
 
     //Formula specific param parsing
     if (this.formula["fractal"] == "magnet_1") {
       if (saved["power2"])
-        this.params["magnet_1"]["power2"].parse(saved["power2"]);
+        this.params["magnet_1"]["q"].parse(saved["power2"]);
     }
 
     if (this.formula["fractal"] == "magnet_3") {
@@ -1036,7 +1036,7 @@
 
     if (this.formula["fractal"] == "phoenix") {
       if (saved["power2"])
-        this.params["phoenix"]["power2"].parse([saved["power2"], 0.0]);
+        this.params["phoenix"]["q"].parse([saved["power2"], 0.0]);
       this.params["phoenix"]["distort"].parse([saved["param1"].re, saved["param1"].im]);
     }
 
@@ -1098,17 +1098,17 @@
         var prefix = "exponential_smoothing" + inout;
         params["exponential_smoothing"][prefix + "diverge"].value = true;
         params["exponential_smoothing"][prefix + "converge"].value = false;
-        params["exponential_smoothing"][prefix + "use_zold"].value = false;
+        params["exponential_smoothing"][prefix + "use_z_old"].value = false;
         if (saved[type] == "Exp. Smoothing - Xdiverge")
-          params["exponential_smoothing"][prefix + "use_zold"].value = true;
+          params["exponential_smoothing"][prefix + "use_z_old"].value = true;
         if (saved[type] == "Exp. Smoothing - converge") {
           params["exponential_smoothing"][prefix + "diverge"].value = false;
           params["exponential_smoothing"][prefix + "converge"].value = true;
-          params["exponential_smoothing"][prefix + "use_zold"].value = true;
+          params["exponential_smoothing"][prefix + "use_z_old"].value = true;
         }
         if (saved[type] == "Exp. Smoothing - Both") {
           params["exponential_smoothing"][prefix + "converge"].value = true;
-          params["exponential_smoothing"][prefix + "use_zold"].value = true;
+          params["exponential_smoothing"][prefix + "use_z_old"].value = true;
         }
       }
 

@@ -10,6 +10,7 @@ var formulaOffsets = {}; //line numbering offset counts for each formula
 var autosize = true;
 var showparams = true;
 var hasChanged = false;
+var editorTheme = 'dark';
 
   function consoleWrite(str) {
     var console = document.getElementById('console');
@@ -177,12 +178,14 @@ var hasChanged = false;
     if (f_source) {
        formulae = JSON.parse(f_source);
        selected = JSON.parse(localStorage["fractured.selected"]);
+       editorTheme = localStorage["fractured.editorTheme"];
     } else {
        //Standard formulae library
        formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
 
        selected = {"base" : "base", "fractal" : "mandelbrot", "transform" : "none",
                     "outside_colour": "default", "inside_colour": "none"};
+       editorTheme = 'dark';
     }
 
     labels = {};
@@ -262,6 +265,8 @@ var hasChanged = false;
       localStorage["fractured.selected"] = JSON.stringify(selected);
       //Save current fractal
       saveFractal(false);
+      //Save some global settings
+      localStorage["fractured.editorTheme"] = editorTheme;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);

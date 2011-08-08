@@ -10,6 +10,8 @@
 @induct = complex(1,0);
 //N (apply every)
 @N = int(1);
+//Circle limit
+@circle = real(1);
 
 void transform()
 {
@@ -20,13 +22,16 @@ void transform()
   if (induct_on > 0)
   {
     if (induct_on == 1)
-      z += mul(zold, induct);
+      z += mul(z_1, induct);
     else if (induct_on == 2)
-      z += mul(zoldold, induct);
+      z += mul(z_2, induct);
   }
 
   //Apply functions to real and/or imaginary components
   z = z_fn(z);
   z = complex(re_fn(z.x), im_fn(z.y));
+
+  //Circle limit
+  if (circle > 0.0 && len > circle) discard;
 }
 

@@ -5,7 +5,7 @@
 @bailout = real(0.00001);
 //Bailout Function
 @bailfunc = bailout_function(norm);
-//Power
+//Power (p)
 @p = real(3);
 //Relax
 @relax = complex(1,0);
@@ -21,6 +21,6 @@ bool bailed()
 {
   //Check bailout condition and return true if bailed out...
   converged = true;  //Always converges
-  if (bailfunc(z-zold) < bailout) return true; //Nova bailout
+  if (bailfunc(z-z_1) < bailout) return true; //Nova bailout
   return false;
 }
