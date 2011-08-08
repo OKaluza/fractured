@@ -12,9 +12,20 @@ complex mul(in complex a, in complex b)
   return complex(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
 }
 
-complex mul(in real a, in complex b) {return mul(C(a), b);}
-complex mul(in complex a, in real b) {return mul(a, C(b));}
-complex mul(in real a, in real b)    {return C(a * b);}
+complex mul(in real a, in complex b)
+{
+  return complex(a*b.x, a*b.y);
+}
+
+complex mul(in complex a, in real b)
+{
+  return complex(a.x*b, a.y*b);
+}
+
+complex mul(in real a, in real b)
+{
+  return C(a * b);
+}
 
 complex div(in complex z, in complex w)
 {
@@ -24,8 +35,16 @@ complex div(in complex z, in complex w)
   return complex(dot(z,w), z.y*w.x - z.x*w.y) / dot(w,w);
 }
 
-complex div(in real a, in complex b) {return div(C(a), b);}
-complex div(in complex a, in real b) {return div(a, C(b));}
+complex div(in real a, in complex z) //{return div(C(a), z);}
+{
+  return complex(a*z.x, -a*z.y) / dot(z,z);
+}
+
+complex div(in complex z, in real a) //{return div(z, C(a));}
+{
+  return complex(z.x*a, z.y*a) / (a*a);
+}
+
 complex div(in real a, in real b)    {return C(a / b);}
 
 complex inv(in complex z)
@@ -94,6 +113,11 @@ real sqr(in real x)
   return x*x;
 }
 
+real cube(in real x)
+{
+  return x*x*x;
+}
+
 complex neg(in complex z)
 {
   return z * -1.0;
@@ -120,6 +144,7 @@ complex polar(in real r, in real theta)
 complex cpow(in real base, in complex exponent)
 {
   if (base == 0.0) return C(0);
+  if (exponent.y == 0.0) return C(pow(base, exponent.x));
 
   real re = log(abs(base));
   real im = atan(0.0, base);
@@ -135,6 +160,12 @@ complex cpow(in real base, in complex exponent)
 complex cpow(in complex base, in real exponent) 
 {
   if (base == C(0)) return C(0);
+  if (exponent == 0.0) return C(1);
+  if (exponent == 1.0) return base;
+  if (exponent == 2.0) return mul(base,base);
+  if (exponent == 3.0) return mul(mul(base,base),base);
+  if (base.y == 0.0) return C(pow(base.x, exponent));
+  
   real re = exponent * log(cabs(base));
   real im = exponent * arg(base);
 
@@ -145,10 +176,8 @@ complex cpow(in complex base, in real exponent)
 
 complex cpow(in complex base, in complex exponent)
 {
-  if (base == C(0)) return C(0);
-  if (exponent == C(0)) return C(1);
-  if (exponent == C(1)) return base;
   if (exponent.y == 0.0) return cpow(base, exponent.x);
+  if (base == C(0)) return C(0);
 
   real re =  log(cabs(base));
   real im =  arg(base);
@@ -359,6 +388,14 @@ complex flip(in complex z)
 complex sqr(in complex z)
 {
   return complex(z.x*z.x - z.y*z.y, z.x*z.y + z.y*z.x);
+}
+
+complex cube(in complex z)
+{
+  real x2 = z.x * z.x;
+  real y2 = z.y * z.y;
+  return complex(z.x*x2 - z.x*y2 - z.x*y2 - y2*z.x, 
+                 x2*z.y + x2*z.y + z.y*x2 - y2*z.y);
 }
 
 real imag(in complex z)
