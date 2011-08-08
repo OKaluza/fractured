@@ -1,6 +1,7 @@
 CodeMirror.defineMode("clike", function(config, parserConfig) {
   var indentUnit = config.indentUnit,
       keywords = parserConfig.keywords || {},
+      blockKeywords = parserConfig.blockKeywords || {},
       modifiers = parserConfig.modifiers || {},
       types = parserConfig.types || {},
       stdlib = parserConfig.stdlib || {}, 
@@ -46,7 +47,10 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     }
     stream.eatWhile(/[\w\$_]/);
     var cur = stream.current();
-    if (keywords.propertyIsEnumerable(cur)) return "keyword";
+    if (keywords.propertyIsEnumerable(cur)) {
+      if (blockKeywords.propertyIsEnumerable(cur)) curPunc = "newstatement";
+      return "keyword";
+    }
     if (atoms.propertyIsEnumerable(cur)) return "atom";
     if (modifiers.propertyIsEnumerable(cur)) return "modifier";
     if (types.propertyIsEnumerable(cur)) return "type";
@@ -92,6 +96,9 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     return state.context = new Context(state.indented, col, type, null, state.context);
   }
   function popContext(state) {
+    var t = state.context.type;
+    if (t == ")" || t == "]" || t == "}")
+      state.indented = state.context.indented;
     return state.context = state.context.prev;
   }
 
@@ -117,7 +124,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       if (stream.eatSpace()) return null;
       curPunc = null;
       var style = (state.tokenize || tokenBase)(stream, state);
-      if (style == "comment") return style;
+      if (style == "comment" || style == "meta") return style;
       if (ctx.align == null) ctx.align = true;
 
       if ((curPunc == ";" || curPunc == ":") && ctx.type == "statement") popContext(state);
@@ -125,12 +132,13 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       else if (curPunc == "[") pushContext(state, stream.column(), "]");
       else if (curPunc == "(") pushContext(state, stream.column(), ")");
       else if (curPunc == "}") {
-        if (ctx.type == "statement") ctx = popContext(state);
+        while (ctx.type == "statement") ctx = popContext(state);
         if (ctx.type == "}") ctx = popContext(state);
-        if (ctx.type == "statement") ctx = popContext(state);
+        while (ctx.type == "statement") ctx = popContext(state);
       }
       else if (curPunc == ctx.type) popContext(state);
-      else if (ctx.type == "}" || ctx.type == "top") pushContext(state, stream.column(), "statement");
+      else if (ctx.type == "}" || ctx.type == "top" || (ctx.type == "statement" && curPunc == "newstatement"))
+        pushContext(state, stream.column(), "statement");
       state.startOfLine = false;
       return style;
     },
@@ -178,6 +186,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
   CodeMirror.defineMIME("text/x-csrc", {
     name: "clike",
     keywords: words(cKeywords),
+    blockKeywords: words("case do else for if switch while struct"),
     atoms: words("null"),
     hooks: {"#": cppHook}
   });
@@ -187,6 +196,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
                     "static_cast typeid catch operator template typename class friend private " +
                     "this using const_cast inline public throw virtual delete mutable protected " +
                     "wchar_t"),
+    blockKeywords: words("catch class do else finally for if struct switch try while"),
     atoms: words("true false null"),
     hooks: {"#": cppHook}
   });
@@ -197,6 +207,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
                     "instanceof int interface long native new package private protected public " +
                     "return short static strictfp super switch synchronized this throw throws transient " +
                     "try void volatile while"),
+    blockKeywords: words("catch class do else finally for if switch try while"),
     atoms: words("true false null"),
     hooks: {
       "@": function(stream, state) {
@@ -214,6 +225,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
                     " sizeof stackalloc static string struct switch this throw try typeof uint ulong unchecked" + 
                     " unsafe ushort using virtual void volatile while add alias ascending descending dynamic from get" + 
                     " global group into join let orderby partial remove select set value var yield"),
+    blockKeywords: words("catch class do else finally for foreach if struct switch try while"),
     atoms: words("true false null"),
     hooks: {
       "@": function(stream, state) {
@@ -226,9 +238,25 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       }
     }
   });
+  CodeMirror.defineMIME("text/x-groovy", {
+    name: "clike",
+    keywords: words("abstract as assert boolean break byte case catch char class const continue def default " +
+                    "do double else enum extends final finally float for goto if implements import " +
+                    "in instanceof int interface long native new package property private protected public " +
+                    "return short static strictfp super switch synchronized this throw throws transient " +
+                    "try void volatile while"),
+    atoms: words("true false null"),
+    hooks: {
+      "@": function(stream, state) {
+        stream.eatWhile(/[\w\$_]/);
+        return "meta";
+      }
+    }
+  });
   CodeMirror.defineMIME("text/x-glsl", {
     name: "clike",
     keywords: words("if while else do discard return break continue for switch case default"),
+    blockKeywords: words("do else for if switch while"),
     atoms: words("true false PI TWO_PI E C CI I"),
     modifiers: words("attribute const in inout out varying uniform"),
     types: words("bool bvec2 bvec3 bvec4 float  int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 
