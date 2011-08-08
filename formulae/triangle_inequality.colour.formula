@@ -1,6 +1,6 @@
 //Triangle Inequality
-//Use power
-@~usepower = bool(true);
+//Power
+@~power = real(2);
 //Use bailout
 @~usebailout = bool(true);
 //Alt bailout
@@ -13,10 +13,7 @@ real ~ac = 0.0;
 
 void ~init()
 {
-  if (~usepower)
-    ~il = 1.0/log(power);  //Inverse log of (power).  
-  else
-    ~il = 1.0/log(2.0);    //Inverse log(2)
+  ~il = 1.0/log(~power);  //Inverse log of (power).  
 
   if (~usebailout)
     ~lp = log(log(bailout)/2.0);

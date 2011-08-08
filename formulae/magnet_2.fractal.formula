@@ -1,6 +1,6 @@
 //Magnet 2: z = ((z^3 + 3z(c-1) + (c-1)(c-2)) / (3*z^2 + 3z(c-2) + (c-1)(c-2)))^a
 //z(n+1) = 
-@znext = expression(((z^3 + 3*zc1 + c1c2) / (3*z^2 + 3*zc2 + c1c2 + 1))^power);
+@znext = expression(((z^3 + 3*zc1 + c1c2) / (3*z^2 + 3*zc2 + c1c2 + 1))^p);
 //c1c2 =
 @c1c2 = expression((c-1).(c-2));
 //zc1 =
@@ -13,8 +13,8 @@
 @bailoutc = real(0.00005);
 //Bailout Function
 @bailfunc = bailout_function(norm);
-//Power
-@power = real(2);
+//Power (p)
+@p = real(2);
 
 //Check bailout conditions and return true if bailed out
 bool bailed()

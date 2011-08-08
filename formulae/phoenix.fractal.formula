@@ -1,30 +1,19 @@
 //z(n+1) = 
-@znext = expression(z^power + z^power2*c);
+@znext = expression(z^p + z^q*c + distort*z_2);
 //Bailout
 @bailout = real(4);   
 //Bailout Function
 @bailfunc = bailout_function(norm);
-//Power
-@power = real(2);
-//Power 2
-@power2 = real(0);
+//Power (p)
+@p = real(2);
+//Power (q)
+@q = real(0);
 //Distortion
 @distort = complex(1);
-
-complex ~savez;
 
 //Reset, called once for each pixel before iterating
 void reset()
 {
-  ~savez = C(0);
   z = pixel;
 }
 
-//Get next z(n+1), performs an iteration step
-void runstep()
-{
-  complex newz;
-  newz = znext + mul(distort,~savez);
-  ~savez = z;
-  z = newz;
-}

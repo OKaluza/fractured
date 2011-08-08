@@ -86,8 +86,8 @@ real imag(in complex z);
 complex z;
 complex c;
 complex pixel;      //Current pixel coord
-complex zold;       //Previous value of z
-complex zoldold;    //Previous previous value of z
+complex z_1;        //Value of z(n-1)
+complex z_2;        //Value of z(n-2)
 int maxiterations;  //Number of iterations to perform
 int count = 0;      //Step counter
 bool converged;     //Converge flag
@@ -106,3 +106,10 @@ uniform rgba background;
 
 //Current complex coordinate
 varying complex coord;
+
+//Largest dimension
+real dim = dims.y > dims.x ? dims.y : dims.x;
+//Get radius in pixels
+complex radius = 0.5 * dim * complex(pixelsize, pixelsize);
+//Stores distance from current coord to origin
+real len;

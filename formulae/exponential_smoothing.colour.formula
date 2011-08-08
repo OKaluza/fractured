@@ -4,7 +4,7 @@
 //Convergent
 @~converge = bool(false);
 //z(n-1) - z(n)
-@~use_zold = bool(false);
+@~use_z_old = bool(false);
 
 real ~sum = 0.0;
 real ~csum = 0.0;
@@ -19,16 +19,16 @@ void ~calc()
 {
   if (~diverge)
   {
-    if (~use_zold)
-      ~sum += exp(-cabs(zold - z));
+    if (~use_z_old)
+      ~sum += exp(-cabs(z_1 - z));
     else
       ~sum += exp(-cabs(z));
   }
 
   if (~converge)
   {
-    if (~use_zold)
-      ~csum += exp(-1.0/cabs(zold - z));  
+    if (~use_z_old)
+      ~csum += exp(-1.0/cabs(z_1 - z));  
     else
       ~csum += exp(-1.0/cabs(z));  
   }
