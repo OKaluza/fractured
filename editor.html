@@ -63,8 +63,13 @@ var formula;
   updateEditor = function() {
     editor.save();  //Updates textarea content
     window.opener.sources[filename] = code.value;
-    window.opener.fractal.selectFormula(type);
-    window.opener.fractal.writeShader();
+    //Editing compiled shader source?
+    if (filename == "gen-shader.frag")
+      window.opener.fractal.updateShader(code.value);
+    else {
+      window.opener.fractal.selectFormula(type);
+      window.opener.fractal.writeShader();
+    }
     window.opener.fractal.draw();
   }
 
@@ -91,9 +96,8 @@ var formula;
       saveFunction: saveEditor,
       lineNumbers: true,
       firstLineNumber: window.opener.formulaOffsets[type],
-      //indentUnit: 2,
-      //enterMode: "keep",
-      //tabMode: "classic",
+      indentUnit: 2,
+      tabMode: "classic",
       matchBrackets: true
     });
     sel = document.getElementById('theme');

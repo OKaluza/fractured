@@ -1222,9 +1222,6 @@
     //Get formula selections
     consoleWrite("Building fractal shader using:\nformula: " + this.formula["fractal"] + "\ntransform: " + this.formula["transform"] + "\noutside colour: " + this.formula["outside_colour"] + "\ninside colour: " + this.formula["inside_colour"]);
 
-    //Vertex shader
-    var vertexShader = sources["shaders/shader2d.vert"];
-
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
     if (this.compatibility) header += "\n#define COMPAT\n";
@@ -1260,12 +1257,24 @@
     //Remove param declarations, replace with newline to preserve line numbers
     fragmentShader = fragmentShader.replace(paramreg, "//(Param removed)\n");
 
+    //Replace any (x,y) constants with complex(x,y)
+    var creg = /([^a-zA-Z_])\(([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)/g;
+    fragmentShader = fragmentShader.replace(creg, "$1complex($2,$4)");
+
     //Finally replace any @ symbols used to reference params in code
     fragmentShader = fragmentShader.replace(/@/g, "");
 
     //Save for debugging
     sources["gen-shader.frag"] = fragmentShader;
     ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
+
+    this.updateShader(fragmentShader);
+  }
+
+  Fractal.prototype.updateShader = function(fragmentShader, vertexShader) {
+    //Default vertex shader
+    if (!vertexShader)
+      vertexShader = sources["shaders/shader2d.vert"];
 
     //Load a default shader setup
     //this.webgl.initProgram(sources("default.vert"), sources("default.frag"));
