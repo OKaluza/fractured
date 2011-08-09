@@ -454,6 +454,9 @@ var rztimeout = undefined;
     if (!mouse.isdown) return;
     if (mouse.button > 0) return; //Process left drag only
 
+    // Set the scroll position (drag scroll mode)
+    //window.scrollBy(-mouse.deltaX, -mouse.deltaY);
+
     //Drag processing
     var select = document.getElementById("select");
     select.style.display = 'block';

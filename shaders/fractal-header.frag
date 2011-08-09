@@ -111,8 +111,8 @@ uniform rgba background;
 varying complex coord;
 
 //Largest dimension
-real dim = dims.y > dims.x ? dims.y : dims.x;
-//Get radius in pixels
-complex radius = 0.5 * dim * complex(pixelsize, pixelsize);
+real dim;
+//Radius in pixels
+complex radius;
 //Stores distance from current coord to origin
 real len;
