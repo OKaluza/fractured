@@ -1,9 +1,9 @@
 .cm-s-fracturedlight { background: #dadad6; color: black; }
+.cm-s-fracturedlight span.CodeMirror-selected { background: #b96 !important; }
+.cm-s-fracturedlight .CodeMirror-cursor { border-left: 1px solid black !important; }
 /*
-.cm-s-fracturedlight span.CodeMirror-selected { background: #a8f !important; }
 .cm-s-fracturedlight .CodeMirror-gutter { background: #443; border-right: 1px solid #aaa; }
 .cm-s-fracturedlight .CodeMirror-gutter-text { color: #888; }
-.cm-s-fracturedlight .CodeMirror-cursor { border-left: 1px solid white !important; }
 */
 
 .cm-s-fracturedlight span.cm-keyword {color: #7f0055; font-weight:bold;}
@@ -21,7 +21,7 @@
 
 /* Dark version */
 .cm-s-fractureddark { background: #312922; color: beige; }
-.cm-s-fractureddark span.CodeMirror-selected { background: #a8f !important; }
+.cm-s-fractureddark span.CodeMirror-selected { background: #38c !important; }
 .cm-s-fractureddark .CodeMirror-gutter { background: #443; border-right: 1px solid #aaa; }
 .cm-s-fractureddark .CodeMirror-gutter-text { color: #888; }
 .cm-s-fractureddark .CodeMirror-cursor { border-left: 1px solid white !important; }

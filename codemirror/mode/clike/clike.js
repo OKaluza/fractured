@@ -257,13 +257,13 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     name: "clike",
     keywords: words("if while else do discard return break continue for switch case default"),
     blockKeywords: words("do else for if switch while"),
-    atoms: words("true false PI TWO_PI E C CI I"),
+    atoms: words("true false PI TWO_PI E"),
     modifiers: words("attribute const in inout out varying uniform"),
-    types: words("bool bvec2 bvec3 bvec4 float  int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 
+    types: words("bool bvec2 bvec3 bvec4 float int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 
       "sampler1D sampler1DShadow sampler2D sampler2DShadow sampler3D samplerCube " + 
       "vec2 vec3 vec4 void struct " + 
       "param complex real RGB rgba " + //Custom types for fractals 
-      "list real_function complex_function"),
+      "list real_function complex_function bailout_function expression"),
     stdlib: words("abs acos all any asin atan " +
       "ceil clamp cos cross dFdx dFdy " +
       "degrees distance dot equal exp exp2 " +

@@ -985,7 +985,7 @@ var CodeMirror = (function() {
       case "classic":
         if (posEq(sel.from, sel.to)) {
           if (shift) indentLine(sel.from.line, "smart");
-          else replaceSelection("\t", "end");
+          else replaceSelection("  ", "end");
           break;
         }
       case "shift":
