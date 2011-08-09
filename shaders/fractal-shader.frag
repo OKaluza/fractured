@@ -40,11 +40,10 @@ void main()
         if (perturb) 
           z = selected; //Perturbation
         else
-          z = C(0);
+          z = (0,0);
         c = pixel;
       }
-      z_1 = C(0);
-      z_2 = C(0);
+      z_1 = z_2 = (0,0);
       converged = false;
 
       //Formula specific reset...

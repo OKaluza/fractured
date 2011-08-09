@@ -9,7 +9,7 @@ precision highp float;
 #define rgba vec4
 #define ident(args) args
 #define zero(args) 0
-#define czero(args) C(0.0)
+#define czero(args) complex(0.0,0.0)
 
 //Palette lookup mu = [0,1]
 #define gradient(mu) texture2D(palette, vec2(mu, 0.0))

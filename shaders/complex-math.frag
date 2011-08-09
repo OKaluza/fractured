@@ -12,20 +12,9 @@ complex mul(in complex a, in complex b)
   return complex(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
 }
 
-complex mul(in real a, in complex b)
-{
-  return complex(a*b.x, a*b.y);
-}
-
-complex mul(in complex a, in real b)
-{
-  return complex(a.x*b, a.y*b);
-}
-
-complex mul(in real a, in real b)
-{
-  return C(a * b);
-}
+complex mul(in real a, in complex b) {return a * b;}
+complex mul(in complex a, in real b) {return a * b;}
+complex mul(in real a, in real b) {return C(a * b);}
 
 complex div(in complex z, in complex w)
 {
@@ -54,10 +43,7 @@ complex inv(in complex z)
   return conj(z) / norm(z);
 }
 
-real inv(in real r)
-{
-  return 1.0/r;
-}
+real inv(in real r) {return 1.0/r;}
 
 complex loge(in complex z)
 {
