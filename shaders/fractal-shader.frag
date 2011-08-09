@@ -7,17 +7,14 @@ void main()
   init();
   inside_colour_init();
   outside_colour_init();
+  
+  //Get distance from current coord to origin
+  len = cabs((coord - origin) / radius);  
     
   //Variable iterations?
   if (vary > 0.0)
   {
     //Vary in circle of 1/2 pixelsize radius
-    real dim = dims.x;
-    if (dims.y < dim) dim = dims.y;
-    complex radius = 0.5 * dim * complex(pixelsize, pixelsize);
-    complex dist = (coord - origin) / radius;
-    real len = cabs(dist);
-    //if (len > 1.0) discard; //--circle limit
     real d = 1.0 + len * vary;
     maxiterations = int(d * real(iterations));
   }
@@ -46,8 +43,8 @@ void main()
           z = C(0);
         c = pixel;
       }
-      zoldold = C(0);
-      zold = C(0);
+      z_1 = C(0);
+      z_2 = C(0);
       converged = false;
 
       //Formula specific reset...
@@ -60,9 +57,10 @@ void main()
       bool in_set = true;
       for (int i=0; i <= iterations*2; i++)
       {
-        //Save previous z value
-        zoldold = zold;
-        zold = z;
+        //Update z(n-2)
+        z_2 = z_1;
+        //Save current z value for z(n-1)
+        z_1 = z;
 
         //Run next calc step
         count = i;
