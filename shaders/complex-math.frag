@@ -330,15 +330,18 @@ complex csqrt(in complex z)
   if (z.x == 0.0)
   {
     real r = sqrt(0.5 * abs(z.y));
-    return complex(r, z.y > 0.0 ? r : -r);
+    if (z.y < 0.0) r = -r;
+    return complex(r, r);
   }
 
   real t = sqrt(2.0 * (cabs(z) + abs(z.x)));
   real u = t / 2.0;
+  
   if (z.x > 0.0)
     return complex(u, z.y / t);
-  else
-    return complex(abs(z.y / t), z.y > 0.0 ? u : -u);
+
+  if (z.y < 0.0) u = -u;
+  return complex(abs(z.y / t), u);
 }
 
 bool equals(in complex z1, in complex z2, real tolerance)

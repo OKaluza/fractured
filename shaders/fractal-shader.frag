@@ -7,7 +7,11 @@ void main()
   init();
   inside_colour_init();
   outside_colour_init();
-  
+
+  //Largest dimension
+  dim = dims.y > dims.x ? dims.y : dims.x;
+  //Get radius in pixels
+  radius = 0.5 * dim * complex(pixelsize, pixelsize);
   //Get distance from current coord to origin
   len = cabs((coord - origin) / radius);  
     
