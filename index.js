@@ -107,9 +107,14 @@ var editorTheme = 'dark';
   function saveFractal(toExport) {
     source = fractal + "";
     if (toExport) {
+      //var exportLink = document.createElement('a');
+      //exportLink.setAttribute('href', 'data:text/fractal;base64,' + window.btoa(source));
+      //exportLink.appendChild(document.createTextNode('test.csv'));
+      //document.getElementById('results').appendChild(exportLink);
+      location.href = 'data:text/fractal;base64,' + window.btoa(source);
       //Write to disk on server
-      function fileSaved() {window.open("saved.fractal");}
-      ajaxWriteFile("saved.fractal", source, fileSaved);
+      //function fileSaved() {window.open("saved.fractal");}
+      //ajaxWriteFile("saved.fractal", source, fileSaved);
     } else {
       //Save current fractal to list
       if (!supports_html5_storage()) return;
@@ -386,7 +391,7 @@ var rztimeout = undefined;
 
 //Fractal canvas mouse event handling
   function canvasMouseClick(event, mouse) {
-    if (event.button > 0) return;
+    if (event.button > 0) return true;
 
     //Convert mouse coords into fractal coords
     var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
@@ -442,7 +447,7 @@ var rztimeout = undefined;
 
   function canvasMouseMove(event, mouse) {
     //Mouseover processing
-    if (!fractal) return;
+    if (!fractal) return true;
     if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
     {
       //Convert mouse coords into fractal coords
@@ -451,11 +456,14 @@ var rztimeout = undefined;
       point.im += fractal.origin.im;
       document.getElementById("coords").innerHTML = "&nbsp;re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8);
     }
-    if (!mouse.isdown) return;
-    if (mouse.button > 0) return; //Process left drag only
+    if (!mouse.isdown) return true;
 
-    // Set the scroll position (drag scroll mode)
-    //window.scrollBy(-mouse.deltaX, -mouse.deltaY);
+    //Right & middle buttons: drag to scroll
+    if (mouse.button > 0) {
+      // Set the scroll position
+      window.scrollBy(-mouse.deltaX, -mouse.deltaY);
+      return true;
+    }
 
     //Drag processing
     var select = document.getElementById("select");
@@ -488,19 +496,20 @@ var rztimeout = undefined;
   function canvasMouseWheel(event, mouse) {
     //alert(event.spin);
     if (event.ctrlKey) {
-      /* Zoom */
-      if (event.spin < 0)
-         fractal.origin.zoom *= (1/(-event.spin * 1.1));
-      else
-         fractal.origin.zoom *= (event.spin * 1.1);
+      return true;
     } else if (event.shiftKey) {
       /* SHIFT + scroll */
       fractal.origin.rotate += 10 * event.spin;
     } else if (event.altKey) {
       /* ALT + scroll -> rotate */
       fractal.origin.rotate += event.spin;
-    } else
-      return;
+    } else {
+      /* Zoom */
+      if (event.spin < 0)
+         fractal.origin.zoom *= (1/(-event.spin * 1.1));
+      else
+         fractal.origin.zoom *= (event.spin * 1.1);
+    }
 
     //Limit to range [0-360)
     if (fractal.origin.rotate < 0) fractal.origin.rotate += 360;
@@ -579,6 +588,8 @@ function ColourEditor(source, gl) {
   //Event handling for palette
   this.editcanvas.mouse = new Mouse(this.editcanvas, this);
   this.editcanvas.mouse.ignoreScroll = true;
+  this.editcanvas.oncontextmenu="return false;";
+  this.editcanvas.oncontextmenu = function() { return false; }      
 
       /*/Update palette history
       var sel = $('stored');
@@ -693,7 +704,7 @@ ColourEditor.prototype.click = function(event, mouse) {
     //Slider moved, update texture
     mouse.slider = null;
     this.palette.draw(this.editcanvas, true);
-    return;
+    return false;
   }
   var pal = document.getElementById('palette');
   if (pal.getContext){
@@ -718,6 +729,7 @@ ColourEditor.prototype.click = function(event, mouse) {
       this.insert(mouse.x / pal.width, event.clientX-128, 30);
     }
   }
+  return false;
 }
 
 ColourEditor.prototype.move = function(event, mouse) {

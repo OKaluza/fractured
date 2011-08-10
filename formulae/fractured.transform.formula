@@ -11,7 +11,7 @@
 //N (apply every)
 @N = int(1);
 //Circle limit
-@circle = real(1);
+@circle = real(0);
 
 void transform()
 {
