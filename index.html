@@ -40,6 +40,7 @@
           <li><span id="show" style="display:none" onClick="toggleParams();">&darr;</span></li> 
           <li><span onClick="fractal.applyChanges();">Draw</span></li> 
           <li><span onClick="saveFractal(true);">Export</span></li> 
+          <li><span onClick="exportState();">ExportAll</span></li>
           <li><span onClick="saveFractal(false);">Save</span></li> 
           <li><span onClick="loadLastFractal();">Load</span></li> 
           <!--li><span onClick="saveImage();">Save Image</span></li--> 
@@ -200,6 +201,9 @@
         <hr>
         <select id="stored" onchange="selectedFractal(this.value)">
         </select>
+        <hr>
+          File upload (state file):<br>
+          <input name="file" type="file"onchange="filesProcess(this.files, importState)"><br>
         <hr>
           <div class="row">
             <div class="label">Left-click Action</div>
