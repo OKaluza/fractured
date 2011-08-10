@@ -168,10 +168,26 @@ var editorTheme = 'dark';
   }
 
   function resetState() {
-      localStorage.clear(); //be careful as this will clear the entire database
+      localStorage.clear(); //be careful as this will clear the entire database, TODO: Confirm
       window.location.reload(false);
     //localStorage.removeItem("fractured.formulae");
     //loadState();
+  }
+
+  //Import/export all local storage to a text file
+  function exportState() {
+    //This will overwrite everything, TODO: Confirm
+    var source = JSON.stringify(localStorage);
+    location.href = 'data:text/store;base64,' + window.btoa(source);
+  }
+  function importState(filename, source) {
+    try {
+      var parsed = JSON.parse(source);
+      for (key in parsed)
+         localStorage[key] = parsed[key];
+    } catch(e) {
+      alert('Error! ' + e);
+    }
   }
 
   function loadState() {
