@@ -770,6 +770,7 @@
     source = source.replace(/exp_smooth/g, "exponential_smoothing");
     source = source.replace(/magnet(\d)/g, "magnet_$1");
     source = source.replace(/burningship/g, "burning_ship");
+    source = source.replace(/power=/g, "p=");
     var lines = source.split("\n"); // split on newlines
     var section = "";
 
