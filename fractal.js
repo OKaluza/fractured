@@ -237,12 +237,14 @@
 
   Param.prototype.declare = function(key) {
     //Return GLSL const declaration for this parameter
+    var com = this.label ? "//" + this.label + "\n" : "";
     type = this.type;
     if (this.type == 'list') type = 'int';
     if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
-    if (this.type == 'expression') return "#define " + key + " " + this.toGLSL() + "\n";
-    if (this.type.indexOf('function') > 0) return "#define " + key + "(args) " + this.value + "(args)\n";
-    return "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
+
+    if (this.type == 'expression') return com + "#define " + key + " " + this.toGLSL() + "\n";
+    if (this.type.indexOf('function') > 0) return com + "#define " + key + "(args) " + this.value + "(args)\n";
+    return com + "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
   }
 
   Param.prototype.setFromElement = function(key) {
@@ -344,7 +346,8 @@
       var name = match[3];
       var type = match[4];
       var value = match[5];
-      if (!label) label = name; //Default label if none provided
+      //if (!label) {
+      //  label = name; //Default label if none provided
 
       var param = new Param(value, type, label);
 
@@ -392,11 +395,13 @@
       var row = document.createElement("div");
       row.className = "row";
 
+      //Get label (if none provided, use field name)
+      var fieldlabel = this[key].label ? this[key].label : key;
       var label = document.createElement("span");
       label.className = "label";
       //Label text, skip for checkbox, has own label element
       if (this[key].typeid >= 0)
-        label.appendChild(label.ownerDocument.createTextNode(this[key].label));
+        label.appendChild(label.ownerDocument.createTextNode(fieldlabel));
 
       var spanin = document.createElement("span");
       spanin.className = "field";
@@ -420,7 +425,7 @@
           //Checkbox label
           var lab = document.createElement("label");
           lab.setAttribute("for", key);
-          lab.appendChild(lab.ownerDocument.createTextNode(this[key].label));
+          lab.appendChild(lab.ownerDocument.createTextNode(fieldlabel));
           spanin.appendChild(lab);
           break;
         case 0: //Integer
@@ -696,13 +701,25 @@
     return code;
   }
 
-  Fractal.prototype.getParamDeclarations = function() {
-    var code = ""
-    for (key in this.formula)
-    {
-      if (key == "inside_colour" && this.formula[key] == this.formula["outside_colour"]) continue;
-      code += this.params[this.formula[key]].toCode();
+  Fractal.prototype.getParsedFormula = function(type) {
+    //Get formula definition
+    var code = this.getFormulaCode(type);
+    //var codelines = code.split("\n").length;
+
+    //Get block of param declarations by finding first and last match index
+    var match;
+    var firstIdx = -1;
+    var lastIdx = 0;
+    while (match = paramreg.exec(code)) {
+      if (firstIdx < 0) firstIdx = paramreg.lastIndex - match[0].length;
+      lastIdx = paramreg.lastIndex;
     }
+
+    if (type == "inside_colour" && this.formula[type] == this.formula["outside_colour"]) return "";
+    var params = this.params[this.formula[type]].toCode();
+
+    //Strip out param definitions, replace with declarations
+    code = code.slice(0, firstIdx) + params.slice(0, params.length-1) + code.slice(lastIdx, code.length);
     return code;
   }
 
@@ -1227,25 +1244,25 @@
     var header = sources["shaders/fractal-header.frag"];
     if (this.compatibility) header += "\n#define COMPAT\n";
 
+    //Base code
+    var base = this.getParsedFormula("base");
+
     //Code for selected formula
-    var code = this.getFormulaCode("fractal");
+    var code = this.getParsedFormula("fractal");
 
     //Code for selected transform
-    var transformcode = this.getFormulaCode("transform");
+    var transformcode = this.getParsedFormula("transform");
 
     //Code for selected colouring algorithms
-    var outcolourcode = this.getFormulaCode("outside_colour");
-    var incolourcode = this.getFormulaCode("inside_colour");
-
-    //Define param constants now we have complete list
-    var constants = this.getParamDeclarations();
+    var outcolourcode = this.getParsedFormula("outside_colour");
+    var incolourcode = this.getParsedFormula("inside_colour");
 
     //Core code for all fractal fragment programs
     var shader = sources["shaders/fractal-shader.frag"];
     var complex = sources["shaders/complex-math.frag"];
 
     //Combine into final shader, saving line offsets
-    var fragmentShader = header + constants;
+    var fragmentShader = header + base;
     formulaOffsets["fractal"] = fragmentShader.split("\n").length;
     fragmentShader += code;
     formulaOffsets["transform"] = fragmentShader.split("\n").length;
@@ -1256,7 +1273,7 @@
     fragmentShader += incolourcode + shader + complex;
 
     //Remove param declarations, replace with newline to preserve line numbers
-    fragmentShader = fragmentShader.replace(paramreg, "//(Param removed)\n");
+    //fragmentShader = fragmentShader.replace(paramreg, "//(Param removed)\n");
 
     //Replace any (x,y) constants with complex(x,y)
     var creg = /([^a-zA-Z_])\(([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)/g;
