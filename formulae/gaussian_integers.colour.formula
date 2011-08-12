@@ -13,7 +13,7 @@
 complex ~zmin, ~zmax, ~normfac;
 real ~rmin, ~rmax, ~rave, ~total, ~itermin, ~itermax;
 
-void ~reset()
+reset:
 {
   ~rmin = 1.0e12;
   ~rmax = 0.0;
@@ -35,7 +35,7 @@ void ~reset()
     ~normfac = ~normfunc(z); //f(z) normalisation
 }
 
-void ~calc()
+calc:
 {
   complex temp, remain;
 
@@ -67,7 +67,7 @@ void ~calc()
   }
 }
 
-rgba ~result(in real repeat)
+result:
 {
   real index, t;
   

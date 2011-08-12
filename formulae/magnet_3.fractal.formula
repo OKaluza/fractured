@@ -1,31 +1,24 @@
 //Magnet3
 // similar to kleinien group / mobius transform arangement:
 // Mobius transorm z = az^2 + b / cz^2 + d
+
 //z(n+1) =
 @znext = expression((A*z^p+B) / (C*z^p-D) + c);
-//Bailout
-@bailout = real(100);
-//Converge Bailout
-@bailoutc = real(0.00005);
-//Bailout Function
-@bailfunc = bailout_function(norm);
 //Power (p)
 @p = real(2);
 @A = complex(1,0);
 @B = complex(1,0);
 @C = complex(1,0);
 @D = complex(1,0);
+//Escape
+@escape = real(100);
+//Converge
+@converge = real(0.00005);
+//Bailout Function
+@bailtest = bailout_function(norm);
 
-//Check bailout conditions and return true if bailed out
-bool bailed()
+//Convergent bailout
+converged:
 {
-  //Divergent bailout
-  if (bailfunc(z) > bailout) return true;
-  //Convergent bailout
-  if (bailfunc(z - C(1)) <= bailoutc)
-  {
-    converged = true;
-    return true;
-  }
-  return false;
+  return bailtest(z-(1,0)) < converge;
 }

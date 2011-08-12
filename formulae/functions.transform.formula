@@ -1,7 +1,7 @@
 //Simple transform that applies a function to z
 //Function
 @fn = complex_function(abs);
-void transform()
+transform:
 {
     z = fn(z);
 }

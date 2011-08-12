@@ -7,25 +7,17 @@
 @zc1 = expression(z.(c-1));
 //zc2 =
 @zc2 = expression(z.(c-2));
-//Bailout
-@bailout = real(100);
-//Converge Bailout
-@bailoutc = real(0.00005);
-//Bailout Function
-@bailfunc = bailout_function(norm);
 //Power (p)
 @p = real(2);
+//Escape
+@escape = real(100);
+//Converge
+@converge = real(0.00005);
+//Bailout Function
+@bailtest = bailout_function(norm);
 
-//Check bailout conditions and return true if bailed out
-bool bailed()
+//Convergent bailout
+converged:
 {
-  //Divergent bailout
-  if (bailfunc(z) > bailout) return true;
-  //Convergent bailout
-  if (bailfunc(z - C(1)) <= bailoutc)
-  {
-    converged = true;
-    return true;
-  }
-  return false;
+  return bailtest(z-(1,0)) < converge;
 }

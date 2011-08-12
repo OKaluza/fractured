@@ -1,7 +1,7 @@
 //z(n+1) = 
 @znext = expression(z^p + c); 
-//Bailout
-@bailout = real(4);   
+//Escape
+@escape = real(4);   
 //Bailout Function
 @bailfunc = bailout_function(norm);
 //Power (p)

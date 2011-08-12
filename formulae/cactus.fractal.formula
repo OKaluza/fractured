@@ -1,14 +1,14 @@
 //z(n+1) = 
 @znext = expression(z^p + z*(pixel-1) - pixel);
-//Bailout
-@bailout = real(4);   
-//Bailout Function
-@bailfunc = bailout_function(norm);
 //Power (p)
 @p = real(3);
+//Escape
+@escape = real(4);   
+//Bailout Function
+@bailfunc = bailout_function(norm);
 
 //Reset, called once for each pixel before iterating
-void reset()
+reset:
 {
   //Reset fractal, standard doesn't work with this algorithm
   z = pixel;
@@ -17,3 +17,4 @@ void reset()
   else
     if (perturb) z = C(0);
 }
+

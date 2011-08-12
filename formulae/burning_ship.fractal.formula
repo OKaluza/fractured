@@ -1,8 +1,8 @@
 //Burning ship with subtracted pixel coord (mirrored)
 //z(n+1) = 
 @znext = expression(abs(z)^p - c); 
-//Bailout
-@bailout = real(4);   
+//Escape
+@escape = real(4);   
 //Bailout Function
 @bailfunc = bailout_function(norm);
 //Power (p)

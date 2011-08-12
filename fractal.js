@@ -651,40 +651,69 @@
 
     //Check code for required functions, where not found create defaults
     //This allows minimal formula files by leaving out functions where they use the standard approach
-    var initreg = /void\s*~?init\(\)/g;
-    var resetreg = /void\s*~?reset\(\)/g;
-    var runstepreg = /void\s*runstep\(\)/g;
-    var znextreg = /@znext[\s=]*expression/g;
-    var bailedreg = /bool\s*bailed\(\)/g;
-    var bailoutreg = /@bailout[\s=]*real/g;
-    var bailfuncreg = /@bailfunc[\s=]*bailout_function/g;
-    var calcreg = /void\s*~calc\(\)/g;
-    var resultreg = /rgba\s*~result\(in\s*real\s*repeat\s*\)/g;
-    var transformreg = /void\s*transform\(\)/g;
+    var initreg = /^init:/gm;
+    var resetreg = /^reset:/gm;
+    var znextreg = /^znext:/gm;
+    var escapedreg = /^escaped:/gm;
+    var convergedreg = /^converged:/gm;
+    var calcreg = /^calc:/gm;
+    var resultreg = /^result:/gm;
+    var transformreg = /^transform:/gm;
 
     //Create defines for formula entry points
     code += "\n";
     if (type == "fractal") {
-      if (!initreg.exec(code)) code += "#define init()\n";
-      if (!resetreg.exec(code)) code += "#define reset()\n";
-      if (!runstepreg.exec(code)) {
-        //If use znext expression as default runstep(), define if not found
-        if (!znextreg.exec(code)) code += "#define znext mul(z,z)+c\n";
-        code += "#define runstep() z = znext\n";
-      }
-      if (!bailedreg.exec(code)) {
-        //If use bailfunc and bailout params for default bailout, define if not found
-        if (!bailoutreg.exec(code)) code += "#define bailout 4.0\n";
-        if (!bailfuncreg.exec(code)) code += "#define bailfunc norm\n";
-        code += "#define bailed() (bailfunc(z) > bailout)\n";
-      }
+      if (!initreg.exec(code)) code += "#define init()\n"; else code = code.replace(initreg, "void init()");
+      if (!resetreg.exec(code)) code += "#define reset()\n"; else code = code.replace(resetreg, "void reset()");
+      //If use znext expression if found, otherwise use function, define default if not found
+      if (!this.params[this.formula[type]]["znext"])
+        if (!znextreg.exec(code))
+          code += "#define znext() sqr(z)+c\n";
+      code = code.replace(znextreg, "complex znext()");
+
+      var converge_defined = false;
+      if (!this.params[this.formula[type]]["converged"]) {
+        if (!convergedreg.exec(code))
+          code += "#define converged false\n";
+        else
+          converge_defined = true;
+      } else
+         converge_defined = true;
+      code = code.replace(convergedreg, "bool converged()");
+
+      if (!this.params[this.formula[type]]["escaped"])
+        if (!escapedreg.exec(code))
+          if (converge_defined && !this.params[this.formula[type]]["escape"])
+            code += "#define escaped false\n";  //If converge test provided, default escape test to false
+          else
+            code += "#define escaped (bailfunc(z) > escape)\n";
+      if (!this.params[this.formula[type]]["escape"]) code += "#define escape 4.0\n";
+      if (!this.params[this.formula[type]]["bailfunc"]) code += "#define bailfunc norm\n";
+      code = code.replace(escapedreg, "bool escaped()");
+
+      //Add failsafe defines for calling functions that return results
+      code += "\n#ifndef znext\n#define znext znext()\n#endif";
+      code += "\n#ifndef escaped\n#define escaped escaped()\n#endif";
+      code += "\n#ifndef converged\n#define converged converged()\n#endif";
+
     } else if (type == "transform") {
-      if (!transformreg.exec(code)) code += "#define transform()\n"
-    } else {
+      if (!transformreg.exec(code))
+        code += "#define transform()\n";
+      else
+        code = code.replace(transformreg, "void transform()");
+    } else if (type.indexOf("colour") > -1) {
       code += "#define " + type + "_init" + (initreg.exec(code) ? " ~init\n" : "()\n");
       code += "#define " + type + "_reset" + (resetreg.exec(code) ? " ~reset\n" : "()\n");
       code += "#define " + type + "_calc" + (calcreg.exec(code) ? " ~calc\n" : "()\n");
       code += "#define " + type + "_result" + (resultreg.exec(code) ? " ~result\n" : "(A) background\n");
+
+      code = code.replace(initreg, "void ~init()");
+      code = code.replace(resetreg, "void ~reset()");
+      code = code.replace(calcreg, "void ~calc()");
+      code = code.replace(resultreg, "rgba ~result(in real repeat)");
+
+      //Add failsafe defines for calling functions that return results
+      code += "\n#ifndef result\n#define result result()\n#endif\n";
     }
 
     //Replace any ~ symbols with formula name and "_"
@@ -719,7 +748,10 @@
     var params = this.params[this.formula[type]].toCode();
 
     //Strip out param definitions, replace with declarations
-    code = code.slice(0, firstIdx) + params.slice(0, params.length-1) + code.slice(lastIdx, code.length);
+    var head = firstIdx >= 0 ? code.slice(0, firstIdx) : "";
+    var body = code.slice(lastIdx, code.length);
+    //alert(type + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
+    code = head + params.slice(0, params.length-1) + body;
     return code;
   }
 
@@ -1045,8 +1077,8 @@
     this.loadParams();
 
     //Bailout and power
-    if (saved["bailout"])
-      this.params[this.formula["fractal"]]["bailout"].parse(saved["bailout"]);
+    if (saved["bailout"] && this.formula["fractal"].indexOf("nova") < 0)
+      this.params[this.formula["fractal"]]["escape"].parse(saved["bailout"]);
     if (saved["power"])
       this.params[this.formula["fractal"]]["p"].parse(saved["power"]);
 
@@ -1066,13 +1098,13 @@
     if (this.formula["fractal"] == "nova") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
       this.params["nova"]["relax"].parse([relax.re, relax.im]);
-      this.params["nova"]["bailout"].value = 0.00001;
+      this.params["nova"]["converge"].value = 0.00001;
     }
 
     if (this.formula["fractal"] == "novabs") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
       this.params["novabs"]["relax"].parse([relax.re, relax.im]);
-      this.params["novabs"]["bailout"].value = 0.00001;
+      this.params["novabs"]["converge"].value = 0.00001;
     }
 
     if (this.formula["fractal"] == "gmm") {
@@ -1270,7 +1302,9 @@
     formulaOffsets["outside_colour"] = fragmentShader.split("\n").length;
     fragmentShader += outcolourcode;
     formulaOffsets["inside_colour"] = fragmentShader.split("\n").length;
-    fragmentShader += incolourcode + shader + complex;
+    fragmentShader += incolourcode;
+
+    fragmentShader += shader + complex;
 
     //Remove param declarations, replace with newline to preserve line numbers
     //fragmentShader = fragmentShader.replace(paramreg, "//(Param removed)\n");
@@ -1300,8 +1334,7 @@
 
     this.webgl.initProgram(vertexShader, fragmentShader);
     //Setup uniforms for fractal program
-    var uniforms = ["palette", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
-    this.webgl.setupProgram(uniforms);
+    this.webgl.setupProgram(["palette", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
   }
 
   Fractal.prototype.draw = function() {
@@ -1320,9 +1353,8 @@
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.gradientTexture);
     this.gl.uniform1i(this.webgl.program.paletteUniform, 0);
 
-    this.webgl.modelView.identity()
-
     //Apply translation to origin, any rotation and scaling (inverse of zoom factor)
+    this.webgl.modelView.identity()
     this.webgl.modelView.translate([this.origin.re, this.origin.im, 0])
     this.webgl.modelView.rotate(this.origin.rotate, [0, 0, -1]);
     //Apply zoom and flip Y to match old coord system

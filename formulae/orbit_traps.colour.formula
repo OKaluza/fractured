@@ -1,18 +1,18 @@
 //Orbit traps
 real ~closest;
 
-void ~reset()
+reset:
 {
   ~closest = 1000000.0;
 }
 
-void ~calc()
+calc:
 {
   real d = cabs(z);
   if (d < ~closest) ~closest = d;  
 }
 
-rgba ~result(in real repeat)
+result:
 {
   return gradient(repeat * ~closest);
 }

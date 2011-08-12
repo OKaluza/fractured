@@ -13,7 +13,7 @@
 //Circle limit
 @circle = real(0);
 
-void transform()
+transform:
 {
   //Apply every N steps
   if (N > 1 && mod(real(count),real(N)) != 0.0) return;

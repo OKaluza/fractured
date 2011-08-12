@@ -1,34 +1,34 @@
 //Triangle Inequality
 //Power
 @~power = real(2);
-//Use bailout
+//Use escape
 @~usebailout = bool(true);
-//Alt bailout
-@~bvalue = real(4);
+//Alt escape
+@~evalue = real(4);
 
 real ~il, ~lp;
 real ~sum = 0.0;
 real ~sum2 = 0.0;
 real ~ac = 0.0;
 
-void ~init()
+init:
 {
   ~il = 1.0/log(~power);  //Inverse log of (power).  
 
   if (~usebailout)
-    ~lp = log(log(bailout)/2.0);
+    ~lp = log(log(escape)/2.0);
   else
-    ~lp = log(log(@~bvalue)/2.0);
+    ~lp = log(log(@~evalue)/2.0);
 }
 
-void ~reset()
+reset:
 {
   ~sum = 0.0;
   ~sum2 = 0.0;
   ~ac = cabs(c);
 }
 
-void ~calc()
+calc:
 {
   ~sum2 = ~sum;
   if (count > 0)
@@ -39,7 +39,7 @@ void ~calc()
   }
 }
 
-rgba ~result(in real repeat)
+result:
 {
   ~sum /= real(count);
   ~sum2 /= real(count - 1);
