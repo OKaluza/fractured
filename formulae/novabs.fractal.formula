@@ -1,26 +1,24 @@
 //Novabs: z = abs(z - (relax * (z^p - 1)) / (p * z^(p-1))) + c
 //z(n+1) = 
 @znext = expression(abs(z - (relax*(z^p-1)) / (p*z^(p-1))) + c);
-//Bailout
-@bailout = real(0.00001);
-//Bailout Function
-@bailfunc = bailout_function(norm);
 //Power (p)
 @p = real(3);
 //Relax
 @relax = complex(1,0);
+//Converge
+@converge = real(0.00001);
+//Bailout Function
+@bailtest = bailout_function(norm);
 
 //Reset, called once for each pixel before iterating
-void reset()
+reset:
 {
-  if (!julia && !perturb) z = C(1);  //Nova init
-  converged = true;  //Always converges
+  //Nova init
+  if (!julia && !perturb) z = C(1);
 }
 
-bool bailed()
+//Convergent bailout
+converged:
 {
-  //Check bailout condition and return true if bailed out...
-  converged = true;  //Always converges
-  if (bailfunc(z-z_1) < bailout) return true; //Nova bailout
-  return false;
+  return bailtest(z-z_1) < converge;
 }

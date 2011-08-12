@@ -6,15 +6,15 @@
 
 real ~il, ~lp;
 
-void ~init()
+init:
 {
   //Inverse log of (power)
   ~il = 1.0/log(~power);
   //Additional for Smooth 2
-  ~lp = log(2.0 * log(sqrt(bailout))) * ~il;
+  ~lp = log(2.0 * log(sqrt(escape))) * ~il;
 }
 
-rgba ~result(in real repeat)
+result:
 {
   real mu;
   if (~type2)

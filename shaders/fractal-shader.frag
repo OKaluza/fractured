@@ -48,7 +48,7 @@ void main()
         c = pixel;
       }
       z_1 = z_2 = (0,0);
-      converged = false;
+      //converged = false;
 
       //Formula specific reset...
       reset();
@@ -67,11 +67,11 @@ void main()
 
         //Run next calc step
         count = i;
-        runstep();
+        z = znext;
         transform();
 
-        //Check bailout condition
-        if (bailed())
+        //Check bailout conditions
+        if (escaped || converged)
         {
           in_set = false;
           break;

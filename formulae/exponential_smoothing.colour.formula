@@ -9,13 +9,13 @@
 real ~sum = 0.0;
 real ~csum = 0.0;
 
-void ~reset()
+reset:
 {
   ~sum = 0.0;
   ~csum = 0.0;  
 }
 
-void ~calc()
+calc:
 {
   if (~diverge)
   {
@@ -34,7 +34,7 @@ void ~calc()
   }
 }
 
-rgba ~result(in real repeat)
+result:
 {
   real mu;
   if (!~diverge || ~converge && converged)

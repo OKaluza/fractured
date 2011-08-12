@@ -1,17 +1,17 @@
-//Bailout
-@bailout = real(4);   
-//Bailout Function
-@bailfunc = bailout_function(norm);
 //Power (p)
 @p = real(2);
+//Escape
+@escape = real(4);   
+//Bailout Function
+@bailfunc = bailout_function(norm);
 
 //Get next z(n+1), performs an iteration step
-void runstep()
+znext:
 {
   //(diagonally stretched)
   //z = x + yi
   //x(n+1) = y(n) + x(c)
   //y(n+1) = y(n)^2 - x(n)^2 + y(c)
-  z = complex(z.y + c.x, pow(z.y, p) - pow(z.x, p) + c.y);
+  return complex(z.y + c.x, pow(z.y, p) - pow(z.x, p) + c.y);
 }
 

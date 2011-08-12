@@ -82,45 +82,42 @@
   }
 
   WebGL.prototype.compileShader = function(source, type) {
+    //alert("Compiling " + type + " Source == " + source);
     var shader = this.gl.createShader(type);
     this.gl.shaderSource(shader, source);
     this.gl.compileShader(shader);
     if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      alert(this.gl.getShaderInfoLog(shader));
+      alert("Compile failed: " + this.gl.getShaderInfoLog(shader));
       return null;
     }
     return shader;
   }
 
-  WebGL.prototype.initProgram = function() {
+  WebGL.prototype.initProgram = function(vs, fs) {
     //Pass in vertex shader, fragment shaders...
-    var args = arguments;
-    var vertexShaderSource = args[0];
 
     if (this.gl.isProgram(this.program))
     {
       //Clean up previous shader set
-      for (var i=0; i<this.program.shaders.length; i++)
+      if (this.gl.isShader(this.program.vshader))
       {
-        var shader = this.program.shaders[i];
-        if (this.gl.isShader(shader))
-        {
-          this.gl.detachShader(this.program, shader);
-          this.gl.deleteShader(shader);
-        }
+        this.gl.detachShader(this.program, this.program.vshader);
+        this.gl.deleteShader(this.program.vshader);
+      }
+      if (this.gl.isShader(this.program.fshader))
+      {
+        this.gl.detachShader(this.program, this.program.fshader);
+        this.gl.deleteShader(this.program.fshader);
       }
     }
     else
        this.program = this.gl.createProgram();
 
-    this.program.shaders = new Array();
+    this.program.vshader = this.compileShader(vs, this.gl.VERTEX_SHADER);
+    this.program.fshader = this.compileShader(fs, this.gl.FRAGMENT_SHADER);
 
-    this.program.shaders.push(this.compileShader(args[0], this.gl.VERTEX_SHADER));
-    for (i=1; i<args.length; i++)
-      this.program.shaders.push(this.compileShader(args[i], this.gl.FRAGMENT_SHADER));
-
-    for (i=0; i<this.program.shaders.length; i++)
-      this.gl.attachShader(this.program, this.program.shaders[i]);
+    this.gl.attachShader(this.program, this.program.vshader);
+    this.gl.attachShader(this.program, this.program.fshader);
 
     this.gl.linkProgram(this.program);
 

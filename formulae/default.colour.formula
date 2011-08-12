@@ -1,5 +1,5 @@
 //Default colouring algorithm, does nothing but return the count
-rgba ~result(in real repeat)
+result:
 {
   return gradient(repeat * real(count) / real(maxiterations));
 }

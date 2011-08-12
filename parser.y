@@ -14,6 +14,15 @@
 "^"                    return '^'
 "("                    return '('
 ")"                    return ')'
+"=="                   return '=='
+"!="                   return '!='
+"<="                   return '<='
+"=<"                   return '<='
+">="                   return '>='
+"=>"                   return '>='
+"<"                    return '<'
+">"                    return '>'
+"!"                    return '!'
 "PI"                   return 'PI'
 "E"                    return 'E'
 <<EOF>>                return 'EOF'
@@ -24,6 +33,8 @@
 
 /* operator associations and precedence */
 
+%left UNOT
+%left '<' '>' '==' '!=' '<=' '>='
 %left '+' '-'
 %left '*' '/'
 %left '^'
@@ -92,8 +103,22 @@ e
           else if ($3 == 3) $$ = "cube(" + $1 + ")";
           else $$ = "cpow(" + $1 + "," + $3 + ")";
         }
+    | e '==' e
+        {$$ = $1 + " == " + $3;}
+    | e '!=' e
+        {$$ = $1 + " != " + $3;}
+    | e '<=' e
+        {$$ = $1 + " <= " + $3;}
+    | e '>=' e
+        {$$ = $1 + " >= " + $3;}
+    | e '<' e
+        {$$ = $1 + " < " + $3;}
+    | e '>' e
+        {$$ = $1 + " > " + $3;}
     | '-' e %prec UMINUS
         {$$ = "-" + $2;}
+    | '!' e %prec UNOT
+        {$$ = "!" + $2;}
     | '(' e ')'
         {$$ = $2;}
     | NUMBER
@@ -111,5 +136,6 @@ call
     : IDENTIFIER '(' e ')'
         {$$ = $1 + "(" + $3 + ")";}
     ;
+
 
 

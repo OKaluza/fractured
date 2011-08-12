@@ -17,13 +17,13 @@
 int ~closecalls;
 int ~farcalls;
 
-void ~reset()
+reset:
 {
   ~closecalls=0;
   ~farcalls=0;
 }
 
-void ~calc()
+calc:
 {
   real dist = norm(z);
   if (dist < @~closedist)
@@ -32,7 +32,7 @@ void ~calc()
     ~farcalls++;
 }
 
-rgba ~result(in real repeat)
+result:
 {
   //return gradient(repeat * real(~closecalls) / real(count));
   rgba hcolour = @~hotcolour * (real(~closecalls)/real(count));

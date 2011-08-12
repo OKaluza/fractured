@@ -93,7 +93,7 @@ complex z_1;        //Value of z(n-1)
 complex z_2;        //Value of z(n-2)
 int maxiterations;  //Number of iterations to perform
 int count = 0;      //Step counter
-bool converged;     //Converge flag
+//bool converged;     //Converge flag
 
 //Uniform data
 uniform bool julia;
@@ -116,3 +116,4 @@ real dim;
 complex radius;
 //Stores distance from current coord to origin
 real len;
+
