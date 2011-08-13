@@ -40,7 +40,6 @@
           <li><span id="show" style="display:none" onClick="toggleParams();">&darr;</span></li> 
           <li><span onClick="fractal.applyChanges();">Draw</span></li> 
           <li><span onClick="saveFractal(true);">Export</span></li> 
-          <li><span onClick="exportState();">ExportAll</span></li>
           <li><span onClick="saveFractal(false);">Save</span></li> 
           <li><span onClick="loadLastFractal();">Load</span></li> 
           <!--li><span onClick="saveImage();">Save Image</span></li--> 
@@ -68,7 +67,7 @@
         <!--hr-->
 
         <div id="formscroll" onmousedown="handleFormMouseDown(event)">
-          <form name="inputs" class="formbox">
+          <form id="inputs" name="inputs" class="formbox">
             <div class="row">
               <span class="label">Name</span>
               <span class="field"><input type="text" id="namelabel" value="unnamed" style="width: 208px"></span>
@@ -125,7 +124,7 @@
       <div class="panel" id="panel2" style="display: none">
         <div class="label">Fractal</div>
         <div class="field">
-          <select id="fractal_formula" onchange="fractal.selectFormula('fractal', this.value)">
+          <select id="fractal_formula" onchange="fractal['fractal'].select(this.value)">
           </select>
           <div class="right">
             <input type="button" value="Edit" onclick="fractal.editFormula('fractal');">
@@ -136,7 +135,7 @@
 
         <div class="label">Transform</div>
         <div class="field">
-          <select id="transform_formula" onchange="fractal.selectFormula('transform', this.value)">
+          <select id="transform_formula" onchange="fractal['transform'].select(this.value)">
             <option value="none"></option>
           </select>
           <div class="right">
@@ -148,7 +147,7 @@
 
         <div class="label">Outside Colour</div>
         <div class="field">
-          <select id="outside_colour_formula" onchange="fractal.selectFormula('outside_colour', this.value)">
+          <select id="outside_colour_formula" onchange="fractal['outside_colour'].select(this.value)">
           </select>
           <div class="right">
             <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
@@ -158,7 +157,7 @@
         </div>
         <div class="label">Inside Colour</div>
         <div class="field">
-          <select id="inside_colour_formula" onchange="fractal.selectFormula('inside_colour', this.value)">
+          <select id="inside_colour_formula" onchange="fractal['inside_colour'].select(this.value)">
           </select>
           <div class="right">
             <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
@@ -196,7 +195,8 @@
 
       <div class="panel" id="panel5" style="display: none">
         <input type="button" value="Save State" onclick="saveState();">
-        <input type="button" value="Load State" onclick="loadState();">
+        <!--input type="button" value="Load State" onclick="loadState();"-->
+        <input type="button" value="Export State" onclick="exportState();">
         <input type="button" value="Reset State" onclick="resetState();">
         <hr>
         <select id="stored" onchange="selectedFractal(this.value)">

@@ -278,13 +278,11 @@
         }
         break;
       case 4: //Function name
-        this.value = field.value;
+      case 6: //Expression
+        this.value = field.value.trim();
         break;
       case 5: //RGBA colour
         this.value = new Colour(field.style.backgroundColor);
-        break;
-      case 6: //Expression
-        this.value = field.value;
         break;
     }
   }
@@ -330,8 +328,10 @@
       if (this[key].type == 'real') savevars[key] = this[key].value;
     for (key in this)
     {
-      if (typeof(this[key]) == 'object')
+      if (typeof(this[key]) == 'object') {
+        consoleWrite(key + " = " + this[key].value);
         code += this[key].declare(key);
+      }
     }
     return code;
   }
@@ -361,7 +361,6 @@
       }
 
       this[name] = param;
-      //consoleWrite(type + " " + name + " = " + this[name].value + " (" + value + ")");
     };
   }
 
@@ -383,8 +382,8 @@
       if (typeof(this[key]) != 'object') continue;
 
       //Prevent creating duplicate fields when same colouring used for in & out
-      if (type == "outside_colour" && key.indexOf("_out_") < 0) continue;
-      if (type == "inside_colour" && key.indexOf("_in_") < 0) continue;
+      //if (type == "outside_colour" && key.indexOf("_out_") < 0) continue;
+      //if (type == "inside_colour" && key.indexOf("_in_") < 0) continue;
 
       //Append divider before first param
       if (divider) {
@@ -440,8 +439,6 @@
           break;
         case 2: //complex (2xreal)
           var input = document.createElement("input");
-          input.id = key;
-          input.name = key;
           input.id = key + "_re";
           input.name = input.id;
           input.type = "number";
@@ -495,11 +492,180 @@
           input.id = key;
           input.name = key;
           input.value = this[key].value;
+          input.setAttribute("onkeyup", "grow(this);");
+          input.setAttribute("spellcheck", false);
           spanin.appendChild(input);
           break;
       }   
     }
   }
+
+  //Contains a formula selection and its parameter set
+  function Formula(type) {
+    this.type = type;
+    this.params = {};
+
+    if (type == "base")
+      this.select("base");
+    else
+      this.select(this.getSelected(type));
+  }
+
+  Formula.prototype.select = function(name) {
+    //Formula selected, parse it's parameters
+    if (name) this.selected = name;
+    else name = this.selected;  //Re-selecting current
+
+    //Delete any existing dynamic form fields
+    var element = document.getElementById(this.type + "_params");
+    if (element.hasChildNodes()) {
+      while (element.childNodes.length >= 1 )
+        element.removeChild(element.firstChild );       
+    }
+
+    //Create empty param set if not yet defined
+    if (!this.params[name])
+      this.params[name] = new ParameterSet();
+
+    //Save a reference to active parameters
+    this.currentParams = this.params[name];
+
+    if (this.selected != "none") {
+      var code = this.getCode();
+      //Load the parameter set for selected formula
+      this.params[name].parseFormula(code);
+      //Update the fields
+      this.params[name].createFields(this.type, name);
+    }
+    //alert(this.type + "," + this.selected + " =====> " + this.currentParams.toString());
+    growTextAreas();  //Resize expression fields
+  }
+
+  //Get selected formula in select controls
+  Formula.prototype.getSelected = function(type) {
+    var sel = $(type + '_formula');
+    var selidx = sel.selectedIndex;
+    var name = sel.options[selidx].value;
+    return name;
+  }
+
+  Formula.prototype.filename = function() {
+    return formulaFilename(this.type, this.selected);
+  }
+
+  Formula.prototype.getCode = function() {
+    var name = this.selected;
+    var code = "";
+    if (name == "same")
+      code = "#define inside_colour_result outside_colour_result\n";
+    else if (name != "none") {
+      code = sources[this.filename()];
+      if (!code) alert(this.type + " - " + name + " has no formula source defined!");
+    }
+
+    //Check code for required functions, where not found create defaults
+    //This allows minimal formula files by leaving out functions where they use the standard approach
+    var initreg = /^init:/gm;
+    var resetreg = /^reset:/gm;
+    var znextreg = /^znext:/gm;
+    var escapedreg = /^escaped:/gm;
+    var convergedreg = /^converged:/gm;
+    var calcreg = /^calc:/gm;
+    var resultreg = /^result:/gm;
+    var transformreg = /^transform:/gm;
+
+    //Create defines for formula entry points
+    code += "\n";
+    if (this.type == "fractal") {
+      if (!initreg.exec(code)) code += "#define init()\n"; else code = code.replace(initreg, "void init()");
+      if (!resetreg.exec(code)) code += "#define reset()\n"; else code = code.replace(resetreg, "void reset()");
+      //If use znext expression if found, otherwise use function, define default if not found
+      if (!znextreg.exec(code)) {
+        if (!this.currentParams["znext"])
+          code += "#define znext sqr(z)+c\n";
+      } else {
+        code = code.replace(znextreg, "complex znext()");
+        code += "#define znext znext()\n";
+      }
+
+      var converge_defined = false;
+      if (!convergedreg.exec(code)) {
+        if (!this.currentParams["converged"])
+          code += "#define converged false\n";
+        else
+          converge_defined = true;
+      } else {
+        code = code.replace(convergedreg, "bool converged()");
+        code += "#define converged converged()\n";
+        converge_defined = true;
+      }
+
+      if (!escapedreg.exec(code)) {
+        if (!this.currentParams["escaped"]) {
+          if (converge_defined && !this.currentParams["escape"])
+            code += "#define escaped false\n";  //If converge test provided, default escape test to false
+          else
+            code += "#define escaped (bailtest(z) > 4.0)\n";
+        }
+      } else {
+        code = code.replace(escapedreg, "bool escaped()");
+        code += "#define escaped escaped()\n";
+      }
+
+      //if (!this[type].currentParams["escape"]) code += "#define escape 4.0\n";
+      if (!this.currentParams["bailtest"]) code += "#define bailtest norm\n";
+
+    } else if (this.type == "transform") {
+      if (!transformreg.exec(code))
+        code += "#define transform()\n";
+      else
+        code = code.replace(transformreg, "void transform()");
+    } else if (this.type.indexOf("colour") > -1) {
+      if (!initreg.exec(code)) code += "#define ~init()\n";
+      if (!resetreg.exec(code)) code += "#define ~reset()\n";
+      if (!calcreg.exec(code)) code += "#define ~calc()\n";
+      if (!resultreg.exec(code) && name != "same") code += "#define ~result(A) background\n";
+
+      code = code.replace(initreg, "void ~init()");
+      code = code.replace(resetreg, "void ~reset()");
+      code = code.replace(calcreg, "void ~calc()");
+      code = code.replace(resultreg, "rgba ~result(in real repeat)");
+    }
+
+    //Replace any ~ symbols with formula type and "_"
+    //(to prevent namespace clashes in globals/function names/params)
+    //(~ is reserved but not used in glsl)
+    code = code.replace(/~/g, this.type + "_");
+
+    return code;
+  }
+
+  Formula.prototype.getParsedFormula = function() {
+    //Get formula definition
+    var code = this.getCode();
+    //var codelines = code.split("\n").length;
+
+    //Get block of param declarations by finding first and last match index
+    var match;
+    var firstIdx = -1;
+    var lastIdx = 0;
+    while (match = paramreg.exec(code)) {
+      if (firstIdx < 0) firstIdx = paramreg.lastIndex - match[0].length;
+      lastIdx = paramreg.lastIndex;
+    }
+
+    //if (type == "inside_colour" && this[type].selected == this.formula["outside_colour"]) return "";
+    var params = this.currentParams.toCode();
+
+    //Strip out param definitions, replace with declarations
+    var head = firstIdx >= 0 ? code.slice(0, firstIdx) : "";
+    var body = code.slice(lastIdx, code.length);
+    //alert(type + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
+    code = head + params.slice(0, params.length-1) + body;
+
+    return code;
+  }
+
 
   function Fractal(canvas, webgl) {
     //Construct a new default fractal object
@@ -525,32 +691,24 @@
     this.perturb = false;
     this.compatibility = false;
 
-    this.params = {};
-
-    this.formula = {"base" : "base", "fractal" : this.getSelected("fractal"), 
-                    "transform" : this.getSelected("transform"),
-                    "outside_colour": this.getSelected("outside_colour"), 
-                    "inside_colour": this.getSelected("inside_colour")};
+    this["base"] = new Formula("base");
+    this["fractal"] = new Formula("fractal");
+    this["transform"] = new Formula("transform");
+    this["inside_colour"] = new Formula("inside_colour");
+    this["outside_colour"] = new Formula("outside_colour");
 
     //Load parameters for default formula selections
     this.loadParams();
   }
 
   Fractal.prototype.formulaFilename = function(type) {
-    return formulaFilename(type, this.formula[type]);
+    return formulaFilename(type, this[type].selected);
   }
 
   Fractal.prototype.editFormula = function(type) {
-    if (this.formula[type] != "none")
+    if (this[type].selected != "none")
       openEditor(type);
       //openEditor(this.formulaFilename(type));
-  }
-
-  Fractal.prototype.getSelected = function(type) {
-    var sel = $(type + '_formula');
-    var selidx = sel.selectedIndex;
-    var name = sel.options[selidx].value;
-    return name;
   }
 
   Fractal.prototype.newFormula = function(select) {
@@ -575,9 +733,8 @@
 
     sources["formulae/" + name + "." + type + ".formula"] = def;
 
-    this.formula[select] = name;
-      this.selectFormula(select, name);
-    $(select + '_formula').value = this.formula[select];
+    this[select].select(name); //Set selected
+    $(select + '_formula').value = name;
     this.editFormula(select);
   }
 
@@ -593,166 +750,20 @@
         var insel = $('inside_colour_formula');
         insel.options.remove(selidx+1);
         if (insel.options[insel.selectedIndex+1] == null)
-          this.selectFormula('inside_colour', insel.options[0].value);
+          this['inside_colour'].select(insel.options[0].value);
       } else if (select == 'inside_colour') {
         if (selidx < 2) return;
         var outsel = $('outside_colour_formula');
         outsel.options.remove(selidx-1);
         if (outsel.options[outsel.selectedIndex] == null)
-          this.selectFormula('outside_colour', outsel.options[0].value);
+          this['outside_colour'].select(outsel.options[0].value);
       }
     }
     sel.remove(selidx);
     sources[this.formulaFilename(select)] = null;
-    labels[this.formula[select]] = null;
+    labels[this[select].selected] = null;
     //Finally, reselect
-    this.selectFormula(select, sel.options[0].value);
-  }
-
-  Fractal.prototype.selectFormula = function(type, name) {
-    //Formula selected, parse it's parameters
-    if (name) this.formula[type] = name; //$(type + "_formula").value;
-    else name = this.formula[type];
-
-    //Delete any existing dynamic form fields
-    var element = document.getElementById(type + "_params");
-    if (element.hasChildNodes()) {
-      while (element.childNodes.length >= 1 )
-        element.removeChild(element.firstChild );       
-    }
-
-    //Create empty param set if not yet defined
-    if (!this.params[name])
-      this.params[name] = new ParameterSet();
-
-    if (this.formula[type] != "none") {
-      var code = this.getFormulaCode(type);
-      //Load the parameter set for selected formula
-      this.params[name].parseFormula(code);
-      //Update the fields
-      this.params[name].createFields(type, name);
-    }
-  }
-
-  Fractal.prototype.getFormulaCode = function(type) {
-    var name = this.formula[type];
-    if (name == "same") {
-      //Don't load code for this formula, replace with dummy defines
-      var defines = "#define inside_colour_init()\n" +
-      "#define inside_colour_reset()\n#define inside_colour_calc()\n" + 
-      "#define inside_colour_result " + this.formula["outside_colour"] + "_out_result\n";
-      return defines;
-    }
-    var code = "";
-    if (name != "none") {
-      code = sources[this.formulaFilename(type)];
-      if (!code) alert(type + " - " + name + " has no formula source defined!");
-    }
-
-    //Check code for required functions, where not found create defaults
-    //This allows minimal formula files by leaving out functions where they use the standard approach
-    var initreg = /^init:/gm;
-    var resetreg = /^reset:/gm;
-    var znextreg = /^znext:/gm;
-    var escapedreg = /^escaped:/gm;
-    var convergedreg = /^converged:/gm;
-    var calcreg = /^calc:/gm;
-    var resultreg = /^result:/gm;
-    var transformreg = /^transform:/gm;
-
-    //Create defines for formula entry points
-    code += "\n";
-    if (type == "fractal") {
-      if (!initreg.exec(code)) code += "#define init()\n"; else code = code.replace(initreg, "void init()");
-      if (!resetreg.exec(code)) code += "#define reset()\n"; else code = code.replace(resetreg, "void reset()");
-      //If use znext expression if found, otherwise use function, define default if not found
-      if (!this.params[this.formula[type]]["znext"])
-        if (!znextreg.exec(code))
-          code += "#define znext() sqr(z)+c\n";
-      code = code.replace(znextreg, "complex znext()");
-
-      var converge_defined = false;
-      if (!this.params[this.formula[type]]["converged"]) {
-        if (!convergedreg.exec(code))
-          code += "#define converged false\n";
-        else
-          converge_defined = true;
-      } else
-         converge_defined = true;
-      code = code.replace(convergedreg, "bool converged()");
-
-      if (!this.params[this.formula[type]]["escaped"])
-        if (!escapedreg.exec(code))
-          if (converge_defined && !this.params[this.formula[type]]["escape"])
-            code += "#define escaped false\n";  //If converge test provided, default escape test to false
-          else
-            code += "#define escaped (bailfunc(z) > escape)\n";
-      if (!this.params[this.formula[type]]["escape"]) code += "#define escape 4.0\n";
-      if (!this.params[this.formula[type]]["bailfunc"]) code += "#define bailfunc norm\n";
-      code = code.replace(escapedreg, "bool escaped()");
-
-      //Add failsafe defines for calling functions that return results
-      code += "\n#ifndef znext\n#define znext znext()\n#endif";
-      code += "\n#ifndef escaped\n#define escaped escaped()\n#endif";
-      code += "\n#ifndef converged\n#define converged converged()\n#endif";
-
-    } else if (type == "transform") {
-      if (!transformreg.exec(code))
-        code += "#define transform()\n";
-      else
-        code = code.replace(transformreg, "void transform()");
-    } else if (type.indexOf("colour") > -1) {
-      code += "#define " + type + "_init" + (initreg.exec(code) ? " ~init\n" : "()\n");
-      code += "#define " + type + "_reset" + (resetreg.exec(code) ? " ~reset\n" : "()\n");
-      code += "#define " + type + "_calc" + (calcreg.exec(code) ? " ~calc\n" : "()\n");
-      code += "#define " + type + "_result" + (resultreg.exec(code) ? " ~result\n" : "(A) background\n");
-
-      code = code.replace(initreg, "void ~init()");
-      code = code.replace(resetreg, "void ~reset()");
-      code = code.replace(calcreg, "void ~calc()");
-      code = code.replace(resultreg, "rgba ~result(in real repeat)");
-
-      //Add failsafe defines for calling functions that return results
-      code += "\n#ifndef result\n#define result result()\n#endif\n";
-    }
-
-    //Replace any ~ symbols with formula name and "_"
-    //(to prevent namespace clashes in globals/function names/params)
-    //If colour formula, use "name_in_" / "name_out_"
-    //(~ is reserved but not used in glsl)
-    if (type == "inside_colour")
-      code = code.replace(/~/g, name + "_in_");
-    else if (type == "outside_colour")
-      code = code.replace(/~/g, name + "_out_");
-    else
-      code = code.replace(/~/g, name + "_");
-
-    return code;
-  }
-
-  Fractal.prototype.getParsedFormula = function(type) {
-    //Get formula definition
-    var code = this.getFormulaCode(type);
-    //var codelines = code.split("\n").length;
-
-    //Get block of param declarations by finding first and last match index
-    var match;
-    var firstIdx = -1;
-    var lastIdx = 0;
-    while (match = paramreg.exec(code)) {
-      if (firstIdx < 0) firstIdx = paramreg.lastIndex - match[0].length;
-      lastIdx = paramreg.lastIndex;
-    }
-
-    if (type == "inside_colour" && this.formula[type] == this.formula["outside_colour"]) return "";
-    var params = this.params[this.formula[type]].toCode();
-
-    //Strip out param definitions, replace with declarations
-    var head = firstIdx >= 0 ? code.slice(0, firstIdx) : "";
-    var body = code.slice(lastIdx, code.length);
-    //alert(type + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
-    code = head + params.slice(0, params.length-1) + body;
-    return code;
+    this[select].select(sel.options[0].value);
   }
 
   //Save fractal (write param/source file)
@@ -764,29 +775,29 @@
                "selected=" + this.selected + "\n" +
                "julia=" + this.julia + "\n" +
                "perturb=" + this.perturb + "\n" +
-               "fractal=" + this.formula["fractal"] + "\n" +
-               "transform=" + this.formula["transform"] + "\n" +
-               "outside_colour=" + this.formula["outside_colour"] + "\n" +
-               "inside_colour=" + this.formula["inside_colour"] + "\n" +
-               "\n[params.base]\n" + this.params["base"];
+               "fractal=" + this["fractal"].selected + "\n" +
+               "transform=" + this["transform"].selected + "\n" +
+               "outside_colour=" + this["outside_colour"].selected + "\n" +
+               "inside_colour=" + this["inside_colour"].selected + "\n" +
+               "\n[params.base]\n" + this["base"].currentParams;
 
-    var types;
-    if (this.formula["outside_colour"] == this.formula["inside_colour"])
-      types = ["fractal", "transform", "outside_colour"];
-    else
-      types = ["fractal", "transform", "outside_colour", "inside_colour"];
-
+    var types = ["fractal", "transform", "outside_colour", "inside_colour"];
+    //Parameter values
     for (t in types) {
       type = types[t];
-      if (this.formula[type] != "none") {
-        if (this.params[this.formula[type]].count() > 0) {
-          code += "\n[params." + this.formula[type] + "]\n" + 
-                  this.params[this.formula[type]];
-        }
-        code += "\n[formula." + this.formula[type] + "]\n" + 
-                sources[this.formulaFilename(type)];
-      }
+      if (this[type].selected != "none" && this[type].currentParams.count() > 0)
+          code += "\n[params." + type + "]\n" + this[type].currentParams;
     }
+    //Formula code (TODO: Re-enable once code stable!)
+    /*
+    for (t in types) {
+      type = types[t];
+      if (this[type].selected != "none") {
+        //Don't save formula source twice if same colouring used
+        if (t==3 && this["outside_colour"].selected == this["inside_colour"].selected) break;
+        code += "\n[formula." + type + "]\n" + sources[this.formulaFilename(type)];
+      }
+    }*/
     code += "\n[palette]\n" + colours.palette;
     return code;
   }
@@ -815,11 +826,19 @@
     //3. Load code for each selected formula (including "base")
     //4. For each formula, load formula params into params[formula]
     //5. Load palette
-    //Name change fixes... TODO: run a sed script on all existing saved fractals then can remove these lines
+    //Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
     source = source.replace(/exp_smooth/g, "exponential_smoothing");
     source = source.replace(/magnet(\d)/g, "magnet_$1");
     source = source.replace(/burningship/g, "burning_ship");
+    source = source.replace(/zold=/g, "z_old=");
     source = source.replace(/power=/g, "p=");
+    source = source.replace(/bailfunc=/g, "bailtest=");
+    if (source.indexOf("nova") > 0)
+      source = source.replace(/bailout=/g, "converged=bailtest(z-z_1) < ");
+    else
+      source = source.replace(/bailout=/g, "escaped=bailtest(z) > ");
+    source = source.replace(/bailoutc=/g, "converged=bailtest(z-1) < ");
+
     var lines = source.split("\n"); // split on newlines
     var section = "";
 
@@ -883,18 +902,29 @@
           this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
         } else {
           //Formula name
-          this.selectFormula(pair[0], pair[1]);
-          //this.formula[pair[0]] = pair[1];
+          this[pair[0]].select(pair[1]);
           formulas[pair[1]] = pair[0]; //Save for a reverse lookup
         }
       } else if (section.slice(0, 7) == "params.") {
         var pair1 = section.split(".");
-        var formula = pair1[1];
+        var type = pair1[1]
+        var formula = formulas[type];
+        //Check if using old style [params.formula] instead of [params.type]
+        if (type != "base" && type in formulas) {
+          type = formula;
+          if (type.indexOf('colour') > 0) {
+            line = line.replace(/_in_/g, "_");
+            line = line.replace(/_out_/g, "_");
+            line = line.replace(pair1[1], type);
+          }
+        }
+        if (!type) type = "base";
         var pair2 = line.split("=");
-        if (this.params[formula][pair2[0]])
-          this.params[formula][pair2[0]].parse(pair2[1]);
+        if (this[type].currentParams[pair2[0]])
+          this[type].currentParams[pair2[0]].parse(pair2[1]);
         else //Not defined in formula, skip
-          consoleWrite("Skipped param, not declared: " + section + "--- this.params[" + formula + "][" + pair2[0] + "]=" + pair2[1]);
+          alert(pair2[0] + " not in: " + this[type].currentParams);
+          //consoleWrite("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
 
       }
     }
@@ -958,13 +988,13 @@
 
         //Process ini format params
         if (pair[0] == "Formula" || pair[0] == "Type" || pair[0] == "OperationType") {
-          this.formula["fractal"] = convertFormulaName(pair[1]);
+          this["fractal"].select(convertFormulaName(pair[1]));
         } else if (pair[0] == "JuliaFlag")
           this.julia = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "PerturbFlag" || pair[0] == "zFlag")
           this.perturb = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "Iterations")
-          this.params["base"]["iterations"].value = parseInt(pair[1]); 
+          this["base"].currentParams["iterations"].value = parseInt(pair[1]); 
         else if (pair[0] == "Xstart")
           this.origin.re = parseFloat(pair[1]);
         else if (pair[0] == "Ystart")
@@ -990,7 +1020,7 @@
           this.origin.im += fheight * 0.5;
         }
         else if (pair[0] == "AntiAlias")
-          this.params["base"]["antialias"].value = 1; //pair[1]; Don't override antialias
+          this["base"].currentParams["antialias"].value = 1; //pair[1]; Don't override antialias
         else if (pair[0] == "Rotation")
           this.origin.rotate = pair[1];
         //Selected coords for Julia/Perturb
@@ -1002,21 +1032,21 @@
           saved["smooth"] = pair[1];
         else if (pair[0] == "PaletteRepeat") {
           //Initially copy to both repeat params
-          this.params["base"]["outrepeat"].parse(pair[1]);
-          this.params["base"]["inrepeat"].parse(pair[1]);
+          this["base"].currentParams["outrepeat"].parse(pair[1]);
+          this["base"].currentParams["inrepeat"].parse(pair[1]);
         }
         else if (pair[0] == "PaletteRepeatIn")
-          this.params["base"]["inrepeat"].parse(pair[1]);
+          this["base"].currentParams["inrepeat"].parse(pair[1]);
         else if (pair[0] == "Outside") {
           saved["outside"] = pair[1];
-          this.formula['outside_colour'] = convertFormulaName(pair[1]);
+          this['outside_colour'].select(convertFormulaName(pair[1]));
         }
         else if (pair[0] == "Inside") {
           saved["inside"] = pair[1];
-          this.formula['inside_colour'] = convertFormulaName(pair[1]);
+          this['inside_colour'].select(convertFormulaName(pair[1]));
         }
         else if (pair[0] == "VariableIterations")
-          this.params["base"]["vary"].parse(pair[1]);
+          this["base"].currentParams["vary"].parse(pair[1]);
 
         //Following parameters need to be created rather than just set values, save for processing later
         else if (pair[0] == "Bailout")
@@ -1068,132 +1098,139 @@
     if (saved["smooth"]) {
       //Really old
       if (parseInt(saved["smooth"]) == 1)
-        this.formula["outside_colour"] = "smooth";
+        this["outside_colour"].select("smooth");
       else
-        this.formula["outside_colour"] = "default";
+        this["outside_colour"].select("default");
     }
 
     // Load formulae
-    this.loadParams();
+    //this.loadParams();
 
     //Bailout and power
-    if (saved["bailout"] && this.formula["fractal"].indexOf("nova") < 0)
-      this.params[this.formula["fractal"]]["escape"].parse(saved["bailout"]);
-    if (saved["power"])
-      this.params[this.formula["fractal"]]["p"].parse(saved["power"]);
+    if (saved["bailout"] && this["fractal"].selected.indexOf("nova") < 0)
+      this["fractal"].currentParams["escaped"].parse("bailtest(z) > " + saved["bailout"]);
+    if (saved["power"] != undefined)
+      this["fractal"].currentParams["p"].parse(saved["power"]);
+    //Correct error where possible, may require further param adjust
+    if (this["fractal"].currentParams["p"].value <= 0) {
+      alert("NOTE: power <= 0");
+      this["fractal"].currentParams["p"].value = 1;
+    }
 
     //Formula specific param parsing
-    if (this.formula["fractal"] == "magnet_1") {
+    if (this["fractal"].selected == "magnet_1") {
       if (saved["power2"])
-        this.params["magnet_1"]["q"].parse(saved["power2"]);
+        this['fractal'].currentParams["q"].parse(saved["power2"]);
     }
 
-    if (this.formula["fractal"] == "magnet_3") {
-      this.params["magnet_3"]["A"].parse([saved["param1"].re, saved["param1"].im]);
-      this.params["magnet_3"]["B"].parse([saved["param3"].re, saved["param3"].im]);
-      this.params["magnet_3"]["C"].parse([saved["param2"].re, saved["param2"].im]);
-      this.params["magnet_3"]["D"].parse([saved["param3"].re, saved["param3"].im]);
+    if (this["fractal"].selected == "magnet_3") {
+      this['fractal'].currentParams["A"].parse([saved["param1"].re, saved["param1"].im]);
+      this['fractal'].currentParams["B"].parse([saved["param3"].re, saved["param3"].im]);
+      this['fractal'].currentParams["C"].parse([saved["param2"].re, saved["param2"].im]);
+      this['fractal'].currentParams["D"].parse([saved["param3"].re, saved["param3"].im]);
     }
 
-    if (this.formula["fractal"] == "nova") {
+    if (this["fractal"].selected == "nova") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-      this.params["nova"]["relax"].parse([relax.re, relax.im]);
-      this.params["nova"]["converge"].value = 0.00001;
+      this['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
+      this['fractal'].currentParams["converged"].parse("bailtest(z-z_1) < 0.00001");
     }
 
-    if (this.formula["fractal"] == "novabs") {
+    if (this["fractal"].selected == "novabs") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-      this.params["novabs"]["relax"].parse([relax.re, relax.im]);
-      this.params["novabs"]["converge"].value = 0.00001;
+      this['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
+      this['fractal'].currentParams["converged"].parse("bailtest(z-z_1) < 0.00001");
     }
 
-    if (this.formula["fractal"] == "gmm") {
-      this.params["gmm"]["A"].parse([saved["param1"].re, saved["param1"].im]);
-      this.params["gmm"]["B"].parse([saved["param2"].re, saved["param2"].im]);
-      this.params["gmm"]["C"].parse([saved["param3"].re, saved["param3"].im]);
-      this.params["gmm"]["D"].parse([saved["param4"].re, saved["param4"].im]);
+    if (this["fractal"].selected == "gmm") {
+      this['fractal'].currentParams["A"].parse([saved["param1"].re, saved["param1"].im]);
+      this['fractal'].currentParams["B"].parse([saved["param2"].re, saved["param2"].im]);
+      this['fractal'].currentParams["C"].parse([saved["param3"].re, saved["param3"].im]);
+      this['fractal'].currentParams["D"].parse([saved["param4"].re, saved["param4"].im]);
     }
 
-    if (this.formula["fractal"] == "quadra") {
-      this.params["quadra"]["a"].parse([saved["param1"].re, saved["param1"].im]);
-      this.params["quadra"]["b"].parse([saved["param2"].re, saved["param2"].im]);
+    if (this["fractal"].selected == "quadra") {
+      this['fractal'].currentParams["a"].parse([saved["param1"].re, saved["param1"].im]);
+      this['fractal'].currentParams["b"].parse([saved["param2"].re, saved["param2"].im]);
     }
 
-    if (this.formula["fractal"] == "phoenix") {
+    if (this["fractal"].selected == "phoenix") {
       if (saved["power2"])
-        this.params["phoenix"]["q"].parse([saved["power2"], 0.0]);
-      this.params["phoenix"]["distort"].parse([saved["param1"].re, saved["param1"].im]);
+        this['fractal'].currentParams["q"].parse([saved["power2"], 0.0]);
+      this['fractal'].currentParams["distort"].parse([saved["param1"].re, saved["param1"].im]);
     }
 
     //Functions and ops
     if (!saved["inductop"]) saved["inductop"] = "0";
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
-      this.selectFormula("transform", "fractured");
+      this["transform"].select("fractured");
 
       var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
 
-      this.params["fractured"]["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
-      this.params["fractured"]["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
+      this['transform'].currentParams["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
+      this['transform'].currentParams["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
-        this.params["fractured"]["induct"].parse([saved["induct"].re, saved["induct"].im]);
+        this['transform'].currentParams["induct"].parse([saved["induct"].re, saved["induct"].im]);
       else if (saved["param1"])
-        this.params["fractured"]["induct"].parse([saved["param1"].re, saved["param1"].im]);
+        this['transform'].currentParams["induct"].parse([saved["param1"].re, saved["param1"].im]);
 
-      this.params["fractured"]["induct_on"].value = saved["inductop"];
-      if (this.params["fractured"]["induct_on"].value >= 10) {
+      this['transform'].currentParams["induct_on"].value = saved["inductop"];
+      if (this['transform'].currentParams["induct_on"].value >= 10) {
         //Double induct, same effect as induct*2
-        this.params["fractured"]["induct_on"].value -= 10;
-        this.params["fractured"]["induct"].value.re *= 2.0;
-        this.params["fractured"]["induct"].value.im *= 2.0;
+        this['transform'].currentParams["induct_on"].value -= 10;
+        this['transform'].currentParams["induct"].value.re *= 2.0;
+        this['transform'].currentParams["induct"].value.im *= 2.0;
       }
-      if (this.params["fractured"]["induct_on"].value == 1)
-        this.params["fractured"]["induct_on"].value = 2;
-      if (this.params["fractured"]["induct_on"].value > 1)
-        this.params["fractured"]["induct_on"].value = 1;
+      if (this['transform'].currentParams["induct_on"].value == 1)
+        this['transform'].currentParams["induct_on"].value = 2;
+      if (this['transform'].currentParams["induct_on"].value > 1)
+        this['transform'].currentParams["induct_on"].value = 1;
     }
 
     //Colour formulae param conversion
-    function convertColourParams(type, formula, params) {
-      var inout;
-      if (type == "outside") inout = "_out_"; else inout = "_in_";
+    function convertColourParams(type, formula) {
+      var typename = type + "_colour";
+      var params = formula[typename].currentParams;
+      //var inout;
+      //if (type == "outside") inout = "_out_"; else inout = "_in_";
 
-      if (formula[type + "_colour"] == "smooth") {
-        var prefix = "smooth" + inout;
-        params["smooth"][prefix + "usepower"].value = false;
-        params["smooth"][prefix + "type2"].value = false;
+      if (formula[typename].selected == "smooth") {
+        //var prefix = "smooth" + inout;
+        params["usepower"].value = false;
+        params["type2"].value = false;
         if (saved[type] == "Smooth 2")
-          params["smooth"][prefix + "type2"].value = true;
+          params["type2"].value = true;
       }
 
-      if (formula[type + "_colour"] == "exponential_smoothing") {
-        var prefix = "exponential_smoothing" + inout;
-        params["exponential_smoothing"][prefix + "diverge"].value = true;
-        params["exponential_smoothing"][prefix + "converge"].value = false;
-        params["exponential_smoothing"][prefix + "use_z_old"].value = false;
+      if (formula[typename].selected == "exponential_smoothing") {
+        ////var prefix = "exponential_smoothing" + inout;
+        params["diverge"].value = true;
+        params["converge"].value = false;
+        params["use_z_old"].value = false;
         if (saved[type] == "Exp. Smoothing - Xdiverge")
-          params["exponential_smoothing"][prefix + "use_z_old"].value = true;
+          params["use_z_old"].value = true;
         if (saved[type] == "Exp. Smoothing - converge") {
-          params["exponential_smoothing"][prefix + "diverge"].value = false;
-          params["exponential_smoothing"][prefix + "converge"].value = true;
-          params["exponential_smoothing"][prefix + "use_z_old"].value = true;
+          params["diverge"].value = false;
+          params["converge"].value = true;
+          params["use_z_old"].value = true;
         }
         if (saved[type] == "Exp. Smoothing - Both") {
-          params["exponential_smoothing"][prefix + "converge"].value = true;
-          params["exponential_smoothing"][prefix + "use_z_old"].value = true;
+          params["converge"].value = true;
+          params["use_z_old"].value = true;
         }
       }
 
-      if (formula[type + "_colour"] == "gaussian_integers") {
-        var prefix = "gaussian_integers" + inout;
-        params["gaussian_integers"][prefix + "mode"].parse(saved["param2"].re);
-        params["gaussian_integers"][prefix + "colourby"].parse(saved["param2"].im);
+      if (formula[typename].selected == "gaussian_integers") {
+        //var prefix = "gaussian_integers" + inout;
+        params["mode"].parse(saved["param2"].re);
+        params["colourby"].parse(saved["param2"].im);
       }
     }
 
-    convertColourParams("outside", this.formula, this.params);
-    convertColourParams("inside", this.formula, this.params);
+    convertColourParams("outside", this);
+    convertColourParams("inside", this);
 
     //Update parameters to form
     this.loadParams();
@@ -1202,9 +1239,11 @@
 
   Fractal.prototype.loadParams = function() {
     //Parse param fields from formula code
-    for (key in this.formula)
-      this.selectFormula(key, this.formula[key]);
-
+    this["base"].select();
+    this["fractal"].select();
+    this["transform"].select();
+    this["inside_colour"].select();
+    this["outside_colour"].select();
     //Copy params to form fields
     this.copyToForm();
   }
@@ -1241,8 +1280,11 @@
     this.origin.zoom = parseFloat(document.getElementById("zoomLevel").value);
 
     //Copy form values to defined parameters
-    for (key in this.formula)
-      this.params[this.formula[key]].setFromForm();
+    this["base"].currentParams.setFromForm();
+    this["fractal"].currentParams.setFromForm();
+    this["transform"].currentParams.setFromForm();
+    this["inside_colour"].currentParams.setFromForm();
+    this["outside_colour"].currentParams.setFromForm();
 
     //Update shader code & redraw
     this.writeShader();
@@ -1261,33 +1303,33 @@
     document.inputs.elements["rotate"].value = this.origin.rotate;
     document.inputs.elements["julia"].checked = this.julia;
     document.inputs.elements["perturb"].checked = this.perturb;
-    $('fractal_formula').value = this.formula["fractal"];
-    $('transform_formula').value = this.formula["transform"];
-    $('outside_colour_formula').value = this.formula["outside_colour"];
-    $('inside_colour_formula').value = this.formula["inside_colour"];
+    $('fractal_formula').value = this["fractal"].selected;
+    $('transform_formula').value = this["transform"].selected;
+    $('outside_colour_formula').value = this["outside_colour"].selected;
+    $('inside_colour_formula').value = this["inside_colour"].selected;
   }
 
   //Build and redraw shader from source components
   Fractal.prototype.writeShader = function() {
     //Get formula selections
-    consoleWrite("Building fractal shader using:\nformula: " + this.formula["fractal"] + "\ntransform: " + this.formula["transform"] + "\noutside colour: " + this.formula["outside_colour"] + "\ninside colour: " + this.formula["inside_colour"]);
+    consoleWrite("Building fractal shader using:\nformula: " + this["fractal"].selected + "\ntransform: " + this["transform"].selected + "\noutside colour: " + this["outside_colour"].selected + "\ninside colour: " + this["inside_colour"].selected);
 
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
     if (this.compatibility) header += "\n#define COMPAT\n";
 
     //Base code
-    var base = this.getParsedFormula("base");
+    var base = this["base"].getParsedFormula();
 
     //Code for selected formula
-    var code = this.getParsedFormula("fractal");
+    var code = this["fractal"].getParsedFormula();
 
     //Code for selected transform
-    var transformcode = this.getParsedFormula("transform");
+    var transformcode = this["transform"].getParsedFormula();
 
     //Code for selected colouring algorithms
-    var outcolourcode = this.getParsedFormula("outside_colour");
-    var incolourcode = this.getParsedFormula("inside_colour");
+    var outcolourcode = this["outside_colour"].getParsedFormula();
+    var incolourcode = this["inside_colour"].getParsedFormula();
 
     //Core code for all fractal fragment programs
     var shader = sources["shaders/fractal-shader.frag"];
