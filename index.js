@@ -176,15 +176,17 @@ var editorTheme = 'dark';
 
   //Import/export all local storage to a text file
   function exportState() {
-    //This will overwrite everything, TODO: Confirm
     var source = JSON.stringify(localStorage);
     location.href = 'data:text/store;base64,' + window.btoa(source);
   }
+
   function importState(filename, source) {
+    //This will overwrite everything, TODO: Confirm
     try {
       var parsed = JSON.parse(source);
       for (key in parsed)
-         localStorage[key] = parsed[key];
+        localStorage[key] = parsed[key];
+      window.location.reload(false);
     } catch(e) {
       alert('Error! ' + e);
     }
@@ -349,7 +351,24 @@ var editorTheme = 'dark';
     selectedTab.style.paddingTop = '2px';
     for(i = 0; i < panels.length; i++)
       document.getElementById(panels[i]).style.display = (name == panels[i]) ? 'block':'none';
+
+    //Resize expression edit fields
+    if (selectedTab.id == "tab1") growTextAreas();
     return false;
+  }
+
+  function growTextAreas() {
+    var elem = document.getElementById('inputs').elements;
+    for(var i = 0; i < elem.length; i++)
+      if (elem[i].type == 'textarea') grow(elem[i]);
+  }
+
+  function grow(textarea) {
+    // Value of the line-height CSS property for the textarea.
+    var newHeight = textarea.scrollHeight;
+    var currentHeight = textarea.clientHeight;
+    if (newHeight > currentHeight)
+       textarea.style.height = newHeight + "px";
   }
 
   function toggleParams() {

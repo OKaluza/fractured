@@ -66,7 +66,7 @@ performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate, $$, _$)
         break;
       case 6:
         if ($$[$0] == 0) {
-            this.$ = 1;
+            this.$ = "1.0";
         } else if ($$[$0] == 1) {
             this.$ = $$[$0 - 2];
         } else if ($$[$0] == 2) {

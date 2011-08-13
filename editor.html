@@ -67,7 +67,7 @@ var formula;
     if (filename == "gen-shader.frag")
       window.opener.fractal.updateShader(code.value);
     else {
-      window.opener.fractal.selectFormula(type);
+      window.opener.fractal[type].select();
       window.opener.fractal.writeShader();
     }
     window.opener.fractal.draw();
