@@ -8,8 +8,8 @@
 @distort = complex(1);
 //Escape
 @escape = real(4);
-//Bailout Function
-@bailfunc = bailout_function(norm);
+//Bailout Test
+@bailtest = bailout_function(norm);
 
 //Reset, called once for each pixel before iterating
 reset:

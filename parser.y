@@ -14,6 +14,7 @@
 "^"                    return '^'
 "("                    return '('
 ")"                    return ')'
+"|"                    return '|'
 "=="                   return '=='
 "!="                   return '!='
 "<="                   return '<='
@@ -38,6 +39,7 @@
 %left '+' '-'
 %left '*' '/'
 %left '^'
+%left ABS
 %left UMINUS
 
 %start expressions
@@ -121,6 +123,8 @@ e
         {$$ = "!" + $2;}
     | '(' e ')'
         {$$ = $2;}
+    | '|' e '|' %prec ABS
+        {$$ = "cabs(" + $2 + ")";}
     | NUMBER
         {
           if (yytext.indexOf(".") < 0) 
@@ -136,6 +140,7 @@ call
     : IDENTIFIER '(' e ')'
         {$$ = $1 + "(" + $3 + ")";}
     ;
+
 
 
 

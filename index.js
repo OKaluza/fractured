@@ -269,6 +269,7 @@ var editorTheme = 'dark';
     try {
       var types = ["fractal", "transform", "colour"];
       var formulae = {};
+      var selected = {};
       for (t in types) {
         var start = t<1 ? 0 : 1;
         var selname = t<2 ? types[t] + "_formula" : "outside_colour_formula";
@@ -280,11 +281,12 @@ var editorTheme = 'dark';
           //Store formula source using filename key
           localStorage[filename] = sources[filename];
         }
+        //Get selected
+        selected[types[t]] = select.options[select.selectedIndex].value;
       }
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formulae);
       //Save selected formulae
-      var selected = fractal.formula;
       localStorage["fractured.selected"] = JSON.stringify(selected);
       //Save current fractal
       saveFractal(false);

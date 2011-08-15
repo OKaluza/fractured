@@ -5,20 +5,19 @@
 @p = real(3);
 //Relax
 @relax = complex(1,0);
+//Bailout Test
+@bailtest = bailout_function(norm);
 //Converge
 @converge = real(0.00001);
-//Bailout Function
-@bailtest = bailout_function(norm);
+
+converged:
+{
+  return bailtest(z-z_1) < converge;
+}
 
 //Reset, called once for each pixel before iterating
 reset:
 {
   //Nova init
   if (!julia && !perturb) z = C(1);
-}
-
-//Convergent bailout
-converged:
-{
-  return bailtest(z-z_1) < converge;
 }

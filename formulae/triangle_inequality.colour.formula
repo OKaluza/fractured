@@ -1,24 +1,18 @@
 //Triangle Inequality
 //Power
-@~power = real(2);
-//Use escape
-@~usebailout = bool(true);
-//Alt escape
-@~evalue = real(4);
+@~power = expression(p);
+//Bailout
+@~bailout = expression(escape);
 
 real ~il, ~lp;
-real ~sum = 0.0;
-real ~sum2 = 0.0;
+real ~sum = 10.0;
+real ~sum2 = 5.0;
 real ~ac = 0.0;
 
 init:
 {
   ~il = 1.0/log(~power);  //Inverse log of (power).  
-
-  if (~usebailout)
-    ~lp = log(log(escape)/2.0);
-  else
-    ~lp = log(log(@~evalue)/2.0);
+  ~lp = log(log(@~bailout)/2.0);
 }
 
 reset:
@@ -42,9 +36,13 @@ calc:
 result:
 {
   ~sum /= real(count);
-  ~sum2 /= real(count - 1);
-  real f = ~il * (~lp - log(log(cabs(z))));
-  real idx = ~sum2 + (~sum - ~sum2) * (f+1.0);  
+  ~sum2 /= real(count-1);
+    //Fractured version!
+    complex x1 = loge(complex(log(cabs(z))));
+    real f = ~il * (~lp - x1.x);
+  //Correct version:
+  //real f = ~il * (~lp - log(log(cabs(z))));
+  real idx = ~sum2 + (~sum - ~sum2) * (f+1.0);
   return gradient(repeat * idx);
 }
 

@@ -9,14 +9,14 @@
 @zc2 = expression(z.(c-2));
 //Power (p)
 @p = real(2);
+//Bailout Test
+@bailtest = bailout_function(norm);
 //Escape
 @escape = real(100);
 //Converge
 @converge = real(0.00005);
-//Bailout Function
-@bailtest = bailout_function(norm);
 
-//Convergent bailout
+//Converge test
 converged:
 {
   return bailtest(z-(1,0)) < converge;
