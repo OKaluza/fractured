@@ -1,9 +1,9 @@
 //Power (p)
 @p = real(2);
 //Escape
-@escape = real(4);   
-//Bailout Function
-@bailfunc = bailout_function(norm);
+@escape = real(4);
+//Bailout Test
+@bailtest = bailout_function(norm);
 
 //Get next z(n+1), performs an iteration step
 znext:

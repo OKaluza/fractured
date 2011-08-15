@@ -3,9 +3,9 @@
 //Power (p)
 @p = real(3);
 //Escape
-@escape = real(4);   
-//Bailout Function
-@bailfunc = bailout_function(norm);
+@escape = real(4);
+//Bailout Test
+@bailtest = bailout_function(norm);
 
 //Reset, called once for each pixel before iterating
 reset:
@@ -15,6 +15,6 @@ reset:
   if (julia)
     z = selected;
   else
-    if (perturb) z = C(0);
+    if (perturb) z = (0,0);
 }
 

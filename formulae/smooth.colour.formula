@@ -2,7 +2,9 @@
 //Type 2
 @~type2 = bool(false);
 //Power
-@~power = real(2);
+@~power = expression(p);
+//Bailout
+@~bailout = expression(escape);
 
 real ~il, ~lp;
 
@@ -11,7 +13,7 @@ init:
   //Inverse log of (power)
   ~il = 1.0/log(~power);
   //Additional for Smooth 2
-  ~lp = log(2.0 * log(sqrt(escape))) * ~il;
+  ~lp = log(2.0 * log(sqrt(@~bailout))) * ~il;
 }
 
 result:

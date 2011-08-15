@@ -266,16 +266,18 @@
         break;
       case 0: //Integer = entry
       case 3: //Integer from list
+        if (field.value == "") field.value = 0;
         this.value = parseInt(field.value);
         break;
       case 1: //real = entry
+        if (field.value == "") field.value = 0;
         this.value = parseFloat(field.value);
         break;
       case 2: //complex = 2 x entry
-        if (document.getElementById(key + "_re")) {
-          this.value.re = parseFloat(field_re.value);
-          this.value.im = parseFloat(field_im.value);
-        }
+        if (field_re.value == "") field_re.value = 0;
+        if (field_im.value == "") field_im.value = 0;
+        this.value.re = parseFloat(field_re.value);
+        this.value.im = parseFloat(field_im.value);
         break;
       case 4: //Function name
       case 6: //Expression
@@ -346,22 +348,26 @@
       var name = match[3];
       var type = match[4];
       var value = match[5];
-      //if (!label) {
-      //  label = name; //Default label if none provided
 
-      var param = new Param(value, type, label);
+      this[name] = new Param(value, type, label);
+    };
+  }
 
-      //Restore existing value if same type
-      if (this[name]) {
-        if (this[name].type == type)
-          param.value = this[name].value
+  //Copy existing values from previous parameter set to new one
+  ParameterSet.prototype.restoreValues = function(other) {
+    if (!other) return;
+    for (key in this)
+    {
+      if (typeof(this[key]) != 'object') continue;
+
+      if (other[key]) {
+        if (this[key].type == other[key].type)
+          this[key].value = other[key].value
         else
-          consoleWrite("!! Type mismatch: " + this[name].type + " != " + type + " -- " + name + ", discarded: " + value);
+          consoleWrite("!! Type mismatch: " + this[key].type + " != " + other[key].type + " -- " + key + ", discarded: " + other[key].value);
         //consoleWrite("Restored value for " + name + " : " + saved);
       }
-
-      this[name] = param;
-    };
+    }
   }
 
   //Add fields for all our parameters dynamically to the page
@@ -523,10 +529,10 @@
         element.removeChild(element.firstChild );       
     }
 
-    //Create empty param set if not yet defined
-    if (!this.params[name])
-      this.params[name] = new ParameterSet();
-
+    //Save existing param set
+    var oldparams = this.params[name];
+    //Create new empty param set
+    this.params[name] = new ParameterSet();
     //Save a reference to active parameters
     this.currentParams = this.params[name];
 
@@ -534,6 +540,8 @@
       var code = this.getCode();
       //Load the parameter set for selected formula
       this.params[name].parseFormula(code);
+      //Copy previously values if available
+      this.params[name].restoreValues(oldparams);
       //Update the fields
       this.params[name].createFields(this.type, name);
     }
@@ -604,16 +612,16 @@
         if (!this.currentParams["escaped"]) {
           if (converge_defined && !this.currentParams["escape"])
             code += "#define escaped false\n";  //If converge test provided, default escape test to false
-          else
-            code += "#define escaped (bailtest(z) > 4.0)\n";
+          else {
+            code += "#define escaped (bailtest(z) > escape)\n";
+            if (!this.currentParams["escape"]) code += "#define escape 4.0\n";
+            if (!this.currentParams["bailtest"]) code += "#define bailtest norm\n";
+          }
         }
       } else {
         code = code.replace(escapedreg, "bool escaped()");
         code += "#define escaped escaped()\n";
       }
-
-      //if (!this[type].currentParams["escape"]) code += "#define escape 4.0\n";
-      if (!this.currentParams["bailtest"]) code += "#define bailtest norm\n";
 
     } else if (this.type == "transform") {
       if (!transformreg.exec(code))
@@ -830,14 +838,14 @@
     source = source.replace(/exp_smooth/g, "exponential_smoothing");
     source = source.replace(/magnet(\d)/g, "magnet_$1");
     source = source.replace(/burningship/g, "burning_ship");
-    source = source.replace(/zold=/g, "z_old=");
-    source = source.replace(/power=/g, "p=");
-    source = source.replace(/bailfunc=/g, "bailtest=");
+    source = source.replace(/^zold=/gm, "z_old=");
+    source = source.replace(/^power=/gm, "p=");
+    source = source.replace(/^bailfunc=/gm, "bailtest=");
     if (source.indexOf("nova") > 0)
-      source = source.replace(/bailout=/g, "converged=bailtest(z-z_1) < ");
+      source = source.replace(/^bailout=/gm, "converge=");
     else
-      source = source.replace(/bailout=/g, "escaped=bailtest(z) > ");
-    source = source.replace(/bailoutc=/g, "converged=bailtest(z-1) < ");
+      source = source.replace(/^bailout=/gm, "escape=");
+    source = source.replace(/^bailoutc=/gm, "converge=");
 
     var lines = source.split("\n"); // split on newlines
     var section = "";
@@ -923,8 +931,7 @@
         if (this[type].currentParams[pair2[0]])
           this[type].currentParams[pair2[0]].parse(pair2[1]);
         else //Not defined in formula, skip
-          alert(pair2[0] + " not in: " + this[type].currentParams);
-          //consoleWrite("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+          alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
 
       }
     }
@@ -1108,7 +1115,7 @@
 
     //Bailout and power
     if (saved["bailout"] && this["fractal"].selected.indexOf("nova") < 0)
-      this["fractal"].currentParams["escaped"].parse("bailtest(z) > " + saved["bailout"]);
+      this["fractal"].currentParams["escape"].parse(saved["bailout"]);
     if (saved["power"] != undefined)
       this["fractal"].currentParams["p"].parse(saved["power"]);
     //Correct error where possible, may require further param adjust
@@ -1133,13 +1140,13 @@
     if (this["fractal"].selected == "nova") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
       this['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
-      this['fractal'].currentParams["converged"].parse("bailtest(z-z_1) < 0.00001");
+      this['fractal'].currentParams["converge"].parse("0.00001");
     }
 
     if (this["fractal"].selected == "novabs") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
       this['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
-      this['fractal'].currentParams["converged"].parse("bailtest(z-z_1) < 0.00001");
+      this['fractal'].currentParams["converge"].parse("0.00001");
     }
 
     if (this["fractal"].selected == "gmm") {
@@ -1193,39 +1200,43 @@
     function convertColourParams(type, formula) {
       var typename = type + "_colour";
       var params = formula[typename].currentParams;
-      //var inout;
-      //if (type == "outside") inout = "_out_"; else inout = "_in_";
+      var prefix = typename + "_";
 
       if (formula[typename].selected == "smooth") {
-        //var prefix = "smooth" + inout;
-        params["usepower"].value = false;
-        params["type2"].value = false;
+        params[prefix + "type2"].value = false;
         if (saved[type] == "Smooth 2")
-          params["type2"].value = true;
+          params[prefix + "type2"].value = true;
+        //???? Override these? or leave?
+        params[prefix + "power"].value = "2";
+        params[prefix + "bailout"].value = "4";
+      }
+
+      if (formula[typename].selected == "triangle_inequality") {
+        //???? Override these? or leave?
+        params[prefix + "power"].value = "2";
+        params[prefix + "bailout"].value = "4";
       }
 
       if (formula[typename].selected == "exponential_smoothing") {
-        ////var prefix = "exponential_smoothing" + inout;
-        params["diverge"].value = true;
-        params["converge"].value = false;
-        params["use_z_old"].value = false;
+        params[prefix + "diverge"].value = true;
+        params[prefix + "converge"].value = false;
+        params[prefix + "use_z_old"].value = false;
         if (saved[type] == "Exp. Smoothing - Xdiverge")
-          params["use_z_old"].value = true;
+          params[prefix + "use_z_old"].value = true;
         if (saved[type] == "Exp. Smoothing - converge") {
-          params["diverge"].value = false;
-          params["converge"].value = true;
-          params["use_z_old"].value = true;
+          params[prefix + "diverge"].value = false;
+          params[prefix + "converge"].value = true;
+          params[prefix + "use_z_old"].value = true;
         }
         if (saved[type] == "Exp. Smoothing - Both") {
-          params["converge"].value = true;
-          params["use_z_old"].value = true;
+          params[prefix + "converge"].value = true;
+          params[prefix + "use_z_old"].value = true;
         }
       }
 
       if (formula[typename].selected == "gaussian_integers") {
-        //var prefix = "gaussian_integers" + inout;
-        params["mode"].parse(saved["param2"].re);
-        params["colourby"].parse(saved["param2"].im);
+        params[prefix + "mode"].parse(saved["param2"].re);
+        params[prefix + "colourby"].parse(saved["param2"].im);
       }
     }
 
