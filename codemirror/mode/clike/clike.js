@@ -262,7 +262,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     types: words("bool bvec2 bvec3 bvec4 float int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 
       "sampler1D sampler1DShadow sampler2D sampler2DShadow sampler3D samplerCube " + 
       "vec2 vec3 vec4 void struct " + 
-      "param complex real RGB rgba " + //Custom types for fractals 
+      "complex real RGB rgba " + //Custom types for fractals 
       "list real_function complex_function bailout_function expression"),
     stdlib: words("abs acos all any asin atan " +
       "ceil clamp cos cross dFdx dFdy " +
@@ -317,8 +317,16 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
           state.tokenize = tokenAtString;
           return tokenAtString(stream, state);
         }
-        stream.eatWhile(/[\w\$_~]/);
+        stream.eatWhile(/[\w\$_:]/);
         return "param";
+      },
+      ":": function(stream, state) {
+        if (stream.eat('"')) {
+          state.tokenize = tokenAtString;
+          return tokenAtString(stream, state);
+        }
+        stream.eatWhile(/[\w\$_@]/);
+        return "local";
       }
     }
   });

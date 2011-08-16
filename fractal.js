@@ -375,7 +375,7 @@
     var field_area = document.getElementById(type + "_params");
     var divider = document.createElement("div");
     divider.className = "divider";
-    sectionnames = {"base" : "", "fractal" : "Fractal", "transform" : "Transform", 
+    sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
                     "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
     var label = "";
     if (name != "base") {
@@ -386,10 +386,6 @@
     for (key in this)
     {
       if (typeof(this[key]) != 'object') continue;
-
-      //Prevent creating duplicate fields when same colouring used for in & out
-      //if (type == "outside_colour" && key.indexOf("_out_") < 0) continue;
-      //if (type == "inside_colour" && key.indexOf("_in_") < 0) continue;
 
       //Append divider before first param
       if (divider) {
@@ -510,7 +506,6 @@
   function Formula(type) {
     this.type = type;
     this.params = {};
-
     if (type == "base")
       this.select("base");
     else
@@ -524,6 +519,7 @@
 
     //Delete any existing dynamic form fields
     var element = document.getElementById(this.type + "_params");
+    if (!element) alert("Element is null! " + type + " - " + name);
     if (element.hasChildNodes()) {
       while (element.childNodes.length >= 1 )
         element.removeChild(element.firstChild );       
@@ -623,27 +619,31 @@
         code += "#define escaped escaped()\n";
       }
 
-    } else if (this.type == "transform") {
-      if (!transformreg.exec(code))
-        code += "#define transform()\n";
-      else
-        code = code.replace(transformreg, "void transform()");
-    } else if (this.type.indexOf("colour") > -1) {
-      if (!initreg.exec(code)) code += "#define ~init()\n";
-      if (!resetreg.exec(code)) code += "#define ~reset()\n";
-      if (!calcreg.exec(code)) code += "#define ~calc()\n";
-      if (!resultreg.exec(code) && name != "same") code += "#define ~result(A) background\n";
+    } else if (this.type.indexOf("transform") > -1) {
+      if (!initreg.exec(code)) code += "#define :init()\n";
+      if (!resetreg.exec(code)) code += "#define :reset()\n";
+      if (!transformreg.exec(code)) code += "#define :transform()\n";
 
-      code = code.replace(initreg, "void ~init()");
-      code = code.replace(resetreg, "void ~reset()");
-      code = code.replace(calcreg, "void ~calc()");
-      code = code.replace(resultreg, "rgba ~result(in real repeat)");
+      code = code.replace(initreg, "void :init()");
+      code = code.replace(resetreg, "void :reset()");
+      code = code.replace(transformreg, "void :transform()");
+
+    } else if (this.type.indexOf("colour") > -1) {
+      if (!initreg.exec(code)) code += "#define :init()\n";
+      if (!resetreg.exec(code)) code += "#define :reset()\n";
+      if (!calcreg.exec(code)) code += "#define :calc()\n";
+      if (!resultreg.exec(code) && name != "same") code += "#define :result(A) background\n";
+
+      code = code.replace(initreg, "void :init()");
+      code = code.replace(resetreg, "void :reset()");
+      code = code.replace(calcreg, "void :calc()");
+      code = code.replace(resultreg, "rgba :result(in real repeat)");
     }
 
-    //Replace any ~ symbols with formula type and "_"
+    //Replace any remaining : symbols with formula type and "_"
     //(to prevent namespace clashes in globals/function names/params)
-    //(~ is reserved but not used in glsl)
-    code = code.replace(/~/g, this.type + "_");
+    //(: is used only for tenary operator ?: in glsl)
+    code = code.replace(/:([a-zA-Z_])/g, this.type + "_$1");
 
     return code;
   }
@@ -701,7 +701,8 @@
 
     this["base"] = new Formula("base");
     this["fractal"] = new Formula("fractal");
-    this["transform"] = new Formula("transform");
+    this["pre_transform"] = new Formula("pre_transform");
+    this["post_transform"] = new Formula("post_transform");
     this["inside_colour"] = new Formula("inside_colour");
     this["outside_colour"] = new Formula("outside_colour");
 
@@ -721,8 +722,8 @@
 
   Fractal.prototype.newFormula = function(select) {
     var type = select;
-    if (type == 'inside_colour' || type == 'outside_colour')
-      type = 'colour';
+    if (type.indexOf('colour' > 0)) type = 'colour';
+    if (type.indexOf('transform' > 0)) type = 'transform';
 
     var label = prompt("Please enter name for new " + type + " formula", "");
     if (!label) return;
@@ -751,6 +752,22 @@
     var selidx = sel.selectedIndex;
     var label = labels[sel.options[selidx].value];
     if (!label || !confirm('Really delete the "' + label + '" formula?')) return;
+    //pre/post?
+    if (select.indexOf("transform") > -1) {
+      if (select == 'pre_transform') {
+        if (selidx < 1) return;
+        var post = $('post_transform_formula');
+        post.options.remove(selidx);
+        if (post.options[post.selectedIndex+1] == null)
+          this['post_transform'].select(post.options[0].value);
+      } else if (select == 'post_transform') {
+        if (selidx < 2) return;
+        var pre = $('pre_transform_formula');
+        pre.options.remove(selidx);
+        if (pre.options[pre.selectedIndex] == null)
+          this['pre_transform'].select(pre.options[0].value);
+      }
+    }
     //inside/outside?
     if (select.indexOf("colour") > -1) {
       if (select == 'outside_colour') {
@@ -784,12 +801,13 @@
                "julia=" + this.julia + "\n" +
                "perturb=" + this.perturb + "\n" +
                "fractal=" + this["fractal"].selected + "\n" +
-               "transform=" + this["transform"].selected + "\n" +
+               "pre_transform=" + this["pre_transform"].selected + "\n" +
+               "post_transform=" + this["post_transform"].selected + "\n" +
                "outside_colour=" + this["outside_colour"].selected + "\n" +
                "inside_colour=" + this["inside_colour"].selected + "\n" +
                "\n[params.base]\n" + this["base"].currentParams;
 
-    var types = ["fractal", "transform", "outside_colour", "inside_colour"];
+    var types = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
     //Parameter values
     for (t in types) {
       type = types[t];
@@ -801,8 +819,9 @@
     for (t in types) {
       type = types[t];
       if (this[type].selected != "none") {
-        //Don't save formula source twice if same colouring used
-        if (t==3 && this["outside_colour"].selected == this["inside_colour"].selected) break;
+        //Don't save formula source twice if same used
+        if (t==3 && this["post_transform"].selected == this["pre_transform"].selected) continue;
+        if (t==4 && this["outside_colour"].selected == this["inside_colour"].selected) break;
         code += "\n[formula." + type + "]\n" + sources[this.formulaFilename(type)];
       }
     }*/
@@ -1170,30 +1189,30 @@
     //Functions and ops
     if (!saved["inductop"]) saved["inductop"] = "0";
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
-      this["transform"].select("fractured");
+      this["post_transform"].select("fractured");
 
       var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
 
-      this['transform'].currentParams["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
-      this['transform'].currentParams["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
+      this['post_transform'].currentParams["post_transform_re_fn"].parse(fns[parseInt(saved["re_fn"])]);
+      this['post_transform'].currentParams["post_transform_im_fn"].parse(fns[parseInt(saved["im_fn"])]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
-        this['transform'].currentParams["induct"].parse([saved["induct"].re, saved["induct"].im]);
+        this['post_transform'].currentParams["post_transform_induct"].parse([saved["induct"].re, saved["induct"].im]);
       else if (saved["param1"])
-        this['transform'].currentParams["induct"].parse([saved["param1"].re, saved["param1"].im]);
+        this['post_transform'].currentParams["post_transform_induct"].parse([saved["param1"].re, saved["param1"].im]);
 
-      this['transform'].currentParams["induct_on"].value = saved["inductop"];
-      if (this['transform'].currentParams["induct_on"].value >= 10) {
+      this['post_transform'].currentParams["post_transform_induct_on"].value = saved["inductop"];
+      if (this['post_transform'].currentParams["post_transform_induct_on"].value >= 10) {
         //Double induct, same effect as induct*2
-        this['transform'].currentParams["induct_on"].value -= 10;
-        this['transform'].currentParams["induct"].value.re *= 2.0;
-        this['transform'].currentParams["induct"].value.im *= 2.0;
+        this['post_transform'].currentParams["post_transform_induct_on"].value -= 10;
+        this['post_transform'].currentParams["post_transform_induct"].value.re *= 2.0;
+        this['post_transform'].currentParams["post_transform_induct"].value.im *= 2.0;
       }
-      if (this['transform'].currentParams["induct_on"].value == 1)
-        this['transform'].currentParams["induct_on"].value = 2;
-      if (this['transform'].currentParams["induct_on"].value > 1)
-        this['transform'].currentParams["induct_on"].value = 1;
+      if (this['post_transform'].currentParams["post_transform_induct_on"].value == 1)
+        this['post_transform'].currentParams["post_transform_induct_on"].value = 2;
+      if (this['post_transform'].currentParams["post_transform_induct_on"].value > 1)
+        this['post_transform'].currentParams["post_transform_induct_on"].value = 1;
     }
 
     //Colour formulae param conversion
@@ -1252,7 +1271,8 @@
     //Parse param fields from formula code
     this["base"].select();
     this["fractal"].select();
-    this["transform"].select();
+    this["pre_transform"].select();
+    this["post_transform"].select();
     this["inside_colour"].select();
     this["outside_colour"].select();
     //Copy params to form fields
@@ -1293,7 +1313,8 @@
     //Copy form values to defined parameters
     this["base"].currentParams.setFromForm();
     this["fractal"].currentParams.setFromForm();
-    this["transform"].currentParams.setFromForm();
+    this["pre_transform"].currentParams.setFromForm();
+    this["post_transform"].currentParams.setFromForm();
     this["inside_colour"].currentParams.setFromForm();
     this["outside_colour"].currentParams.setFromForm();
 
@@ -1315,7 +1336,8 @@
     document.inputs.elements["julia"].checked = this.julia;
     document.inputs.elements["perturb"].checked = this.perturb;
     $('fractal_formula').value = this["fractal"].selected;
-    $('transform_formula').value = this["transform"].selected;
+    $('pre_transform_formula').value = this["pre_transform"].selected;
+    $('post_transform_formula').value = this["post_transform"].selected;
     $('outside_colour_formula').value = this["outside_colour"].selected;
     $('inside_colour_formula').value = this["inside_colour"].selected;
   }
@@ -1323,7 +1345,7 @@
   //Build and redraw shader from source components
   Fractal.prototype.writeShader = function() {
     //Get formula selections
-    consoleWrite("Building fractal shader using:\nformula: " + this["fractal"].selected + "\ntransform: " + this["transform"].selected + "\noutside colour: " + this["outside_colour"].selected + "\ninside colour: " + this["inside_colour"].selected);
+    consoleWrite("Building fractal shader using:\nformula: " + this["fractal"].selected + "\nPre-transform: " + this["pre_transform"].selected + "\nPost-transform: " + this["post_transform"].selected + "\noutside colour: " + this["outside_colour"].selected + "\ninside colour: " + this["inside_colour"].selected);
 
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
@@ -1335,8 +1357,9 @@
     //Code for selected formula
     var code = this["fractal"].getParsedFormula();
 
-    //Code for selected transform
-    var transformcode = this["transform"].getParsedFormula();
+    //Code for selected transforms
+    var pretransformcode = this["pre_transform"].getParsedFormula();
+    var posttransformcode = this["post_transform"].getParsedFormula();
 
     //Code for selected colouring algorithms
     var outcolourcode = this["outside_colour"].getParsedFormula();
@@ -1350,8 +1373,10 @@
     var fragmentShader = header + base;
     formulaOffsets["fractal"] = fragmentShader.split("\n").length;
     fragmentShader += code;
-    formulaOffsets["transform"] = fragmentShader.split("\n").length;
-    fragmentShader += transformcode;
+    formulaOffsets["pre_transform"] = fragmentShader.split("\n").length;
+    fragmentShader += pretransformcode;
+    formulaOffsets["post_transform"] = fragmentShader.split("\n").length;
+    fragmentShader += posttransformcode;
     formulaOffsets["outside_colour"] = fragmentShader.split("\n").length;
     fragmentShader += outcolourcode;
     formulaOffsets["inside_colour"] = fragmentShader.split("\n").length;

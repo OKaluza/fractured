@@ -1,7 +1,7 @@
 //Simple transform that applies a function to z
 //Function
-@fn = complex_function(abs);
+@:fn = complex_function(abs);
 transform:
 {
-    z = fn(z);
+    z = :fn(z);
 }

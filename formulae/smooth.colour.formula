@@ -1,31 +1,35 @@
 //Smooth colouring algorithm
 //Type 2
-@~type2 = bool(false);
+@:type2 = bool(false);
 //Power
-@~power = expression(p);
+@:power = expression(p);
 //Bailout
-@~bailout = expression(escape);
+@:bailout = expression(escape);
 
-real ~il, ~lp;
+real :il, :lp;
 
 init:
 {
   //Inverse log of (power)
-  ~il = 1.0/log(~power);
+  :il = 1.0/log(:power);
   //Additional for Smooth 2
-  ~lp = log(2.0 * log(sqrt(@~bailout))) * ~il;
+  :lp = log(2.0 * log(sqrt(@:bailout))) * :il;
 }
+
+#define logexp(z) log(log(cabs(z)))
+//Inside version!
+//#define logexp(z) loge(complex(log(cabs(z)))).x
 
 result:
 {
   real mu;
-  if (~type2)
+  if (:type2)
     //Smooth2 colouring
-    mu = real(count) + ~lp - log(log(cabs(z))) * ~il;
+    mu = real(count) + :lp - logexp(z) * :il;
   else
     //Smooth1 colouring
-    mu = real(count+1) - log(log(cabs(z))) * ~il;
-    
+    mu = real(count+1) - logexp(z) * :il;
+  
   return gradient(repeat * mu / real(maxiterations));
 }
 

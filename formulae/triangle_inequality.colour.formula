@@ -1,48 +1,48 @@
 //Triangle Inequality
 //Power
-@~power = expression(p);
+@:power = expression(p);
 //Bailout
-@~bailout = expression(escape);
+@:bailout = expression(escape);
 
-real ~il, ~lp;
-real ~sum = 10.0;
-real ~sum2 = 5.0;
-real ~ac = 0.0;
+real :il, :lp;
+real :sum = 10.0;
+real :sum2 = 5.0;
+real :ac = 0.0;
 
 init:
 {
-  ~il = 1.0/log(~power);  //Inverse log of (power).  
-  ~lp = log(log(@~bailout)/2.0);
+  :il = 1.0/log(:power);  //Inverse log of (power).  
+  :lp = log(log(@:bailout)/2.0);
 }
 
 reset:
 {
-  ~sum = 0.0;
-  ~sum2 = 0.0;
-  ~ac = cabs(c);
+  :sum = 0.0;
+  :sum2 = 0.0;
+  :ac = cabs(c);
 }
 
 calc:
 {
-  ~sum2 = ~sum;
+  :sum2 = :sum;
   if (count > 0)
   {
     real az2 = cabs(z - c);
-    real lowbound = abs(az2 - ~ac);
-    ~sum += (cabs(z) - lowbound) / (az2 + ~ac - lowbound);
+    real lowbound = abs(az2 - :ac);
+    :sum += (cabs(z) - lowbound) / (az2 + :ac - lowbound);
   }
 }
 
 result:
 {
-  ~sum /= real(count);
-  ~sum2 /= real(count-1);
+  :sum /= real(count);
+  :sum2 /= real(count-1);
     //Fractured version!
     complex x1 = loge(complex(log(cabs(z))));
-    real f = ~il * (~lp - x1.x);
+    real f = :il * (:lp - x1.x);
   //Correct version:
-  //real f = ~il * (~lp - log(log(cabs(z))));
-  real idx = ~sum2 + (~sum - ~sum2) * (f+1.0);
+  //real f = :il * (:lp - log(log(cabs(z))));
+  real idx = :sum2 + (:sum - :sum2) * (f+1.0);
   return gradient(repeat * idx);
 }
 

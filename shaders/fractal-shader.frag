@@ -4,7 +4,9 @@ void main()
   //return;
   rgba colour = rgba(0.0,0.0,0.0,0.0);
   //if (background.a < 0.01) discard;
+  pre_transform_init();
   init();
+  post_transform_init();
   inside_colour_init();
   outside_colour_init();
 
@@ -32,6 +34,7 @@ void main()
     {
       //Reset fractal
       pixel = coord + complex(real(k)*inc, real(j)*inc);
+      pre_transform_reset();
       if (julia)
       {
         //Julia set default
@@ -52,6 +55,7 @@ void main()
 
       //Formula specific reset...
       reset();
+      post_transform_reset();
       inside_colour_reset();
       outside_colour_reset();
 
@@ -67,8 +71,9 @@ void main()
 
         //Run next calc step
         count = i;
+        pre_transform_transform();
         z = znext;
-        transform();
+        post_transform_transform();
 
         //Check bailout conditions
         if (escaped || converged)
