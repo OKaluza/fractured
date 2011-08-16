@@ -204,19 +204,21 @@ var editorTheme = 'dark';
        editorTheme = localStorage["fractured.editorTheme"];
     } else {
        //Standard formulae library
-       formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
+       formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
 
-       selected = {"base" : "base", "fractal" : "mandelbrot", "transform" : "none",
+       selected = {"base" : "base", "fractal" : "mandelbrot", "pre_transform" : "none", "post_transform" : "none",
                     "outside_colour": "default", "inside_colour": "none"};
        editorTheme = 'dark';
     }
 
     labels = {};
     $("fractal_formula").options.length = 0;
-    $("transform_formula").options.length = 0;
+    $("pre_transform_formula").options.length = 0;
+    $("post_transform_formula").options.length = 0;
     $("outside_colour_formula").options.length = 0;
     $("inside_colour_formula").options.length = 0;
-    addToSelect("transform", "none", "");
+    addToSelect("pre_transform", "none", "");
+    addToSelect("post_transform", "none", "");
     addToSelect("outside_colour", "none", "");
     addToSelect("inside_colour", "none", "");
     addToSelect("inside_colour", "same", "As above");
@@ -231,7 +233,8 @@ var editorTheme = 'dark';
     }
     //Set selected defaults
     $('fractal_formula').value = selected['fractal'];
-    $('transform_formula').value = selected['transform'];
+    $('pre_transform_formula').value = selected['pre_transform'];
+    $('post_transform_formula').value = selected['post_transform'];
     $('outside_colour_formula').value = selected['outside_colour'];
     $('inside_colour_formula').value = selected['inside_colour'];
 
@@ -268,11 +271,13 @@ var editorTheme = 'dark';
     //Read the lists
     try {
       var types = ["fractal", "transform", "colour"];
+      var selects = ["fractal", "pre_transform", "outside_colour"];
       var formulae = {};
       var selected = {};
       for (t in types) {
-        var start = t<1 ? 0 : 1;
-        var selname = t<2 ? types[t] + "_formula" : "outside_colour_formula";
+        var start = 0;
+        if (t > 0) start = 1; //Skip "none"
+        var selname = selects[t] + "_formula";
         select = $(selname);
         formulae[types[t]] = [];
         for (i=start; i<select.length; i++) {
@@ -323,6 +328,9 @@ var editorTheme = 'dark';
     if (type.indexOf("colour") > -1) {
       addToSelect("outside_colour", name, label);
       addToSelect("inside_colour", name, label);
+    } else if (type.indexOf("transform") > -1) {
+      addToSelect("pre_transform", name, label);
+      addToSelect("post_transform", name, label);
     } else
       addToSelect(type, name, label);
     return name;
@@ -331,6 +339,7 @@ var editorTheme = 'dark';
   function formulaFilename(type, name) {
     var ext = type;
     if (type.indexOf("colour") > -1) ext = "colour";
+    if (type.indexOf("transform") > -1) ext = "transform";
     return "formulae/" + name + "." + ext + ".formula";
   }
 

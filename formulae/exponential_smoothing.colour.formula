@@ -1,46 +1,46 @@
 //Exponential smoothing
 //Divergent
-@~diverge = bool(true);
+@:diverge = bool(true);
 //Convergent
-@~converge = bool(false);
+@:converge = bool(false);
 //z(n-1) - z(n)
-@~use_z_old = bool(false);
+@:use_z_old = bool(false);
 
-real ~sum = 0.0;
-real ~csum = 0.0;
+real :sum = 0.0;
+real :csum = 0.0;
 
 reset:
 {
-  ~sum = 0.0;
-  ~csum = 0.0;  
+  :sum = 0.0;
+  :csum = 0.0;  
 }
 
 calc:
 {
-  if (~diverge)
+  if (:diverge)
   {
-    if (~use_z_old)
-      ~sum += exp(-cabs(z_1 - z));
+    if (:use_z_old)
+      :sum += exp(-cabs(z_1 - z));
     else
-      ~sum += exp(-cabs(z));
+      :sum += exp(-cabs(z));
   }
 
-  if (~converge)
+  if (:converge)
   {
-    if (~use_z_old)
-      ~csum += exp(-1.0/cabs(z_1 - z));  
+    if (:use_z_old)
+      :csum += exp(-1.0/cabs(z_1 - z));  
     else
-      ~csum += exp(-1.0/cabs(z));  
+      :csum += exp(-1.0/cabs(z));  
   }
 }
 
 result:
 {
   real mu;
-  if (!~diverge || ~converge && converged)
-    mu =  ~csum;
+  if (!:diverge || :converge && converged)
+    mu =  :csum;
   else 
-    mu = ~sum;
+    mu = :sum;
     
   return gradient(repeat * mu / real(maxiterations));
 }

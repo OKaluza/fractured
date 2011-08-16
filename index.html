@@ -110,7 +110,8 @@
 
             <div id="base_params" width="100%"></div>
             <div id="fractal_params" width="100%"></div>
-            <div id="transform_params" width="100%"></div>
+            <div id="pre_transform_params" width="100%"></div>
+            <div id="post_transform_params" width="100%"></div>
             <div id="outside_colour_params" width="100%"></div>
             <div id="inside_colour_params" width="100%"></div>
 
@@ -133,15 +134,27 @@
           </div>
         </div>
 
-        <div class="label">Transform</div>
+        <div class="label">Pre Transform</div>
         <div class="field">
-          <select id="transform_formula" onchange="fractal['transform'].select(this.value)">
+          <select id="pre_transform_formula" onchange="fractal['pre_transform'].select(this.value)">
             <option value="none"></option>
           </select>
           <div class="right">
-            <input type="button" value="Edit" onclick="fractal.editFormula('transform');">
-            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('transform');">
-            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('transform');">
+            <input type="button" value="Edit" onclick="fractal.editFormula('pre_transform');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('pre_transform');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('pre_transform');">
+          </div>
+        </div>
+
+        <div class="label">Post Transform</div>
+        <div class="field">
+          <select id="post_transform_formula" onchange="fractal['post_transform'].select(this.value)">
+            <option value="none"></option>
+          </select>
+          <div class="right">
+            <input type="button" value="Edit" onclick="fractal.editFormula('post_transform');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('post_transform');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('post_transform');">
           </div>
         </div>
 

@@ -18,6 +18,7 @@
 .cm-s-fracturedlight span.cm-stdvar {color: #0099aa; font-weight:bold;}
 .cm-s-fracturedlight span.cm-type {color: blue;}
 .cm-s-fracturedlight span.cm-param {color: black; font-weight:bold;}
+.cm-s-fracturedlight span.cm-local {color: #633;}
 
 /* Dark version */
 .cm-s-fractureddark { background: #312922; color: beige; }
@@ -38,6 +39,7 @@
 .cm-s-fractureddark span.cm-stdvar {color: #00de90; font-weight:bold;}
 .cm-s-fractureddark span.cm-type {color: aqua;}
 .cm-s-fractureddark span.cm-param {color: khaki; font-weight:bold;}
+.cm-s-fractureddark span.cm-local {color: darksalmon; }
 
 /* Unused? */
 .cm-s-fractured span.cm-def {color: white;}
