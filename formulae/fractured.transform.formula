@@ -13,6 +13,12 @@
 //Circle limit
 @:circle = real(0);
 
+reset:
+{
+  //Circle limit
+  if (:circle > 0.0 && len > :circle) discard;
+}
+
 transform:
 {
   //Apply every N steps
@@ -27,11 +33,8 @@ transform:
       z += mul(z_2, :induct);
   }
 
-  //Apply functions to real and/or imaginary components
+  //Apply separate functions to real/imaginary components
   z = :z_fn(z);
   z = complex(:re_fn(z.x), :im_fn(z.y));
-
-  //Circle limit
-  if (:circle > 0.0 && len > :circle) discard;
 }
 

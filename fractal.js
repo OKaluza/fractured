@@ -1,5 +1,5 @@
   //Regular expressions
-  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
+  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)?/;
@@ -249,42 +249,34 @@
 
   Param.prototype.setFromElement = function(key) {
     //Get param value from associated form field
-    var field, field_re, field_im;
-    if (this.typeid == 2) {
-      field_re = document.getElementById(key + "_re");
-      field_im = document.getElementById(key + "_im");
-      if (!field_re || !field_im) return;
-    } else {
-      field = document.getElementById(key);
-      if (!field) return;
-    }
+    if (!this.input) return;
     //if (this.typeid != 2 && !field) {consoleWrite("No field found for: " + key); return;}
     switch (this.typeid)
     {
       case -1: //Boolean = checkbox
-        this.value = field.checked;
+        this.value = this.input.checked;
         break;
       case 0: //Integer = entry
       case 3: //Integer from list
-        if (field.value == "") field.value = 0;
-        this.value = parseInt(field.value);
+        if (this.input.value == "") this.input.value = 0;
+        this.value = parseInt(this.input.value);
         break;
       case 1: //real = entry
-        if (field.value == "") field.value = 0;
-        this.value = parseFloat(field.value);
+        if (this.input.value == "") this.input.value = 0;
+        this.value = parseFloat(this.input.value);
         break;
       case 2: //complex = 2 x entry
-        if (field_re.value == "") field_re.value = 0;
-        if (field_im.value == "") field_im.value = 0;
-        this.value.re = parseFloat(field_re.value);
-        this.value.im = parseFloat(field_im.value);
+        if (this.input[0].value == "") this.input[0].value = 0;
+        if (this.input[1].value == "") this.input[1].value = 0;
+        this.value.re = parseFloat(this.input[0].value);
+        this.value.im = parseFloat(this.input[1].value);
         break;
       case 4: //Function name
       case 6: //Expression
-        this.value = field.value.trim();
+        this.value = this.input.value.trim();
         break;
       case 5: //RGBA colour
-        this.value = new Colour(field.style.backgroundColor);
+        this.value = new Colour(this.input.style.backgroundColor);
         break;
     }
   }
@@ -414,10 +406,12 @@
       field_area.appendChild(row);
 
       //Create the input fields
+      this[key].input = null;
+      var input;
       switch (this[key].typeid)
       {
         case -1: //Boolean
-          var input = document.createElement("input");
+          input = document.createElement("input");
           input.id = key;
           input.name = key;
           input.type = "checkbox";
@@ -431,36 +425,29 @@
           break;
         case 0: //Integer
         case 1: //real
-          var input = document.createElement("input");
-          input.id = key;
-          input.name = key;
+          input = document.createElement("input");
           input.type = "number";
           if (this[key].type == 1) input.setAttribute("step", 0.1);
           input.value = this[key].value;
           spanin.appendChild(input);
           break;
         case 2: //complex (2xreal)
-          var input = document.createElement("input");
-          input.id = key + "_re";
-          input.name = input.id;
-          input.type = "number";
-          input.setAttribute("step", 0.1);
-          input.value = this[key].value.re;
-          spanin.appendChild(input);
+          input = [null, null];
+          input[0] = document.createElement("input");
+          input[0].type = "number";
+          input[0].setAttribute("step", 0.1);
+          input[0].value = this[key].value.re;
+          spanin.appendChild(input[0]);
           //Create second field
-          input = document.createElement("input");
-          input.id = key + "_im";
-          input.name = input.id;
-          input.type = "number";
-          input.setAttribute("step", 0.1);
-          input.value = this[key].value.im;
-          spanin.appendChild(input);
+          input[1] = document.createElement("input");
+          input[1].type = "number";
+          input[1].setAttribute("step", 0.1);
+          input[1].value = this[key].value.im;
+          spanin.appendChild(input[1]);
           break;
         case 3: 
           //List of integer values (label=value|etc...)
           input = document.createElement("select");
-          input.id = key;
-          input.name = key;
           for (k in this[key].list)
             input.options[input.options.length] = new Option(k, this[key].list[k]);
           input.value = this[key].value;
@@ -469,8 +456,6 @@
         case 4: 
           //Drop list of functions
           input = document.createElement("select");
-          input.id = key;
-          input.name = key;
           for (var i=0; i<this[key].functions.length; i++)
             input.options[input.options.length] = new Option(this[key].functions[i], this[key].functions[i]);
           input.value = this[key].value;
@@ -478,27 +463,26 @@
           break;
         case 5: 
           //Colour picker
-          var input = document.createElement("div");
+          input = document.createElement("div");
           input.className = "colourbg";
           var cinput = document.createElement("div");
           cinput.className = "colour";
-          cinput.id = key;
-          cinput.name = key;
           cinput.style.backgroundColor = this[key].value.html();
           input.appendChild(cinput);
           spanin.appendChild(input);
+          input = cinput; //Use inner div as input element
           break;
         case 6: 
           //Expression
           input = document.createElement("textarea");
-          input.id = key;
-          input.name = key;
           input.value = this[key].value;
           input.setAttribute("onkeyup", "grow(this);");
           input.setAttribute("spellcheck", false);
           spanin.appendChild(input);
           break;
-      }   
+      }
+      //Save the field element
+      this[key].input = input;
     }
   }
 
@@ -516,6 +500,7 @@
     //Formula selected, parse it's parameters
     if (name) this.selected = name;
     else name = this.selected;  //Re-selecting current
+    consoleWrite("Selecting " + name + " for " + this.type + "_params");
 
     //Delete any existing dynamic form fields
     var element = document.getElementById(this.type + "_params");
@@ -533,7 +518,7 @@
     this.currentParams = this.params[name];
 
     if (this.selected != "none") {
-      var code = this.getCode();
+      var code = this.getSource();
       //Load the parameter set for selected formula
       this.params[name].parseFormula(code);
       //Copy previously values if available
@@ -557,15 +542,16 @@
     return formulaFilename(this.type, this.selected);
   }
 
+  Formula.prototype.getSource = function() {
+    if (this.selected == "none" || this.selected == "same")
+      return "";
+    return sources[this.filename()];
+  }
+
   Formula.prototype.getCode = function() {
-    var name = this.selected;
-    var code = "";
-    if (name == "same")
+    var code = this.getSource();
+    if (this.selected == "same")
       code = "#define inside_colour_result outside_colour_result\n";
-    else if (name != "none") {
-      code = sources[this.filename()];
-      if (!code) alert(this.type + " - " + name + " has no formula source defined!");
-    }
 
     //Check code for required functions, where not found create defaults
     //This allows minimal formula files by leaving out functions where they use the standard approach
@@ -632,18 +618,13 @@
       if (!initreg.exec(code)) code += "#define :init()\n";
       if (!resetreg.exec(code)) code += "#define :reset()\n";
       if (!calcreg.exec(code)) code += "#define :calc()\n";
-      if (!resultreg.exec(code) && name != "same") code += "#define :result(A) background\n";
+      if (!resultreg.exec(code) && this.selected != "same") code += "#define :result(A) background\n";
 
       code = code.replace(initreg, "void :init()");
       code = code.replace(resetreg, "void :reset()");
       code = code.replace(calcreg, "void :calc()");
       code = code.replace(resultreg, "rgba :result(in real repeat)");
     }
-
-    //Replace any remaining : symbols with formula type and "_"
-    //(to prevent namespace clashes in globals/function names/params)
-    //(: is used only for tenary operator ?: in glsl)
-    code = code.replace(/:([a-zA-Z_])/g, this.type + "_$1");
 
     return code;
   }
@@ -662,7 +643,7 @@
       lastIdx = paramreg.lastIndex;
     }
 
-    //if (type == "inside_colour" && this[type].selected == this.formula["outside_colour"]) return "";
+    //Get the parameter declaration code
     var params = this.currentParams.toCode();
 
     //Strip out param definitions, replace with declarations
@@ -670,6 +651,11 @@
     var body = code.slice(lastIdx, code.length);
     //alert(type + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
     code = head + params.slice(0, params.length-1) + body;
+
+    //Replace remaining : symbols with formula type and "_"
+    //(to prevent namespace clashes in globals/function names/params)
+    //(: is used only for tenary operator ?: in glsl)
+    code = code.replace(/:([a-zA-Z_])/g, this.type + "_$1");
 
     return code;
   }
@@ -710,14 +696,10 @@
     this.loadParams();
   }
 
-  Fractal.prototype.formulaFilename = function(type) {
-    return formulaFilename(type, this[type].selected);
-  }
-
   Fractal.prototype.editFormula = function(type) {
     if (this[type].selected != "none")
       openEditor(type);
-      //openEditor(this.formulaFilename(type));
+      //openEditor(this[type].filename());
   }
 
   Fractal.prototype.newFormula = function(select) {
@@ -785,7 +767,7 @@
       }
     }
     sel.remove(selidx);
-    sources[this.formulaFilename(select)] = null;
+    sources[this[select].filename()] = null;
     labels[this[select].selected] = null;
     //Finally, reselect
     this[select].select(sel.options[0].value);
@@ -822,7 +804,7 @@
         //Don't save formula source twice if same used
         if (t==3 && this["post_transform"].selected == this["pre_transform"].selected) continue;
         if (t==4 && this["outside_colour"].selected == this["inside_colour"].selected) break;
-        code += "\n[formula." + type + "]\n" + sources[this.formulaFilename(type)];
+        code += "\n[formula." + type + "]\n" + sources[this[type].filename()];
       }
     }*/
     code += "\n[palette]\n" + colours.palette;
@@ -857,7 +839,7 @@
     source = source.replace(/exp_smooth/g, "exponential_smoothing");
     source = source.replace(/magnet(\d)/g, "magnet_$1");
     source = source.replace(/burningship/g, "burning_ship");
-    source = source.replace(/^zold=/gm, "z_old=");
+    source = source.replace(/zold/gm, "z_old");
     source = source.replace(/^power=/gm, "p=");
     source = source.replace(/^bailfunc=/gm, "bailtest=");
     if (source.indexOf("nova") > 0)
@@ -872,7 +854,7 @@
     var buffer = "";
     var collect = false;
     var collectDone;
-    var formulas = {};
+    //var formulas = {};
 
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i].trim();
@@ -895,8 +877,8 @@
         } else if (section.slice(0, 8) == "formula.") {
           //Collect lines into formula code
           var pair1 = section.split(".");
-          var formula = pair1[1];
-          var filename = this.formulaFilename(formulas[formula]);
+          var type = pair1[1];
+          var filename = this[type].filename();
           collect = true;
           buffer = "";
           ////TODO: reenable this to load formula code, disabled for now as formulae are changing frequently
@@ -928,23 +910,40 @@
         } else if (pair[0] == "julia" || pair[0] == "perturb") {
           this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
         } else {
+          //Old formulae, swap transform with post_transform
+          if (pair[0] == "transform") pair[0] = "post_transform";
+          //Old formulae - replace in lines
+          for (var j = i+1; j < lines.length; j++) {
+            var oldline = lines[j];
+            lines[j] = lines[j].replace("params." + pair[1], "params." + pair[0]);
+            lines[j] = lines[j].replace("formula." + pair[1], "formula." + pair[0]);
+            if (pair[0] == "inside_colour") lines[j] = lines[j].replace(pair[1] + "_in_", ":");
+            if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", ":");
+            //if (lines[j] != oldline) consoleWrite(oldline + " ==> " + lines[j]);
+          }
           //Formula name
+          //alert("formulas[" + pair[1] + "] = " + pair[0]);
           this[pair[0]].select(pair[1]);
-          formulas[pair[1]] = pair[0]; //Save for a reverse lookup
+          //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
+          //alert(pair[0] + " == " + formulas[pair[0]]);
         }
       } else if (section.slice(0, 7) == "params.") {
         var pair1 = section.split(".");
-        var type = pair1[1]
-        var formula = formulas[type];
-        //Check if using old style [params.formula] instead of [params.type]
-        if (type != "base" && type in formulas) {
-          type = formula;
-          if (type.indexOf('colour') > 0) {
-            line = line.replace(/_in_/g, "_");
-            line = line.replace(/_out_/g, "_");
-            line = line.replace(pair1[1], type);
-          }
+        var type = pair1[1];
+        var formula = this[type].selected;
+        //Old style params.transform, add ":" to params
+        if (type == "post_transform" && line.indexOf(":") < 0) {
+          line = ":" + line;
         }
+        //Check if using old style [params.formula] instead of [params.type]
+        //if (type != "base" && type in formulas) {
+        //  type = formula;
+        //  if (type.indexOf('colour') > 0) {
+        //    line = line.replace(/_in_/g, "_");
+        //    line = line.replace(/_out_/g, "_");
+        //    line = line.replace(pair1[1], type);
+        //  }
+        //}
         if (!type) type = "base";
         var pair2 = line.split("=");
         if (this[type].currentParams[pair2[0]])
