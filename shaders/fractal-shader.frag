@@ -1,9 +1,6 @@
 void main()
 {
-  //gl_FragColor = background;
-  //return;
   rgba colour = rgba(0.0,0.0,0.0,0.0);
-  //if (background.a < 0.01) discard;
   pre_transform_init();
   init();
   post_transform_init();
@@ -104,9 +101,6 @@ void main()
         colour += outside_colour_result(outrepeat);
     }
   }
-  //if (colour == background) discard;
-  //if (colour == rgba(0.0, 0.0, 0.0, 0.0)) discard;
-  //discard;
   
   //Average to get final colour
   gl_FragColor = colour / real(antialias*antialias);
