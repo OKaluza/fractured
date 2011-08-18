@@ -200,7 +200,8 @@
     //Convert value to a valid GLSL constant in a string
     function realStr(val) {
       strval = "" + val;
-      if (strval.split('.')[1] == undefined)
+      //Add .0 if integer, unless in scientific notation
+      if (strval.split('.')[1] == undefined && strval.indexOf('e') < 0)
         return strval + ".0";
       else
         return strval;
@@ -1192,69 +1193,68 @@
 
       var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
 
-      this['post_transform'].currentParams["post_transform_re_fn"].parse(fns[parseInt(saved["re_fn"])]);
-      this['post_transform'].currentParams["post_transform_im_fn"].parse(fns[parseInt(saved["im_fn"])]);
+      this['post_transform'].currentParams[":re_fn"].parse(fns[parseInt(saved["re_fn"])]);
+      this['post_transform'].currentParams[":im_fn"].parse(fns[parseInt(saved["im_fn"])]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
-        this['post_transform'].currentParams["post_transform_induct"].parse([saved["induct"].re, saved["induct"].im]);
+        this['post_transform'].currentParams[":induct"].parse([saved["induct"].re, saved["induct"].im]);
       else if (saved["param1"])
-        this['post_transform'].currentParams["post_transform_induct"].parse([saved["param1"].re, saved["param1"].im]);
+        this['post_transform'].currentParams[":induct"].parse([saved["param1"].re, saved["param1"].im]);
 
-      this['post_transform'].currentParams["post_transform_induct_on"].value = saved["inductop"];
-      if (this['post_transform'].currentParams["post_transform_induct_on"].value >= 10) {
+      this['post_transform'].currentParams[":induct_on"].value = saved["inductop"];
+      if (this['post_transform'].currentParams[":induct_on"].value >= 10) {
         //Double induct, same effect as induct*2
-        this['post_transform'].currentParams["post_transform_induct_on"].value -= 10;
-        this['post_transform'].currentParams["post_transform_induct"].value.re *= 2.0;
-        this['post_transform'].currentParams["post_transform_induct"].value.im *= 2.0;
+        this['post_transform'].currentParams[":induct_on"].value -= 10;
+        this['post_transform'].currentParams[":induct"].value.re *= 2.0;
+        this['post_transform'].currentParams[":induct"].value.im *= 2.0;
       }
-      if (this['post_transform'].currentParams["post_transform_induct_on"].value == 1)
-        this['post_transform'].currentParams["post_transform_induct_on"].value = 2;
-      if (this['post_transform'].currentParams["post_transform_induct_on"].value > 1)
-        this['post_transform'].currentParams["post_transform_induct_on"].value = 1;
+      if (this['post_transform'].currentParams[":induct_on"].value == 1)
+        this['post_transform'].currentParams[":induct_on"].value = 2;
+      if (this['post_transform'].currentParams[":induct_on"].value > 1)
+        this['post_transform'].currentParams[":induct_on"].value = 1;
     }
 
     //Colour formulae param conversion
     function convertColourParams(type, formula) {
       var typename = type + "_colour";
       var params = formula[typename].currentParams;
-      var prefix = typename + "_";
 
       if (formula[typename].selected == "smooth") {
-        params[prefix + "type2"].value = false;
+        params[":type2"].value = false;
         if (saved[type] == "Smooth 2")
-          params[prefix + "type2"].value = true;
+          params[":type2"].value = true;
         //???? Override these? or leave?
-        params[prefix + "power"].value = "2";
-        params[prefix + "bailout"].value = "4";
+        params[":power"].value = "2";
+        params[":bailout"].value = "4";
       }
 
       if (formula[typename].selected == "triangle_inequality") {
         //???? Override these? or leave?
-        params[prefix + "power"].value = "2";
-        params[prefix + "bailout"].value = "4";
+        params[":power"].value = "2";
+        params[":bailout"].value = "4";
       }
 
       if (formula[typename].selected == "exponential_smoothing") {
-        params[prefix + "diverge"].value = true;
-        params[prefix + "converge"].value = false;
-        params[prefix + "use_z_old"].value = false;
+        params[":diverge"].value = true;
+        params[":converge"].value = false;
+        params[":use_z_old"].value = false;
         if (saved[type] == "Exp. Smoothing - Xdiverge")
-          params[prefix + "use_z_old"].value = true;
+          params[":use_z_old"].value = true;
         if (saved[type] == "Exp. Smoothing - converge") {
-          params[prefix + "diverge"].value = false;
-          params[prefix + "converge"].value = true;
-          params[prefix + "use_z_old"].value = true;
+          params[":diverge"].value = false;
+          params[":converge"].value = true;
+          params[":use_z_old"].value = true;
         }
         if (saved[type] == "Exp. Smoothing - Both") {
-          params[prefix + "converge"].value = true;
-          params[prefix + "use_z_old"].value = true;
+          params[":converge"].value = true;
+          params[":use_z_old"].value = true;
         }
       }
 
       if (formula[typename].selected == "gaussian_integers") {
-        params[prefix + "mode"].parse(saved["param2"].re);
-        params[prefix + "colourby"].parse(saved["param2"].im);
+        params[":mode"].parse(saved["param2"].re);
+        params[":colourby"].parse(saved["param2"].im);
       }
     }
 

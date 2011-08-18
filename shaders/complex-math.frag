@@ -78,6 +78,8 @@ real norm(in complex z)
   return dot(z,z);
 }
 
+real cabs(in real x) {return abs(x);}
+
 //complex abs = length/magnitude = sqrt(norm) = sqrt(dot(z,z))
 real cabs(in complex z)
 {
@@ -122,9 +124,14 @@ complex polar(in real r, in real theta)
     r = -r;
   }
 
-  theta = mod(theta, TWO_PI);
+  theta = mod(theta, 2.0*PI);
 
   return complex(r * cos(theta), r * sin(theta));
+}
+
+complex cpow(in real base, in real exponent)
+{
+  return C(pow(base, exponent));
 }
 
 complex cpow(in real base, in complex exponent)
@@ -395,7 +402,7 @@ real imag(in complex z)
 complex gamma(in complex z)
 {
   //An approximation of the gamma function
-  complex a = sqrt(div(C(TWO_PI), z));
+  complex a = sqrt(div(C(2.0*PI), z));
   complex b = mul(C(12), z) - div(C(1), mul(C(10), z));
   complex c = z + div(C(1), b);
   complex d = mul(C(1.0/E), c);
