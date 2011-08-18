@@ -15,9 +15,8 @@ precision highp float;
 #define gradient(mu) texture2D(palette, vec2(mu, 0.0))
 
 //Additional maths functions
-const real PI = 3.1415926536;
-const real TWO_PI = 2.0 * PI;
-const real E = 2.71828183;
+#define PI  3.141592654
+#define E   2.718281828
 real inv(in real r);
 real log10(in real r);
 real cosh(in real x);
@@ -49,6 +48,7 @@ complex div(in real a, in complex b);
 complex div(in complex a, in real b);
 complex div(in real a, in real b);
 complex inv(in complex z);
+complex cpow(in real base, in real exponent);
 complex cpow(in real base, in complex exponent);
 complex cpow(in complex base, in real exponent);
 complex cpow(in complex base, in complex exponent);
@@ -81,6 +81,7 @@ complex gamma(in complex z);
 bool equals(complex z1, complex z2, real tolerance);
 real manhattan(in complex z);
 real norm(in complex z);
+real cabs(in real x);
 real cabs(in complex z);
 real arg(in complex z);
 real imag(in complex z);

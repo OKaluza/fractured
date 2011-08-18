@@ -18,6 +18,7 @@
   line-height: 1.1em;
 }
 .CodeMirror-scroll {height: 100%;}
+.searched {background: yellow}
 
 body {
   background: #ffe;
@@ -110,6 +111,41 @@ var formula;
     editor.setOption("theme", theme);
     window.opener.editorTheme = themename;
   }
+
+
+/* Codemirror search/replace functions */
+var lastPos = null, lastQuery = null, marked = [];
+
+function unmark() {
+  for (var i = 0; i < marked.length; ++i) marked[i]();
+  marked.length = 0;
+}
+
+function search() {
+  unmark();                     
+  var text = document.getElementById("query").value;
+  if (!text) return;
+  for (var cursor = editor.getSearchCursor(text); cursor.findNext();)
+    marked.push(editor.markText(cursor.from(), cursor.to(), "searched"));
+
+  if (lastQuery != text) lastPos = null;
+  var cursor = editor.getSearchCursor(text, lastPos || editor.getCursor());
+  if (!cursor.findNext()) {
+    cursor = editor.getSearchCursor(text);
+    if (!cursor.findNext()) return;
+  }
+  editor.setSelection(cursor.from(), cursor.to());
+  lastQuery = text; lastPos = cursor.to();
+}
+
+function replace() {
+  unmark();
+  var text = document.getElementById("query").value,
+      replace = document.getElementById("replace").value;
+  if (!text) return;
+  for (var cursor = editor.getSearchCursor(text); cursor.findNext();)
+    cursor.replace(replace);
+}
 </script>
 
 </head>
@@ -117,11 +153,14 @@ var formula;
 <body onload="loadEditor()" onUnload="window.opener.closeEditor();" >
 
 <div id="buttons">
-  <input type="button" value="Update" onclick="updateEditor()"><input type="button" value="Save" onclick="saveEditor()">
-    <select id="theme" style="float: right" onchange="selectTheme(this)">
-        <option selected>light</option>
-        <option>dark</option>
-    </select>
+  <input type="button" value="Update" onclick="updateEditor()">
+  <input type="button" value="Save" onclick="saveEditor()">
+  <input type=text style="width: 5em" id=query>
+  <button type=button onclick="search()">Search</button>
+  <select id="theme" style="float: right" onchange="selectTheme(this)">
+    <option selected>light</option>
+    <option>dark</option>
+  </select>
 </div>
 
 <div id="code">

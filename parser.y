@@ -24,8 +24,8 @@
 "<"                    return '<'
 ">"                    return '>'
 "!"                    return '!'
-"PI"                   return 'PI'
-"E"                    return 'E'
+"pi"                   return 'PI'
+"e"                    return 'E'
 <<EOF>>                return 'EOF'
 [_a-zA-Z][_a-zA-Z0-9]* return 'IDENTIFIER';
 .                      return 'INVALID'
@@ -34,8 +34,8 @@
 
 /* operator associations and precedence */
 
-%left UNOT
 %left '<' '>' '==' '!=' '<=' '>='
+%left UNOT
 %left '+' '-'
 %left '*' '/'
 %left '^'
@@ -131,7 +131,9 @@ e
             $$ = yytext + ".0"; }
         }
     | E
+        {$$ = "E";}
     | PI
+        {$$ = "PI";}
     | IDENTIFIER
     | call
     ;
@@ -140,7 +142,4 @@ call
     : IDENTIFIER '(' e ')'
         {$$ = $1 + "(" + $3 + ")";}
     ;
-
-
-
 
