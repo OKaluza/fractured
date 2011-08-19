@@ -84,7 +84,7 @@ var formula;
     type = "";
     if (param.indexOf('.') == -1) {
       type = param;
-      filename = window.opener.fractal.formulaFilename(type);
+      filename = window.opener.fractal[type].filename();
     } else
       filename = param;
 

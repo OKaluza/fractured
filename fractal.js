@@ -228,8 +228,14 @@
          }
       }
       //Replace integer constants in parsed expression with float (by adding .0)
-      var parsed = parser.parse(expr);
-      return parsed; //.replace(/([^_a-zA-Z])([0-9]+)([^.])/g, "$1$2.0$3");
+      var parsed;
+      try {
+        parsed = parser.parse(expr);
+      } catch(e) {
+        alert(e.message);
+        return "C(0)"
+      }
+      return parsed;
 
     }
     else
@@ -413,14 +419,13 @@
       {
         case -1: //Boolean
           input = document.createElement("input");
-          input.id = key;
-          input.name = key;
+          input.id = type + key;
           input.type = "checkbox";
           input.checked = this[key].value;
           spanin.appendChild(input);
           //Checkbox label
           var lab = document.createElement("label");
-          lab.setAttribute("for", key);
+          lab.setAttribute("for", type + key);
           lab.appendChild(lab.ownerDocument.createTextNode(fieldlabel));
           spanin.appendChild(lab);
           break;
