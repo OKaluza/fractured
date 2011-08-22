@@ -70,7 +70,9 @@
           <form id="inputs" name="inputs" class="formbox">
             <div class="row">
               <span class="label">Name</span>
-              <span class="field"><input type="text" id="namelabel" value="unnamed" style="width: 208px"></span>
+              <span class="field"><input type="text" id="nameInput" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
+                <input type="button" value="Clear" onclick="clearFractal();">
+              </span>
             </div>
             <div class="row">
               <span class="label">Size (<label for="autosize">Auto:</label><input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);">)
@@ -212,8 +214,9 @@
         <input type="button" value="Export State" onclick="exportState();">
         <input type="button" value="Reset State" onclick="resetState();">
         <hr>
-        <select id="stored" onchange="selectedFractal(this.value)">
+        <select size="10" style="width: 300px" id="stored" onchange="selectedFractal(this)">
         </select>
+        <input type="button" class="right" value="delete" onclick="deleteFractal();">
         <hr>
           File upload (state file):<br>
           <input name="file" type="file"onchange="filesProcess(this.files, importState)"><br>
