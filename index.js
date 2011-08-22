@@ -97,14 +97,41 @@ var editorTheme = 'dark';
     }
   }
 
-  function selectedFractal(source) {
-    fractal.load(source);
+  function deleteFractal() {
+    var sel = $('stored');
+    var selidx = sel.selectedIndex;
+    var name = sel[selidx].text;
+    if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
+    var opt = sel[selidx];
+    //alert("[" + opt.idx + "] " + opt.text + " == " + opt.value);
+    sel.remove(selidx);
+    try {
+      localStorage.removeItem("fractured.names." + opt.idx);
+      localStorage.removeItem("fractured.fractal." + opt.idx);
+    } catch(e) {
+      alert('Storage delete error! ' + e);
+    }
+  }
+
+  function selectedFractal(select) {
+    var choice = select[select.selectedIndex];
+    fractal.load(choice.value);
+    fractal.name = choice.text;
+    $('nameInput').value = choice.text;
     //alert(colours.palette.toString());
       //fractal.applyChanges();
     //fractal.draw();
   }
 
+  function clearFractal() {
+    fractal.resetDefaults();
+    fractal.formulaDefaults();
+    //De-select
+    $('stored').selectedIndex = -1;
+  }
+
   function saveFractal(toExport) {
+    fractal.applyChanges();
     source = fractal + "";
     if (toExport) {
       //var exportLink = document.createElement('a');
@@ -118,13 +145,32 @@ var editorTheme = 'dark';
     } else {
       //Save current fractal to list
       if (!supports_html5_storage()) return;
-      var namestr = document.getElementById("namelabel").value;
+      var sel = $('stored')
+      if (sel.length > 0 && sel.selectedIndex >= 0) {
+        //Save existing
+        var choice = sel[sel.selectedIndex];
+        if (choice.text == fractal.name) {
+          if (confirm('Overwrite "' + choice.text + '"?')) {
+            var idx = choice.idx;
+            choice.text = fractal.name; //Update name in case changed
+            try {
+              localStorage["fractured.names." + idx] = fractal.name; //namestr;
+              localStorage["fractured.fractal." + idx] = source;
+            } catch(e) {
+              alert('Storage error! ' + e);
+            }
+            return;
+          }
+        }
+      }
+
+      //Save new
+      //Get name and check list for dupes
+      var namestr = fractal.name;
       if (!namestr) namestr = "unnamed";
-      //Check list for dupes
       var add = 0;
       var checkstr = namestr;
       var i;
-      var sel = $('stored');
       do {
          for (i=0; i<sel.options.length; i++) {
             if (checkstr == sel.options[i].text) {
@@ -133,21 +179,25 @@ var editorTheme = 'dark';
             }
          }
       } while (i < sel.options.length);
+      if (namestr != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
       namestr = checkstr;
       //Add to select
-      sel.options[sel.length] = new Option(namestr, source);
+      var opt = new Option(namestr, source);
+      sel.options[sel.length] = opt;
 
-      var stored_str = localStorage["fractured.fractals"];
-      var stored = (stored_str ? parseInt(stored_str) : 0);
-      stored++;
+      var idx_str = localStorage["fractured.fractals"];
+      var idx = (idx_str ? parseInt(idx_str) : 0);
+      idx++;
+      //Save index/id with option
+      opt.idx = idx;
       try {
-        localStorage["fractured.names." + stored] = namestr;
-        localStorage["fractured.fractal." + stored] = source;
-        localStorage["fractured.fractals"] = stored;
+        localStorage["fractured.names." + idx] = namestr;
+        localStorage["fractured.fractal." + idx] = source;
+        localStorage["fractured.fractals"] = idx;
       } catch(e) {
         //data wasn’t successfully saved due to quota exceed so throw an error
-        alert('Quota exceeded! ' + e);
-        //alert('Quota exceeded! ' + stored + " ... Local storage length = " + JSON.stringify(localStorage).length);
+        alert('Storage error! ' + e);
+        //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
       }
     }
   }
@@ -168,10 +218,11 @@ var editorTheme = 'dark';
   }
 
   function resetState() {
+    if (confirm('This will clear everything!')) {
       localStorage.clear(); //be careful as this will clear the entire database, TODO: Confirm
       window.location.reload(false);
+    }
     //localStorage.removeItem("fractured.formulae");
-    //loadState();
   }
 
   //Import/export all local storage to a text file
@@ -181,7 +232,7 @@ var editorTheme = 'dark';
   }
 
   function importState(filename, source) {
-    //This will overwrite everything, TODO: Confirm
+    if (!confirm('This will overwrite everything!')) return;
     try {
       var parsed = JSON.parse(source);
       for (key in parsed)
@@ -241,30 +292,29 @@ var editorTheme = 'dark';
     //Get list of saved fractals
     if (!supports_html5_storage()) return;
     $('stored').options.length = 0;  //Clear list
-    var stored_str = localStorage["fractured.fractals"];
-    if (stored_str) {
-      var stored = parseInt(stored_str);
-      for (var i=1; i<=stored; i++) {
+    var idx_str = localStorage["fractured.fractals"];
+    if (idx_str) {
+      var idx = parseInt(idx_str);
+      var opt;
+      for (var i=1; i<=idx; i++) {
         var namestr = localStorage["fractured.names." + i];
-        if (!namestr) namestr = "unnamed";
+        if (!namestr) continue; //namestr = "unnamed";
         var source = localStorage["fractured.fractal." + i];
-        $("stored").options[$("stored").length] = new Option(namestr, source);
-
+        opt = new Option(namestr, source);
+        $("stored").options[$("stored").length] = opt;
+        //Save index/id on option
+        opt.idx = i;
       }
+      //Update index if unused at end
+      if (opt && i > opt.idx+1)
+        localStorage["fractured.fractals"] = opt.idx;
     }
   }
 
   function loadLastFractal() {
-    //Load most recent fractal
-    if (!supports_html5_storage()) return;
-    var stored_str = localStorage["fractured.fractals"];
-    if (stored_str) {
-      //Load most recent
-      var stored = parseInt(stored_str);
-      fractal.load(localStorage["fractured.fractal." + stored]);
-      $("namelabel").value = localStorage["fractured.names." + stored];
-      //fractal.applyChanges();
-    }
+    var sel = $('stored')
+    sel.selectedIndex = sel.length-1;
+    selectedFractal(sel);
   }
 
   function saveState() {
@@ -839,12 +889,13 @@ function filesProcess(files, callback) {
 
 function loadFile(filename, source) {
   if (filename.indexOf(".ini") > -1) {
-    fractal.iniParser(source);
+    fractal.iniLoader(source);
     filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
   } else {
     fractal.load(source);
   }
-  $("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
+  //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
+  fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
 }
 
 function loadPalette(filename, source) {

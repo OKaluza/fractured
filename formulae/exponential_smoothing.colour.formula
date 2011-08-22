@@ -17,30 +17,22 @@ reset:
 
 calc:
 {
+  complex zval = z;
+  if (:use_z_old)
+    zval = z_1 - z;
+  
   if (:diverge)
-  {
-    if (:use_z_old)
-      :sum += exp(-cabs(z_1 - z));
-    else
-      :sum += exp(-cabs(z));
-  }
+    :sum += exp(-cabs(zval));
 
   if (:converge)
-  {
-    if (:use_z_old)
-      :csum += exp(-1.0/cabs(z_1 - z));  
-    else
-      :csum += exp(-1.0/cabs(z));  
-  }
+    :csum += exp(-1.0/cabs(zval));  
 }
 
 result:
 {
-  real mu;
+  real mu = :sum;
   if (!:diverge || :converge && converged)
     mu =  :csum;
-  else 
-    mu = :sum;
     
   return gradient(repeat * mu / real(maxiterations));
 }

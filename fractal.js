@@ -499,7 +499,20 @@
     if (type == "base")
       this.select("base");
     else
-      this.select(this.getSelected(type));
+      this.reselect();
+  }
+
+  Formula.prototype.reselect = function() {
+    this.selectByIndex();
+  }
+
+  Formula.prototype.selectByIndex = function(idx) {
+    //Select by index from select control
+    var sel = $(this.type + '_formula');
+    if (idx != undefined)
+      sel.selectedIndex = idx;
+    var name = sel.options[sel.selectedIndex].value;
+    this.select(name);
   }
 
   Formula.prototype.select = function(name) {
@@ -534,14 +547,6 @@
     }
     //alert(this.type + "," + this.selected + " =====> " + this.currentParams.toString());
     growTextAreas();  //Resize expression fields
-  }
-
-  //Get selected formula in select controls
-  Formula.prototype.getSelected = function(type) {
-    var sel = $(type + '_formula');
-    var selidx = sel.selectedIndex;
-    var name = sel.options[selidx].value;
-    return name;
   }
 
   Formula.prototype.filename = function() {
@@ -602,14 +607,14 @@
             code += "#define escaped false\n";  //If converge test provided, default escape test to false
           else {
             code += "#define escaped (bailtest(z) > escape)\n";
-            if (!this.currentParams["escape"]) code += "#define escape 4.0\n";
-            if (!this.currentParams["bailtest"]) code += "#define bailtest norm\n";
           }
         }
       } else {
         code = code.replace(escapedreg, "bool escaped()");
         code += "#define escaped escaped()\n";
       }
+      if (!this.currentParams["escape"]) code += "#define escape 4.0\n";
+      if (!this.currentParams["bailtest"]) code += "#define bailtest norm\n";
 
     } else if (this.type.indexOf("transform") > -1) {
       if (!initreg.exec(code)) code += "#define :init()\n";
@@ -673,6 +678,14 @@
     this.webgl = webgl;
     this.gl = webgl.gl;
     this.gradientTexture = this.gl.createTexture();
+
+    this["base"] = new Formula("base");
+    this["fractal"] = new Formula("fractal");
+    this["pre_transform"] = new Formula("pre_transform");
+    this["post_transform"] = new Formula("post_transform");
+    this["inside_colour"] = new Formula("inside_colour");
+    this["outside_colour"] = new Formula("outside_colour");
+
     this.resetDefaults();
   }
 
@@ -681,7 +694,8 @@
   }
 
   Fractal.prototype.resetDefaults = function() {
-    //Default aspect, parameters and formulae:
+    //Default aspect & parameters
+    this.name = "unnamed"
     this.width = window.innerWidth - (showparams ? 390 : 4);
     this.height = window.innerHeight - 34;
     this.origin = new Aspect(0, 0, 0, 0.5); 
@@ -691,15 +705,20 @@
     this.perturb = false;
     this.compatibility = false;
 
+    //Reset default base params
     this["base"] = new Formula("base");
-    this["fractal"] = new Formula("fractal");
-    this["pre_transform"] = new Formula("pre_transform");
-    this["post_transform"] = new Formula("post_transform");
-    this["inside_colour"] = new Formula("inside_colour");
-    this["outside_colour"] = new Formula("outside_colour");
 
     //Load parameters for default formula selections
-    this.loadParams();
+    //this.loadParams();
+    this.copyToForm();
+  }
+
+  Fractal.prototype.formulaDefaults = function() {
+    this["fractal"].selectByIndex(0);
+    this["pre_transform"].selectByIndex(0);
+    this["post_transform"].selectByIndex(0);
+    this["outside_colour"].selectByIndex(1);
+    this["inside_colour"].selectByIndex(0);
   }
 
   Fractal.prototype.editFormula = function(type) {
@@ -836,6 +855,7 @@
   Fractal.prototype.load = function(source) {
     //Reset everything...
     this.resetDefaults();
+    this.formulaDefaults();
     //1. Load fixed params as key=value: origin, selected, julia, perturb, 
     //2. Load selected formula names
     //3. Load code for each selected formula (including "base")
@@ -967,10 +987,11 @@
     this.loadParams();
   }
 
-  //Conversion/parser for my old fractal ini files
-  Fractal.prototype.iniParser = function(source) {
+  //Conversion from my old fractal ini files
+  Fractal.prototype.iniLoader = function(source) {
     //Reset everything...
     this.resetDefaults();
+    this.formulaDefaults();
     this.compatibility = true;  //Set compatibility mode
     var saved = {};
 
@@ -1329,6 +1350,7 @@
 
   //Update form controls with fractal data
   Fractal.prototype.copyToForm = function() {
+    document.inputs.elements["nameInput"].value = this.name;
     document.inputs.elements["widthInput"].value = this.width;
     document.inputs.elements["heightInput"].value = this.height;
     document.inputs.elements["xPosInput"].value = this.origin.re;
