@@ -896,6 +896,7 @@ function loadFile(filename, source) {
   }
   //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
   fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
+  $('nameInput').value = fractal.name;
 }
 
 function loadPalette(filename, source) {
