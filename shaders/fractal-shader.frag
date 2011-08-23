@@ -1,4 +1,4 @@
-void main()
+main_function()
 {
   rgba colour = rgba(0.0,0.0,0.0,0.0);
   pre_transform_init();

@@ -120,13 +120,9 @@ complex polar(in real r, in real theta)
 {
   if (r < 0.0)
   {
-    theta += PI;
-    r = -r;
+    return complex(r * cos(mod(theta+PI, 2.0*PI)), -r * sin(theta));    
   }
-
-  theta = mod(theta, 2.0*PI);
-
-  return complex(r * cos(theta), r * sin(theta));
+  return complex(r * cos(theta), r * sin(mod(theta, 2.0*PI)));
 }
 
 complex cpow(in real base, in real exponent)

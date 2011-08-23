@@ -1,20 +1,22 @@
 precision highp float;
+#define main_function() void main()
 #define real float
 #define complex vec2
-#define R(x) real(x)
-#define C(x) complex(real(x),0.0)
-#define CI(x) complex(0.0,real(x))
-#define I complex(0.0,1.0)
 #define RGB vec3
 #define rgba vec4
-#define ident(args) args
-#define zero(args) 0
-#define czero(args) complex(0.0,0.0)
 
 //Palette lookup mu = [0,1]
 #define gradient(mu) texture2D(palette, vec2(mu, 0.0))
 
 //Additional maths functions
+#define R(x) real(x)
+#define C(x) complex(real(x),0.0)
+#define CI(x) complex(0.0,real(x))
+#define I complex(0.0,1.0)
+#define ident(args) args
+#define zero(args) 0
+#define czero(args) complex(0.0,0.0)
+
 #define PI  3.141592654
 #define E   2.718281828
 real inv(in real r);
