@@ -2,6 +2,18 @@
     //Colour palette array
     this.colours = [];
 
+    if (!source) {
+      //Default
+      this.colours.push(new ColourPos("rgba(255,255,255,0)", -1));
+      this.colours.push(new ColourPos("rgba(0,0,0,1)", 0));
+      this.colours.push(new ColourPos("rgba(253,132,48,1)", 0.2));
+      this.colours.push(new ColourPos("rgba(255,244,218,1)", 0.4));
+      this.colours.push(new ColourPos("rgba(59,51,30,1)", 0.6));
+      this.colours.push(new ColourPos("rgba(31,194,188,1)", 0.8));
+      this.colours.push(new ColourPos("rgba(0,0,0,1)", 1.0));
+      return;
+    }
+
     //Palette data parser
     var lines = source.split("\n"); // split on newlines
     var position;
@@ -93,7 +105,7 @@
       var my_gradient = context.createLinearGradient(0, 0, width, 0);
       for (var i = 1; i < this.colours.length; i++) {
         if (this.colours[i].position > 1.0) alert(i + "POSITION ERROR! " + this.colours[i].position);
-        //consoleWrite(this.colours[i].position + ", " + this.colours[i].colour.html());
+        //consoleWrite(i + ": " + this.colours[i].position + ", " + this.colours[i].colour.html());
         my_gradient.addColorStop(this.colours[i].position, this.colours[i].colour.html());
       }
 

@@ -24,8 +24,7 @@ var editorTheme = 'dark';
     //Preload some images
     ajaxReadFile("media/SatVal.png");
 
-    //Get shader source and palette from files on server
-    sources["default.palette"] = "";
+    //Get shader source files on server
     sources["shaders/fractal-header.frag"] = "";
     sources["shaders/fractal-shader.frag"] = "";
     sources["shaders/complex-math.frag"] = "";
@@ -80,7 +79,7 @@ var editorTheme = 'dark';
     fractal = new Fractal(canvas, webgl);
 
     //Colour editing and palette management
-    colours = new ColourEditor(sources["default.palette"]);
+    colours = new ColourEditor();
 
     //Draw & update
     loadLastFractal();  //Restore last if any
@@ -202,21 +201,6 @@ var editorTheme = 'dark';
     }
   }
 
-  function savePaletteLocal(source) {
-    if (!supports_html5_storage()) return;
-    try {
-      localStorage["fractured.current.palette"] = source;
-    } catch(e) {
-      //data wasn’t successfully saved due to quota exceed so throw an error
-      alert('Quota exceeded! ' + e);
-    }
-  }
-
-  function loadPaletteLocal() {
-    if (!supports_html5_storage()) return;
-    colours.read(localStorage["fractured.current.palette"]);
-  }
-
   function resetState() {
     if (confirm('This will clear everything!')) {
       localStorage.clear(); //be careful as this will clear the entire database, TODO: Confirm
@@ -231,7 +215,7 @@ var editorTheme = 'dark';
     location.href = 'data:text/store;base64,' + window.btoa(source);
   }
 
-  function importState(filename, source) {
+  function importState(source) {
     if (!confirm('This will overwrite everything!')) return;
     try {
       var parsed = JSON.parse(source);
@@ -396,7 +380,7 @@ var editorTheme = 'dark';
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
+  var panels = ['panel1', 'panel2', 'panel3', 'panel4'];
   var selectedTab = null;
   function showPanel(tab, name)
   {
@@ -667,7 +651,7 @@ handleFormMouseDown = function(e) {
 function saveColour(val) {colours.save(val);}
 function abortColour() {colours.cancel();}
 
-function ColourEditor(source, gl) {
+function ColourEditor(gl) {
   this.inserting = false;
   this.editing = -1;
   this.element = null;
@@ -677,27 +661,14 @@ function ColourEditor(source, gl) {
 
   //Load texture data and draw palette
   fractal.gradientTexture.image = this.gradientcanvas;
-  //Update palette colours
-  this.changed = true;
-  this.palette = new Palette(source);
+  //Create default palette object
+  this.palette = new Palette();
   this.palette.draw(this.editcanvas, true);
   //Event handling for palette
   this.editcanvas.mouse = new Mouse(this.editcanvas, this);
   this.editcanvas.mouse.ignoreScroll = true;
   this.editcanvas.oncontextmenu="return false;";
   this.editcanvas.oncontextmenu = function() { return false; }      
-
-      /*/Update palette history
-      var sel = $('stored');
-      for (var i=0; i<sel.options.length; i++) {
-        this.read(sel.options[i].value);
-        var area = document.getElementById("palettes");
-        var canvas = document.createElement("canvas");
-        canvas.width = 360;
-        canvas.height = 16;
-        area.appendChild(canvas);
-        this.palette.draw(canvas, false);  //Save history
-      }*/
 }
 
 //Palette management
@@ -705,32 +676,29 @@ ColourEditor.prototype.read = function(source) {
   //Read a new palette from source data
   this.palette = new Palette(source);
   this.reset();
-  this.changed = true;
   this.palette.draw(this.editcanvas, true);
 }
 
 ColourEditor.prototype.update = function() {
-  //Update gradient from palette
-  if (this.changed) {
-   //Update palette history
-    var area = document.getElementById("palettes");
-    var canvas = document.createElement("canvas");
-    canvas.width = 360;
-    canvas.height = 16;
-    area.appendChild(canvas);
-    this.palette.draw(canvas, false);  //Save history
-    this.changed = false;
-  }
   this.palette.draw(this.editcanvas, true);
-
   //Update gradient texture
   this.palette.draw(this.gradientcanvas, false);  //WebGL texture size (power of 2)
   fractal.updateTexture();
 }
 
 ColourEditor.prototype.savePalette = function() {
-  //Write palette source data (to default only for now)
-  ajaxWriteFile("default.palette", this.palette.toString(), consoleWrite);
+  if (!supports_html5_storage()) return;
+  try {
+    localStorage["fractured.current.palette"] = this.palette.toString();
+  } catch(e) {
+    //data wasn’t successfully saved due to quota exceed so throw an error
+    alert('Quota exceeded! ' + e);
+  }
+}
+
+ColourEditor.prototype.loadPalette = function() {
+  if (!supports_html5_storage()) return;
+  read(localStorage["fractured.current.palette"]);
 }
 
 ColourEditor.prototype.insert = function(position, x, y) {
@@ -762,7 +730,6 @@ ColourEditor.prototype.save = function(val) {
     //Update colour with selected
     this.palette.colours[this.editing].colour.setHSV(val);
     this.palette.draw(this.editcanvas, true);
-    this.changed = true;
   }
   else if (this.element) {
     var col = new Colour(0);
@@ -818,7 +785,6 @@ ColourEditor.prototype.click = function(event, mouse) {
         //Delete on right click
         this.palette.remove(i);
         this.palette.draw(this.editcanvas, true);
-        this.changed = true;
       }
     } else {
       //Clicked elsewhere, add new colour
@@ -850,7 +816,6 @@ ColourEditor.prototype.move = function(event, mouse) {
     if (mouse.x > this.editcanvas.width-1) mouse.x = this.editcanvas.width-1;
     //Move to adjusted position and redraw
     this.palette.colours[mouse.slider].position = mouse.x / this.editcanvas.width;
-    this.changed = true;
     this.palette.draw(this.editcanvas, true);
   }
 }
@@ -864,7 +829,6 @@ ColourEditor.prototype.wheel = function(event, mouse) {
     if (x <= 0) x += 1.0;
     if (x >= 1.0) x -= 1.0;
     this.palette.colours[i].position = x;
-    this.changed = true;
   }
   this.palette.draw(this.editcanvas, true);
 }
@@ -872,22 +836,22 @@ ColourEditor.prototype.wheel = function(event, mouse) {
 
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
+function fileSelected(files) {
+  var filetype = document.getElementsByName("filetype");
+  var callback = loadFile;
+  if (filetype[1].checked) callback = fractal.loadPalette; //loadPalette;
+  if (filetype[2].checked) callback = importState;
+  filesProcess(files, callback);
+}
 
 function filesProcess(files, callback) {
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
-    //var typeFilter = /image.*/;
-
-    //if(!file.type.match(typeFilter)) {
-    //  alert('This file isn\'t an image. Skipping...');
-    //  continue;
-    //}
-
     new ajaxUploadFile(file, callback);
   }
 }
 
-function loadFile(filename, source) {
+function loadFile(source, filename) {
   if (filename.indexOf(".ini") > -1) {
     fractal.iniLoader(source);
     filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
@@ -897,9 +861,5 @@ function loadFile(filename, source) {
   //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
   fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
   $('nameInput').value = fractal.name;
-}
-
-function loadPalette(filename, source) {
-  fractal.loadPalette(source);
 }
 
