@@ -56,9 +56,8 @@
         <ul>
         <li onmousedown="showPanel(this, 'panel1');" id="tab1" >Parameters</li>
         <li onmousedown="showPanel(this, 'panel2');" class="gradient">Formula</li>
-        <li onmousedown="showPanel(this, 'panel3');" class="gradient">Palette</li>
-        <li onmousedown="showPanel(this, 'panel4');" class="gradient">Console</li>
-        <li onmousedown="showPanel(this, 'panel5');" class="gradient">Saved</li>
+        <li onmousedown="showPanel(this, 'panel3');" class="gradient">Console</li>
+        <li onmousedown="showPanel(this, 'panel4');" class="gradient">Saved</li>
         </ul>
       </nav>
 
@@ -180,26 +179,9 @@
             <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('inside_colour');">
           </div>
         </div>
-
-        <hr>
-          File upload:<br>
-          <input name="file" type="file"onchange="filesProcess(this.files, loadFile)"><br>
       </div>
 
       <div class="panel" id="panel3" style="display: none">
-        <input type="button" value="Set Default Palette"  onClick="colours.savePalette()">
-        <input type="button" value="Save Local"  onClick="savePaletteLocal(colours.palette.toString())">
-        <input type="button" value="Load Local"  onClick="loadPaletteLocal()">
-        <hr>
-        File upload:<br>
-        <input name="palfile" type="file"onchange="filesProcess(this.files, loadPalette);"><br>
-        <hr>
-         <div id="palettes">
-         </div>
-      </div>
-
-
-      <div class="panel" id="panel4" style="display: none">
         <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
         <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
         <input type="button" value="Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
@@ -208,7 +190,7 @@
         </textarea>
       </div>
 
-      <div class="panel" id="panel5" style="display: none">
+      <div class="panel" id="panel4" style="display: none">
         <input type="button" value="Save State" onclick="saveState();">
         <!--input type="button" value="Load State" onclick="loadState();"-->
         <input type="button" value="Export State" onclick="exportState();">
@@ -218,8 +200,14 @@
         </select>
         <input type="button" class="right" value="delete" onclick="deleteFractal();">
         <hr>
-          File upload (state file):<br>
-          <input name="file" type="file"onchange="filesProcess(this.files, importState)"><br>
+          File upload:<br>
+          <input name="file" type="file"onchange="fileSelected(this.files)"><br>
+          <input id="filetype" name="filetype" type="radio" id="ftype" checked="checked">
+          <label for="ftype">Fractal</label>
+          <input name="filetype" type="radio" id="ptype">
+          <label for="ptype">Palette</label>
+          <input name="filetype" type="radio" id="stype">
+          <label for="stype">State</label>
         <hr>
           <div class="row">
             <div class="label">Left-click Action</div>

@@ -53,7 +53,7 @@ function ajaxUploadFile(file, callback) {
   reader.onload = function() { //Execute this when the file is successfully read
     //callback(fileData);  //Call passed function on data directly
     var fileData = reader.result + "\r\n";
-    callback(file.name, fileData);  //Call passed function on data directly
+    callback(fileData, file.name);  //Call passed function on data directly
 /* This is all for uploading to the server...
 
     var boundary = "fileboundary"; //Boundary name
