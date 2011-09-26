@@ -92,3 +92,51 @@ function ajaxUploadFile(file, callback) {
   return true;
 }
 
+//Request from server, responds when done with file data + passed name to callback function
+function ajaxRequestPost(callback)
+{ 
+  var http = new XMLHttpRequest();
+
+  http.onreadystatechange = function()
+  { 
+    if(http.readyState == 4)
+      if(http.status == 200) {
+        consoleWrite("loaded: " + filename);
+        if (callback)
+          callback(filename, http.responseText);
+      } else  
+        consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
+  } 
+  //Add date to url to prevent caching
+  var d = new Date();
+  http.open("GET", filename + "?d=" + d.getTime(), true); 
+  http.send(null); 
+}
+
+function callJsonp()
+{
+  // the url of the script where we send the asynchronous call
+      data = window.btoa(fractal + ""); //Test sending a bunch of base64 encoded data with url
+  var url = "http://localhost:8080/" + data;
+  // create a new script element
+  var script = document.createElement('script');
+  // set the src attribute to that url
+  script.setAttribute('src', url);
+  // insert the script in our page
+    consoleWrite("Calling " + url);
+  document.getElementsByTagName('head')[0].appendChild(script);
+}
+
+// this function should parse responses.. you can do anything you need..
+// you can make it general so it would parse all the responses the page receives based on a response field
+function parseRequest(response)
+{
+  try // try to output this to the javascript console
+  {
+    consoleWrite(response);
+  }
+  catch(an_exception) // alert for the users that don't have a javascript console
+  {
+    alert('product id ' + response.item_id + ': quantity = ' + response.quantity + ' & price = ' + response.price);
+  }
+}

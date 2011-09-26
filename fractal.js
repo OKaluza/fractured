@@ -330,7 +330,7 @@
     for (key in this)
     {
       if (typeof(this[key]) == 'object') {
-        consoleWrite(key + " = " + this[key].value);
+        //consoleWrite(key + " = " + this[key].value);
         code += this[key].declare(key);
       }
     }

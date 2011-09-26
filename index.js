@@ -21,8 +21,12 @@ var editorTheme = 'dark';
     //Default editor line offset
     formulaOffsets[""] = 1;
 
-    //Preload some images
-    ajaxReadFile("media/SatVal.png");
+    // Check for the various File API support.
+    if (window.File && window.FileReader && window.FileList) {
+      // Great success! All required File APIs are supported.
+    } else {
+      alert('The File APIs are not fully supported in this browser.');
+    }
 
     //Get shader source files on server
     sources["shaders/fractal-header.frag"] = "";
@@ -45,7 +49,45 @@ var editorTheme = 'dark';
   function loadSources() {
     //Load a from list of remaining source files
     for (filename in sources)
-      if (!sources[filename]) ajaxReadFile(filename, saveSource);
+      if (!sources[filename]) iframeReadFile(filename);  //iFrame file reader that works offline
+      //if (!sources[filename]) ajaxReadFile(filename, saveSource);
+  }
+
+  //External content load via iframe dynamic insert
+  function iframeReadFile(doc) {
+   //Unfortunately doesn't work in chrome for local files in sub-directories,
+   //Stupidly it treats them as from another domain
+
+    // create a new iframe element
+    var iframe = document.createElement('iframe');
+    // set the src attribute to that url
+    iframe.setAttribute('src', doc);
+    iframe.setAttribute('name', doc);
+    iframe.setAttribute('onload', 'transferHTML(this)');
+    // insert the script into our page
+      consoleWrite("Loading " + doc);
+      //<iframe onload="transferHTML();" id="hiddenContent" name=""></iframe>
+    document.getElementById('hidden').appendChild(iframe);
+  }
+
+  function transferHTML(srcFrame) {
+    var doc = srcFrame.name;
+    srcContent='';
+    //if (srcFrame.contentDocument) {
+      srcContent=srcFrame.contentDocument.body.textContent; //innerHTML; //textContent;
+    //}
+    //else if (srcFrame.contentWindow) {
+    //  srcContent=srcFrame.contentWindow.document.body.textContent;
+    //  srcContent=srcFrame.contentWindow.document.body.textContent;
+    //}
+    sources[doc] = srcContent;
+
+    var remain = 0;
+    for (filename in sources)
+      if (sources[filename].length == 0) remain++;
+
+    if (remain == 0)
+      appInit();  //All data loaded, call init
   }
 
   //Source file loaded
@@ -298,7 +340,8 @@ var editorTheme = 'dark';
   function loadLastFractal() {
     var sel = $('stored')
     sel.selectedIndex = sel.length-1;
-    selectedFractal(sel);
+    if (sel.selectedIndex >= 0)
+       selectedFractal(sel);
   }
 
   function saveState() {
@@ -836,6 +879,21 @@ ColourEditor.prototype.wheel = function(event, mouse) {
 
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
+
+  function handleFileSelect(evt) {
+    var files = evt.target.files; // FileList object
+
+    // files is a FileList of File objects. List some properties.
+    var output = [];
+    for (var i = 0, f; f = files[i]; i++) {
+      output.push('<li><strong>', f.name, '</strong> (', f.type || 'n/a', ') - ',
+                  f.size, ' bytes, last modified: ',
+                  f.lastModifiedDate.toLocaleDateString(), '</li>');
+    }
+    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+  }
+
+
 function fileSelected(files) {
   var filetype = document.getElementsByName("filetype");
   var callback = loadFile;
@@ -847,7 +905,21 @@ function fileSelected(files) {
 function filesProcess(files, callback) {
   for (var i = 0; i < files.length; i++) {
     var file = files[i];
-    new ajaxUploadFile(file, callback);
+    //alert(file.name + " -- " + file.size);
+    //new ajaxUploadFile(file, callback);
+    //User html5 fileReader api (works offline)
+      var reader = new FileReader();
+
+      // Closure to capture the file information.
+      reader.onload = (function(file) {
+        return function(e) {
+          //alert(e.target.result);
+          callback(e.target.result, file.name);
+        };
+      })(file);
+
+      // Read in the file (AsText/AsDataURL/AsArrayBuffer/AsBinaryString)
+      reader.readAsText(file);
   }
 }
 
