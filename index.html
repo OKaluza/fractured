@@ -2,6 +2,9 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<!-- This is supposed to tell IE to use Chrome Frame if available-->
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+
 <title>Fractured - WebGL Fractal Art Studio</title>
 
 <!--link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'-->
@@ -36,12 +39,11 @@
 
       <nav>
         <ul>
-          <li><span id="hide" onClick="toggleParams();">&uarr;</span></li> 
-          <li><span id="show" style="display:none" onClick="toggleParams();">&darr;</span></li> 
+          <li><span id="hide" onClick="toggleParams();">Tools &uarr;</span></li> 
+          <li><span id="show" style="display:none" onClick="toggleParams();">Tools &darr;</span></li> 
           <li><span onClick="fractal.applyChanges();">Draw</span></li> 
           <li><span onClick="saveFractal(true);">Export</span></li> 
           <li><span onClick="saveFractal(false);">Save</span></li> 
-          <li><span onClick="loadLastFractal();">Load</span></li> 
           <!--li><span onClick="saveImage();">Save Image</span></li--> 
           <li><a href="/about">About</a></li> 
         </ul>
@@ -56,8 +58,8 @@
         <ul>
         <li onmousedown="showPanel(this, 'panel1');" id="tab1" >Parameters</li>
         <li onmousedown="showPanel(this, 'panel2');" class="gradient">Formula</li>
-        <li onmousedown="showPanel(this, 'panel3');" class="gradient">Console</li>
-        <li onmousedown="showPanel(this, 'panel4');" class="gradient">Saved</li>
+        <li onmousedown="showPanel(this, 'panel3');" class="gradient">Saved</li>
+        <li onmousedown="showPanel(this, 'panel4');" class="gradient">Console</li>
         </ul>
       </nav>
 
@@ -182,21 +184,12 @@
       </div>
 
       <div class="panel" id="panel3" style="display: none">
-        <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
-        <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
-        <input type="button" value="Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
-        <input type="button" value="Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')">
-        <textarea id="console" spellcheck="false">
-        </textarea>
-      </div>
-
-      <div class="panel" id="panel4" style="display: none">
-                <input type="button" value="JSONP TEST" onclick="callJsonp();">
-        <input type="button" value="Save State" onclick="saveState();">
+        <input type="button" value="Save Studio" onclick="saveState();">
         <!--input type="button" value="Load State" onclick="loadState();"-->
-        <input type="button" value="Export State" onclick="exportState();">
-        <input type="button" value="Reset State" onclick="resetState();">
+        <input type="button" value="Export Studio" onclick="exportState();">
+        <input type="button" value="Reset Studio" onclick="resetState();">
         <hr>
+        My Saved Fractals...
         <select size="10" style="width: 300px" id="stored" onchange="selectedFractal(this)">
         </select>
         <input type="button" class="right" value="delete" onclick="deleteFractal();">
@@ -208,7 +201,7 @@
           <input name="filetype" type="radio" id="ptype">
           <label for="ptype">Palette</label>
           <input name="filetype" type="radio" id="stype">
-          <label for="stype">State</label>
+          <label for="stype">Studio</label>
         <hr>
           <div class="row">
             <div class="label">Left-click Action</div>
@@ -228,6 +221,16 @@
         <div id="image"></div>
       </div>
 
+      <div class="panel" id="panel4" style="display: none">
+                <input type="button" value="JSONP TEST" onclick="callJsonp();">
+        <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
+        <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
+        <input type="button" value="Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
+        <input type="button" value="Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')">
+        <textarea id="console" spellcheck="false">
+        </textarea>
+      </div>
+
       <div id="statusbar">
         <span id="coords">&nbsp;re: im:</span>
       </div>
@@ -244,8 +247,8 @@
   <div id="select" style="display: none"></div>
   <div id="hidden" style="display: none">
     <img src="media/slider.png" id="slider">
+    <img src="media/SatVal.png">
     <canvas id="gradient" width="4096" height="1"></canvas>
-    <!--iframe onload="transferHTML();" id="hiddenContent" name=""></iframe-->
   </div>
 
   <!-- Colour picker -->
@@ -269,3 +272,4 @@
 
 </body>
 </html>
+

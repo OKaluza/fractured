@@ -3,16 +3,15 @@ main_function()
   rgba colour = rgba(0.0,0.0,0.0,0.0);
   pre_transform_init();
   init();
-  post_transform_init();
   inside_colour_init();
   outside_colour_init();
 
   //Largest dimension
   dim = dims.y > dims.x ? dims.y : dims.x;
   //Get radius in pixels
-  radius = 0.5 * dim * complex(pixelsize, pixelsize);
+  radius = 0.5 * dim * pixelsize;
   //Get distance from current coord to origin
-  len = cabs((coord - origin) / radius);  
+  len = cabs(coord - origin) / radius;  
     
   //Variable iterations?
   if (vary > 0.0)
@@ -23,6 +22,8 @@ main_function()
   }
   else
     maxiterations = iterations;
+  
+  post_transform_init();
     
   float inc = pixelsize / real(antialias); //Width of variable over fragment
   for (int j=0; j<antialias; j++)
@@ -86,12 +87,6 @@ main_function()
         //Check iterations remain
         if (i == maxiterations) break;
       }
-
-      //This hack forces same results as old program...
-      #ifdef COMPAT
-        count++;
-        if (count > maxiterations) in_set = true;
-      #endif
 
       if (in_set)
         //Inside colour: normalised colour index [0,1]

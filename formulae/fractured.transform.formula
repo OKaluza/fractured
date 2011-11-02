@@ -12,6 +12,15 @@
 @:N = int(1);
 //Circle limit
 @:circle = real(0);
+//Compatibility mode
+@:compat = bool(true);
+
+init:
+{
+  //HACK for old fractals
+  if (:compat)
+    maxiterations--;
+}
 
 reset:
 {
@@ -36,5 +45,9 @@ transform:
   //Apply separate functions to real/imaginary components
   z = :z_fn(z);
   z = complex(:re_fn(z.x), :im_fn(z.y));
+
+  //HACK for old fractals!
+  if (:compat)  
+    count++;
 }
 

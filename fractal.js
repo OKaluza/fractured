@@ -703,7 +703,6 @@
     this.selected = new Complex(0, 0);
     this.julia = false;
     this.perturb = false;
-    this.compatibility = false;
 
     //Reset default base params
     this["base"] = new Formula("base");
@@ -992,7 +991,6 @@
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
-    this.compatibility = true;  //Set compatibility mode
     var saved = {};
 
     function convertFormulaName(name) {
@@ -1252,13 +1250,13 @@
           params[":type2"].value = true;
         //???? Override these? or leave?
         params[":power"].value = "2";
-        params[":bailout"].value = "4";
+        params[":bailout"].value = saved["bailout"]; //"4";
       }
 
       if (formula[typename].selected == "triangle_inequality") {
         //???? Override these? or leave?
         params[":power"].value = "2";
-        params[":bailout"].value = "4";
+        params[":bailout"].value = saved["bailout"]; //"4";
       }
 
       if (formula[typename].selected == "exponential_smoothing") {
@@ -1375,7 +1373,6 @@
 
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
-    if (this.compatibility) header += "\n#define COMPAT\n";
 
     //Base code
     var base = this["base"].getParsedFormula();
@@ -1422,7 +1419,7 @@
 
     //Save for debugging
     sources["gen-shader.frag"] = fragmentShader;
-    ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
+    //ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
 
     this.updateShader(fragmentShader);
   }

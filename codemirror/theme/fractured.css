@@ -1,4 +1,4 @@
-.cm-s-fracturedlight { background: #ffe; color: black; }
+.cm-s-fracturedlight { background: #fef5dd; color: black; }
 .cm-s-fracturedlight span.CodeMirror-selected { background: #b96 !important; }
 .cm-s-fracturedlight .CodeMirror-cursor { border-left: 1px solid black !important; }
 /*
@@ -9,7 +9,7 @@
 .cm-s-fracturedlight span.cm-keyword {color: #7f0055; font-weight:bold;}
 .cm-s-fracturedlight span.cm-atom {color: brown;}
 .cm-s-fracturedlight span.cm-number {color: brown;}
-.cm-s-fracturedlight span.cm-operator {color: purple;}
+.cm-s-fracturedlight span.cm-operator {color: red;}
 .cm-s-fracturedlight span.cm-comment {color: green; font-style: italic;}
 .cm-s-fracturedlight span.cm-meta {color: gray;}
 
@@ -30,7 +30,7 @@
 .cm-s-fractureddark span.cm-keyword {color: #8f6500; font-weight:bold;}
 .cm-s-fractureddark span.cm-atom {color: limegreen;}
 .cm-s-fractureddark span.cm-number {color: limegreen;}
-.cm-s-fractureddark span.cm-operator {color: darkorange;}
+.cm-s-fractureddark span.cm-operator {color: orange;}
 .cm-s-fractureddark span.cm-comment {color: gray; font-style: italic;}
 .cm-s-fractureddark span.cm-meta {color: #8ca;}
 
@@ -39,7 +39,7 @@
 .cm-s-fractureddark span.cm-stdvar {color: #00de90; font-weight:bold;}
 .cm-s-fractureddark span.cm-type {color: aqua;}
 .cm-s-fractureddark span.cm-param {color: khaki; font-weight:bold;}
-.cm-s-fractureddark span.cm-local {color: darksalmon; }
+.cm-s-fractureddark span.cm-local {color: seagreen; }
 
 /* Unused? */
 .cm-s-fractured span.cm-def {color: white;}

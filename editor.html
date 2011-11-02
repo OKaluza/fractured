@@ -4,6 +4,7 @@
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
 
+
 <!-- CodeMirror-->
 <script src="codemirror/lib/codemirror.js"></script>
 <link rel="stylesheet" href="codemirror/lib/codemirror.css">
@@ -34,10 +35,12 @@ html, body {
   border-radius: 4px;
   height: 28px;
 }
-#buttons input{ 
+#buttons input,select{ 
+  float: left;
   width: 80px; height: 24px;
   margin: 2px; padding: 0px 0px 2px 0px;
 }
+
 #code{
   position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;
 }
@@ -155,8 +158,8 @@ function replace() {
 <div id="buttons">
   <input type="button" value="Update" onclick="updateEditor()">
   <input type="button" value="Save" onclick="saveEditor()">
-  <input type=text style="width: 5em" id=query>
-  <button type=button onclick="search()">Search</button>
+  <input type="text" style="width: 5em" id="query" onkeypress="if(event.keyCode == 13 && this.value!='') search(); return true; ">
+  <!--button type="button" onclick="search()">Search</button-->
   <select id="theme" style="float: right" onchange="selectTheme(this)">
     <option selected>light</option>
     <option>dark</option>
