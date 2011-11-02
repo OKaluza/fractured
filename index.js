@@ -49,8 +49,8 @@ var editorTheme = 'dark';
   function loadSources() {
     //Load a from list of remaining source files
     for (filename in sources)
-      if (!sources[filename]) iframeReadFile(filename);  //iFrame file reader that works offline
-      //if (!sources[filename]) ajaxReadFile(filename, saveSource);
+      //if (!sources[filename]) iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
+      if (!sources[filename]) ajaxReadFile(filename, saveSource);
   }
 
   //External content load via iframe dynamic insert
@@ -338,10 +338,19 @@ var editorTheme = 'dark';
   }
 
   function loadLastFractal() {
-    var sel = $('stored')
-    sel.selectedIndex = sel.length-1;
-    if (sel.selectedIndex >= 0)
-       selectedFractal(sel);
+
+    //Load current fractal (as default)
+    var source = localStorage["fractured.active"];
+    if (source) {
+      fractal.load(source);
+      fractal.name = localStorage["fractured.name"];
+      $('nameInput').value = fractal.name;
+    }
+
+    //var sel = $('stored')
+    //sel.selectedIndex = sel.length-1;
+    //if (sel.selectedIndex >= 0)
+    //   selectedFractal(sel);
   }
 
   function saveState() {
@@ -370,8 +379,10 @@ var editorTheme = 'dark';
       localStorage["fractured.formulae"] = JSON.stringify(formulae);
       //Save selected formulae
       localStorage["fractured.selected"] = JSON.stringify(selected);
-      //Save current fractal
-      saveFractal(false);
+      //Save current fractal (as default)
+      localStorage["fractured.active"] = fractal;
+      localStorage["fractured.name"] = fractal.name;
+      ////saveFractal(false);
       //Save some global settings
       localStorage["fractured.editorTheme"] = editorTheme;
     } catch(e) {
@@ -801,6 +812,14 @@ ColourEditor.prototype.reset = function() {
 
 //Mouse event handling
 ColourEditor.prototype.click = function(event, mouse) {
+    if (event.ctrlKey) {
+      //Flip
+      for (var i = 1; i < this.palette.colours.length; i++)
+        this.palette.colours[i].position = 1.0 - this.palette.colours[i].position;
+      this.palette.draw(this.editcanvas, true);
+      return false;
+    }
+
   //Use non-scrolling position
   mouse.x = mouse.clientx;
   mouse.x = mouse.clientx;
@@ -879,21 +898,6 @@ ColourEditor.prototype.wheel = function(event, mouse) {
 
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
-
-  function handleFileSelect(evt) {
-    var files = evt.target.files; // FileList object
-
-    // files is a FileList of File objects. List some properties.
-    var output = [];
-    for (var i = 0, f; f = files[i]; i++) {
-      output.push('<li><strong>', f.name, '</strong> (', f.type || 'n/a', ') - ',
-                  f.size, ' bytes, last modified: ',
-                  f.lastModifiedDate.toLocaleDateString(), '</li>');
-    }
-    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
-  }
-
-
 function fileSelected(files) {
   var filetype = document.getElementsByName("filetype");
   var callback = loadFile;
