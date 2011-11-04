@@ -1,6 +1,7 @@
   //Handler class from passed functions
-  function MouseEventHandler(click, move, wheel) {
+  function MouseEventHandler(click, down, move, wheel) {
     //All these functions should take (event, mouse)
+    this.down = down;
     this.click = click;
     this.move = move;
     this.wheel = wheel;
@@ -90,11 +91,11 @@
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
 
-    //No handler for mouse down at present, prevent default actions anyway
-    //var action = false;
+    //Handler for mouse down
+    var action = this.mouse.handler.down(event, this.mouse);
     //If handler returns false, prevent default action
-    //if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    //event.returnValue = action;
+    if (!action && event.preventDefault) event.preventDefault();  // Firefox
+    event.returnValue = action;
   }
 
   //Default handlers for up & down, call specific handlers on element

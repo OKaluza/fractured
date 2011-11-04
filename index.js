@@ -105,7 +105,7 @@ var editorTheme = 'dark';
   function appInit() {
     //Fractal canvas event handling
     var canvas = document.getElementById("fractal-canvas");
-    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseMove, canvasMouseWheel));
+    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
     canvas.mouse.wheelTimer = true;
     defaultMouse = document.mouse = canvas.mouse;
     document.onmouseup = handleMouseUp;
@@ -579,6 +579,10 @@ var rztimeout = undefined;
     fractal.draw();
   }
 
+  function canvasMouseDown(event, mouse) {
+    return false;
+  }
+
   function canvasMouseMove(event, mouse) {
     //Mouseover processing
     if (!fractal) return true;
@@ -856,8 +860,12 @@ ColourEditor.prototype.click = function(event, mouse) {
   return false;
 }
 
+ColourEditor.prototype.down = function(event, mouse) {
+   return false;
+}
+
 ColourEditor.prototype.move = function(event, mouse) {
-  if (!mouse.isdown) return;
+  if (!mouse.isdown) return true;
 
   //Use non-scrolling position
   mouse.x = mouse.clientx;
