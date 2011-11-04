@@ -74,6 +74,10 @@ ColourPicker.prototype.click = function(e, mouse) {
     this.setOpacity(mouse);
 }
 
+ColourPicker.prototype.down = function(e, mouse) {
+   return false;
+}
+
 ColourPicker.prototype.move = function(e, mouse) {
   if (!mouse.isdown) return;
   if (mouse.button > 0) return; //Process left drag only
