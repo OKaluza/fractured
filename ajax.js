@@ -1,3 +1,24 @@
+//Reads a session from server, responds when done with session data to callback function
+function ajaxReadSession(callback)
+{ 
+  var http = new XMLHttpRequest();
+
+  http.onreadystatechange = function()
+  { 
+    if(http.readyState == 4)
+      if(http.status == 200) {
+        consoleWrite("loaded session: "); // + filename);
+        if (callback)
+          callback(http.responseText);
+      } else  
+        consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
+  } 
+  //Add date to url to prevent caching
+  var d = new Date();
+  http.open("GET", "getsession.php" + "?d=" + d.getTime(), true); 
+  http.send(null); 
+}
+
 function ajaxWriteFile(filename, data, callback) {
   var http = new XMLHttpRequest();
 
@@ -23,7 +44,7 @@ function ajaxWriteFile(filename, data, callback) {
 }
 
 //Reads a file from server, responds when done with file data + passed name to callback function
-function ajaxReadFile(filename, callback)
+function ajaxReadFile(filename, callback, nocache)
 { 
   var http = new XMLHttpRequest();
 
@@ -33,13 +54,18 @@ function ajaxReadFile(filename, callback)
       if(http.status == 200) {
         consoleWrite("loaded: " + filename);
         if (callback)
-          callback(filename, http.responseText);
+          callback(http.responseText, filename);
       } else  
         consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
   } 
   //Add date to url to prevent caching
-  var d = new Date();
-  http.open("GET", filename + "?d=" + d.getTime(), true); 
+  if (nocache)
+  {
+    var d = new Date();
+    http.open("GET", filename + "?d=" + d.getTime(), true); 
+  }
+  else
+    http.open("GET", filename, true); 
   http.send(null); 
 }
 

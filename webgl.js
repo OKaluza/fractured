@@ -201,6 +201,11 @@
     return new Float32Array(matrix.flatten())
   }
 
+  ModelView.prototype.toString = function() {
+    return JSON.stringify(matrix);
+    //return new Float32Array(matrix.flatten())
+  }
+
   ModelView.prototype.push = function(m) {
     if (m) {
       this.stack.push(m.dup());

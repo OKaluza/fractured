@@ -7,14 +7,21 @@ var colours;
 var sources = {};
 var labels = {};
 var formulaOffsets = {}; //line numbering offset counts for each formula
-var autosize = true;
+var autoSize = true;
 var showparams = true;
 var hasChanged = false;
 var editorTheme = 'dark';
+var currentSession = 0;
+var filetype = 'fractal';
 
   function consoleWrite(str) {
     var console = document.getElementById('console');
     console.value = str + "\n" + console.value;
+  }
+
+  function consoleClear() {
+    var console = document.getElementById('console');
+    console.value = '';
   }
 
   function pageStart() {
@@ -46,11 +53,17 @@ var editorTheme = 'dark';
     showPanel(document.getElementById('tab1'), 'panel1');   //Show first tab
   }
 
+  //Update and save
+  function applyAndSave() {
+    fractal.applyChanges();
+    saveState();
+  }
+
   function loadSources() {
     //Load a from list of remaining source files
     for (filename in sources)
       //if (!sources[filename]) iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
-      if (!sources[filename]) ajaxReadFile(filename, saveSource);
+      if (!sources[filename]) ajaxReadFile(filename, saveSource, true);
   }
 
   //External content load via iframe dynamic insert
@@ -91,7 +104,7 @@ var editorTheme = 'dark';
   }
 
   //Source file loaded
-  function saveSource(filename, data){
+  function saveSource(data, filename){
     sources[filename] = data; //Save content
     var remain = 0;
     for (filename in sources)
@@ -110,7 +123,7 @@ var editorTheme = 'dark';
     defaultMouse = document.mouse = canvas.mouse;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
-    document.inputs.elements["autosize"].checked = autosize;
+    document.inputs.elements["autosize"].checked = autoSize;
     window.onresize = autoResize;
     window.onbeforeunload = beforeUnload;
 
@@ -159,9 +172,7 @@ var editorTheme = 'dark';
     fractal.load(choice.value);
     fractal.name = choice.text;
     $('nameInput').value = choice.text;
-    //alert(colours.palette.toString());
-      //fractal.applyChanges();
-    //fractal.draw();
+    applyAndSave();
   }
 
   function clearFractal() {
@@ -246,27 +257,153 @@ var editorTheme = 'dark';
   function resetState() {
     if (confirm('This will clear everything!')) {
       localStorage.clear(); //be careful as this will clear the entire database, TODO: Confirm
-      window.location.reload(false);
+      ajaxReadFile('db/session_get.php?set=1&id=0', reloadWindow);
+      currentSession = 0;
+      //window.location.reload(false);
     }
     //localStorage.removeItem("fractured.formulae");
   }
 
+  //Import/export all local storage to server
+  function uploadState(session_id) {
+    if (session_id > 0 && confirm('Save changes to this session on server?')) {
+      //Update existing
+    } else {
+      var desc = prompt("Enter description for new session");
+      if (desc == null) return;
+      var descField = document.getElementById("desc");
+      descField.setAttribute("value", desc);
+      session_id = 0;
+    }
+
+    var idField = document.getElementById("sessid");
+    idField.setAttribute("value", session_id);
+
+    var hiddenField = document.createElement("input");
+    hiddenField.setAttribute("type", "hidden");
+    hiddenField.setAttribute("name", "data");
+    hiddenField.setAttribute("value", getState());
+
+    var form = document.forms["savesession"];
+    form.appendChild(hiddenField);
+    form.submit();
+    form.removeChild(hiddenField);
+  }
+
+  function exportStateFile() {
+    var d=new Date();
+    var fname = "workspace " + d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + ".fractured";
+    exportFile(fname, "text/fractal-workspace", getState());
+  }
+
+  function exportFractalFile() {
+    fractal.applyChanges();
+    exportFile(fractal.name + ".fractal", "text/fractal-source", fractal + "");
+  }
+
+  function exportFile(filename, content, data) {
+    var fField = document.getElementById("export-filename");
+    fField.setAttribute("value", filename);
+
+    var cField = document.getElementById("export-content");
+    cField.setAttribute("value", content);
+
+    var hiddenField = document.createElement("input");
+    hiddenField.setAttribute("type", "hidden");
+    hiddenField.setAttribute("name", "data");
+    hiddenField.setAttribute("value", data);
+
+    var form = document.forms["exporter"];
+    form.appendChild(hiddenField);
+    form.submit();
+    form.removeChild(hiddenField);
+  }
+
+  function loadStateList(data) {
+    try {
+      var select = document.getElementById('sessions');
+      select.options.length = 0;  //Clear list
+      var list = JSON.parse(data);
+      var i;
+      for (i=0; i<list.length; i++) {
+        var o = document.createElement('option');
+        o.value = list[i].id;
+        o.text = list[i].date + " " + list[i].description;
+        select.options.add(o);
+      }
+    } catch(e) {
+      alert('Error! ' + e);
+    }
+  }
+
+  function loadSelectedState()
+  {
+     var select = document.getElementById('sessions');
+     var idx = select.selectedIndex;
+     if (idx >= 0)
+     {
+       var id = select.options[idx].value;
+       currentSession = id;
+       $('sessions').value = currentSession;
+       ajaxReadFile('db/session_get.php?id=' + id, importState);
+     }
+  }
+
+  function deleteSelectedState()
+  {
+     if (!confirm('Delete this session from the server?')) return;
+     var select = document.getElementById('sessions');
+     var idx = select.selectedIndex;
+     if (idx >= 0)
+     {
+       var id = select.options[idx].value;
+       ajaxReadFile('db/session_delete.php?id=' + id, reloadWindow);
+     }
+  }
+
+  function reloadWindow(temp)
+  {
+    //alert("AJAX RESULT: " + temp);
+    window.location.reload(false);
+  }
+
   //Import/export all local storage to a text file
   function exportState() {
-    var source = JSON.stringify(localStorage);
-    location.href = 'data:text/store;base64,' + window.btoa(source);
+    location.href = 'data:text/store;base64,' + window.btoa(getState());
+  }
+
+  function getState() {
+    //Get current state in local storage minus session/login details
+    var source = localStorage;
+    delete source["fractured.currentSession"];
+    delete source["fractured.currentLogin"];
+    return JSON.stringify(source);
   }
 
   function importState(source) {
     if (!confirm('This will overwrite everything!')) return;
+    localStorage.clear(); //clear the entire database
     try {
       var parsed = JSON.parse(source);
       for (key in parsed)
         localStorage[key] = parsed[key];
+      //localStorage["fractured.currentSession"] = currentSession;
       window.location.reload(false);
     } catch(e) {
       alert('Error! ' + e);
     }
+  }
+
+  function setLogin(data) {
+    //Called with result from ajax login query
+    if (data && data.length > 0)
+      localStorage['fractured.currentLogin'] = data;
+    else {
+      //Failed, clear the login key?
+      if (!confirm("Saved session not found or server unreachable, try again?"))
+        localStorage['fractured.currentLogin'] = '';
+    }
+    window.location.reload(false);
   }
 
   function loadState() {
@@ -279,6 +416,13 @@ var editorTheme = 'dark';
        formulae = JSON.parse(f_source);
        selected = JSON.parse(localStorage["fractured.selected"]);
        editorTheme = localStorage["fractured.editorTheme"];
+       autoSize = document.inputs.elements["autosize"].checked = localStorage["fractured.autoSize"];
+       currentSession = parseInt(localStorage["fractured.currentSession"]);
+       if (currentSession) {
+         //Have a saved session #, get the data
+         ajaxReadFile('db/session_get.php?set=1&id=' + currentSession);
+         if ($('sessions')) $('sessions').value = currentSession;
+       }
     } else {
        //Standard formulae library
        formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
@@ -317,7 +461,8 @@ var editorTheme = 'dark';
 
     //Get list of saved fractals
     if (!supports_html5_storage()) return;
-    $('stored').options.length = 0;  //Clear list
+    var storedlist = $('stored').options;
+    storedlist.length = 0;  //Clear list
     var idx_str = localStorage["fractured.fractals"];
     if (idx_str) {
       var idx = parseInt(idx_str);
@@ -327,7 +472,11 @@ var editorTheme = 'dark';
         if (!namestr) continue; //namestr = "unnamed";
         var source = localStorage["fractured.fractal." + i];
         opt = new Option(namestr, source);
-        $("stored").options[$("stored").length] = opt;
+        storedlist[storedlist.length] = opt;  //Insert at end
+        //if (storedlist.length > 0 && storedlist[0])  //Insert at beginning
+        //  storedlist.add(opt, storedlist[0]);
+        //else
+        //  storedlist.add(opt);
         //Save index/id on option
         opt.idx = i;
       }
@@ -342,6 +491,7 @@ var editorTheme = 'dark';
     //Load current fractal (as default)
     var source = localStorage["fractured.active"];
     if (source) {
+      //document.inputs.elements["autosize"].checked = autoSize = false;  //Disable autosize on load for now
       fractal.load(source);
       fractal.name = localStorage["fractured.name"];
       $('nameInput').value = fractal.name;
@@ -385,6 +535,7 @@ var editorTheme = 'dark';
       ////saveFractal(false);
       //Save some global settings
       localStorage["fractured.editorTheme"] = editorTheme;
+      localStorage["fractured.autoSize"] = autoSize;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);
@@ -434,7 +585,7 @@ var editorTheme = 'dark';
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = ['panel1', 'panel2', 'panel3', 'panel4'];
+  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
   var selectedTab = null;
   function showPanel(tab, name)
   {
@@ -487,7 +638,7 @@ var editorTheme = 'dark';
         main.style.left = '1px';
     }
     showparams = (sidebar.style.display == 'block');
-    autoResize(autosize);
+    autoResize(autoSize);
   }
 
 /////////////////////////////////////////////////////////////////////////
@@ -499,13 +650,13 @@ var rztimeout = undefined;
     if (rztimeout) clearTimeout(rztimeout);
     var timer = false;
     if (typeof(newval) == 'boolean')
-      autosize = newval;
+      autoSize = newval;
     else
       timer = true;
 
-    if (autosize) {
-      fractal.width = window.innerWidth - (showparams ? 390 : 4);
-      fractal.height = window.innerHeight - 34;
+    if (autoSize) {
+      fractal.width = window.innerWidth - (showparams ? 388 : 2);
+      fractal.height = window.innerHeight - 32;
       fractal.copyToForm();
       var canvas = document.getElementById('fractal-canvas');
       canvas.width = fractal.width-1;
@@ -513,9 +664,9 @@ var rztimeout = undefined;
 
       if (timer) {
         document.body.style.cursor = "wait";
-        rztimeout = setTimeout('fractal.applyChanges(); document.body.style.cursor = "default";', 150);
+        rztimeout = setTimeout('applyAndSave(); document.body.style.cursor = "default";', 150);
       } else
-        fractal.applyChanges();
+        applyAndSave();
     }
   }
 
@@ -526,6 +677,7 @@ var rztimeout = undefined;
 //Fractal canvas mouse event handling
   function canvasMouseClick(event, mouse) {
     if (event.button > 0) return true;
+    var select = document.getElementById("select");
 
     //Convert mouse coords into fractal coords
     var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
@@ -540,8 +692,10 @@ var rztimeout = undefined;
           select0.value = fractal.origin.re + point.re;
           var select1 = document.getElementById("ySelInput");
           select1.value = fractal.origin.im + point.im;
-       } else
+          consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
+       } else {
           fractal.julia = false;
+       }
 
        //Switch saved views
        var tempPos = fractal.origin.clone();
@@ -549,9 +703,7 @@ var rztimeout = undefined;
        fractal.savePos = tempPos;
     } else {
       //Selection box?
-      var select = document.getElementById("select");
       if (select.style.display == 'block') {
-        select.style.display = 'none';
 
         //Ignore if too small a region selected
         if (select.w > 5 && select.h > 5) {
@@ -573,10 +725,13 @@ var rztimeout = undefined;
         //Adjust centre position to match mouse left click
         fractal.origin.re += point.re;
         fractal.origin.im += point.im;
+        consoleWrite("Origin set to: re: " + fractal.origin.re.toFixed(8) + " im: " + fractal.origin.im.toFixed(8));
       }
     }
+    select.style.display = 'none';
     fractal.copyToForm();
     fractal.draw();
+    saveState();  //Save param changes
   }
 
   function canvasMouseDown(event, mouse) {
@@ -655,6 +810,7 @@ var rztimeout = undefined;
 
     fractal.copyToForm();
     fractal.draw();
+    saveState();  //Save param changes
   }
 
   function bgColourMouseClick() {
@@ -907,10 +1063,9 @@ ColourEditor.prototype.wheel = function(event, mouse) {
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
 function fileSelected(files) {
-  var filetype = document.getElementsByName("filetype");
   var callback = loadFile;
-  if (filetype[1].checked) callback = fractal.loadPalette; //loadPalette;
-  if (filetype[2].checked) callback = importState;
+  if (filetype == 'palette') callback = fractal.loadPalette; //loadPalette;
+  if (filetype == 'session') callback = importState;
   filesProcess(files, callback);
 }
 

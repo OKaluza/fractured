@@ -9,7 +9,7 @@ html, body {
 }
 
 /* Data entry form layout */
-form.formbox {padding: 5px;}
+form.scroll  {position: absolute; top: 3px; bottom: 3px; width: 99%;}
 div.row      {clear: both;}
 div.row span.label   {display: inline; float: left; width: 124px; text-align: right; margin: 1px 3px; }
 div.row span.field   {display: inline; float: left; text-align: left; margin: 0px} 
@@ -20,12 +20,30 @@ input, select{
     padding: 0px;  
     font-size: 10pt;
 }
+input[type=file] {display:block; height:0; width:0;}  /* Hidden uploads, triggered by buttons */
+
 div.row textarea {height: 15px; min-width: 208px; max-width: 208px; font-family: sans; font-size: 9pt;}
 div.row input[type="button"] {margin: 0px}
 div.row input[type="number"] {width: 100px;}
 div.row input[type="text"] {width: 100px;}
 
-textarea#console {width: 99%; height: 95%;}
+textarea#console {width: 99%; height: 60%; min-width: 360px;}
+
+p {margin: 0px 2px; }
+
+div.gap {height: 5px; }
+
+form.login {
+  padding: 1px;
+  margin: 1px;
+  font-size: 12pt;
+  background: #776;
+  color: #eee;
+  border-radius: 5px;
+    -webkit-border-radius: 5px;  
+    -moz-border-radius: 5px;  
+}
+
 
 /* Floating divs */
 .left       {float: left}
@@ -33,10 +51,17 @@ textarea#console {width: 99%; height: 95%;}
 .clear      {clear: both;}
 
 .divider{
-  clear: both; margin: 0px 0px 3px; padding: 0px 0px 3px; 
-  border-bottom: dotted 1px #aaa;
+  clear: both; margin: 1px 0px 3px; padding: 3px 0px 0px; 
+  border-top: dotted 1px #aaa;
   font-size: 8pt;
-  color: #777;
+}
+.divider-label{
+  padding:0px 2px;
+  background: #320;
+  color: #eee;
+  border-radius: 3px;
+    -webkit-border-radius: 3px;  
+    -moz-border-radius: 3px;  
 }
 
 canvas {
@@ -45,6 +70,10 @@ canvas {
   padding:0px;
   /*background: rgba(1,1,1,0);*/
   background-image: url("media/bg.png");
+  border: none; 
+}
+
+canvas#palette {
   border:1px solid #000;
   border-radius: 4px;
     -webkit-border-radius: 4px;  
@@ -80,9 +109,8 @@ canvas {
   position: absolute; top: 25px; left: 3px; bottom: 27px; width: 368px;
 }
 
-/* Scrolling area of form */
-#formscroll {overflow: auto; position: absolute; top: 3px; bottom: 3px; width: 99%;}
-  /*overflow: auto; position: absolute; top: 40px; bottom: 5px; width: 98%; With non-scrolling top area*/
+/* Scrolling areas */
+.scroll {overflow: auto;}
 
 #statusbar {position: absolute; bottom: 0px; width: 380px; margin: 0; padding: 0;}
 
@@ -181,6 +209,18 @@ header nav ul li span:hover {
   background-color: #fb7d0f;
 }
 
+/* base nav styles */  
+nav ul:after { content:"."; display:block; height:0; clear:both; visibility:hidden; }  
+nav li a { display:block; padding:10px 20px; border-left:1px solid #999; border-right:1px solid #222; color:#eee; text-decoration:none; }  
+nav li a:focus { outline:none; text-decoration:underline; }  
+nav li:first-child a { border-left:none; }  
+nav li.last a { border-right:none; }  
+nav a span { display:block; float:rightright; margin-left:5px; }  
+nav ul ul { display:none; width:100%; position:absolute; left:0; background:#6a6a6a; }  
+nav ul ul li { float:none; }  
+nav ul ul a { padding:5px 10px; border-left:none; border-right:none; font-size:14px; }  
+nav ul ul a:hover { background-color:#555; }
+
 #controls {
   z-index: 2;
   margin: 0px 0px 2px 0px; padding:0px;
@@ -189,7 +229,7 @@ header nav ul li span:hover {
   float: right;
 }
 
-#middle {
+#left {
   margin: 0 auto;
   z-index: 2;
      position: fixed;

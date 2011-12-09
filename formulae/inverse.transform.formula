@@ -1,4 +1,4 @@
-//Inverse the complex plane (works as pre-transform only)
+//Invert the complex plane (works as pre-transform only)
 //Center
 @:center = complex(0,0);
 //Radius

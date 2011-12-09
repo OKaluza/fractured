@@ -22,18 +22,18 @@ function ColourPicker(savefn, abortfn) {
   $("plugin").mouse = this.mouse;
 
   //Load hue strip
-  var html='';
-  for(var i=0; i<=this.size; i++) { 
-    var bgcol = new Colour({H:Math.round((360/this.size)*i), S:100, V:100, A:1.0});
+  var i, html='', bgcol, opac;
+  for(i=0; i<=this.size; i++) { 
+    bgcol = new Colour({H:Math.round((360/this.size)*i), S:100, V:100, A:1.0});
     html+="<div class='hue' style='background: "+bgcol.htmlHex()+";'> <\/div>"; 
   }
   $('Hmodel').innerHTML=html;
 
   //Load alpha strip
   html='';
-  for(var i=0; i<=this.size; i++) {
-    var O=1.0-i/this.size;
-    html+="<div class='opacity' style='opacity: " + O.toFixed(2) + ";'> <\/div>"; 
+  for(i=0; i<=this.size; i++) {
+    opac=1.0-i/this.size;
+    html+="<div class='opacity' style='opacity: " + opac.toFixed(2) + ";'> <\/div>"; 
   }
   $('Omodel').innerHTML=html;
 }
@@ -50,8 +50,8 @@ ColourPicker.prototype.pick = function(colour, x, y) {
   $S('plugin').display='block';
 
   //Correct if outside window width/height
-  var w = $('plugin').offsetWidth;
-  var h = $('plugin').offsetHeight;
+  var w = $('plugin').offsetWidth,
+      h = $('plugin').offsetHeight;
   if (x + w > window.innerWidth - 20)
     $S('plugin').left=(window.innerWidth - w - 20) + 'px';
   if (y + h > window.innerHeight - 20)
@@ -101,8 +101,8 @@ ColourPicker.prototype.wheel = function(e, mouse) {
 }
 
 ColourPicker.prototype.setSV = function(mouse) {
-  var X = mouse.clientx - parseInt($('SV').offsetLeft);
-  var Y = mouse.clienty - parseInt($('SV').offsetTop);
+  var X = mouse.clientx - parseInt($('SV').offsetLeft),
+      Y = mouse.clienty - parseInt($('SV').offsetTop);
   //Saturation & brightness adjust
   this.picked.S = scale(X, this.size, 0, this.max['S']);
   this.picked.V = this.max['V'] - scale(Y, this.size, 0, this.max['V']);
@@ -110,8 +110,8 @@ ColourPicker.prototype.setSV = function(mouse) {
 }
 
 ColourPicker.prototype.setHue = function(mouse) {
-  var X = mouse.clientx - parseInt($('H').offsetLeft);
-  var Y = mouse.clienty - parseInt($('H').offsetTop);
+  var X = mouse.clientx - parseInt($('H').offsetLeft),
+      Y = mouse.clienty - parseInt($('H').offsetTop);
   //Hue adjust
   this.picked.H = scale(Y, this.size, 0, this.max['H']);
   this.update(this.picked);
@@ -125,8 +125,8 @@ ColourPicker.prototype.incHue = function(inc) {
 }
 
 ColourPicker.prototype.setOpacity = function(mouse) {
-  var X = mouse.clientx - parseInt($('O').offsetLeft);
-  var Y = mouse.clienty - parseInt($('O').offsetTop);
+  var X = mouse.clientx - parseInt($('O').offsetLeft),
+      Y = mouse.clienty - parseInt($('O').offsetTop);
   //Alpha adjust
   this.picked.A = 1.0 - clamp(Y / this.size, 0, 1);
   this.update(this.picked);
@@ -134,14 +134,14 @@ ColourPicker.prototype.setOpacity = function(mouse) {
 
 ColourPicker.prototype.update = function(HSV) {
   this.picked = HSV;
-  var colour = new Colour(HSV);
-  var rgba = colour.rgbaObj();
-  var rgbaStr = colour.html();
+  var colour = new Colour(HSV),
+      rgba = colour.rgbaObj(),
+      rgbaStr = colour.html(),
+      bgcol = new Colour({H:HSV.H, S:100, V:100, A:255});
+
   $('plugRGB').innerHTML=colour.printString();
   $S('plugCUR').background=rgbaStr;
   $S('plugCUR').backgroundColour=rgbaStr;
-  
-  var bgcol = new Colour({H:HSV.H, S:100, V:100, A:255});
   $S('SV').backgroundColor=bgcol.htmlHex();
 
   //Hue adjust
@@ -152,5 +152,6 @@ ColourPicker.prototype.update = function(HSV) {
   //Alpha adjust
   $S('Oslide').top = this.size * (1.0-HSV.A) - this.oh - 1 + 'px';
 };
+
 
 
