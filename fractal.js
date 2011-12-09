@@ -379,7 +379,10 @@
     var label = "";
     if (name != "base") {
       label = labels[name];
-      divider.appendChild(divider.ownerDocument.createTextNode(sectionnames[type] + ": " + label));
+      var divlabel = document.createElement("span");
+      divlabel.className = "divider-label";
+      divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[type] + ": " + label));
+      divider.appendChild(divlabel);
     }
 
     for (key in this)
@@ -519,7 +522,7 @@
     //Formula selected, parse it's parameters
     if (name) this.selected = name;
     else name = this.selected;  //Re-selecting current
-    consoleWrite("Selecting " + name + " for " + this.type + "_params");
+    //consoleWrite("Selecting " + name + " for " + this.type + "_params");
 
     //Delete any existing dynamic form fields
     var element = document.getElementById(this.type + "_params");
@@ -906,8 +909,8 @@
           var filename = this[type].filename();
           collect = true;
           buffer = "";
-          ////TODO: reenable this to load formula code, disabled for now as formulae are changing frequently
-          ////collectDone = function() {sources[filename] = buffer;}
+          //collectDone = function() {sources[filename] = buffer;}
+          //Use this instead to skip loading formula code from saved param files
             collectDone = function() {}
         }
         continue;
@@ -1369,7 +1372,12 @@
   //Build and redraw shader from source components
   Fractal.prototype.writeShader = function() {
     //Get formula selections
-    consoleWrite("Building fractal shader using:\nformula: " + this["fractal"].selected + "\nPre-transform: " + this["pre_transform"].selected + "\nPost-transform: " + this["post_transform"].selected + "\noutside colour: " + this["outside_colour"].selected + "\ninside colour: " + this["inside_colour"].selected);
+    var msg = "Building fractal shader using:\nformula: " + this["fractal"].selected;
+    if (this["pre_transform"].selected != "none") msg += "\nPre-transform: " + this["pre_transform"].selected;
+    if (this["post_transform"].selected != "none") msg += "\nPost-transform: " + this["post_transform"].selected;
+    if (this["outside_colour"].selected != "none") msg += "\nOutside colour: " + this["outside_colour"].selected;
+    if (this["inside_colour"].selected != "none") msg += "\nInside colour: " + this["inside_colour"].selected;
+    consoleWrite(msg);
 
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
