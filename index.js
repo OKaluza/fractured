@@ -16,7 +16,8 @@ var filetype = 'fractal';
 
   function consoleWrite(str) {
     var console = document.getElementById('console');
-    console.value = str + "\n" + console.value;
+    //console.value = str + "\n" + console.value;
+    console.innerHTML = str + "<br>" + console.innerHTML;
   }
 
   function consoleClear() {
@@ -484,6 +485,13 @@ var filetype = 'fractal';
       if (opt && i > opt.idx+1)
         localStorage["fractured.fractals"] = opt.idx;
     }
+
+    //Show an indicator, assumes 5mb of local storage
+    var size = JSON.stringify(localStorage).length;
+    var indic = size / 5000000;
+        //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
+    $S('indicator').width = (350 * indic) + 'px';
+        //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
   }
 
   function loadLastFractal() {
@@ -639,6 +647,14 @@ var filetype = 'fractal';
     }
     showparams = (sidebar.style.display == 'block');
     autoResize(autoSize);
+  }
+
+  function showPopup(id) {
+    var popup = document.getElementById(id);
+    if (popup.style.display == 'block')
+      popup.style.display = 'none';
+    else
+      popup.style.display = 'block';
   }
 
 /////////////////////////////////////////////////////////////////////////

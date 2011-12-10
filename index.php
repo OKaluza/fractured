@@ -49,6 +49,7 @@
           <li><span id="show" style="display:none" onClick="toggleParams();">Tools &darr;</span></li> 
           <li><span onClick="applyAndSave();">Draw</span></li> 
           <li><span onClick="saveFractal(false);">Save</span></li> 
+          <li><span onClick="showPopup('popup');">Test</span></li> 
           <!--li><span onClick="saveFractal(true);">Export</span></li-->
           <!--li><span onClick="saveImage();">Save Image</span></li--> 
 
@@ -159,33 +160,16 @@
   </form>
   <div class="gap"></div>
   <p><i><b>Sessions:</b></i></p>
-  <select size="10" style="width: 350px" id="sessions" ondblclick="loadSelectedState()">
-  </select>
-  <br>
   <input type="button" onclick="uploadState(<?php echo $_SESSION['session_id'];?>);" value="Save"/>
   <input type="button" onclick="loadSelectedState();" value="Load"/>
   <input type="button" onclick="deleteSelectedState();" value="Delete"/>
+  <select size="20" class="savelist" id="sessions" ondblclick="loadSelectedState()">
+  </select>
+  <br>
 
   <?php
   }
 ?>
-
-        <form name="exporter" action="savefile.php" method="post">
-          <input type="hidden" id="export-filename" name="filename"/>
-          <input type="hidden" id="export-content" name="content"/>
-        </form>
-        <div class="gap"></div>
-        <p><i><b>Fractals:</b></i></p>
-        <select size="10" style="width: 350px" id="stored" ondblclick="selectedFractal(this)">
-        </select>
-        <br>
-        <input type="button" value="Load" onclick="selectedFractal($('stored'));">
-        <input type="button" value="Delete" onclick="deleteFractal();">
-        <input type="button" value="Export" onclick="exportFractalFile();">
-        <input type="button" value="Upload" onClick="filetype='fractal'; $('fileupload').click();"/>
-        <input type="button" value="Upload palette" onClick="filetype='palette'; $('fileupload').click();"/>
-        <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
-
         <!--hr>
           <div class="row">
             <div class="label">Left-click Action</div>
@@ -209,6 +193,20 @@
       <div class="panel" id="panel2" style="display: none">
 
         <form id="inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
+
+          <p><i><b>Saved Fractals:</b></i></p>
+          <input type="button" value="Load" onclick="selectedFractal($('stored'));">
+          <input type="button" value="Delete" onclick="deleteFractal();">
+          <input type="button" value="Export" onclick="exportFractalFile();">
+          <input type="button" value="Upload" onClick="filetype='fractal'; $('fileupload').click();"/>
+          <input type="button" value="Upload palette" onClick="filetype='palette'; $('fileupload').click();"/>
+          <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
+          </select>
+          <div id="indicatorbg"><div id="indicator"></div></div>
+          <div class="gap"></div>
+          <div class="divider"></div>
+
+
           <div class="row">
             <span class="label">Name</span>
             <span class="field"><input type="text" id="nameInput" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
@@ -331,21 +329,6 @@
       </div>
 
       <div class="panel scroll" id="panel5" style="display: none">
-        <h2>Fractured Studio v0.2</h2>
-        <h3>Owen Kaluza, 2011</h3>
-        <p></p>
-        <br>
-        <p><i><b>With thanks to:</b></i></p>
-        <p>
-        Formula/Shader code editing component uses <a href="http://codemirror.net/">CodeMirror</a>
-        </p>
-        <p>
-        Colour picker was based on an original design from <a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a>, heavily modified since.
-        </p>
-        <p>
-        Expression parser built using <a href="http://zaach.github.com/jison/">Jison</a>
-        </p>
-
         <div id="debug" style="display: none">
           <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
           <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
@@ -354,8 +337,24 @@
           <input type="button" value="Vertex" onClick="lineOffset=1; openEditor('shaders/shader2d.vert')"-->
         </div>
         <input type="button" value="Clear log" onClick="consoleClear()" ondblClick="$('debug').style.display='block'">
-        <textarea id="console" spellcheck="false">
-        </textarea>
+        <div id="consolearea">
+          <div id="console">
+            <br>
+            <p>Fractured Studio v0.2 - Owen Kaluza, 2011</p>
+            <p></p>
+            <br>
+            <p><i><b>With thanks to:</b></i></p>
+            <p>
+            Formula/Shader code editing component uses <a href="http://codemirror.net/">CodeMirror</a>
+            </p>
+            <p>
+            Colour picker was based on an original design from <a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a>, heavily modified since.
+            </p>
+            <p>
+            Expression parser built using <a href="http://zaach.github.com/jison/">Jison</a>
+            </p>
+          </div>
+        </div>
       </div>
 
       <div id="statusbar">
@@ -376,12 +375,23 @@
     <img src="media/slider.png" id="slider">
     <img src="media/SatVal.png">
     <canvas id="gradient" width="4096" height="1"></canvas>
+
+    <form name="exporter" action="savefile.php" method="post">
+      <input type="hidden" id="export-filename" name="filename"/>
+      <input type="hidden" id="export-content" name="content"/>
+    </form>
+
+  </div>
+  <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
+
+  <div id="popup" class="popup">
+    This a vertically and horizontally centered popup.
   </div>
 
   <!-- Colour picker -->
   <div id="plugin">
     <div id="plugCURBG"><div id="plugCUR"></div></div>
-    <div id="plugRGB">R: 255 G: 255 B: 255</div>
+    <div id="plugRGB" onclick="colours.picker.updateString()">R: 255 G: 255 B: 255</div>
     <div id="plugCLOSE">X</div>
     <div id="plugOK">OK</div><br>
     <div id="SV">

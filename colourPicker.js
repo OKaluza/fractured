@@ -15,6 +15,7 @@ function ColourPicker(savefn, abortfn) {
   this.oh=2;   //Half size of H & O selectors
   this.picked={H:360, S:100, V:100, A:1.0};
   this.max={'H':360,'S':100,'V':100, 'A':1.0};
+  this.colour = new Colour();
 
   //Mouse processing:
   this.mouse = new Mouse($("plugin"), this);
@@ -132,14 +133,21 @@ ColourPicker.prototype.setOpacity = function(mouse) {
   this.update(this.picked);
 }
 
+ColourPicker.prototype.updateString = function(str) {
+  if (!str) str = prompt('Edit colour:', this.colour.html());
+  if (!str) return;
+  this.colour = new Colour(str);
+  this.update(this.colour.HSV());
+}
+
 ColourPicker.prototype.update = function(HSV) {
   this.picked = HSV;
-  var colour = new Colour(HSV),
-      rgba = colour.rgbaObj(),
-      rgbaStr = colour.html(),
+  this.colour = new Colour(HSV),
+      rgba = this.colour.rgbaObj(),
+      rgbaStr = this.colour.html(),
       bgcol = new Colour({H:HSV.H, S:100, V:100, A:255});
 
-  $('plugRGB').innerHTML=colour.printString();
+  $('plugRGB').innerHTML=this.colour.printString();
   $S('plugCUR').background=rgbaStr;
   $S('plugCUR').backgroundColour=rgbaStr;
   $S('SV').backgroundColor=bgcol.htmlHex();

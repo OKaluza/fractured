@@ -5,7 +5,8 @@ body {
   background: #ffe;
 }
 html, body { 
-  padding: 0; margin: 0; 
+  padding: 0; margin: 0;
+  border: none; 
 }
 
 /* Data entry form layout */
@@ -20,14 +21,21 @@ input, select{
     padding: 0px;  
     font-size: 10pt;
 }
-input[type=file] {display:block; height:0; width:0;}  /* Hidden uploads, triggered by buttons */
+input[type=file] {height:0; width:0;}  /* Hidden uploads, triggered by buttons */
 
 div.row textarea {height: 15px; min-width: 208px; max-width: 208px; font-family: sans; font-size: 9pt;}
 div.row input[type="button"] {margin: 0px}
 div.row input[type="number"] {width: 100px;}
 div.row input[type="text"] {width: 100px;}
 
-textarea#console {width: 99%; height: 60%; min-width: 360px;}
+#consolearea{
+  position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;
+}
+#console{
+  width: 100%; height: 100%;
+  background: #ffe;
+  border:1px solid #000;
+}
 
 p {margin: 0px 2px; }
 
@@ -65,10 +73,7 @@ form.login {
 }
 
 canvas {
-  z-index: 0;
-  margin:0px;
-  padding:0px;
-  /*background: rgba(1,1,1,0);*/
+  z-index: 0; margin: 0px; padding:0px;
   background-image: url("media/bg.png");
   border: none; 
 }
@@ -78,7 +83,6 @@ canvas#palette {
   border-radius: 4px;
     -webkit-border-radius: 4px;  
     -moz-border-radius: 4px;  
-  /*box-shadow: 1px 1px 1px #333;*/
 }
 
 /* Colour select */
@@ -98,6 +102,19 @@ canvas#palette {
   opacity: 0.3;
 }
 
+/* Popup div */
+.popup {
+  position:fixed;
+  width:200px; height:100px;
+  top:50%; left:50%;
+  margin:-50px 0 0 -100px; /* [-(height/2)px 0 0 -(width/2)px] */
+  display:none; z-index: 30; border: none; 
+  padding: 5px; overflow: hidden;
+  background: #ffe;
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 3px 3px 2px #333;
+}
+
 /* Tab panels */
 .panel { 
   border: none; 
@@ -115,6 +132,11 @@ canvas#palette {
 #statusbar {position: absolute; bottom: 0px; width: 380px; margin: 0; padding: 0;}
 
 #coords {float: left; background-color: #cb9; padding: 0px 5px; margin: 3px; border-radius: 4px;}
+
+#indicatorbg {width: 98%; background-color: #666; margin: 1px; border-radius: 4px;}
+#indicator {width: 0px; height: 5px; background-color: #0b2; margin: 0px; border-radius: 4px;}
+
+.savelist {width: 98%;}
 
 section, header, aside, nav, article {display: block;}
 
