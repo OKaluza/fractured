@@ -109,9 +109,10 @@
         this.gl.detachShader(this.program, this.program.fshader);
         this.gl.deleteShader(this.program.fshader);
       }
+      this.gl.deleteProgram(this.program);  //Required for chrome, doesn't like re-using program object
     }
-    else
-       this.program = this.gl.createProgram();
+
+    this.program = this.gl.createProgram();
 
     this.program.vshader = this.compileShader(vs, this.gl.VERTEX_SHADER);
     this.program.fshader = this.compileShader(fs, this.gl.FRAGMENT_SHADER);
