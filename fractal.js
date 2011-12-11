@@ -1372,12 +1372,12 @@
   //Build and redraw shader from source components
   Fractal.prototype.writeShader = function() {
     //Get formula selections
-    var msg = "Building fractal shader using:\nformula: " + this["fractal"].selected;
-    if (this["pre_transform"].selected != "none") msg += "\nPre-transform: " + this["pre_transform"].selected;
-    if (this["post_transform"].selected != "none") msg += "\nPost-transform: " + this["post_transform"].selected;
-    if (this["outside_colour"].selected != "none") msg += "\nOutside colour: " + this["outside_colour"].selected;
-    if (this["inside_colour"].selected != "none") msg += "\nInside colour: " + this["inside_colour"].selected;
-    consoleWrite(msg);
+    consoleWrite("Building fractal shader using:");
+    consoleWrite("formula: " + this["fractal"].selected);
+    if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
+    if (this["post_transform"].selected != "none") consoleWrite("Post-transform: " + this["post_transform"].selected);
+    if (this["outside_colour"].selected != "none") consoleWrite("Outside colour: " + this["outside_colour"].selected);
+    if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
 
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];

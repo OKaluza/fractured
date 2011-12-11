@@ -24,7 +24,7 @@
              $_SESSION['login'] = $login;
 
           //JSON response
-          echo "{'id' : '$login', 'user' : '$user'};";
+          echo '{"id" : "' . $login . '", "user" : "' . $user . '"}';
 
           //Delete old entry
           $query = "DELETE FROM login WHERE user_id = '$user' AND hash = '$hash';";
@@ -37,7 +37,6 @@
 
   //Close to free resources
   mysql_close();
-  //header("Location: /index.php");
   exit();
 ?>
 

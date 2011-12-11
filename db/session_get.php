@@ -6,10 +6,10 @@
   //Always filter by session user id, so can't access another users data with GET url alone
   $user = $_SESSION["user_id"];
   $session = $_GET['id'];
-  $set = $_GET['set'];
+  $set = $_GET['setid'];
   if ($set)
   {
-    $_SESSION['session_id'] = $session;
+    $_SESSION['session_id'] = $set;
     exit();
   }
 

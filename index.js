@@ -16,13 +16,13 @@ var filetype = 'fractal';
 
   function consoleWrite(str) {
     var console = document.getElementById('console');
-    //console.value = str + "\n" + console.value;
-    console.innerHTML = str + "<br>" + console.innerHTML;
+    console.innerHTML += "<div class='message'>" + str + "</div>";
+    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
   }
 
   function consoleClear() {
     var console = document.getElementById('console');
-    console.value = '';
+    console.innerHTML = '';
   }
 
   function pageStart() {
@@ -33,7 +33,7 @@ var filetype = 'fractal';
     if (window.File && window.FileReader && window.FileList) {
       // Great success! All required File APIs are supported.
     } else {
-      alert('The File APIs are not fully supported in this browser.');
+      consoleWrite('The File APIs are not fully supported in this browser.');
     }
 
     //Get shader source files on server
@@ -45,6 +45,9 @@ var filetype = 'fractal';
     //Base parameters for all formulae defined in here
     sources["formulae/base.base.formula"] = "";
 
+    //Session to json:
+    ajaxReadFile('session_json.php', sessionGet);
+
     //Load the last program state
     loadState();
 
@@ -52,6 +55,62 @@ var filetype = 'fractal';
     loadSources();
 
     showPanel(document.getElementById('tab1'), 'panel1');   //Show first tab
+  }
+
+  //Login session JSON received, load session.php
+  function sessionGet(data) {
+    var currentLogin = JSON.parse(data);
+    if (currentLogin.id && currentLogin.id.length > 4) {
+      //Have an active login, save and continue
+      localStorage['fractured.currentLogin'] = data;
+      //Load and insert session details
+      ajaxReadFile('session.php', sessionLoaded);
+    } else {
+      //First attempt to load a stored login session if available
+      if (localStorage["fractured.currentLogin"]) {
+        alert('Loading stored login : ' + localStorage["fractured.currentLogin"]);
+        currentLogin = JSON.parse(localStorage["fractured.currentLogin"]);
+        if (currentLogin.id && currentLogin.id.length > 4) {
+          alert('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id);
+          ajaxReadFile('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id, setLogin);
+        }
+      } else
+        //Load and insert session details
+        ajaxReadFile('session.php', sessionLoaded);
+    }
+  }
+
+  function setLogin(data) {
+    //Called with result from ajax login query
+    if (data && data.length > 0)
+      localStorage['fractured.currentLogin'] = data;
+    else {
+      //Failed, clear the login key?
+      if (!confirm("Saved session not found or server unreachable, try again?"))
+        localStorage['fractured.currentLogin'] = '';
+      else
+        window.location.reload(false);
+    }
+    //window.location.reload(false);
+    ajaxReadFile('session.php', sessionLoaded);
+  }
+
+  //Insert result of login session load into page
+  function sessionLoaded(html) {
+    var currentLogin;
+    if (localStorage['fractured.currentLogin'])
+      currentLogin = JSON.parse(localStorage['fractured.currentLogin']);
+
+    if (currentLogin && currentLogin.id && currentLogin.id.length > 0) {
+      //Load sessions list from server
+      ajaxReadFile('db/session_get.php', loadStateList);
+    } else {
+    //if (currentLogin.id && currentLogin.id.length > 0) {
+      //
+    }
+
+    var sesdiv = document.getElementById('session');
+    sesdiv.innerHTML = html;
   }
 
   //Update and save
@@ -183,82 +242,87 @@ var filetype = 'fractal';
     $('stored').selectedIndex = -1;
   }
 
-  function saveFractal(toExport) {
+  function exportFractal() {
+    //Export without server side script
     fractal.applyChanges();
     source = fractal + "";
-    if (toExport) {
-      //var exportLink = document.createElement('a');
-      //exportLink.setAttribute('href', 'data:text/fractal;base64,' + window.btoa(source));
-      //exportLink.appendChild(document.createTextNode('test.csv'));
-      //document.getElementById('results').appendChild(exportLink);
-      location.href = 'data:text/fractal;base64,' + window.btoa(source);
-      //Write to disk on server
-      //function fileSaved() {window.open("saved.fractal");}
-      //ajaxWriteFile("saved.fractal", source, fileSaved);
-    } else {
-      //Save current fractal to list
-      if (!supports_html5_storage()) return;
-      var sel = $('stored')
-      if (sel.length > 0 && sel.selectedIndex >= 0) {
-        //Save existing
-        var choice = sel[sel.selectedIndex];
-        if (choice.text == fractal.name) {
-          if (confirm('Overwrite "' + choice.text + '"?')) {
-            var idx = choice.idx;
-            choice.text = fractal.name; //Update name in case changed
-            try {
-              localStorage["fractured.names." + idx] = fractal.name; //namestr;
-              localStorage["fractured.fractal." + idx] = source;
-            } catch(e) {
-              alert('Storage error! ' + e);
-            }
-            return;
+    //var exportLink = document.createElement('a');
+    //exportLink.setAttribute('href', 'data:text/fractal;base64,' + window.btoa(source));
+    //exportLink.appendChild(document.createTextNode('test.csv'));
+    //document.getElementById('results').appendChild(exportLink);
+    location.href = 'data:text/fractal;base64,' + window.btoa(source);
+    //Write to disk on server
+    //function fileSaved() {window.open("saved.fractal");}
+    //ajaxWriteFile("saved.fractal", source, fileSaved);
+  }
+
+  function saveFractal() {
+    fractal.applyChanges();
+    source = fractal + "";
+    //Save current fractal to list
+    if (!supports_html5_storage()) return;
+    var sel = $('stored')
+    if (sel.length > 0 && sel.selectedIndex >= 0) {
+      //Save existing
+      var choice = sel[sel.selectedIndex];
+      if (choice.text == fractal.name) {
+        if (confirm('Overwrite "' + choice.text + '"?')) {
+          var idx = choice.idx;
+          choice.text = fractal.name; //Update name in case changed
+          try {
+            localStorage["fractured.names." + idx] = fractal.name; //namestr;
+            localStorage["fractured.fractal." + idx] = source;
+          } catch(e) {
+            alert('Storage error! ' + e);
           }
+          return;
         }
       }
+    }
 
-      //Save new
-      //Get name and check list for dupes
-      var namestr = fractal.name;
-      if (!namestr) namestr = "unnamed";
-      var add = 0;
-      var checkstr = namestr;
-      var i;
-      do {
-         for (i=0; i<sel.options.length; i++) {
-            if (checkstr == sel.options[i].text) {
-               checkstr = namestr + (++add);
-               break;
-            }
-         }
-      } while (i < sel.options.length);
-      if (namestr != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
-      namestr = checkstr;
-      //Add to select
-      var opt = new Option(namestr, source);
-      sel.options[sel.length] = opt;
+    //Save new
+    //Get name and check list for dupes
+    var namestr = fractal.name;
+    if (!namestr) namestr = "unnamed";
+    var add = 0;
+    var checkstr = namestr;
+    var i;
+    do {
+       for (i=0; i<sel.options.length; i++) {
+          if (checkstr == sel.options[i].text) {
+             checkstr = namestr + (++add);
+             break;
+          }
+       }
+    } while (i < sel.options.length);
+    if (namestr != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
+    namestr = checkstr;
+    //Add to select
+    var opt = new Option(namestr, source);
+    sel.options[sel.length] = opt;
 
-      var idx_str = localStorage["fractured.fractals"];
-      var idx = (idx_str ? parseInt(idx_str) : 0);
-      idx++;
-      //Save index/id with option
-      opt.idx = idx;
-      try {
-        localStorage["fractured.names." + idx] = namestr;
-        localStorage["fractured.fractal." + idx] = source;
-        localStorage["fractured.fractals"] = idx;
-      } catch(e) {
-        //data wasn’t successfully saved due to quota exceed so throw an error
-        alert('Storage error! ' + e);
-        //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
-      }
+    var idx_str = localStorage["fractured.fractals"];
+    var idx = (idx_str ? parseInt(idx_str) : 0);
+    idx++;
+    //Save index/id with option
+    opt.idx = idx;
+    try {
+      localStorage["fractured.names." + idx] = namestr;
+      localStorage["fractured.fractal." + idx] = source;
+      localStorage["fractured.fractals"] = idx;
+    } catch(e) {
+      //data wasn’t successfully saved due to quota exceed so throw an error
+      alert('Storage error! ' + e);
+      //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
   }
 
   function resetState() {
     if (confirm('This will clear everything!')) {
+      var login = localStorage["fractured.currentLogin"]; //Save login
       localStorage.clear(); //be careful as this will clear the entire database, TODO: Confirm
-      ajaxReadFile('db/session_get.php?set=1&id=0', reloadWindow);
+      localStorage["fractured.currentLogin"] = login; //Restore login
+      ajaxReadFile('db/session_get.php?setid=0', reloadWindow);
       currentSession = 0;
       //window.location.reload(false);
     }
@@ -303,6 +367,7 @@ var filetype = 'fractal';
   }
 
   function exportFile(filename, content, data) {
+    //Export using server side script to get proper filename
     var fField = document.getElementById("export-filename");
     fField.setAttribute("value", filename);
 
@@ -388,23 +453,11 @@ var filetype = 'fractal';
       var parsed = JSON.parse(source);
       for (key in parsed)
         localStorage[key] = parsed[key];
-      //localStorage["fractured.currentSession"] = currentSession;
+      localStorage["fractured.currentSession"] = currentSession;
       window.location.reload(false);
     } catch(e) {
       alert('Error! ' + e);
     }
-  }
-
-  function setLogin(data) {
-    //Called with result from ajax login query
-    if (data && data.length > 0)
-      localStorage['fractured.currentLogin'] = data;
-    else {
-      //Failed, clear the login key?
-      if (!confirm("Saved session not found or server unreachable, try again?"))
-        localStorage['fractured.currentLogin'] = '';
-    }
-    window.location.reload(false);
   }
 
   function loadState() {
@@ -419,9 +472,10 @@ var filetype = 'fractal';
        editorTheme = localStorage["fractured.editorTheme"];
        autoSize = document.inputs.elements["autosize"].checked = localStorage["fractured.autoSize"];
        currentSession = parseInt(localStorage["fractured.currentSession"]);
+       alert(currentSession);
        if (currentSession) {
          //Have a saved session #, get the data
-         ajaxReadFile('db/session_get.php?set=1&id=' + currentSession);
+         ajaxReadFile('db/session_get.php?setid=' + currentSession);
          if ($('sessions')) $('sessions').value = currentSession;
        }
     } else {
@@ -540,7 +594,6 @@ var filetype = 'fractal';
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
-      ////saveFractal(false);
       //Save some global settings
       localStorage["fractured.editorTheme"] = editorTheme;
       localStorage["fractured.autoSize"] = autoSize;
