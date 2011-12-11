@@ -1,48 +1,3 @@
-//Reads a session from server, responds when done with session data to callback function
-function ajaxReadSession(callback)
-{ 
-  var http = new XMLHttpRequest();
-
-  http.onreadystatechange = function()
-  { 
-    if(http.readyState == 4)
-      if(http.status == 200) {
-        consoleWrite("loaded session: "); // + filename);
-        if (callback)
-          callback(http.responseText);
-      } else  
-        consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
-  } 
-  //Add date to url to prevent caching
-  var d = new Date();
-  http.open("GET", "getsession.php" + "?d=" + d.getTime(), true); 
-  http.send(null); 
-}
-
-function ajaxWriteFile(filename, data, callback) {
-  var http = new XMLHttpRequest();
-
-  var url = "writefile.php";
-  var encoded = encodeURIComponent(data);
-  var params = "filename=" + filename + "&data=" + encoded;
-  http.open("POST", url, true);
-
-  //Send the proper header information along with the request
-  http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-  http.setRequestHeader("Content-length", params.length);
-  http.setRequestHeader("Connection", "close");
-
-  http.onreadystatechange = function() 
-  {
-    if(http.readyState == 4)
-      if (http.status == 200)
-        callback(http.responseText); //Supply response to callback fn
-      else
-        consoleWrite("Ajax Write File Error: returned status code " + http.status + " " + http.statusText);
-  }
-  http.send(params);
-}
-
 //Reads a file from server, responds when done with file data + passed name to callback function
 function ajaxReadFile(filename, callback, nocache)
 { 
@@ -68,6 +23,33 @@ function ajaxReadFile(filename, callback, nocache)
     http.open("GET", filename, true); 
   http.send(null); 
 }
+
+//Saves a file to the server, must exist and be writable
+function ajaxWriteFile(filename, data, callback) {
+  var http = new XMLHttpRequest();
+
+  var url = "writefile.php";
+  var encoded = encodeURIComponent(data);
+  var params = "filename=" + filename + "&data=" + encoded;
+  http.open("POST", url, true);
+
+  //Send the proper header information along with the request
+  http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  http.setRequestHeader("Content-length", params.length);
+  http.setRequestHeader("Connection", "close");
+
+  http.onreadystatechange = function() 
+  {
+    if(http.readyState == 4)
+      if (http.status == 200)
+        callback(http.responseText); //Supply response to callback fn
+      else
+        consoleWrite("Ajax Write File Error: returned status code " + http.status + " " + http.statusText);
+  }
+  http.send(params);
+}
+
+
 
 function ajaxUploadFile(file, callback) {
   var fileName = file.name;

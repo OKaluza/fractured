@@ -28,14 +28,15 @@ div.row input[type="button"] {margin: 0px}
 div.row input[type="number"] {width: 100px;}
 div.row input[type="text"] {width: 100px;}
 
-#consolearea{
-  position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;
-}
-#console{
-  width: 100%; height: 100%;
+#console {
+  border:1px solid #888;
+  margin: 2px; padding: 2px;  
   background: #ffe;
-  border:1px solid #000;
+  border-radius: 5px;
+    -webkit-border-radius: 5px;  
+    -moz-border-radius: 5px;  
 }
+.message {font-family: monospace; font-size: 9pt;}
 
 p {margin: 0px 2px; }
 

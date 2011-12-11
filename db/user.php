@@ -53,7 +53,7 @@
   //Close to free resources
   mysql_close();
 
-  header("Location: /index.php");
+  header("Location: /");
   
   exit();
 ?>
