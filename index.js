@@ -11,7 +11,7 @@ var autoSize = true;
 var showparams = true;
 var hasChanged = false;
 var editorTheme = 'dark';
-var currentSession = 0;
+var currentSession = 0; //Selected session
 var filetype = 'fractal';
 
   function consoleWrite(str) {
@@ -59,6 +59,12 @@ var filetype = 'fractal';
 
   //Login session JSON received, load session.php
   function sessionGet(data) {
+    if (!data) {
+      //Offline mode?
+      alert('Offline!');
+      return;
+    }
+
     var currentLogin = JSON.parse(data);
     if (currentLogin.id && currentLogin.id.length > 4) {
       //Have an active login, save and continue
@@ -320,10 +326,10 @@ var filetype = 'fractal';
   function resetState() {
     if (confirm('This will clear everything!')) {
       var login = localStorage["fractured.currentLogin"]; //Save login
-      localStorage.clear(); //be careful as this will clear the entire database, TODO: Confirm
+      localStorage.clear(); //be careful as this will clear the entire database
       localStorage["fractured.currentLogin"] = login; //Restore login
       ajaxReadFile('db/session_get.php?setid=0', reloadWindow);
-      currentSession = 0;
+      currentSession = 0;  //No sessions to select
       //window.location.reload(false);
     }
     //localStorage.removeItem("fractured.formulae");
@@ -386,6 +392,7 @@ var filetype = 'fractal';
   }
 
   function loadStateList(data) {
+    //Load list of saved states/sessions from server
     try {
       var select = document.getElementById('sessions');
       select.options.length = 0;  //Clear list
@@ -397,6 +404,15 @@ var filetype = 'fractal';
         o.text = list[i].date + " " + list[i].description;
         select.options.add(o);
       }
+
+      //Get selected id 
+      currentSession = parseInt(localStorage["fractured.currentSession"]);
+      if (currentSession) {
+        //Have a saved session #, get the data
+        ajaxReadFile('db/session_get.php?setid=' + currentSession);
+        if ($('sessions')) $('sessions').value = currentSession;
+      }
+
     } catch(e) {
       alert('Error! ' + e);
     }
@@ -409,7 +425,7 @@ var filetype = 'fractal';
      if (idx >= 0)
      {
        var id = select.options[idx].value;
-       currentSession = id;
+       currentSession = id;   //Set the current session id
        $('sessions').value = currentSession;
        ajaxReadFile('db/session_get.php?id=' + id, importState);
      }
@@ -440,10 +456,14 @@ var filetype = 'fractal';
 
   function getState() {
     //Get current state in local storage minus session/login details
-    var source = localStorage;
-    delete source["fractured.currentSession"];
-    delete source["fractured.currentLogin"];
-    return JSON.stringify(source);
+    var login = localStorage["fractured.currentLogin"];
+    var session = localStorage["fractured.currentSession"];
+    delete localStorage["fractured.currentSession"];
+    delete localStorage["fractured.currentLogin"];
+    var source = JSON.stringify(localStorage);
+    localStorage["fractured.currentLogin"] = login;
+    localStorage["fractured.currentSession"] = session;
+    return source;
   }
 
   function importState(source) {
@@ -453,6 +473,7 @@ var filetype = 'fractal';
       var parsed = JSON.parse(source);
       for (key in parsed)
         localStorage[key] = parsed[key];
+      //Replace session id, not saved in state data
       localStorage["fractured.currentSession"] = currentSession;
       window.location.reload(false);
     } catch(e) {
@@ -461,7 +482,7 @@ var filetype = 'fractal';
   }
 
   function loadState() {
-    //Load formulae from local storage (or defaults from server if not found)
+    //Load formulae from local storage (or defaults if not found)
     var formulae;
     var selected;
     var f_source;
@@ -471,13 +492,7 @@ var filetype = 'fractal';
        selected = JSON.parse(localStorage["fractured.selected"]);
        editorTheme = localStorage["fractured.editorTheme"];
        autoSize = document.inputs.elements["autosize"].checked = localStorage["fractured.autoSize"];
-       currentSession = parseInt(localStorage["fractured.currentSession"]);
-       alert(currentSession);
-       if (currentSession) {
-         //Have a saved session #, get the data
-         ajaxReadFile('db/session_get.php?setid=' + currentSession);
-         if ($('sessions')) $('sessions').value = currentSession;
-       }
+
     } else {
        //Standard formulae library
        formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
@@ -684,30 +699,28 @@ var filetype = 'fractal';
 
   function toggleParams() {
     var sidebar = document.getElementById("sidebar");
-    var hide = document.getElementById("hide");
-    var show = document.getElementById("show");
     var main = document.getElementById("main");
     if (sidebar.style.display == 'none') {
-        sidebar.style.display = 'block';
-        hide.style.display = 'inline-block';
-        show.style.display = 'none';
-        main.style.left = '386px';
+      sidebar.style.display = 'block';
+      main.style.left = '386px';
+      $('toolsbtn').innerHTML = "Hide Tools &uarr;"
     } else {
-        sidebar.style.display = 'none';
-        hide.style.display = 'none';
-        show.style.display = 'inline-block';
-        main.style.left = '1px';
+      sidebar.style.display = 'none';
+      main.style.left = '1px';
+      $('toolsbtn').innerHTML = "Show Tools &darr;"
     }
     showparams = (sidebar.style.display == 'block');
     autoResize(autoSize);
   }
 
-  function showPopup(id) {
-    var popup = document.getElementById(id);
-    if (popup.style.display == 'block')
-      popup.style.display = 'none';
+  //Show/hide on click
+  function toggle(id)
+  {
+    var el = $(id);
+    if (el.style.display == 'block')
+      el.style.display = 'none';
     else
-      popup.style.display = 'block';
+      el.style.display = 'block';
   }
 
 /////////////////////////////////////////////////////////////////////////
@@ -907,12 +920,16 @@ var editorFilename;
     document.location.href = canvas.toDataURL("image/jpeg");
   }
 
-  function saveImage() {
+  function saveImageJPEG() {
     var canvas = document.getElementById("fractal-canvas");
     //window.open(canvas.toDataURL());
-    //window.open(canvas.toDataURL("image/jpeg"));
+    window.open(canvas.toDataURL("image/jpeg"));
     //addImage(canvas.toDataURL("image/png"));
-    return canvas.toDataURL("image/jpeg");
+  }
+
+  function saveImagePNG() {
+    var canvas = document.getElementById("fractal-canvas");
+    window.open(canvas.toDataURL("image/png"));
   }
 
   function addImage(url){

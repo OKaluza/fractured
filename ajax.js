@@ -10,8 +10,12 @@ function ajaxReadFile(filename, callback, nocache)
         consoleWrite("loaded: " + filename);
         if (callback)
           callback(http.responseText, filename);
-      } else  
-        consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
+      } else {
+        if (callback)
+          callback();    //Error callback
+        else
+          consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
+      }
   } 
   //Add date to url to prevent caching
   if (nocache)

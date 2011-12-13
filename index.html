@@ -30,40 +30,63 @@
 
 <body onload="pageStart();" id="body">
 
+
+
   <header id="header">
+
     <h2>Fractured Studio v0.2</h2>
 
-      <section id="controls">
-        <div id="backgroundBG" class="colourbg">
-          <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
-        </div>
-        <canvas id="palette" width="572" height="24"></canvas>
-      </section>
-      <nav>
-        <ul>
-          <li><span id="hide" onClick="toggleParams();">Tools &uarr;</span></li> 
-          <li><span id="show" style="display:none" onClick="toggleParams();">Tools &darr;</span></li> 
-          <li><span onClick="applyAndSave();">Draw</span></li> 
-          <li><span onClick="saveFractal();">Save</span></li> 
-          <li><span onClick="showPopup('popup');">Test</span></li> 
-          <!--li><span onClick="exportFractal();">Export</span></li-->
-          <!--li><span onClick="saveImage();">Save Image</span></li--> 
+    <nav>
 
-           <!--li> Testing multi-level dropdown menu
-             <span onClick="exportFractalFile();">Export</span>
-              <ul>  
-                <li><a href="#" title="Sub Nav Link 1">Sub Nav Link 1</a></li>  
-                <li><a href="#" title="Sub Nav Link 2">Sub Nav Link 2</a></li>  
-                <li><a href="#" title="Sub Nav Link 3">Sub Nav Link 3</a></li>  
-                <li><a href="#" title="Sub Nav Link 4">Sub Nav Link 4</a></li>  
-                <li class="last"><a href="#" title="Sub Nav Link 5">Sub Nav Link 5</a></li>  
-              </ul>
-           </li-->
-        </ul>
-      </nav>
+      <ul id="nav">
+        <li><a class="fly" tabindex="1" href="#">Session</a>
+            <ul class="dd">
+                <li><a class="fly" tabindex="1" href="#">Workspace</a>
+                    <ul>
+                        <li><a href="javascript:resetState();">New</a></li>
+                        <li><a href="javascript:exportStateFile();">Export</a></li>
+                        <li><a href="javascript:filetype='session'; $('fileupload').click();">Upload</a></li>
+                    </ul>
+                </li>
+                <li><a id="toolsbtn" href="javascript:toggleParams();">Hide Tools &uarr;</a></li>
+                <li><a href="javascript:toggle('loginpop');">Login</a></li>
+            </ul>
+        </li>
+        <li><a class="fly" tabindex="1" href="#">Fractal</a>
+            <ul class="dd">
+                <li><a href="javascript:saveFractal();">Save</a></li>
+                <li><a href="javascript:exportFractal();">Export</a></li>
+                <li><a href="javascript:saveImageJPEG();">Save JPEG</a></li>
+                <li><a href="javascript:saveImagePNG();">Save PNG</a></li>
+                <li><a href="javascript:toggle('popup');">Test</a></li>
+                <li><a class="fly" tabindex="1" href="#">Multi</a>
+                  <ul class="dd">
+                    <li><a class="fly" tabindex="1" href="#">Multi 2</a>
+                      <ul class="dd">
+                        <li><a href="#">Test 1</a></li>
+                        <li><a href="#">Test 2</a></li>
+                        <li><a href="#">Test 3</a></li>
+                      </ul>
+                    </li>
+                    <li><a href="#">Test</a></li>
+                  </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="javascript:applyAndSave();">Draw</a></li>
+      </ul>
 
+    </nav>
+
+    <section id="controls">
+      <div id="backgroundBG" class="colourbg">
+        <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
+      </div>
+      <canvas id="palette" width="572" height="24"></canvas>
+    </section>
 
   </header>
+
 
   <section id="left">  
 
@@ -82,7 +105,6 @@
       <div class="panel scroll" id="panel1" style="display: block">
 
         <div id="session">
-          Offline, no sessions available
         </div>
 
 
@@ -263,6 +285,7 @@
             <p><a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a> for the design the colour picker is based on.</p>
             <p>For fractal formulae code? Gnofract?</p>
             <p>For webgl tutorials? Learning WebGL?</p>
+            <p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p>
             <br>
           </div>
         </div>
@@ -296,7 +319,31 @@
   <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
 
   <div id="popup" class="popup">
+    <div class="popclose" onclick="$S('popup').display='none';">X</div>
     This a vertically and horizontally centered popup.
+  </div>
+
+  <div id="loginpop" class="popup">
+    <div class="popclose" onclick="$S('loginpop').display='none';">X</div>
+    <form action="authenticate.php?login" method="post" class="login">
+      <p>Login with</p>
+      <input type="submit" name="submit" value="Login" class="right" >
+      <select name="provider-url" onchange="$S('openid').display = (this.value=='none') ? 'block' : 'none';">
+        <option value="https://www.google.com/accounts/o8/id">Google</option>
+        <option value="https://me.yahoo.com">Yahoo</option>
+        <option value="http://myopenid.com">MyOpenId</option>
+        <option value="http://openid.stackexchange.com">StackExchange</option>
+        <option value="none">Entered OpenID...</option>
+      </select><br>
+      <input type="text" id="openid" name="openid_identifier" style="display: none;"/>
+      <div class="clear"></div>
+    </form>
+    <img src="media/logos/logo_google.png">
+    <img src="media/logos/logo_yahoo.png">
+    <img src="media/logos/logo_aol.png">
+    <img src="media/logos/logo_myopenid.png">
+    <img src="media/logos/logo_stackexchange.png">
+    <img src="media/logos/logo_openid.png">
   </div>
 
   <!-- Colour picker -->
