@@ -13,9 +13,6 @@
     <div class="clear"></div>
   </form>
   <div class="gap"></div>
-  <input type="button" value="New workspace" onclick="resetState();">
-  <input type="button" onclick="exportStateFile();" value="Export workspace"/>
-  <input type="button" value="Upload workspace" onClick="filetype='session'; $('fileupload').click();"/>
   <form name="savesession" action="db/session_save.php" method="post">
     <input type="hidden" id="desc" name="description"/>
     <input type="hidden" id="sessid" name="session_id"/>
@@ -50,9 +47,6 @@
     <div class="clear"></div>
   </form>
   <div class="gap"></div>
-  <input type="button" value="New workspace" onclick="resetState();">
-  <input type="button" onclick="exportStateFile();" value="Export workspace"/>
-  <input type="button" value="Upload workspace" onClick="filetype='session'; $('fileupload').click();"/>
 
   <?php
   }
