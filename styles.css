@@ -40,16 +40,6 @@ p {margin: 0px 2px; }
 
 div.gap {height: 5px; }
 
-form.login {
-  padding: 1px;
-  margin: 1px;
-  font-size: 12pt;
-  background: #776;
-  color: #eee;
-  border-radius: 5px;
-}
-
-
 /* Floating divs */
 .left       {float: left}
 .right      {float: right}
@@ -161,27 +151,27 @@ nav {float: left;}
 
 #nav,#nav ul {
     list-style:none;
-    margin:0;
-    padding:0;
+    margin:0; padding:0;
 }
 #nav {
     height:27px;
     padding-left:2px;
-    padding-top:3px;
+    padding-top:2px;
     position:relative;
     z-index:2;
 }
+/* Drop menus */
 #nav ul {
-    left:-9999px;
+  display: none; /* Initially hidden */
     position:absolute;
     top:24px;
     width:auto;
- border-radius:4px;
- padding:3px;
- background-color:#3c2c1f;
+  border-radius:4px;
+  padding:3px;
+  background-color:#3c2c1f;
 }
 #nav ul ul {
-    left:-9999px;
+  display: none; /* Initially hidden */
     position:absolute;
     top:0;
     width:auto;
@@ -193,16 +183,25 @@ nav {float: left;}
 }
 #nav li a {
     background:#3c2c1f;
-    color:#bbb;
+    color:#ffd;
     display:block;
     float:left;
     font-size:13px;
     padding:2px 3px;
     text-decoration:none;
 }
+
+/* For login options */
+#nav ul.login {border: 1px solid #3c2c1f;width: 95px; background:#fcfccf;}
+#nav ul.login li a {width: 90px; background:#fcfccf;}
+#nav ul.login li img:hover {background:#dac083;}
+
+/* Top level items only */
 #nav > li > a {
     border-radius:4px;
     overflow:hidden;
+  border: 1px solid #777;
+  color:#bbb;
 }
 #nav li a.fly {
     background:#3c2c1f url(media/arrow.gif) no-repeat right center;
@@ -218,8 +217,8 @@ nav {float: left;}
 #nav li a:focus { outline-width:0; }
 
 /*popups*/
-#nav li a:active + ul.dd,#nav li a:focus + ul.dd,#nav li ul.dd:hover { left:0; }
-#nav ul.dd li a:active + ul,#nav ul.dd li a:focus + ul,#nav ul.dd li ul:hover { left:129px; top:-3px; }
+#nav li a:active + ul.dd,#nav li a:focus + ul.dd,#nav li ul.dd:hover { display: block}
+#nav ul.dd li a:active + ul,#nav ul.dd li a:focus + ul,#nav ul.dd li ul:hover { left:129px; top:-3px;; display: block }
 
 
 /* Tab navigation */

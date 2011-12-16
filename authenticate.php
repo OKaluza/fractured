@@ -13,18 +13,9 @@ try
     $openid->required = array('contact/email');
     $openid->optional = array('namePerson', 'namePerson/friendly');
 
-    //Generic login
-    if($_POST['provider-url'] === "none" && isset($_POST['openid_identifier']))
-    {
-      $openid->identity = $_POST['openid_identifier'];
-      header('Location: ' . $openid->authUrl());
-    }
-    //Provider login
-    elseif(isset($_POST['provider-url']))
-    {
-      $openid->identity = $_POST['provider-url'];
-      header('Location: ' . $openid->authUrl());
-    }
+    //OpenID login
+    $openid->identity = $_POST['openid_url'];
+    header('Location: ' . $openid->authUrl());
   }
   elseif ($openid->mode == 'cancel')
   {

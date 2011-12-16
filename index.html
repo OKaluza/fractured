@@ -40,38 +40,29 @@
 
       <ul id="nav">
         <li><a class="fly" tabindex="1" href="#">Session</a>
-            <ul class="dd">
-                <li><a class="fly" tabindex="1" href="#">Workspace</a>
-                    <ul>
-                        <li><a href="javascript:resetState();">New</a></li>
-                        <li><a href="javascript:exportStateFile();">Export</a></li>
-                        <li><a href="javascript:filetype='session'; $('fileupload').click();">Upload</a></li>
-                    </ul>
-                </li>
-                <li><a id="toolsbtn" href="javascript:toggleParams();">Hide Tools &uarr;</a></li>
-                <li><a href="javascript:toggle('loginpop');">Login</a></li>
-            </ul>
+          <ul class="dd">
+            <li><a class="fly" tabindex="1" href="#">Workspace</a>
+              <ul>
+                <li><a href="javascript:resetState();">New</a></li>
+                <li><a href="javascript:exportStateFile();">Export</a></li>
+                <li><a href="javascript:filetype='session'; $('fileupload').click();">Upload</a></li>
+              </ul>
+            </li>
+            <li><a id="toolsbtn" href="javascript:toggleParams();">Hide Tools &uarr;</a></li>
+            <div id="session_menu"></div>
+          </ul>
         </li>
         <li><a class="fly" tabindex="1" href="#">Fractal</a>
-            <ul class="dd">
-                <li><a href="javascript:saveFractal();">Save</a></li>
-                <li><a href="javascript:exportFractal();">Export</a></li>
-                <li><a href="javascript:saveImageJPEG();">Save JPEG</a></li>
-                <li><a href="javascript:saveImagePNG();">Save PNG</a></li>
-                <li><a href="javascript:toggle('popup');">Test</a></li>
-                <li><a class="fly" tabindex="1" href="#">Multi</a>
-                  <ul class="dd">
-                    <li><a class="fly" tabindex="1" href="#">Multi 2</a>
-                      <ul class="dd">
-                        <li><a href="#">Test 1</a></li>
-                        <li><a href="#">Test 2</a></li>
-                        <li><a href="#">Test 3</a></li>
-                      </ul>
-                    </li>
-                    <li><a href="#">Test</a></li>
-                  </ul>
-                </li>
-            </ul>
+          <ul class="dd">
+            <li><a href="javascript:saveFractal();">Save</a></li>
+            <!--li><a href="javascript:exportFractal();">Export</a></li-->
+            <li><a href="javascript:exportFractalFile();">Export</a></li>
+            <li><a href="javascript:saveImageJPEG();">Save JPEG</a></li>
+            <li><a href="javascript:saveImagePNG();">Save PNG</a></li>
+            <!--li><a href="javascript:toggle('popup');">Test</a></li-->
+            <li><a href="javascript:filetype='fractal'; $('fileupload').click();">Upload</a></li>
+            <li><a href="javascript:filetype='palette'; $('fileupload').click();">Upload Palette</a></li>
+          </ul>
         </li>
         <li><a href="javascript:applyAndSave();">Draw</a></li>
       </ul>
@@ -94,55 +85,16 @@
 
       <nav id="tabs">
         <ul>
-        <li onmousedown="showPanel(this, 'panel1');" id="tab1" >Session</li>
-        <li onmousedown="showPanel(this, 'panel2');" class="gradient">Parameters</li>
-        <li onmousedown="showPanel(this, 'panel3');" class="gradient">Formula</li>
-        <li onmousedown="showPanel(this, 'panel4');" class="gradient">Colour</li>
-        <li onmousedown="showPanel(this, 'panel5');" class="gradient">Info</li>
+          <li onmousedown="showPanel(this, 'panel1');" id="tab1">Parameters</li>
+          <li onmousedown="showPanel(this, 'panel2');">Formula</li>
+          <li onmousedown="showPanel(this, 'panel3');">Colour</li>
+          <li onmousedown="showPanel(this, 'panel4');">Info</li>
         </ul>
       </nav>
 
-      <div class="panel scroll" id="panel1" style="display: block">
-
-        <div id="session">
-        </div>
-
-
-        <!--hr>
-          <div class="row">
-            <div class="label">Left-click Action</div>
-            <div class="field">
-              <select id="left_click" onchange="alert(this.value)">
-              <option value="none">Set Origin</option>
-              </select>
-            </div>
-            <div class="label">Wheel Action</div>
-            <div class="field">
-              <select id="right_click" onchange="alert(this.value)">
-              <option value="none">Zoom</option>
-              </select>
-            </div>
-          </div>
-
-        <div id="image"></div-->
-
-        </div>
-
-      <div class="panel" id="panel2" style="display: none">
+      <div class="panel" id="panel1" style="display: none">
 
         <form id="inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
-
-          <p><i><b>Saved Fractals:</b></i></p>
-          <input type="button" value="Load" onclick="selectedFractal($('stored'));">
-          <input type="button" value="Delete" onclick="deleteFractal();">
-          <input type="button" value="Export" onclick="exportFractalFile();">
-          <input type="button" value="Upload" onClick="filetype='fractal'; $('fileupload').click();"/>
-          <input type="button" value="Upload palette" onClick="filetype='palette'; $('fileupload').click();"/>
-          <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
-          </select>
-          <div id="indicatorbg"><div id="indicator"></div></div>
-          <div class="gap"></div>
-
 
           <div class="row">
             <span class="label">Name</span>
@@ -190,11 +142,21 @@
 
           <div class="clear"></div>
 
+          <div class="gap"></div>
+          <p><i><b>Saved Fractals:</b></i></p>
+          <input type="button" value="Load" onclick="selectedFractal($('stored'));">
+          <input type="button" value="Delete" onclick="deleteFractal();">
+          <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
+          </select>
+          <div id="indicatorbg"><div id="indicator"></div></div>
+
+
+
         </form>
 
       </div>
 
-      <div class="panel scroll" id="panel3" style="display: none">
+      <div class="panel scroll" id="panel2" style="display: none">
         <p>Fractal</p>
         <div class="field">
           <select id="fractal_formula" onchange="fractal['fractal'].select(this.value)">
@@ -237,7 +199,7 @@
           <div id="post_transform_params" width="100%"></div>
       </div>
 
-      <div class="panel scroll" id="panel4" style="display: none">
+      <div class="panel scroll" id="panel3" style="display: none">
         <p>Outside Colour</p>
         <div class="field">
           <select id="outside_colour_formula" onchange="fractal['outside_colour'].select(this.value)">
@@ -265,7 +227,7 @@
           <div id="inside_colour_params" width="100%"></div>
       </div>
 
-      <div class="panel scroll" id="panel5" style="display: none">
+      <div class="panel scroll" id="panel4" style="display: none">
         <div id="debug" style="display: none">
           <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
           <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
@@ -289,6 +251,22 @@
             <br>
           </div>
         </div>
+
+        <!--hr>
+          <div class="row">
+            <div class="label">Left-click Action</div>
+            <div class="field">
+              <select id="left_click" onchange="alert(this.value)">
+              <option value="none">Set Origin</option>
+              </select>
+            </div>
+            <div class="label">Wheel Action</div>
+            <div class="field">
+              <select id="right_click" onchange="alert(this.value)">
+              <option value="none">Zoom</option>
+              </select>
+            </div>
+          </div-->
       </div>
 
       <div id="statusbar">
@@ -321,29 +299,6 @@
   <div id="popup" class="popup">
     <div class="popclose" onclick="$S('popup').display='none';">X</div>
     This a vertically and horizontally centered popup.
-  </div>
-
-  <div id="loginpop" class="popup">
-    <div class="popclose" onclick="$S('loginpop').display='none';">X</div>
-    <form action="authenticate.php?login" method="post" class="login">
-      <p>Login with</p>
-      <input type="submit" name="submit" value="Login" class="right" >
-      <select name="provider-url" onchange="$S('openid').display = (this.value=='none') ? 'block' : 'none';">
-        <option value="https://www.google.com/accounts/o8/id">Google</option>
-        <option value="https://me.yahoo.com">Yahoo</option>
-        <option value="http://myopenid.com">MyOpenId</option>
-        <option value="http://openid.stackexchange.com">StackExchange</option>
-        <option value="none">Entered OpenID...</option>
-      </select><br>
-      <input type="text" id="openid" name="openid_identifier" style="display: none;"/>
-      <div class="clear"></div>
-    </form>
-    <img src="media/logos/logo_google.png">
-    <img src="media/logos/logo_yahoo.png">
-    <img src="media/logos/logo_aol.png">
-    <img src="media/logos/logo_myopenid.png">
-    <img src="media/logos/logo_stackexchange.png">
-    <img src="media/logos/logo_openid.png">
   </div>
 
   <!-- Colour picker -->
