@@ -79,7 +79,6 @@ complex round(in complex z);
 complex flip(in complex z);
 complex sqr(in complex z);
 complex cube(in complex z);
-complex gamma(in complex z);
 bool equals(complex z1, complex z2, real tolerance);
 real manhattan(in complex z);
 real norm(in complex z);

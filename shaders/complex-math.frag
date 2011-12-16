@@ -395,12 +395,3 @@ real imag(in complex z)
   return z.y;
 }
 
-complex gamma(in complex z)
-{
-  //An approximation of the gamma function
-  complex a = sqrt(div(C(2.0*PI), z));
-  complex b = mul(C(12), z) - div(C(1), mul(C(10), z));
-  complex c = z + div(C(1), b);
-  complex d = mul(C(1.0/E), c);
-  return mul(a, d);
-}

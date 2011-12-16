@@ -88,7 +88,8 @@
           <li onmousedown="showPanel(this, 'panel1');" id="tab1">Parameters</li>
           <li onmousedown="showPanel(this, 'panel2');">Formula</li>
           <li onmousedown="showPanel(this, 'panel3');">Colour</li>
-          <li onmousedown="showPanel(this, 'panel4');">Info</li>
+          <li onmousedown="showPanel(this, 'panel4');">Mouse</li>
+          <li onmousedown="showPanel(this, 'panel5');">Info</li>
         </ul>
       </nav>
 
@@ -228,6 +229,57 @@
       </div>
 
       <div class="panel scroll" id="panel4" style="display: none">
+          <div class="label">Mouse Actions</div>
+          <div class="row">
+            <div class="label">Set origin:</div>
+            <div class="field">
+              <select id="set_origin" onchange="alert(this.value)">
+                <option value="none">Left click</option>
+                <option value="none">Middle click</option>
+                <option value="none">Right click</option>
+                <option value="none">Shift+Left</option>
+                <option value="none">Shift+Middle</option>
+                <option value="none">Shift+Right</option>
+                <option value="none">Alt+Left</option>
+                <option value="none">Alt+Middle</option>
+                <option value="none">Alt+Right</option>
+                <option value="none">Ctrl+Left</option>
+                <option value="none">Ctrl+Middle</option>
+                <option value="none">Ctrl+Right</option>
+                <option value="none">Shift+Alt+Left</option>
+                <option value="none">Shift+Alt+Middle</option>
+                <option value="none">Shift+Alt+Right</option>
+                <option value="none">Shift+Ctrl+Left</option>
+                <option value="none">Shift+Ctrl+Middle</option>
+                <option value="none">Shift+Ctrl+Right</option>
+                <option value="none">Ctrl+Alt+Left</option>
+                <option value="none">Ctrl+Alt+Middle</option>
+                <option value="none">Ctrl+Alt+Right</option>
+              </select>
+            </div>
+
+            <div class="label">Set select:</div>
+            <div class="label">Drag/scroll:</div>
+
+            <div class="label">Zoom</div>
+            <div class="field">
+              <select id="right_click" onchange="alert(this.value)">
+                <option value="none">Wheel</option>
+                <option value="none">Shift+Wheel</option>
+                <option value="none">Alt+Wheel</option>
+                <option value="none">Ctrl+Wheel</option>
+                <option value="none">Shift+Alt+Wheel</option>
+                <option value="none">Shift+Ctrl+Wheel</option>
+                <option value="none">Ctrl+Alt+Wheel</option>
+              </select>
+            </div>
+
+            <div class="label">Rotate 1</div>
+            <div class="label">Rotate 10</div>
+          </div>
+      </div>
+
+      <div class="panel scroll" id="panel5" style="display: none">
         <div id="debug" style="display: none">
           <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
           <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">
@@ -252,21 +304,6 @@
           </div>
         </div>
 
-        <!--hr>
-          <div class="row">
-            <div class="label">Left-click Action</div>
-            <div class="field">
-              <select id="left_click" onchange="alert(this.value)">
-              <option value="none">Set Origin</option>
-              </select>
-            </div>
-            <div class="label">Wheel Action</div>
-            <div class="field">
-              <select id="right_click" onchange="alert(this.value)">
-              <option value="none">Zoom</option>
-              </select>
-            </div>
-          </div-->
       </div>
 
       <div id="statusbar">
