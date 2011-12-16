@@ -17,7 +17,7 @@ var filetype = 'fractal';
   function consoleWrite(str) {
     var console = document.getElementById('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
-    $('panel4').scrollTop = console.clientHeight - $('panel4').clientHeight + $('panel4').offsetHeight;
+    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
   }
 
   function consoleClear() {
@@ -666,7 +666,7 @@ var filetype = 'fractal';
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = ['panel1', 'panel2', 'panel3', 'panel4'];
+  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
   var selectedTab = null;
   function showPanel(tab, name)
   {
