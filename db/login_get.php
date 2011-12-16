@@ -6,6 +6,7 @@
   $user = $_GET['user'];
   $login = $_GET['login'];
   $hash = hash('sha256', $login);
+  $json = '{"id" : "", "user" : "0"}';
 
     $query = "SELECT * FROM login WHERE user_id = '$user' AND hash = '$hash';";
     $result = mysql_query($query);
@@ -24,7 +25,7 @@
              $_SESSION['login'] = $login;
 
           //JSON response
-          echo '{"id" : "' . $login . '", "user" : "' . $user . '"}';
+          $json = '{"id" : "' . $login . '", "user" : "' . $user . '"}';
 
           //Delete old entry
           $query = "DELETE FROM login WHERE user_id = '$user' AND hash = '$hash';";
@@ -34,6 +35,9 @@
           include("login_new.php");
         }
     }
+
+  //Return result
+  echo $json;
 
   //Close to free resources
   mysql_close();

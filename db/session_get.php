@@ -9,6 +9,7 @@
   $set = $_GET['setid'];
   if ($set)
   {
+    //Simply set passed id in session variable and return
     $_SESSION['session_id'] = $set;
     exit();
   }

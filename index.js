@@ -17,7 +17,7 @@ var filetype = 'fractal';
   function consoleWrite(str) {
     var console = document.getElementById('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
-    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
+    $('panel4').scrollTop = console.clientHeight - $('panel4').clientHeight + $('panel4').offsetHeight;
   }
 
   function consoleClear() {
@@ -54,7 +54,7 @@ var filetype = 'fractal';
     //Load the content from files
     loadSources();
 
-    showPanel(document.getElementById('tab1'), 'panel1');   //Show first tab
+    showPanel($('tab1'), 'panel1');   //Show first tab
   }
 
   //Login session JSON received, load session.php
@@ -70,7 +70,8 @@ var filetype = 'fractal';
       //Have an active login, save and continue
       localStorage['fractured.currentLogin'] = data;
       //Load and insert session details
-      ajaxReadFile('session.php', sessionLoaded);
+      //ajaxReadFile('session.php', sessionLoaded);
+      ajaxReadFile('session_menu.php', sessionLoaded);
     } else {
       //First attempt to load a stored login session if available
       if (localStorage["fractured.currentLogin"]) {
@@ -82,7 +83,8 @@ var filetype = 'fractal';
         }
       } else
         //Load and insert session details
-        ajaxReadFile('session.php', sessionLoaded);
+        //ajaxReadFile('session.php', sessionLoaded);
+        ajaxReadFile('session_menu.php', sessionLoaded);
     }
   }
 
@@ -98,7 +100,8 @@ var filetype = 'fractal';
         window.location.reload(false);
     }
     //window.location.reload(false);
-    ajaxReadFile('session.php', sessionLoaded);
+    //ajaxReadFile('session.php', sessionLoaded);
+    ajaxReadFile('session_menu.php', sessionLoaded);
   }
 
   //Insert result of login session load into page
@@ -115,8 +118,10 @@ var filetype = 'fractal';
       //
     }
 
-    var sesdiv = document.getElementById('session');
-    sesdiv.innerHTML = html;
+    //var sesdiv = document.getElementById('session');
+    //sesdiv.innerHTML = html;
+    var sesmenu = document.getElementById('session_menu');
+    sesmenu.innerHTML = html;
   }
 
   //Update and save
@@ -327,7 +332,7 @@ var filetype = 'fractal';
     if (confirm('This will clear everything!')) {
       var login = localStorage["fractured.currentLogin"]; //Save login
       localStorage.clear(); //be careful as this will clear the entire database
-      localStorage["fractured.currentLogin"] = login; //Restore login
+      if (login) localStorage["fractured.currentLogin"] = login; //Restore login
       ajaxReadFile('db/session_get.php?setid=0', reloadWindow);
       currentSession = 0;  //No sessions to select
       //window.location.reload(false);
@@ -661,7 +666,7 @@ var filetype = 'fractal';
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
+  var panels = ['panel1', 'panel2', 'panel3', 'panel4'];
   var selectedTab = null;
   function showPanel(tab, name)
   {
@@ -714,13 +719,27 @@ var filetype = 'fractal';
   }
 
   //Show/hide on click
-  function toggle(id)
-  {
+  function toggle(id) {
     var el = $(id);
     if (el.style.display == 'block')
       el.style.display = 'none';
     else
       el.style.display = 'block';
+  }
+
+  function login(id) {
+    if (!id) id = prompt("Enter OpenID URL");
+    if (!id) return;
+    var id_field = document.getElementById("openid");
+    id_field.setAttribute("value", id);
+    var form = document.forms["login"];
+    form.submit();
+  }
+
+  function logout() {
+    delete localStorage['fractured.currentLogin'];
+    delete localStorage['fractured.currentSession']
+    ajaxReadFile('logout.php', reloadWindow);
   }
 
 /////////////////////////////////////////////////////////////////////////
