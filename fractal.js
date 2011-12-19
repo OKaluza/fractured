@@ -548,8 +548,10 @@
       //Update the fields
       this.params[name].createFields(this.type, name);
     }
-    //alert(this.type + "," + this.selected + " =====> " + this.currentParams.toString());
-    growTextAreas();  //Resize expression fields
+    consoleWrite("SELECT " + this.type + "," + this.selected); // + " =====> " + this.currentParams.toString());
+       //consoleTrace();
+    //growTextAreas('fractal_inputs');  //Resize expression fields
+    //growTextAreas('colour_inputs');  //Resize expression fields
   }
 
   Formula.prototype.filename = function() {
@@ -690,6 +692,41 @@
     this["outside_colour"] = new Formula("outside_colour");
 
     this.resetDefaults();
+  }
+
+//Actions
+  Fractal.prototype.setOrigin = function(point) {
+    //Adjust centre position
+    this.origin.re += point.re;
+    this.origin.im += point.im;
+    consoleWrite("Origin set to: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
+  }
+
+  Fractal.prototype.applyZoom = function(factor) {
+    //Adjust zoom
+    this.origin.zoom *= factor;
+    consoleWrite("Zoom set to: " + this.origin.zoom.toFixed(8));
+  }
+
+  Fractal.prototype.selectPoint = function(point) {
+    //Julia set switch
+    if (!this.julia) {
+      this.julia = true;
+      this.selected.re = this.origin.re + point.re;
+      this.selected.im = this.origin.im + point.im;
+      var select0 = document.getElementById("xSelInput");
+      select0.value = this.origin.re + point.re;
+      var select1 = document.getElementById("ySelInput");
+      select1.value = this.origin.im + point.im;
+      consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
+    } else {
+      this.julia = false;
+    }
+
+    //Switch saved views
+    var tempPos = this.origin.clone();
+    this.origin = this.savePos.clone();
+    this.savePos = tempPos;
   }
 
   Fractal.prototype.updateTexture = function() {

@@ -5,8 +5,8 @@
 
   //A user has used an OpenID to log in,
   //Look them up in the database, if not found, insert a new user record
-  //then save details to session
-  //finally redirect logged in user to login creation
+  //then save details to session and create a new login record
+  //finally redirect logged in user back to home page
 
   $openid = $_SESSION["openid"];
   $email = $_SESSION["email"];
