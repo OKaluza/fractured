@@ -39,32 +39,34 @@
     <nav>
 
       <ul id="nav">
-        <li><a class="fly" tabindex="1" href="#">Session</a>
+        <li><span class="fly" tabindex="1">Session</span>
           <ul class="dd">
-            <li><a class="fly" tabindex="1" href="#">Workspace</a>
+            <li><span class="fly" tabindex="1">Workspace</span>
               <ul>
-                <li><a href="javascript:resetState();">New</a></li>
-                <li><a href="javascript:exportStateFile();">Export</a></li>
-                <li><a href="javascript:filetype='session'; $('fileupload').click();">Import</a></li>
+                <li><span onclick="resetState();">New</span></li>
+                <li><span onclick="exportStateFile();">Export</span></li>
+                <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
               </ul>
             </li>
-            <li><a id="toolsbtn" href="javascript:toggleParams();">Hide Tools &uarr;</a></li>
+            <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
             <div id="session_menu"></div>
           </ul>
         </li>
-        <li><a class="fly" tabindex="1" href="#">Fractal</a>
+        <li><span class="fly" tabindex="1">Fractal</span>
           <ul class="dd">
-            <li><a href="javascript:saveFractal();">Save</a></li>
-            <li><a href="javascript:saveImageJPEG();">Save JPEG</a></li>
-            <li><a href="javascript:saveImagePNG();">Save PNG</a></li>
-            <!--li><a href="javascript:toggle('popup');">Test</a></li-->
-            <!--li><a href="javascript:exportFractal();">Export</a></li-->
-            <li><a href="javascript:exportFractalFile();">Export</a></li>
-            <li><a href="javascript:filetype='fractal'; $('fileupload').click();">Import</a></li>
-            <li><a href="javascript:filetype='palette'; $('fileupload').click();">Import Palette</a></li>
+            <li><span onclick="saveFractal();">Save</span></li>
+            <li><hr></li>
+            <li><span onclick="saveImageJPEG();">Save JPEG</span></li>
+            <li><span onclick="saveImagePNG();">Save PNG</span></li>
+            <!--li><span onclick="toggle('popup');">Test</span></li-->
+            <li><hr></li>
+            <!--li><span onclick="exportFractal();">Export</span></li-->
+            <li><span onclick="exportFractalFile();">Export</span></li>
+            <li><span onclick="filetype='fractal'; $('fileupload').click();">Import</span></li>
+            <li><span onclick="filetype='palette'; $('fileupload').click();">Import Palette</span></li>
           </ul>
         </li>
-        <li><a href="javascript:applyAndSave();">Draw</a></li>
+        <li><span onclick="applyAndSave();">Draw</span></li>
       </ul>
 
     </nav>
