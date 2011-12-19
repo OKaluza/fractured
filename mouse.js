@@ -1,3 +1,5 @@
+  var rightclick = false;
+
   //Handler class from passed functions
   function MouseEventHandler(click, down, move, wheel) {
     //All these functions should take (event, mouse)
@@ -30,7 +32,14 @@
     if (element.addEventListener) element.addEventListener("DOMMouseScroll", handleMouseWheel, false);
     element.onmousedown = handleMouseDown;
     element.onmousewheel = handleMouseWheel;
-    //element.oncontextmenu = function() { return false; }      
+    //To disable context menu
+    //element.oncontextmenu = function() { return false; }
+    element.oncontextmenu = function() {
+      if (rightclick) return true;
+      rightclick = true;
+      setTimeout('rightclick = false;', 300);
+      return false; 
+    }
   }
 
   Mouse.prototype.update = function(e) {
@@ -138,11 +147,10 @@
     var action = false;
     if (!event) event = window.event; // For IE, access the global (window) event object
     // cross-bowser handling of eventdata 
-    if ( event.wheelDelta ) { // IE and Opera
-        nDelta= event.wheelDelta;
-        if ( window.opera ) nDelta= -nDelta  // Opera has the values reversed
-    }
-    else if (event.detail) nDelta= -event.detail; // Mozilla FireFox
+    if (event.wheelDelta) // IE and Opera
+      nDelta= event.wheelDelta;
+    else if (event.detail)
+      nDelta= -event.detail; // Mozilla FireFox
 
     event.spin = nDelta > 0 ? 1 : -1;
 
