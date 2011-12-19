@@ -55,13 +55,13 @@
         <li><a class="fly" tabindex="1" href="#">Fractal</a>
           <ul class="dd">
             <li><a href="javascript:saveFractal();">Save</a></li>
-            <!--li><a href="javascript:exportFractal();">Export</a></li-->
-            <li><a href="javascript:exportFractalFile();">Export</a></li>
             <li><a href="javascript:saveImageJPEG();">Save JPEG</a></li>
             <li><a href="javascript:saveImagePNG();">Save PNG</a></li>
             <!--li><a href="javascript:toggle('popup');">Test</a></li-->
-            <li><a href="javascript:filetype='fractal'; $('fileupload').click();">Upload</a></li>
-            <li><a href="javascript:filetype='palette'; $('fileupload').click();">Upload Palette</a></li>
+            <!--li><a href="javascript:exportFractal();">Export</a></li-->
+            <li><a href="javascript:exportFractalFile();">Export</a></li>
+            <li><a href="javascript:filetype='fractal'; $('fileupload').click();">Import</a></li>
+            <li><a href="javascript:filetype='palette'; $('fileupload').click();">Import Palette</a></li>
           </ul>
         </li>
         <li><a href="javascript:applyAndSave();">Draw</a></li>
@@ -85,17 +85,17 @@
 
       <nav id="tabs">
         <ul>
-          <li onmousedown="showPanel(this, 'panel1');" id="tab1">Parameters</li>
-          <li onmousedown="showPanel(this, 'panel2');">Formula</li>
-          <li onmousedown="showPanel(this, 'panel3');">Colour</li>
-          <li onmousedown="showPanel(this, 'panel4');">Mouse</li>
-          <li onmousedown="showPanel(this, 'panel5');">Info</li>
+          <li onmousedown="showPanel(this, 'panel1');" id="tab1" class="selected">Parameters</li>
+          <li onmousedown="showPanel(this, 'panel2');" class="unselected">Formula</li>
+          <li onmousedown="showPanel(this, 'panel3');" class="unselected">Colour</li>
+          <li onmousedown="showPanel(this, 'panel4');" class="unselected">Actions</li>
+          <li onmousedown="showPanel(this, 'panel5');" class="unselected">Info</li>
         </ul>
       </nav>
 
-      <div class="panel" id="panel1" style="display: none">
+      <div class="panel" id="panel1">
 
-        <form id="inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
+        <form id="param_inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
 
           <div class="row">
             <span class="label">Name</span>
@@ -157,7 +157,8 @@
 
       </div>
 
-      <div class="panel scroll" id="panel2" style="display: none">
+      <div class="panel" id="panel2" style="display: none">
+        <form id="fractal_inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
         <p>Fractal</p>
         <div class="field">
           <select id="fractal_formula" onchange="fractal['fractal'].select(this.value)">
@@ -198,9 +199,11 @@
           <div id="fractal_params" width="100%"></div>
           <div id="pre_transform_params" width="100%"></div>
           <div id="post_transform_params" width="100%"></div>
+        </form>
       </div>
 
-      <div class="panel scroll" id="panel3" style="display: none">
+      <div class="panel" id="panel3" style="display: none">
+        <form id="colour_inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
         <p>Outside Colour</p>
         <div class="field">
           <select id="outside_colour_formula" onchange="fractal['outside_colour'].select(this.value)">
@@ -226,57 +229,68 @@
           <div class="gap"></div>
           <div id="outside_colour_params" width="100%"></div>
           <div id="inside_colour_params" width="100%"></div>
+        </form>
       </div>
 
-      <div class="panel scroll" id="panel4" style="display: none">
-          <div class="label">Mouse Actions</div>
-          <div class="row">
-            <div class="label">Set origin:</div>
-            <div class="field">
-              <select id="set_origin" onchange="alert(this.value)">
-                <option value="none">Left click</option>
-                <option value="none">Middle click</option>
-                <option value="none">Right click</option>
-                <option value="none">Shift+Left</option>
-                <option value="none">Shift+Middle</option>
-                <option value="none">Shift+Right</option>
-                <option value="none">Alt+Left</option>
-                <option value="none">Alt+Middle</option>
-                <option value="none">Alt+Right</option>
-                <option value="none">Ctrl+Left</option>
-                <option value="none">Ctrl+Middle</option>
-                <option value="none">Ctrl+Right</option>
-                <option value="none">Shift+Alt+Left</option>
-                <option value="none">Shift+Alt+Middle</option>
-                <option value="none">Shift+Alt+Right</option>
-                <option value="none">Shift+Ctrl+Left</option>
-                <option value="none">Shift+Ctrl+Middle</option>
-                <option value="none">Shift+Ctrl+Right</option>
-                <option value="none">Ctrl+Alt+Left</option>
-                <option value="none">Ctrl+Alt+Middle</option>
-                <option value="none">Ctrl+Alt+Right</option>
+      <div class="panel" id="panel4" style="display: none">
+        <form class="scroll">
+          <div class="divider"><span class="divider-label">Mouse Actions</span></div>
+          <span onclick="$('testP').appendChild($('testC'))">Click to move</span>
+          <div class="row" id="testC">
+            <span class="label">Left button</span>
+            <span class="field">
+              <select id="left_click" onchange="alert(this.value)">
+                <option value="origin">Set origin</option>
+                <option value="select">Set select</option>
+                <option value="scroll">Drag/scroll</option>
               </select>
-            </div>
-
-            <div class="label">Set select:</div>
-            <div class="label">Drag/scroll:</div>
-
-            <div class="label">Zoom</div>
-            <div class="field">
-              <select id="right_click" onchange="alert(this.value)">
-                <option value="none">Wheel</option>
-                <option value="none">Shift+Wheel</option>
-                <option value="none">Alt+Wheel</option>
-                <option value="none">Ctrl+Wheel</option>
-                <option value="none">Shift+Alt+Wheel</option>
-                <option value="none">Shift+Ctrl+Wheel</option>
-                <option value="none">Ctrl+Alt+Wheel</option>
-              </select>
-            </div>
-
-            <div class="label">Rotate 1</div>
-            <div class="label">Rotate 10</div>
+            </span>
           </div>
+          <div class="row">
+            <span class="label">Middle button</span>
+            <span class="field">
+              <select id="left_click" onchange="alert(this.value)">
+                <option value="origin">Set origin</option>
+                <option value="select">Set select</option>
+                <option value="scroll">Drag/scroll</option>
+              </select>
+            </span>
+          </div>
+          <div class="row">
+            <span class="label">Right button</span>
+            <span class="field">
+              <select id="left_click" onchange="alert(this.value)">
+                <option value="origin">Set origin</option>
+                <option value="select">Set select</option>
+                <option value="scroll">Drag/scroll</option>
+              </select>
+            </span>
+          </div>
+          <div class="row">
+            <span class="label">Scroll Wheel</span>
+            <span class="field">
+              <select id="right_click" onchange="alert(this.value)">
+                <option value="zoom">Zoom</option>
+                <option value="rotate 1">Rotate 1 degree</option>
+                <option value="rotate 10">Rotate 10 degrees</option>
+              </select>
+            </span>
+          </div>
+
+          <div class="divider" id="testP"><span class="divider-label">Shift</span>
+          </div>
+          <div class="divider"><span class="divider-label">Alt</span>
+          </div>
+          <div class="divider"><span class="divider-label">Ctrl</span>
+          </div>
+          <div class="divider"><span class="divider-label">Shift</span>+<span class="divider-label">Alt</span>
+          </div>
+          <div class="divider"><span class="divider-label">Shift</span>+<span class="divider-label">Ctrl</span>
+          </div>
+          <div class="divider"><span class="divider-label">Ctrl</span>+<span class="divider-label">Alt</span>
+          </div>
+
+        </form>
       </div>
 
       <div class="panel scroll" id="panel5" style="display: none">

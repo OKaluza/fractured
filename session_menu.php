@@ -19,7 +19,7 @@
     </select>
     </ul>
   </li>
-  <li>----</li>
+  <li><hr></li>
   <li><a href="javascript:logout();">Logout</a></li>
 
   <?php
@@ -30,7 +30,11 @@
   ?>
   <li><a class="fly" tabindex="1" href="#">Login with</a>
     <ul class="login">
-      <li><a href="javascript:login();"><img src="media/logos/logo_openid.png" alt="OpenID"></a></li>
+      <li><a href="javascript:$S('openid_form').display = 'block';"><img src="media/logos/logo_openid.png" alt="OpenID"></a></li>
+        <li id="openid_form" style="display:none;">
+          <input type="text" value="" id="openid_field" style="width: 120px;"></p>
+          <a href="javascript:login($('openid_field').value);" style="color: #666;">Login</a>
+        </li>
       <li><a href="javascript:login('https://www.google.com/accounts/o8/id');"><img src="media/logos/logo_google.png" alt="Google"></a></li>
       <li><a href="javascript:login('https://me.yahoo.com');"><img src="media/logos/logo_yahoo.png" alt="Yahoo"></a></li>
       <li><a href="javascript:login('http://myopenid.com');"><img src="media/logos/logo_myopenid.png" alt="MyOpenID"></a></li>

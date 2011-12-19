@@ -25,6 +25,57 @@ var filetype = 'fractal';
     console.innerHTML = '';
   }
 
+   //Stack trace
+    Function.prototype.trace = function()
+    {
+        var trace = [];
+        var current = this;
+        while(current)
+        {
+            trace.push(current.signature());
+            current = current.caller;
+        }
+        return trace;
+    }
+    Function.prototype.signature = function()
+    {
+        var signature = {
+            name: this.getName(),
+            params: [],
+            toString: function()
+            {
+                //var params = this.params.length > 0 ?
+                //    "'" + this.params.join("', '") + "'" : "";
+                //return this.name + "(" + params + ")"
+                return this.name + "()"
+            }
+        };
+        if(this.arguments)
+        {
+            for(var x=0; x<this .arguments.length; x++)
+                signature.params.push(this.arguments[x]);
+        }
+        return signature;
+    }
+    Function.prototype.getName = function()
+    {
+        if(this.name)
+            return this.name;
+        var definition = this.toString().split("\n")[0];
+        var exp = /^function ([^\s(]+).+/;
+        if(exp.test(definition))
+            return definition.split("\n")[0].replace(exp, "$1") || "anonymous";
+        return "anonymous: " + definition;
+    }
+
+  function consoleTrace() {
+    var trace = arguments.callee.trace();
+    consoleWrite('<hr>');
+    consoleWrite(trace.join("<br/>\n"));
+    consoleWrite('<hr>');
+  }
+
+
   function pageStart() {
     //Default editor line offset
     formulaOffsets[""] = 1;
@@ -53,8 +104,6 @@ var filetype = 'fractal';
 
     //Load the content from files
     loadSources();
-
-    showPanel($('tab1'), 'panel1');   //Show first tab
   }
 
   //Login session JSON received, load session.php
@@ -670,26 +719,23 @@ var filetype = 'fractal';
   var selectedTab = null;
   function showPanel(tab, name)
   {
-    if (selectedTab) 
-    {
-      selectedTab.style.paddingTop = '';
-      selectedTab.className = 'gradient';
-      selectedTab.style.backgroundColor = '';
-    }
+    if (!selectedTab) selectedTab = $('tab1');
+
+    selectedTab.className = 'unselected';
     selectedTab = tab;
-      selectedTab.className = '';
-    selectedTab.style.backgroundColor = '#e9e4cc';
-    selectedTab.style.paddingTop = '2px';
+    selectedTab.className = 'selected';
+
     for(i = 0; i < panels.length; i++)
       document.getElementById(panels[i]).style.display = (name == panels[i]) ? 'block':'none';
 
     //Resize expression edit fields
-    if (selectedTab.id == "tab1") growTextAreas();
+    if (name == "panel2") growTextAreas('fractal_inputs');
+    if (name == "panel3") growTextAreas('colour_inputs');
     return false;
   }
 
-  function growTextAreas() {
-    var elem = document.getElementById('inputs').elements;
+  function growTextAreas(form_id) {
+    var elem = $(form_id).elements;
     for(var i = 0; i < elem.length; i++)
       if (elem[i].type == 'textarea') grow(elem[i]);
   }
@@ -783,25 +829,19 @@ var rztimeout = undefined;
     //Convert mouse coords into fractal coords
     var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
 
-    if (event.ctrlKey) {
-       //CTRL-click: julia set switch
-       if (!fractal.julia) {
-          fractal.julia = true;
-          fractal.selected.re = fractal.origin.re + point.re;
-          fractal.selected.im = fractal.origin.im + point.im;
-          var select0 = document.getElementById("xSelInput");
-          select0.value = fractal.origin.re + point.re;
-          var select1 = document.getElementById("ySelInput");
-          select1.value = fractal.origin.im + point.im;
-          consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
-       } else {
-          fractal.julia = false;
-       }
-
-       //Switch saved views
-       var tempPos = fractal.origin.clone();
-       fractal.origin = fractal.savePos.clone();
-       fractal.savePos = tempPos;
+    if (event.shiftKey && event.altKey) {
+      return true;
+    } else if (event.shiftKey && event.ctrlKey) {
+      return true;
+    } else if (event.altKey && event.ctrlKey) {
+      return true;
+    } else if (event.ctrlKey) {
+      //Select point for julia set
+      fractal.selectPoint(point);
+    } else if (event.shiftKey) {
+      return true;
+    } else if (event.altKey) {
+      return true;
     } else {
       //Selection box?
       if (select.style.display == 'block') {
@@ -816,17 +856,13 @@ var rztimeout = undefined;
           //Get centre of selection in fractal coords
           var centre = fractal.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
           //Adjust centre position to match mouse left click
-          fractal.origin.re += centre.re;
-          fractal.origin.im += centre.im;
+          fractal.setOrigin(centre);
           //Adjust zoom by factor of element width to selection
-          var ratio = mouse.element.width / select.w;
-          fractal.origin.zoom *= ratio;
+          fractal.applyZoom(mouse.element.width / select.w);
         }
       } else {
         //Adjust centre position to match mouse left click
-        fractal.origin.re += point.re;
-        fractal.origin.im += point.im;
-        consoleWrite("Origin set to: re: " + fractal.origin.re.toFixed(8) + " im: " + fractal.origin.im.toFixed(8));
+        fractal.setOrigin(point);
       }
     }
     select.style.display = 'none';
@@ -889,7 +925,13 @@ var rztimeout = undefined;
 
   function canvasMouseWheel(event, mouse) {
     //alert(event.spin);
-    if (event.ctrlKey) {
+    if (event.shiftKey && event.altKey) {
+      return true;
+    } else if (event.shiftKey && event.ctrlKey) {
+      return true;
+    } else if (event.altKey && event.ctrlKey) {
+      return true;
+    } else if (event.ctrlKey) {
       return true;
     } else if (event.shiftKey) {
       /* SHIFT + scroll */
@@ -900,9 +942,9 @@ var rztimeout = undefined;
     } else {
       /* Zoom */
       if (event.spin < 0)
-         fractal.origin.zoom *= (1/(-event.spin * 1.1));
+         fractal.applyZoom(1/(-event.spin * 1.1));
       else
-         fractal.origin.zoom *= (event.spin * 1.1);
+         fractal.applyZoom(event.spin * 1.1);
     }
 
     //Limit to range [0-360)

@@ -192,9 +192,12 @@ nav {float: left;}
 }
 
 /* For login options */
-#nav ul.login {border: 1px solid #3c2c1f;width: 95px; background:#fcfccf;}
-#nav ul.login li a {width: 90px; background:#fcfccf;}
+#nav ul.login {border: 1px solid #3c2c1f; background:#fcfccf;}
+#nav ul.login li a {background:#fcfccf; text-align: center;}
 #nav ul.login li img:hover {background:#dac083;}
+
+/* Dividers */
+#nav ul li hr {margin: 2px 0px; width:125px; }
 
 /* Top level items only */
 #nav > li > a {
@@ -218,7 +221,7 @@ nav {float: left;}
 
 /*popups*/
 #nav li a:active + ul.dd,#nav li a:focus + ul.dd,#nav li ul.dd:hover { display: block}
-#nav ul.dd li a:active + ul,#nav ul.dd li a:focus + ul,#nav ul.dd li ul:hover { left:129px; top:-3px;; display: block }
+#nav ul.dd li a:active + ul,#nav ul.dd li a:focus + ul,#nav ul.dd li ul:hover { left:129px; top:-3px; display: block }
 
 
 /* Tab navigation */
@@ -252,6 +255,19 @@ nav {float: left;}
   background: white; 
   height: 22px;
   cursor: pointer
+}
+
+#tabs .selected {
+  background-color: #e9e4cc;
+  padding-top: 2px;
+}
+#tabs .unselected {
+  padding-top: 1px;
+  /* Alpha+black gradient */
+  background-image: -webkit-gradient(linear, left bottom, left top,
+    from(rgba(0,0,0,0.5)), color-stop(60%, rgba(0,0,0,0.0)));
+  background-image: -moz-linear-gradient(center bottom, 
+    rgba(0,0,0,0.5), rgba(0,0,0,0.0) 60%);
 }
 
 #controls {
