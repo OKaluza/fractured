@@ -14,6 +14,15 @@ var editorTheme = 'dark';
 var currentSession = 0; //Selected session
 var filetype = 'fractal';
 
+var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt'
+
+  function defaultMouseActions() {
+    mouseActions["left"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["right"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["middle"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["wheel"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+  }
+
   function consoleWrite(str) {
     var console = document.getElementById('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
@@ -104,6 +113,8 @@ var filetype = 'fractal';
 
     //Load the content from files
     loadSources();
+
+    defaultMouseActions();
   }
 
   //Login session JSON received, load session.php
@@ -937,8 +948,14 @@ var rztimeout = undefined;
       /* SHIFT + scroll */
       fractal.origin.rotate += 10 * event.spin;
     } else if (event.altKey) {
-      /* ALT + scroll -> rotate */
-      fractal.origin.rotate += event.spin;
+      //Test of assigned function
+      var id = mouseActions["wheel"]["ctrl"];
+      if (id) {
+        $(id).value = parseFloat($(id).value) + event.spin;
+        applyAndSave();
+      } else
+        /* ALT + scroll -> rotate */
+        fractal.origin.rotate += event.spin;
     } else {
       /* Zoom */
       if (event.spin < 0)
@@ -1007,6 +1024,14 @@ handleFormMouseDown = function(e) {
   //Event delegation from parameters form to edit colour params
   e = e || window.event;
   if (e.target.className == "colour") colours.edit(e.target);
+  if (e.target.type == 'text' || e.target.type == 'number') {
+    consoleWrite(e.target.id + " == " + e.target.value);
+    //Test, on middle click (1) assign alt+scroll function to selected field
+    if (e.button == 1) {
+      mouseActions["wheel"]["ctrl"] = e.target.id;
+      return false;
+    }
+  }
 }
 
 function saveColour(val) {colours.save(val);}

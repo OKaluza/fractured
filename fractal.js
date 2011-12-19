@@ -101,98 +101,94 @@
 
   Param.prototype.parse = function(value) {
     //Parse a value based on type string
-    if (this.type == 'bool') {
-      this.typeid = -1;
-      if (typeof(value) == 'boolean')
-        this.value = value;
-      if (typeof(value) == 'number')
-        this.value = value != 0;
-      if (typeof(value) == 'string')
-        this.value = (/^true$/i).test(value);
-    }
-
-    if (this.type == 'int' || this.type == 'uint') {
-      this.typeid = 0;
-      if (typeof(value) == 'number')
-        this.value = value | 0; //Bitwise ops convert to integers
-      if (typeof(value) == 'string')
-        this.value = parseInt(value);
-    }
-
-    if (this.type == 'float' || this.type == 'real') {
-      this.typeid = 1;
-      if (typeof(value) == 'number')
-        this.value = value;
-      if (typeof(value) == 'string')
-        this.value = parseFloat(value);
-    }
-
-    if (this.type == 'complex') {
-      this.typeid = 2;
-      if (typeof(value) == 'number')
-        this.value = new Complex(value, 0);
-      if (typeof(value) == 'object') {
-        if (value.length == 2)
-          this.value = new Complex(value[0], value[1]);
-        else
-          this.value = value; //Assume is a Complex already
-      }
-      if (typeof(value) == 'string') {
-        var match = complexreg.exec(value);
-        if (match && match[1] && match[3])
-          this.value = new Complex(match[1], match[3]);
-        else
-          this.value = new Complex(parseFloat(value), 0);
-      }
-    }
-
-    if (this.type == 'real_function') {
-      this.typeid = 4;
-      this.value = value;
-      this.functions = realfunctions;
-    }
-    if (this.type == 'complex_function') {
-      this.typeid = 4;
-      this.value = value;
-      this.functions = complexfunctions;
-    }
-    if (this.type == 'bailout_function') {
-      this.typeid = 4;
-      this.value = value;
-      this.functions = bailfunctions;
-    }
-
-    if (this.type == 'list') {
-      this.typeid = 3;
-      var listmatch = listreg.exec(value);
-      if (!listmatch) {
-        //Assume parsing a selection value into a prefined list
-        this.value = value;
-      } else {
-        //Populate list items...'entry=value|entry=value'
-        var num = 0;
-        var items = listmatch[1].split("|");
-        this.list = {};
-        for (var i = 0; i < items.length; i++) {
-          var vals = items[i].split("=");
-          if (vals[1]) num = parseInt(vals[1]);
-          this.list[vals[0]] = num;
-          num++;
+    switch (this.type) {
+      case 'bool':
+        this.typeid = -1;
+        if (typeof(value) == 'boolean')
+          this.value = value;
+        if (typeof(value) == 'number')
+          this.value = value != 0;
+        if (typeof(value) == 'string')
+          this.value = (/^true$/i).test(value);
+        break;
+      case 'int':
+      case 'uint':
+        this.typeid = 0;
+        if (typeof(value) == 'number')
+          this.value = value | 0; //Bitwise ops convert to integers
+        if (typeof(value) == 'string')
+          this.value = parseInt(value);
+        break;
+      case 'float':
+      case 'real':
+        this.typeid = 1;
+        if (typeof(value) == 'number')
+          this.value = value;
+        if (typeof(value) == 'string')
+          this.value = parseFloat(value);
+        break;
+      case 'complex':
+        this.typeid = 2;
+        if (typeof(value) == 'number')
+          this.value = new Complex(value, 0);
+        if (typeof(value) == 'object') {
+          if (value.length == 2)
+            this.value = new Complex(value[0], value[1]);
+          else
+            this.value = value; //Assume is a Complex already
         }
-        this.value = 0; //Initial selection is first item
-      }
+        if (typeof(value) == 'string') {
+          var match = complexreg.exec(value);
+          if (match && match[1] && match[3])
+            this.value = new Complex(match[1], match[3]);
+          else
+            this.value = new Complex(parseFloat(value), 0);
+        }
+        break;
+      case 'real_function':
+        this.typeid = 4;
+        this.value = value;
+        this.functions = realfunctions;
+        break;
+      case 'complex_function':
+        this.typeid = 4;
+        this.value = value;
+        this.functions = complexfunctions;
+        break;
+      case 'bailout_function':
+        this.typeid = 4;
+        this.value = value;
+        this.functions = bailfunctions;
+        break;
+      case 'list':
+        this.typeid = 3;
+        var listmatch = listreg.exec(value);
+        if (!listmatch) {
+          //Assume parsing a selection value into a prefined list
+          this.value = value;
+        } else {
+          //Populate list items...'entry=value|entry=value'
+          var num = 0;
+          var items = listmatch[1].split("|");
+          this.list = {};
+          for (var i = 0; i < items.length; i++) {
+            var vals = items[i].split("=");
+            if (vals[1]) num = parseInt(vals[1]);
+            this.list[vals[0]] = num;
+            num++;
+          }
+          this.value = 0; //Initial selection is first item
+        }
+        break;
+      case 'rgba':
+        this.typeid = 5;
+        this.value = new Colour('rgba(' + value + ')');
+        break;
+      case 'expression':
+        this.typeid = 6;
+        this.value = value;
+        break;
     }
-
-    if (this.type == 'rgba') {
-      this.typeid = 5;
-      this.value = new Colour('rgba(' + value + ')');
-    }
-
-    if (this.type == 'expression') {
-      this.typeid = 6;
-      this.value = value;
-    }
-
     //consoleWrite(this.label + " parsed as " + this.type + " value = " + this.value);
   }
 
@@ -422,19 +418,20 @@
       {
         case -1: //Boolean
           input = document.createElement("input");
-          input.id = type + key;
+          input.id = type + '_' + key;
           input.type = "checkbox";
           input.checked = this[key].value;
           spanin.appendChild(input);
           //Checkbox label
           var lab = document.createElement("label");
-          lab.setAttribute("for", type + key);
+          lab.setAttribute("for", type + '_' + key);
           lab.appendChild(lab.ownerDocument.createTextNode(fieldlabel));
           spanin.appendChild(lab);
           break;
         case 0: //Integer
         case 1: //real
           input = document.createElement("input");
+          input.id = type + '_' + key;
           input.type = "number";
           if (this[key].type == 1) input.setAttribute("step", 0.1);
           input.value = this[key].value;
@@ -444,12 +441,14 @@
           input = [null, null];
           input[0] = document.createElement("input");
           input[0].type = "number";
+          input[0].id = type + '_' + key + '_0';
           input[0].setAttribute("step", 0.1);
           input[0].value = this[key].value.re;
           spanin.appendChild(input[0]);
           //Create second field
           input[1] = document.createElement("input");
           input[1].type = "number";
+          input[1].id = type + '_' + key + '_1';
           input[1].setAttribute("step", 0.1);
           input[1].value = this[key].value.im;
           spanin.appendChild(input[1]);
@@ -860,8 +859,7 @@
       if (this[type].selected != "none" && this[type].currentParams.count() > 0)
           code += "\n[params." + type + "]\n" + this[type].currentParams;
     }
-    //Formula code (TODO: Re-enable once code stable!)
-    /*
+    /*/Formula code (###)
     for (t in types) {
       type = types[t];
       if (this[type].selected != "none") {
@@ -946,6 +944,7 @@
           var filename = this[type].filename();
           collect = true;
           buffer = "";
+          //###
           //collectDone = function() {sources[filename] = buffer;}
           //Use this instead to skip loading formula code from saved param files
             collectDone = function() {}
