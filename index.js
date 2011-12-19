@@ -117,7 +117,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     defaultMouseActions();
   }
 
-  //Login session JSON received, load session.php
+  //Login session JSON received, load session_menu.php
   function sessionGet(data) {
     if (!data) {
       //Offline mode?
@@ -126,13 +126,10 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     }
 
     var currentLogin = JSON.parse(data);
-    if (currentLogin.id && currentLogin.id.length > 4) {
+    if (currentLogin.id && currentLogin.id.length > 4)
       //Have an active login, save and continue
       localStorage['fractured.currentLogin'] = data;
-      //Load and insert session details
-      //ajaxReadFile('session.php', sessionLoaded);
-      ajaxReadFile('session_menu.php', sessionLoaded);
-    } else {
+    else {
       //First attempt to load a stored login session if available
       if (localStorage["fractured.currentLogin"]) {
         alert('Loading stored login : ' + localStorage["fractured.currentLogin"]);
@@ -140,12 +137,13 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         if (currentLogin.id && currentLogin.id.length > 4) {
           alert('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id);
           ajaxReadFile('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id, setLogin);
+          return;
         }
-      } else
-        //Load and insert session details
-        //ajaxReadFile('session.php', sessionLoaded);
-        ajaxReadFile('session_menu.php', sessionLoaded);
+      }
     }
+
+    //Load and insert session details
+    ajaxReadFile('session_menu.php', sessionLoaded);
   }
 
   function setLogin(data) {
@@ -160,7 +158,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         window.location.reload(false);
     }
     //window.location.reload(false);
-    //ajaxReadFile('session.php', sessionLoaded);
     ajaxReadFile('session_menu.php', sessionLoaded);
   }
 

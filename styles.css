@@ -181,7 +181,7 @@ nav {float: left;}
     margin-right:3px;
     position:relative;
 }
-#nav li a {
+#nav li span {
     background:#3c2c1f;
     color:#ffd;
     display:block;
@@ -189,39 +189,40 @@ nav {float: left;}
     font-size:13px;
     padding:2px 3px;
     text-decoration:none;
+  cursor: pointer; 
 }
 
 /* For login options */
 #nav ul.login {border: 1px solid #3c2c1f; background:#fcfccf;}
-#nav ul.login li a {background:#fcfccf; text-align: center;}
+#nav ul.login li span {background:#fcfccf; text-align: center;}
 #nav ul.login li img:hover {background:#dac083;}
 
 /* Dividers */
 #nav ul li hr {margin: 2px 0px; width:125px; }
 
 /* Top level items only */
-#nav > li > a {
+#nav > li > span {
     border-radius:4px;
     overflow:hidden;
   border: 1px solid #777;
   color:#bbb;
 }
-#nav li a.fly {
+#nav li span.fly {
     background:#3c2c1f url(media/arrow.gif) no-repeat right center;
     padding-right:15px;
 }
 #nav ul li { margin:0; }
-#nav ul li a { width:120px; }
-#nav ul li a.fly { padding-right:3px; }
+#nav ul li span { width:120px; }
+#nav ul li span.fly { padding-right:3px; }
 
 /*hover styles*/
-#nav li:hover > a { background-color:#9a6023; color:#000; }
-/*focus styles*/
-#nav li a:focus { outline-width:0; }
+#nav li:hover > span { background-color:#9a6023; color:#000; }
+/*focus styles - removes the dotted outline */
+#nav li span:focus { outline-width:0; }
 
 /*popups*/
-#nav li a:active + ul.dd,#nav li a:focus + ul.dd,#nav li ul.dd:hover { display: block}
-#nav ul.dd li a:active + ul,#nav ul.dd li a:focus + ul,#nav ul.dd li ul:hover { left:129px; top:-3px; display: block }
+#nav li span:active + ul.dd,#nav li span:focus + ul.dd,#nav li ul.dd:hover { display: block}
+#nav ul.dd li span:active + ul,#nav ul.dd li span:focus + ul,#nav ul.dd li ul:hover { left:129px; top:-3px; display: block }
 
 
 /* Tab navigation */
