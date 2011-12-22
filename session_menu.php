@@ -31,21 +31,31 @@
   <li><span class="fly" tabindex="1">Login with</span>
     <ul class="login">
       <li><span onclick="toggle('openid_form');"><img src="media/logos/logo_openid.png" alt="OpenID"></span></li>
-        <li id="openid_form" style="display:none;">
-          <input type="text" value="" id="openid_field" style="width: 120px;"></p>
-          <span onclick="login($('openid_field').value);" style="color: #666;">Login</span>
-        </li>
-      <li><span onclick="login('https://www.google.com/accounts/o8/id');"><img src="media/logos/logo_google.png" alt="Google"></span></li>
-      <li><span onclick="login('https://me.yahoo.com');"><img src="media/logos/logo_yahoo.png" alt="Yahoo"></span></li>
-      <li><span onclick="login('http://myopenid.com');"><img src="media/logos/logo_myopenid.png" alt="MyOpenID"></span></li>
-      <li><span onclick="login('http://openid.aol.com');"><img src="media/logos/logo_aol.png" alt="AOL"></span></li>
-      <li><span onclick="login('http://openid.stackexchange.com');"><img src="media/logos/logo_stackexchange.png" alt="Stack Exchange"></span></li>
+      <li id="openid_form" style="display:none;">
+        <form action="authenticate.php" method="post" name="login">
+          <input type="text" value="" name="openid_url" id="openid" style="width: 120px;"/>
+          <input type="submit" class="right" value="Login">
+        </form>
+        <!--span onclick="login();" style="color: #666;">Login</span-->
+      </li>
+      <li><span onclick="login('https://www.google.com/accounts/o8/id');">
+        <img src="media/logos/logo_google.png" alt="Google">
+      </span></li>
+      <li><span onclick="login('https://me.yahoo.com');">
+        <img src="media/logos/logo_yahoo.png" alt="Yahoo">
+      </span></li>
+      <li><span onclick="login('http://myopenid.com');">
+        <img src="media/logos/logo_myopenid.png" alt="MyOpenID">
+      </span></li>
+      <li><span onclick="login('http://openid.aol.com');">
+        <img src="media/logos/logo_aol.png" alt="AOL">
+      </span></li>
+      <li><span onclick="login('http://openid.stackexchange.com');">
+        <img src="media/logos/logo_stackexchange.png" alt="Stack Exchange">
+      </span></li>
     </ul>
   </li>
 
-  <form action="authenticate.php" method="post" name="login">
-    <input type="hidden" id="openid" name="openid_url" id="openid"/>
-  </form>
 
   <?php
   }
