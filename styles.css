@@ -196,6 +196,7 @@ nav {float: left;}
 #nav ul.login {border: 1px solid #3c2c1f; background:#fcfccf;}
 #nav ul.login li span {background:#fcfccf; text-align: center;}
 #nav ul.login li img:hover {background:#dac083;}
+#nav ul.login li img {padding: 0px 15px;}
 
 /* Dividers */
 #nav ul li hr {margin: 2px 0px; width:125px; }

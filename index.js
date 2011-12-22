@@ -147,6 +147,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function setLogin(data) {
+    alert("login_get response: " + data);
     //Called with result from ajax login query
     if (data && data.length > 0)
       localStorage['fractured.currentLogin'] = data;
@@ -782,10 +783,10 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function login(id) {
-    if (!id) id = prompt("Enter OpenID URL");
-    if (!id) return;
-    var id_field = document.getElementById("openid");
-    id_field.setAttribute("value", id);
+    if (id) {
+      var id_field = document.getElementById("openid");
+      id_field.setAttribute("value", id);
+    }
     var form = document.forms["login"];
     form.submit();
   }

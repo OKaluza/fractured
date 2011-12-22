@@ -1448,6 +1448,8 @@
     fragmentShader += outcolourcode;
     formulaOffsets["inside_colour"] = fragmentShader.split("\n").length;
     fragmentShader += incolourcode;
+        //###
+        $('console2').value = fragmentShader;
 
     fragmentShader += shader + complex;
 
