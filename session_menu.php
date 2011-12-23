@@ -15,7 +15,7 @@
       <li><span onclick="uploadState(<?php echo $_SESSION['session_id'];?>);">Save</span></li>
       <li><span onclick="loadSelectedState();">Load</span></li>
       <li><span onclick="deleteSelectedState();">Delete</span></li>
-      <select size="10" style="width: 300px;" class="savelist" id="sessions" ondblclick="loadSelectedState()">
+      <select size="10" class="savelist" id="sessions" ondblclick="loadSelectedState()">
       </select>
     </ul>
   </li>
@@ -30,14 +30,9 @@
   ?>
   <li><span class="fly" tabindex="1">Login with</span>
     <ul class="login">
-      <li><span onclick="toggle('openid_form');"><img src="media/logos/logo_openid.png" alt="OpenID"></span></li>
-      <li id="openid_form" style="display:none;">
-        <form action="authenticate.php" method="post" name="login">
-          <input type="text" value="" name="openid_url" id="openid" style="width: 120px;"/>
-          <input type="submit" class="right" value="Login">
-        </form>
-        <!--span onclick="login();" style="color: #666;">Login</span-->
-      </li>
+      <li><span onclick="toggle('openid_form'); $('openid').focus();">
+        <img src="media/logos/logo_openid.png" alt="OpenID">
+      </span></li>
       <li><span onclick="login('https://www.google.com/accounts/o8/id');">
         <img src="media/logos/logo_google.png" alt="Google">
       </span></li>

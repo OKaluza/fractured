@@ -126,16 +126,17 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     }
 
     var currentLogin = JSON.parse(data);
-    if (currentLogin.id && currentLogin.id.length > 4)
+    if (currentLogin.id && currentLogin.id.length > 4) {
       //Have an active login, save and continue
+        consoleWrite("Login retrieved from session: " + data)
       localStorage['fractured.currentLogin'] = data;
-    else {
+    } else {
       //First attempt to load a stored login session if available
       if (localStorage["fractured.currentLogin"]) {
-        alert('Loading stored login : ' + localStorage["fractured.currentLogin"]);
+          consoleWrite('Loading stored login : ' + localStorage["fractured.currentLogin"]);
         currentLogin = JSON.parse(localStorage["fractured.currentLogin"]);
         if (currentLogin.id && currentLogin.id.length > 4) {
-          alert('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id);
+            consoleWrite('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id);
           ajaxReadFile('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id, setLogin);
           return;
         }
@@ -147,11 +148,12 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function setLogin(data) {
-    alert("login_get response: " + data);
+      consoleWrite("login_get response: " + data);
     //Called with result from ajax login query
-    if (data && data.length > 0)
+    if (data && data.length > 0) {
+        consoleWrite("Saved login, new Login received from server: " + data)
       localStorage['fractured.currentLogin'] = data;
-    else {
+    } else {
       //Failed, clear the login key?
       if (!confirm("Saved session not found or server unreachable, try again?"))
         localStorage['fractured.currentLogin'] = '';
@@ -613,6 +615,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         //Save index/id on option
         opt.idx = i;
       }
+
       //Update index if unused at end
       if (opt && i > opt.idx+1)
         localStorage["fractured.fractals"] = opt.idx;
@@ -627,7 +630,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function loadLastFractal() {
-
     //Load current fractal (as default)
     var source = localStorage["fractured.active"];
     if (source) {
