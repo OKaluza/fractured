@@ -37,7 +37,6 @@
     <h2>Fractured Studio v0.2</h2>
 
     <nav>
-
       <ul id="nav">
         <li><span class="fly" tabindex="1">Session</span>
           <ul class="dd">
@@ -55,6 +54,27 @@
         <li><span class="fly" tabindex="1">Fractal</span>
           <ul class="dd">
             <li><span onclick="saveFractal();">Save</span></li>
+            <li><span class="fly" tabindex="1">Saved fractals</span>
+              <ul>
+                <li><span onclick="selectedFractal($('stored'));">Load</span></li>
+                <li><span onclick="deleteFractal();">Delete</span></li>
+                <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
+                </select>
+                <div id="indicatorbg"><div id="indicator"></div></div>
+              </ul>
+
+          <!--div class="gap"></div>
+          <p><i><b>Saved Fractals:</b></i></p>
+          <input type="button" value="Load" onclick="selectedFractal($('stored'));">
+          <input type="button" value="Delete" onclick="deleteFractal();">
+          <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
+          </select>
+          <div id="indicatorbg"><div id="indicator"></div></div>
+          -->
+
+
+
+            </li>
             <li><hr></li>
             <li><span onclick="saveImageJPEG();">Save JPEG</span></li>
             <li><span onclick="saveImagePNG();">Save PNG</span></li>
@@ -144,14 +164,6 @@
           <div id="base_params" width="100%"></div>
 
           <div class="clear"></div>
-
-          <div class="gap"></div>
-          <p><i><b>Saved Fractals:</b></i></p>
-          <input type="button" value="Load" onclick="selectedFractal($('stored'));">
-          <input type="button" value="Delete" onclick="deleteFractal();">
-          <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
-          </select>
-          <div id="indicatorbg"><div id="indicator"></div></div>
 
 
 
@@ -352,8 +364,18 @@
   <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
 
   <div id="popup" class="popup">
-    <div class="popclose" onclick="$S('popup').display='none';">X</div>
+    <div class="popclose" onclick="toggle('popup');">X</div>
     This a vertically and horizontally centered popup.
+  </div>
+
+  <div id="openid_form" class="popup">
+    <div class="popclose" onclick="toggle('openid_form');">X</div>
+    <img src="media/logos/logo_openid.png" alt="OpenID">
+    <form action="authenticate.php" method="post" name="login">
+      <input type="text" value="" name="openid_url" id="openid" style="width: 194px;"/>
+      <input type="submit" class="right" value="Login">
+    </form>
+    <!--span onclick="login();" style="color: #666;">Login</span-->
   </div>
 
   <!-- Colour picker -->

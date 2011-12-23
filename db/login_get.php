@@ -24,15 +24,15 @@
       $_SESSION['login'] = $login;
       $openid = $row["openid"];
 
-      //JSON response
-      $json = '{"id" : "' . $login . '", "user" : "' . $user . '"}';
-
       //Delete old entry
       $query = "DELETE FROM login WHERE user_id = '$user' AND hash = '$hash';";
       mysql_query($query);
 
       //Create a new login entry
       include("login_new.php");
+
+      //JSON response
+      $json = '{"id" : "' . $login . '", "user" : "' . $user . '"}';
     }
   }
 
