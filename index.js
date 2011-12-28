@@ -126,18 +126,20 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     }
 
     var currentLogin = JSON.parse(data);
-    if (currentLogin.id && currentLogin.id.length > 4) {
+    var code = currentLogin.code; //Random
+    if (currentLogin.id && currentLogin.id.length == 64) {
       //Have an active login, save and continue
-        consoleWrite("Login retrieved from session: " + data)
+        consoleWrite("Login retrieved from session: " + data);
       localStorage['fractured.currentLogin'] = data;
     } else {
       //First attempt to load a stored login session if available
       if (localStorage["fractured.currentLogin"]) {
           consoleWrite('Loading stored login : ' + localStorage["fractured.currentLogin"]);
         currentLogin = JSON.parse(localStorage["fractured.currentLogin"]);
-        if (currentLogin.id && currentLogin.id.length > 4) {
-            consoleWrite('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id);
-          ajaxReadFile('db/login_get.php?user=' + currentLogin.user + '&login=' + currentLogin.id, setLogin);
+        if (currentLogin.id && currentLogin.id.length == 64) {
+          //Hash the once-off code with the login id
+          var hash = SHA256(currentLogin.id + code);
+          ajaxPost('db/login_get.php', 'user=' + currentLogin.user + '&hash=' + hash, setLogin);
           return;
         }
       }
@@ -170,16 +172,11 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     if (localStorage['fractured.currentLogin'])
       currentLogin = JSON.parse(localStorage['fractured.currentLogin']);
 
-    if (currentLogin && currentLogin.id && currentLogin.id.length > 0) {
+    if (currentLogin && currentLogin.id && currentLogin.id.length == 64) {
       //Load sessions list from server
       ajaxReadFile('db/session_get.php', loadStateList);
-    } else {
-    //if (currentLogin.id && currentLogin.id.length > 0) {
-      //
     }
 
-    //var sesdiv = document.getElementById('session');
-    //sesdiv.innerHTML = html;
     var sesmenu = document.getElementById('session_menu');
     sesmenu.innerHTML = html;
   }
@@ -393,7 +390,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       var login = localStorage["fractured.currentLogin"]; //Save login
       localStorage.clear(); //be careful as this will clear the entire database
       if (login) localStorage["fractured.currentLogin"] = login; //Restore login
-      ajaxReadFile('db/session_get.php?setid=0', reloadWindow);
+      ajaxReadFile('setvariable.php?name=session_id?value=0', reloadWindow);
       currentSession = 0;  //No sessions to select
       //window.location.reload(false);
     }
@@ -401,8 +398,8 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   //Import/export all local storage to server
-  function uploadState(session_id) {
-    if (session_id > 0 && confirm('Save changes to this session on server?')) {
+  function uploadState() {
+    if (currentSession > 0 && confirm('Save changes to this session on server?')) {
       //Update existing
     } else {
       var desc = prompt("Enter description for new session");
@@ -413,7 +410,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     }
 
     var idField = document.getElementById("sessid");
-    idField.setAttribute("value", session_id);
+    idField.setAttribute("value", currentSession);
 
     var hiddenField = document.createElement("input");
     hiddenField.setAttribute("type", "hidden");
@@ -474,7 +471,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       currentSession = parseInt(localStorage["fractured.currentSession"]);
       if (currentSession) {
         //Have a saved session #, get the data
-        ajaxReadFile('db/session_get.php?setid=' + currentSession);
+        ajaxReadFile('setvariable.php?name=session_id?value=' + currentSession);
         if ($('sessions')) $('sessions').value = currentSession;
       }
 
@@ -485,7 +482,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
 
   function loadSelectedState()
   {
-     var select = document.getElementById('sessions');
+     var select = $('sessions');
      var idx = select.selectedIndex;
      if (idx >= 0)
      {
@@ -532,10 +529,10 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function importState(source) {
-    if (!confirm('This will overwrite everything!')) return;
-    localStorage.clear(); //clear the entire database
+    var parsed = JSON.parse(source);
+    if (!parsed || !confirm('This will overwrite everything!')) return;
     try {
-      var parsed = JSON.parse(source);
+      localStorage.clear(); //clear the entire database
       for (key in parsed)
         localStorage[key] = parsed[key];
       //Replace session id, not saved in state data
@@ -789,14 +786,14 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       var id_field = document.getElementById("openid");
       id_field.setAttribute("value", id);
     }
-    var form = document.forms["login"];
+    var form = document.forms["login_form"];
     form.submit();
   }
 
   function logout() {
     delete localStorage['fractured.currentLogin'];
     delete localStorage['fractured.currentSession']
-    ajaxReadFile('logout.php', reloadWindow);
+    ajaxReadFile('db/logout.php', reloadWindow);
   }
 
 /////////////////////////////////////////////////////////////////////////

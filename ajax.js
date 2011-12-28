@@ -28,6 +28,36 @@ function ajaxReadFile(filename, callback, nocache)
   http.send(null); 
 }
 
+//Posts request to server, responds when done with response data to callback function
+function ajaxPost(url, params, callback)
+{ 
+  var http = new XMLHttpRequest();
+
+  http.onreadystatechange = function()
+  { 
+    if(http.readyState == 4)
+      if(http.status == 200) {
+        consoleWrite("POST: " + url + "&" + params);
+        if (callback)
+          callback(http.responseText);
+      } else {
+        if (callback)
+          callback();    //Error callback
+        else
+          consoleWrite("Ajax Post Error: returned status code " + http.status + " " + http.statusText);
+      }
+  }
+
+  http.open("POST", url, true); 
+
+  //Send the proper header information along with the request
+  http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  http.setRequestHeader("Content-length", params.length);
+  http.setRequestHeader("Connection", "close");
+
+  http.send(params); 
+}
+
 //Saves a file to the server, must exist and be writable
 function ajaxWriteFile(filename, data, callback) {
   var http = new XMLHttpRequest();

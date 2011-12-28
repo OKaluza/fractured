@@ -12,7 +12,7 @@
 
   <li><span class="fly" tabindex="1">Saved Sessions</span>
     <ul>
-      <li><span onclick="uploadState(<?php echo $_SESSION['session_id'];?>);">Save</span></li>
+      <li><span onclick="uploadState();">Save</span></li>
       <li><span onclick="loadSelectedState();">Load</span></li>
       <li><span onclick="deleteSelectedState();">Delete</span></li>
       <select size="10" class="savelist" id="sessions" ondblclick="loadSelectedState()">

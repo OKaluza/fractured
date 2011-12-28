@@ -23,6 +23,7 @@ try
   } 
   else 
   {
+    # Returned from openid authentication, check valid
     if ($openid->validate())
     {
       $attribs = $openid->getAttributes();
