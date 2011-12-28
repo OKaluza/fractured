@@ -6,13 +6,6 @@
   //Always filter by session user id, so can't access another users data with GET url alone
   $user = $_SESSION["user_id"];
   $session = $_GET['id'];
-  $set = $_GET['setid'];
-  if ($set)
-  {
-    //Simply set passed id in session variable and return
-    $_SESSION['session_id'] = $set;
-    exit();
-  }
 
   //Retrieve specific ID or list?
   if (isset($session))
@@ -27,7 +20,6 @@
         echo $row["data"];
       else
         echo gzinflate($row["data"]);
-      //exit();
       //Update current session id
       $_SESSION['session_id'] = $session;
     }

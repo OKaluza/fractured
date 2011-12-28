@@ -5,14 +5,13 @@
 
   $user = $_SESSION['user_id'];
   $login = $_SESSION['login'];
-  $hash = hash('sha256', $login);
 
   //Delete old entry
-  $query = "DELETE FROM login WHERE user_id = '$user' AND hash = '$hash';";
+  $query = "DELETE FROM login WHERE user_id = '$user' AND hash = '$login';";
   mysql_query($query);
 
   mysql_close();
 
+  //Kill the session
   session_destroy();
-  //header("Location: /");	
 ?>

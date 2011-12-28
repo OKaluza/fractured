@@ -11,6 +11,8 @@
 <link rel="stylesheet" type="text/css" href="reset.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
+<script type="text/javascript" src="sha256.js"></script>
+
 <script type="text/javascript" src="colourPicker.js"></script>
 <script type="text/javascript" src="index.js"></script>
 <script type="text/javascript" src="utils.js"></script>
@@ -371,11 +373,10 @@
   <div id="openid_form" class="popup">
     <div class="popclose" onclick="toggle('openid_form');">X</div>
     <img src="media/logos/logo_openid.png" alt="OpenID">
-    <form action="authenticate.php" method="post" name="login">
+    <form action="authenticate.php" method="post" name="login_form">
       <input type="text" value="" name="openid_url" id="openid" style="width: 194px;"/>
-      <input type="submit" class="right" value="Login">
+      <input type="submit" class="right" value="Login" onclick="toggle('openid_form');">
     </form>
-    <!--span onclick="login();" style="color: #666;">Login</span-->
   </div>
 
   <!-- Colour picker -->

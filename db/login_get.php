@@ -1,31 +1,33 @@
 <?php
   session_start();
 
+  $user = $_POST['user'];
+  $hash = $_POST['hash'];
+
+  //Once off challenge code, get then clear
+  if (time() - $_SESSION['time'] > 30) exit();  //Expired code! (Shouldn't happen)
+  $code = $_SESSION['code'];
+  unset($_SESSION['code']);
+
   include("connect.php");
 
-  $user = $_GET['user'];
-  $login = $_GET['login'];
-  $hash = hash('sha256', $login);
-  $json = '{"id" : "", "user" : "0"}';
-
-  $query = "SELECT * FROM login WHERE user_id = '$user' AND hash = '$hash';";
+  //Load all this user's login entries
+  $query = "SELECT * FROM user,login WHERE user_id = '$user'";
   $result = mysql_query($query);
-  if (mysql_num_rows($result))
+  while ($row = mysql_fetch_array($result))
   {
-    //Found a saved login, lookup the user details
-    $query = "SELECT * FROM user WHERE id = '$user';";
-    $result = mysql_query($query);
-    if (mysql_num_rows($result))
+    //Found a saved login, check the hash
+    //Re-hashed using once-off code
+    if ($hash == hash('sha256', $row["hash"] . $code))
     {
-      $row = mysql_fetch_assoc($result);
-      $_SESSION['user_id'] = $row["id"];
+      $_SESSION['user_id'] = $user;
       $_SESSION['name'] = $row["name"];
       $_SESSION['email'] = $row["email"];
-      $_SESSION['login'] = $login;
       $openid = $row["openid"];
 
       //Delete old entry
-      $query = "DELETE FROM login WHERE user_id = '$user' AND hash = '$hash';";
+      $oldhash = $row["hash"];
+      $query = "DELETE FROM login WHERE user_id = '$user' AND hash = '$oldhash';";
       mysql_query($query);
 
       //Create a new login entry
@@ -33,7 +35,17 @@
 
       //JSON response
       $json = '{"id" : "' . $login . '", "user" : "' . $user . '"}';
+      break;
     }
+  }
+
+  if (!isset($json))
+  {
+    // Attempt to use expired login?
+    // Delete all logins for this user to force re-auth
+    $query = "DELETE FROM login WHERE user_id = '$user';";
+    mysql_query($query);
+    $json = '{"id" : "", "user" : "0"}';
   }
 
   //Return result
