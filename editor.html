@@ -7,8 +7,10 @@
 
 <!-- CodeMirror-->
 <script src="codemirror/lib/codemirror.js"></script>
-<link rel="stylesheet" href="codemirror/lib/codemirror.css">
+<script src="codemirror/lib/searchcursor.js"></script>
+<script src="codemirror/lib/search.js"></script>
 <script src="codemirror/mode/clike/clike.js"></script>
+<link rel="stylesheet" href="codemirror/lib/codemirror.css">
 <link rel="stylesheet" href="codemirror/theme/fractured.css">
 
 <style type="text/css">
@@ -96,7 +98,8 @@ var formula;
       lineNumbers: true,
       firstLineNumber: window.opener.formulaOffsets[type],
       indentUnit: 2,
-      tabMode: "classic",
+      tabSize: 2,
+      /*tabMode: "classic",*/
       matchBrackets: true
     });
     sel = document.getElementById('theme');
@@ -111,38 +114,11 @@ var formula;
   }
 
 
-/* Codemirror search/replace functions */
-var lastPos = null, lastQuery = null, marked = [];
-
-function unmark() {
-  for (var i = 0; i < marked.length; ++i) marked[i]();
-  marked.length = 0;
-}
-
 function search() {
-  unmark();                     
-  var text = document.getElementById("query").value;
-  if (!text) return;
-  for (var cursor = editor.getSearchCursor(text); cursor.findNext();)
-    marked.push(editor.markText(cursor.from(), cursor.to(), "searched"));
-
-  if (lastQuery != text) lastPos = null;
-  var cursor = editor.getSearchCursor(text, lastPos || editor.getCursor());
-  if (!cursor.findNext()) {
-    cursor = editor.getSearchCursor(text);
-    if (!cursor.findNext()) return;
-  }
-  editor.setSelection(cursor.from(), cursor.to());
-  lastQuery = text; lastPos = cursor.to();
+  CodeMirror.searchFor(editor, document.getElementById("query").value);
 }
 
 function replace() {
-  unmark();
-  var text = document.getElementById("query").value,
-      replace = document.getElementById("replace").value;
-  if (!text) return;
-  for (var cursor = editor.getSearchCursor(text); cursor.findNext();)
-    cursor.replace(replace);
 }
 </script>
 

@@ -33,6 +33,7 @@ div.row input[type="text"] {width: 100px;}
   margin: 2px; padding: 2px;  
   background: #ffe;
   border-radius: 5px;
+overflow:auto;
 }
 .message {font-family: monospace; font-size: 9pt;}
 
