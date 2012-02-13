@@ -42,28 +42,23 @@
       <ul id="nav">
         <li><span class="fly" tabindex="1">Session</span>
           <ul class="dd">
-            <li><span class="fly" tabindex="1">Workspace</span>
-              <ul>
-                <li><span onclick="resetState();">New</span></li>
-                <li><span onclick="exportStateFile();">Export</span></li>
-                <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
-              </ul>
-            </li>
-            <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
+            <li><span onclick="resetState();">New</span></li>
+            <li><span onclick="exportStateFile();">Export</span></li>
+            <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
             <div id="session_menu"></div>
           </ul>
         </li>
         <li><span class="fly" tabindex="1">Fractal</span>
           <ul class="dd">
             <li><span onclick="saveFractal();">Save</span></li>
-            <li><span class="fly" tabindex="1">Saved fractals</span>
-              <ul>
+            <!--li><span class="fly" tabindex="1">Saved fractals</span>
+              <ul id="fractal-list">
                 <li><span onclick="selectedFractal($('stored'));">Load</span></li>
                 <li><span onclick="deleteFractal();">Delete</span></li>
                 <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
                 </select>
                 <div id="indicatorbg"><div id="indicator"></div></div>
-              </ul>
+              </ul-->
 
           <!--div class="gap"></div>
           <p><i><b>Saved Fractals:</b></i></p>
@@ -86,6 +81,8 @@
             <li><span onclick="exportFractalFile();">Export</span></li>
             <li><span onclick="filetype='fractal'; $('fileupload').click();">Import</span></li>
             <li><span onclick="filetype='palette'; $('fileupload').click();">Import Palette</span></li>
+            <li><hr></li>
+            <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
           </ul>
         </li>
         <li><span onclick="applyAndSave();">Draw</span></li>
@@ -112,7 +109,7 @@
           <li onmousedown="showPanel(this, 'panel1');" id="tab1" class="selected">Parameters</li>
           <li onmousedown="showPanel(this, 'panel2');" class="unselected">Formula</li>
           <li onmousedown="showPanel(this, 'panel3');" class="unselected">Colour</li>
-          <li onmousedown="showPanel(this, 'panel4');" class="unselected">Actions</li>
+          <li onmousedown="showPanel(this, 'panel4');" class="unselected">Saved</li>
           <li onmousedown="showPanel(this, 'panel5');" class="unselected">Info</li>
         </ul>
       </nav>
@@ -250,6 +247,12 @@
 
       <div class="panel" id="panel4" style="display: none">
         <form class="scroll">
+          <input type="button" onclick="selectedFractal($('stored'));" value="Load">
+          <input type="button" onclick="deleteFractal();" value="Delete">
+          <select size="20" class="fractal-list" id="stored" ondblclick="selectedFractal(this)">
+          </select>
+          <div id="indicatorbg"><div id="indicator"></div></div>
+
           <div class="divider"><span class="divider-label">Mouse Actions</span></div>
           <span onclick="$('testP').appendChild($('testC'))">Click to move</span>
           <div class="row" id="testC">
@@ -318,8 +321,8 @@
           <input type="button" value="Vertex" onClick="lineOffset=1; openEditor('shaders/shader2d.vert')"-->
         </div>
         <input type="button" value="Clear log" onClick="consoleClear()" ondblClick="$('debug').style.display='block'">
-            <textarea id="console2">
-            </textarea>
+            <!--textarea id="source-debug">
+            </textarea-->
         <div id="consolearea">
           <div id="console">
             <p>Fractured Studio v0.2 - Owen Kaluza, 2011</p>

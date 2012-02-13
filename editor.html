@@ -61,6 +61,10 @@ var filename;
 var type;
 var formula;
 
+  exportFile = function() {
+    window.opener.exportFile(filename, "text/fractal-formula", code.value);
+  }
+
   saveEditor = function() {
     editor.save();  //Updates textarea content
     window.opener.sources[filename] = code.value;
@@ -128,6 +132,7 @@ function replace() {
 
 <div id="buttons">
   <input type="button" value="Save" onclick="saveEditor()">
+  <input type="button" value="Export" onclick="exportFile()">
   <input type="button" value="Search >" onclick="search()">
   <input type="text" style="width: 15em" id="query" onkeypress="if(event.keyCode == 13 && this.value!='') search(); return true; ">
   <select id="theme" style="float: right" onchange="selectTheme(this)">

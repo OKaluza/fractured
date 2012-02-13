@@ -10,15 +10,15 @@
     <input type="hidden" id="sessid" name="session_id"/>
   </form>
 
+  <li><hr></li>
   <li><span class="fly" tabindex="1">Saved Sessions</span>
-    <ul>
-      <li><span onclick="uploadState();">Save</span></li>
-      <li><span onclick="loadSelectedState();">Load</span></li>
-      <li><span onclick="deleteSelectedState();">Delete</span></li>
-      <select size="10" class="savelist" id="sessions" ondblclick="loadSelectedState()">
-      </select>
+    <ul id="sessions">
     </ul>
   </li>
+  <li><hr></li>
+  <li><span onclick="uploadState();">Save</span></li>
+  <li><span onclick="deleteSelectedState();">Delete</span></li>
+
   <li><hr></li>
   <li><span onclick="logout();">Logout</span></li>
 

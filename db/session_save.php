@@ -33,7 +33,7 @@
 
       if ($result == 1)
         //New session inserted, save id
-        $_SESSION['session_id'] = mysql_insert_id();
+        $_SESSION['session_id'] = $sessid = mysql_insert_id();
       else
         $_SESSION['error'] = "Database error";
     }
@@ -45,6 +45,10 @@
 //echo $query;
 
     mysql_close();
-    header("Location: {$goto}");
+    //header("Location: {$goto}");
+  echo "<script language='javascript'>";
+  echo "localStorage['fractured.currentSession'] = " . $sessid . ";";
+  echo "window.location = '/'";
+  echo "</script>";
   exit();
 ?>
