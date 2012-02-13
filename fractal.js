@@ -333,6 +333,22 @@
     return code;
   }
 
+  ParameterSet.prototype.getField = function(id) {
+    //Check if a field is created by this parameter set
+    var field = $(id);
+    for (key in this)
+    {
+      if (typeof(this[key]) == 'object') {
+        if (this[key].input == field) return this[key];
+        if (typeof(this[key].input) == 'object') {
+          if (this[key].input[0] == field) return this[key];
+          if (this[key].input[1] == field) return this[key];
+        }
+      }
+    }
+    return null;
+  }
+
   //Read our parameter definitions from provided formula source
   ParameterSet.prototype.parseFormula = function(source) {
     var match;
@@ -527,7 +543,7 @@
     var element = document.getElementById(this.type + "_params");
     if (!element) alert("Element is null! " + type + " - " + name);
     if (element.hasChildNodes()) {
-      while (element.childNodes.length >= 1 )
+      while (element.childNodes.length > 0 )
         element.removeChild(element.firstChild );       
     }
 
@@ -767,8 +783,8 @@
 
   Fractal.prototype.newFormula = function(select) {
     var type = select;
-    if (type.indexOf('colour' > 0)) type = 'colour';
-    if (type.indexOf('transform' > 0)) type = 'transform';
+    if (type.indexOf('colour') > 0) type = 'colour';
+    if (type.indexOf('transform') > 0) type = 'transform';
 
     var label = prompt("Please enter name for new " + type + " formula", "");
     if (!label) return;
@@ -1449,7 +1465,7 @@
     formulaOffsets["inside_colour"] = fragmentShader.split("\n").length;
     fragmentShader += incolourcode;
         //###
-        $('console2').value = fragmentShader;
+        //$('source-debug').value = fragmentShader;
 
     fragmentShader += shader + complex;
 
@@ -1463,11 +1479,15 @@
     //Finally replace any @ symbols used to reference params in code
     fragmentShader = fragmentShader.replace(/@/g, "");
 
-    //Save for debugging
-    sources["gen-shader.frag"] = fragmentShader;
-    //ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
+    //Only recompile if data has changed!
+    if (sources["gen-shader.frag"] != fragmentShader) {
+      //Save for debugging
+      sources["gen-shader.frag"] = fragmentShader;
+      //ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
 
-    this.updateShader(fragmentShader);
+      this.updateShader(fragmentShader);
+    } else
+      consoleWrite("Build skipped, shader not changed");
   }
 
   Fractal.prototype.updateShader = function(fragmentShader, vertexShader) {

@@ -35,8 +35,10 @@
     {
       if ($count > 0) echo ',';
       $count++;
+      $datetime = strtotime($row["date"]);
+      $mysqldate = date("Y/m/d", $datetime);
       echo '{"id": "'. $row["id"] . '",';
-      echo ' "date": "'. $row["date"] . '",';
+      echo ' "date": "'. $mysqldate . '",';
       echo ' "description": "'. $row["description"] . '"}';
     }
     echo ']';

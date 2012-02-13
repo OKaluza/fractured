@@ -16,11 +16,17 @@ var filetype = 'fractal';
 
 var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt'
 
+  //WheelAction - field id and value
+  function WheelAction(id, value) {
+    this.id = id;
+    this.value = value;
+  }
+
   function defaultMouseActions() {
     mouseActions["left"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
     mouseActions["right"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
     mouseActions["middle"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
-    mouseActions["wheel"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["wheel"] = {'':new WheelAction('zoom',1.1), 'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
   }
 
   function consoleWrite(str) {
@@ -406,11 +412,11 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       if (desc == null) return;
       var descField = document.getElementById("desc");
       descField.setAttribute("value", desc);
-      session_id = 0;
+      //session_id = 0;   ??
     }
 
     var idField = document.getElementById("sessid");
-    idField.setAttribute("value", currentSession);
+    idField.setAttribute("value", currentSession ? currentSession : 0);
 
     var hiddenField = document.createElement("input");
     hiddenField.setAttribute("type", "hidden");
@@ -456,23 +462,32 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   function loadStateList(data) {
     //Load list of saved states/sessions from server
     try {
-      var select = document.getElementById('sessions');
-      select.options.length = 0;  //Clear list
+      //Get selected id 
+      currentSession = parseInt(localStorage["fractured.currentSession"]);
+
+      //Clear & repopulate list
+      var menu = document.getElementById('sessions');
+      if (menu.hasChildNodes()) {
+        while (menu.childNodes.length > 0 )
+        menu.removeChild(menu.firstChild );
+      }
       var list = JSON.parse(data);
       var i;
       for (i=0; i<list.length; i++) {
-        var o = document.createElement('option');
-        o.value = list[i].id;
-        o.text = list[i].date + " " + list[i].description;
-        select.options.add(o);
+        var entry = document.createElement("li");
+        var span = document.createElement("span");
+        if (currentSession == list[i].id) {
+          entry.id = "selected_session"
+        }
+        span.onclick = Function("loadSession(" + list[i].id + ")");
+        span.appendChild(span.ownerDocument.createTextNode(list[i].date + "\n" + list[i].description));
+        entry.appendChild(span);
+        menu.appendChild(entry);
       }
 
-      //Get selected id 
-      currentSession = parseInt(localStorage["fractured.currentSession"]);
       if (currentSession) {
         //Have a saved session #, get the data
         ajaxReadFile('setvariable.php?name=session_id?value=' + currentSession);
-        if ($('sessions')) $('sessions').value = currentSession;
       }
 
     } catch(e) {
@@ -480,28 +495,18 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     }
   }
 
-  function loadSelectedState()
+  function loadSession(id)
   {
-     var select = $('sessions');
-     var idx = select.selectedIndex;
-     if (idx >= 0)
-     {
-       var id = select.options[idx].value;
-       currentSession = id;   //Set the current session id
-       $('sessions').value = currentSession;
-       ajaxReadFile('db/session_get.php?id=' + id, importState);
-     }
+     //TODO: Highlight css current session in menu
+     currentSession = id;
+     ajaxReadFile('db/session_get.php?id=' + id, importState);
   }
 
   function deleteSelectedState()
   {
-     if (!confirm('Delete this session from the server?')) return;
-     var select = document.getElementById('sessions');
-     var idx = select.selectedIndex;
-     if (idx >= 0)
-     {
-       var id = select.options[idx].value;
-       ajaxReadFile('db/session_delete.php?id=' + id, reloadWindow);
+     if (currentSession && confirm('Delete this session from the server?')) {
+       ajaxReadFile('db/session_delete.php?id=' + currentSession, reloadWindow);
+       currentSession = localStorage["fractured.currentSession"] = 0;
      }
   }
 
@@ -530,7 +535,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
 
   function importState(source) {
     var parsed = JSON.parse(source);
-    if (!parsed || !confirm('This will overwrite everything!')) return;
+    if (!parsed || !confirm('Loading new session. This will overwrite everything!')) return;
     try {
       localStorage.clear(); //clear the entire database
       for (key in parsed)
@@ -932,42 +937,48 @@ var rztimeout = undefined;
   }
 
   function canvasMouseWheel(event, mouse) {
-    //alert(event.spin);
+    var action = null;
     if (event.shiftKey && event.altKey) {
-      return true;
+      action = mouseActions["wheel"]["shift+alt"];
     } else if (event.shiftKey && event.ctrlKey) {
-      return true;
+      action = mouseActions["wheel"]["shift+ctrl"];
     } else if (event.altKey && event.ctrlKey) {
-      return true;
+      action = mouseActions["wheel"]["ctrl+alt"];
     } else if (event.ctrlKey) {
-      return true;
+      action = mouseActions["wheel"]["ctrl"];
     } else if (event.shiftKey) {
-      /* SHIFT + scroll */
-      fractal.origin.rotate += 10 * event.spin;
+      action = mouseActions["wheel"]["shift"];
     } else if (event.altKey) {
-      //Test of assigned function
-      var id = mouseActions["wheel"]["ctrl"];
-      if (id) {
-        $(id).value = parseFloat($(id).value) + event.spin;
-        applyAndSave();
-      } else
-        /* ALT + scroll -> rotate */
-        fractal.origin.rotate += event.spin;
+      action = mouseActions["wheel"]["alt"];
     } else {
       /* Zoom */
+      action = new WheelAction(null, 0);
       if (event.spin < 0)
          fractal.applyZoom(1/(-event.spin * 1.1));
       else
          fractal.applyZoom(event.spin * 1.1);
     }
 
+    //Set assigned field
+    if (!action) return true; //Default browser action
+    if (action.id) {
+      $(action.id).value = parseFloat($(action.id).value) + event.spin * action.value;
+      //applyAndSave();
+    }
+
+
     //Limit to range [0-360)
     if (fractal.origin.rotate < 0) fractal.origin.rotate += 360;
     fractal.origin.rotate %= 360;
-
     fractal.copyToForm();
-    fractal.draw();
-    saveState();  //Save param changes
+
+    //fractal.copyToForm();
+    //fractal.draw();
+    //saveState();  //Save param changes
+      applyAndSave();
+
+
+
   }
 
   function bgColourMouseClick() {
@@ -998,13 +1009,15 @@ var editorFilename;
   function saveImageJPEG() {
     var canvas = document.getElementById("fractal-canvas");
     //window.open(canvas.toDataURL());
-    window.open(canvas.toDataURL("image/jpeg"));
+    //window.open(canvas.toDataURL("image/jpeg"));
     //addImage(canvas.toDataURL("image/png"));
+    exportFile(fractal.name + ".jpg", "jpeg", canvas.toDataURL("image/jpeg"));
   }
 
   function saveImagePNG() {
     var canvas = document.getElementById("fractal-canvas");
-    window.open(canvas.toDataURL("image/png"));
+    //window.open(canvas.toDataURL("image/png"));
+    exportFile(fractal.name + ".png", "png", canvas.toDataURL("image/png"));
   }
 
   function addImage(url){
@@ -1017,15 +1030,43 @@ var editorFilename;
 /////////////////////////////////////////////////////////////////////////
 //Colour picker functions
 
-handleFormMouseDown = function(e) {
+handleFormMouseDown = function(event) {
   //Event delegation from parameters form to edit colour params
-  e = e || window.event;
-  if (e.target.className == "colour") colours.edit(e.target);
-  if (e.target.type == 'text' || e.target.type == 'number') {
-    consoleWrite(e.target.id + " == " + e.target.value);
+  event = event || window.event;
+  if (event.target.className == "colour") colours.edit(event.target);
+  if (event.target.type == 'text' || event.target.type == 'number') {
+    //Assigning actions to fields? (unfinished?)
+    //Parameter values
+    var types = ["base", "fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
+    for (t in types) {
+      var params = fractal[types[t]].currentParams;
+      var field;
+      if (params)
+        field = params.getField(event.target.id);
+      //if (field)
+      //  alert(field.value);
+    }
+
+    consoleWrite(event.target.id + " == " + event.target.value);
     //Test, on middle click (1) assign alt+scroll function to selected field
-    if (e.button == 1) {
-      mouseActions["wheel"]["ctrl"] = e.target.id;
+    if (event.button == 1) {
+      var value = prompt("Enter value", 1);
+      if (event.shiftKey && event.altKey) {
+        mouseActions["wheel"]["shift+alt"] = new WheelAction(event.target.id, value);
+      } else if (event.shiftKey && event.ctrlKey) {
+        mouseActions["wheel"]["shift+ctrl"] = new WheelAction(event.target.id, value);
+      } else if (event.altKey && event.ctrlKey) {
+        mouseActions["wheel"]["ctrl+alt"] = new WheelAction(event.target.id, value);
+      } else if (event.ctrlKey) {
+        mouseActions["wheel"]["ctrl"] = new WheelAction(event.target.id, value);
+      } else if (event.shiftKey) {
+        mouseActions["wheel"]["shift"] = new WheelAction(event.target.id, value);
+      } else if (event.altKey) {
+        mouseActions["wheel"]["alt"] = new WheelAction(event.target.id, value);
+      } else {
+        /* Zoom */
+      }
+
       return false;
     }
   }
