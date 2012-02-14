@@ -12,7 +12,7 @@
 
   <li><hr></li>
   <li><span class="fly" tabindex="1">Saved Sessions</span>
-    <ul id="sessions">
+    <ul id="sessions" class="selectlist">
     </ul>
   </li>
   <li><hr></li>

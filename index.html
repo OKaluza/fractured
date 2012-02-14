@@ -51,31 +51,16 @@
         <li><span class="fly" tabindex="1">Fractal</span>
           <ul class="dd">
             <li><span onclick="saveFractal();">Save</span></li>
-            <!--li><span class="fly" tabindex="1">Saved fractals</span>
-              <ul id="fractal-list">
-                <li><span onclick="selectedFractal($('stored'));">Load</span></li>
-                <li><span onclick="deleteFractal();">Delete</span></li>
-                <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
-                </select>
-                <div id="indicatorbg"><div id="indicator"></div></div>
-              </ul-->
-
-          <!--div class="gap"></div>
-          <p><i><b>Saved Fractals:</b></i></p>
-          <input type="button" value="Load" onclick="selectedFractal($('stored'));">
-          <input type="button" value="Delete" onclick="deleteFractal();">
-          <select size="10" class="savelist" id="stored" ondblclick="selectedFractal(this)">
-          </select>
-          <div id="indicatorbg"><div id="indicator"></div></div>
-          -->
-
-
-
-            </li>
+            <li><span onclick="deleteFractal();">Delete</span></li>
             <li><hr></li>
             <li><span onclick="saveImageJPEG();">Save JPEG</span></li>
             <li><span onclick="saveImagePNG();">Save PNG</span></li>
             <!--li><span onclick="toggle('popup');">Test</span></li-->
+            <li><hr></li>
+            <li><span class="fly" tabindex="1">Saved Fractals</span>
+              <ul id="fractals" class="selectlist">
+              </ul>
+            </li>
             <li><hr></li>
             <!--li><span onclick="exportFractal();">Export</span></li-->
             <li><span onclick="exportFractalFile();">Export</span></li>
@@ -247,12 +232,6 @@
 
       <div class="panel" id="panel4" style="display: none">
         <form class="scroll">
-          <input type="button" onclick="selectedFractal($('stored'));" value="Load">
-          <input type="button" onclick="deleteFractal();" value="Delete">
-          <select size="20" class="fractal-list" id="stored" ondblclick="selectedFractal(this)">
-          </select>
-          <div id="indicatorbg"><div id="indicator"></div></div>
-
           <div class="divider"><span class="divider-label">Mouse Actions</span></div>
           <span onclick="$('testP').appendChild($('testC'))">Click to move</span>
           <div class="row" id="testC">
@@ -313,6 +292,7 @@
       </div>
 
       <div class="panel scroll" id="panel5" style="display: none">
+        <div id="indicatorbg"><div id="indicator"></div></div>
         <div id="debug" style="display: none">
           <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
           <input type="button" value="Header" onClick="lineOffset=1; openEditor('shaders/fractal-header.frag')">

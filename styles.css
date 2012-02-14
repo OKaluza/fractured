@@ -122,7 +122,7 @@ canvas#palette {
 
 #coords {float: left; background-color: #cb9; padding: 0px 5px; margin: 3px; border-radius: 4px;}
 
-#indicatorbg {width: 98%; background-color: #666; margin: 1px; border-radius: 4px;}
+#indicatorbg {width: 100%; background-color: #666; margin: 1px; border-radius: 4px;}
 #indicator {width: 0px; height: 5px; background-color: #0b2; margin: 0px; border-radius: 4px;}
 
 .savelist {width: 200px;}
@@ -234,7 +234,10 @@ nav {float: left;}
 #nav ul.dd li ul:hover 
   { left:129px; top:-3px; display: block }
 
-#selected_session {border: 1px solid #777;}
+.selected_item {border: 1px solid #777;}
+.selectlist {overflow-y:auto; overflow-x: hidden; max-height: 300px;}
+.selectlist li {width: 200px;}
+.selectlist span {min-width: 194px;}
 
 /* Tab navigation */
 #tabs ul {

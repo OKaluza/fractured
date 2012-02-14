@@ -12,6 +12,7 @@ var showparams = true;
 var hasChanged = false;
 var editorTheme = 'dark';
 var currentSession = 0; //Selected session
+var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 
 var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt'
@@ -286,34 +287,70 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function deleteFractal() {
-    var sel = $('stored');
-    var selidx = sel.selectedIndex;
-    var name = sel[selidx].text;
-    if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
-    var opt = sel[selidx];
-    //alert("[" + opt.idx + "] " + opt.text + " == " + opt.value);
-    sel.remove(selidx);
-    try {
-      localStorage.removeItem("fractured.names." + opt.idx);
-      localStorage.removeItem("fractured.fractal." + opt.idx);
-    } catch(e) {
-      alert('Storage delete error! ' + e);
+    if (currentFractal >= 0) {
+      var idx = currentFractal;
+      var name = localStorage["fractured.names." + idx];
+      if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
+      try {
+        localStorage.removeItem("fractured.names." + idx);
+        localStorage.removeItem("fractured.fractal." + idx);
+        currentFractal = localStorage["fractured.currentFractal"] = -1;
+        populateFractals();
+      } catch(e) {
+        alert('Storage delete error! ' + e);
+      }
     }
   }
 
-  function selectedFractal(select) {
-    var choice = select[select.selectedIndex];
-    fractal.load(choice.value);
-    fractal.name = choice.text;
-    $('nameInput').value = choice.text;
+  function populateFractals() {
+    //Clear & repopulate list
+    var menu = document.getElementById('fractals');
+    if (menu.hasChildNodes()) {
+      while (menu.childNodes.length > 0 )
+      menu.removeChild(menu.firstChild );
+    }
+
+    var idx_str = localStorage["fractured.fractals"];
+    if (idx_str) {
+      var idx = parseInt(idx_str);
+      var opt;
+      for (var i=1; i<=idx; i++) {
+        var namestr = localStorage["fractured.names." + i];
+        if (!namestr) continue; //namestr = "unnamed";
+        var source = localStorage["fractured.fractal." + i];
+
+        var entry = document.createElement("li");
+        var span = document.createElement("span");
+        if (currentFractal == i) {
+          entry.className = "selected_item"
+        }
+        span.onclick = Function("selectedFractal(" + i + ")");
+        span.appendChild(span.ownerDocument.createTextNode(namestr));
+        entry.appendChild(span);
+        menu.appendChild(entry);
+      }
+
+      //Update index if unused at end
+      if (opt && i > opt.idx+1)
+        localStorage["fractured.fractals"] = opt.idx;
+    }
+  }
+
+  function selectedFractal(idx) {
+    localStorage["fractured.currentFractal"] = currentFractal = idx;
+    fractal.load(localStorage["fractured.fractal." + idx]);
+    fractal.name = localStorage["fractured.names." + idx];
+    $('nameInput').value = fractal.name;
     applyAndSave();
+    populateFractals();
   }
 
   function clearFractal() {
     fractal.resetDefaults();
     fractal.formulaDefaults();
     //De-select
-    $('stored').selectedIndex = -1;
+    currentFractal = -1;
+    populateFractals();
   }
 
   function exportFractal() {
@@ -335,17 +372,16 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     source = fractal + "";
     //Save current fractal to list
     if (!supports_html5_storage()) return;
-    var sel = $('stored')
-    if (sel.length > 0 && sel.selectedIndex >= 0) {
+    if (currentFractal >= 0) {
       //Save existing
-      var choice = sel[sel.selectedIndex];
-      if (choice.text == fractal.name) {
-        if (confirm('Overwrite "' + choice.text + '"?')) {
-          var idx = choice.idx;
-          choice.text = fractal.name; //Update name in case changed
+      var name = localStorage["fractured.names." + currentFractal];
+      if (name == fractal.name) {
+        if (confirm('Overwrite "' + name + '"?')) {
+          var idx = currentFractal;
           try {
             localStorage["fractured.names." + idx] = fractal.name; //namestr;
             localStorage["fractured.fractal." + idx] = source;
+            populateFractals();
           } catch(e) {
             alert('Storage error! ' + e);
           }
@@ -355,6 +391,8 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     }
 
     //Save new
+    var idx_str = localStorage["fractured.fractals"];
+    var idx = (idx_str ? parseInt(idx_str) : 0);
     //Get name and check list for dupes
     var namestr = fractal.name;
     if (!namestr) namestr = "unnamed";
@@ -362,33 +400,28 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     var checkstr = namestr;
     var i;
     do {
-       for (i=0; i<sel.options.length; i++) {
-          if (checkstr == sel.options[i].text) {
+       for (i=0; i<=idx; i++) {
+          if (checkstr == localStorage["fractured.names." + i]) {
              checkstr = namestr + (++add);
              break;
           }
        }
-    } while (i < sel.options.length);
+    } while (i <= idx);
     if (namestr != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
     namestr = checkstr;
-    //Add to select
-    var opt = new Option(namestr, source);
-    sel.options[sel.length] = opt;
-
-    var idx_str = localStorage["fractured.fractals"];
-    var idx = (idx_str ? parseInt(idx_str) : 0);
-    idx++;
-    //Save index/id with option
-    opt.idx = idx;
+    idx++;  //Increment index
     try {
       localStorage["fractured.names." + idx] = namestr;
       localStorage["fractured.fractal." + idx] = source;
       localStorage["fractured.fractals"] = idx;
+      localStorage["fractured.currentFractal"] = currentFractal = idx;
+      $('nameInput').value = namestr;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Storage error! ' + e);
       //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
+    populateFractals();
   }
 
   function resetState() {
@@ -398,6 +431,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       if (login) localStorage["fractured.currentLogin"] = login; //Restore login
       ajaxReadFile('setvariable.php?name=session_id?value=0', reloadWindow);
       currentSession = 0;  //No sessions to select
+      currentFractal = -1;  //No fractals to select
       //window.location.reload(false);
     }
     //localStorage.removeItem("fractured.formulae");
@@ -477,7 +511,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         var entry = document.createElement("li");
         var span = document.createElement("span");
         if (currentSession == list[i].id) {
-          entry.id = "selected_session"
+          entry.className = "selected_item"
         }
         span.onclick = Function("loadSession(" + list[i].id + ")");
         span.appendChild(span.ownerDocument.createTextNode(list[i].date + "\n" + list[i].description));
@@ -497,17 +531,16 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
 
   function loadSession(id)
   {
-     //TODO: Highlight css current session in menu
-     currentSession = id;
-     ajaxReadFile('db/session_get.php?id=' + id, importState);
+    currentSession = id;
+    ajaxReadFile('db/session_get.php?id=' + id, importState);
   }
 
   function deleteSelectedState()
   {
-     if (currentSession && confirm('Delete this session from the server?')) {
-       ajaxReadFile('db/session_delete.php?id=' + currentSession, reloadWindow);
-       currentSession = localStorage["fractured.currentSession"] = 0;
-     }
+    if (currentSession && confirm('Delete this session from the server?')) {
+      ajaxReadFile('db/session_delete.php?id=' + currentSession, reloadWindow);
+      currentSession = localStorage["fractured.currentSession"] = 0;
+    }
   }
 
   function reloadWindow(temp)
@@ -525,11 +558,13 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     //Get current state in local storage minus session/login details
     var login = localStorage["fractured.currentLogin"];
     var session = localStorage["fractured.currentSession"];
+    var cf = localStorage["fractured.currentFractal"];
     delete localStorage["fractured.currentSession"];
     delete localStorage["fractured.currentLogin"];
     var source = JSON.stringify(localStorage);
     localStorage["fractured.currentLogin"] = login;
     localStorage["fractured.currentSession"] = session;
+    localStorage["fractured.currentFractal"] = cf;
     return source;
   }
 
@@ -542,6 +577,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         localStorage[key] = parsed[key];
       //Replace session id, not saved in state data
       localStorage["fractured.currentSession"] = currentSession;
+      localStorage["fractured.currentFractal"] = currentFractal;
       window.location.reload(false);
     } catch(e) {
       alert('Error! ' + e);
@@ -598,30 +634,11 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
 
     //Get list of saved fractals
     if (!supports_html5_storage()) return;
-    var storedlist = $('stored').options;
-    storedlist.length = 0;  //Clear list
-    var idx_str = localStorage["fractured.fractals"];
-    if (idx_str) {
-      var idx = parseInt(idx_str);
-      var opt;
-      for (var i=1; i<=idx; i++) {
-        var namestr = localStorage["fractured.names." + i];
-        if (!namestr) continue; //namestr = "unnamed";
-        var source = localStorage["fractured.fractal." + i];
-        opt = new Option(namestr, source);
-        storedlist[storedlist.length] = opt;  //Insert at end
-        //if (storedlist.length > 0 && storedlist[0])  //Insert at beginning
-        //  storedlist.add(opt, storedlist[0]);
-        //else
-        //  storedlist.add(opt);
-        //Save index/id on option
-        opt.idx = i;
-      }
 
-      //Update index if unused at end
-      if (opt && i > opt.idx+1)
-        localStorage["fractured.fractals"] = opt.idx;
-    }
+    //Get selected id 
+    currentFractal = parseInt(localStorage["fractured.currentFractal"]);
+
+    populateFractals();
 
     //Show an indicator, assumes 5mb of local storage
     var size = JSON.stringify(localStorage).length;
@@ -640,11 +657,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       fractal.name = localStorage["fractured.name"];
       $('nameInput').value = fractal.name;
     }
-
-    //var sel = $('stored')
-    //sel.selectedIndex = sel.length-1;
-    //if (sel.selectedIndex >= 0)
-    //   selectedFractal(sel);
   }
 
   function saveState() {
@@ -798,6 +810,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   function logout() {
     delete localStorage['fractured.currentLogin'];
     delete localStorage['fractured.currentSession']
+    delete localStorage['fractured.currentFractal']
     ajaxReadFile('db/logout.php', reloadWindow);
   }
 
