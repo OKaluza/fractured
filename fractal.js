@@ -707,6 +707,7 @@
     this["outside_colour"] = new Formula("outside_colour");
 
     this.resetDefaults();
+    this.copyToForm();
   }
 
 //Actions
@@ -749,6 +750,7 @@
   }
 
   Fractal.prototype.resetDefaults = function() {
+      consoleWrite("resetDefaults<hr>");
     //Default aspect & parameters
     this.name = "unnamed"
     this.width = window.innerWidth - (showparams ? 390 : 4);
@@ -761,10 +763,6 @@
 
     //Reset default base params
     this["base"] = new Formula("base");
-
-    //Load parameters for default formula selections
-    //this.loadParams();
-    this.copyToForm();
   }
 
   Fractal.prototype.formulaDefaults = function() {
@@ -906,6 +904,7 @@
 
   //Load fractal from file
   Fractal.prototype.load = function(source) {
+      consoleWrite("load<hr>");
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
@@ -1346,6 +1345,7 @@
 
 
   Fractal.prototype.loadParams = function() {
+      consoleWrite("loadParams<hr>");
     //Parse param fields from formula code
     this["base"].select();
     this["fractal"].select();
@@ -1403,6 +1403,7 @@
 
   //Update form controls with fractal data
   Fractal.prototype.copyToForm = function() {
+    consoleWrite("copyToForm<hr>");
     document.inputs.elements["nameInput"].value = this.name;
     document.inputs.elements["widthInput"].value = this.width;
     document.inputs.elements["heightInput"].value = this.height;
