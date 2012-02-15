@@ -26,10 +26,12 @@ main_function()
   post_transform_init();
     
   float inc = pixelsize / real(antialias); //Width of variable over fragment
-  for (int j=0; j<antialias; j++)
+  for (int j=0; j<16; j++)
   {
-    for (int k=0; k<antialias; k++)
+    if (j >= antialias) break;
+    for (int k=0; k<16; k++)
     {
+      if (k >= antialias) break;
       //Reset fractal
       pixel = coord + complex(real(k)*inc, real(j)*inc);
       pre_transform_reset();

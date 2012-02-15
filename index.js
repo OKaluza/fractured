@@ -7,6 +7,7 @@ var colours;
 var sources = {};
 var labels = {};
 var formulaOffsets = {}; //line numbering offset counts for each formula
+var antialias = 1;
 var autoSize = true;
 var showparams = true;
 var hasChanged = false;
@@ -40,57 +41,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     var console = document.getElementById('console');
     console.innerHTML = '';
   }
-
-   //Stack trace
-    Function.prototype.trace = function()
-    {
-        var trace = [];
-        var current = this;
-        while(current)
-        {
-            trace.push(current.signature());
-            current = current.caller;
-        }
-        return trace;
-    }
-    Function.prototype.signature = function()
-    {
-        var signature = {
-            name: this.getName(),
-            params: [],
-            toString: function()
-            {
-                //var params = this.params.length > 0 ?
-                //    "'" + this.params.join("', '") + "'" : "";
-                //return this.name + "(" + params + ")"
-                return this.name + "()"
-            }
-        };
-        if(this.arguments)
-        {
-            for(var x=0; x<this .arguments.length; x++)
-                signature.params.push(this.arguments[x]);
-        }
-        return signature;
-    }
-    Function.prototype.getName = function()
-    {
-        if(this.name)
-            return this.name;
-        var definition = this.toString().split("\n")[0];
-        var exp = /^function ([^\s(]+).+/;
-        if(exp.test(definition))
-            return definition.split("\n")[0].replace(exp, "$1") || "anonymous";
-        return "anonymous: " + definition;
-    }
-
-  function consoleTrace() {
-    var trace = arguments.callee.trace();
-    consoleWrite('<hr>');
-    consoleWrite(trace.join("<br/>\n"));
-    consoleWrite('<hr>');
-  }
-
 
   function pageStart() {
     //Default editor line offset
@@ -258,7 +208,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     defaultMouse = document.mouse = canvas.mouse;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
-    document.inputs.elements["autosize"].checked = autoSize;
     window.onresize = autoResize;
     window.onbeforeunload = beforeUnload;
 
@@ -267,6 +216,8 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
 
     //Create a fractal object
     fractal = new Fractal(canvas, webgl);
+    fractal.antialias = antialias;
+    setAntiAliasMenu();
 
     //Colour editing and palette management
     colours = new ColourEditor();
@@ -274,6 +225,23 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     //Draw & update
     loadLastFractal();  //Restore last if any
     fractal.applyChanges();
+  }
+
+  function setAntiAlias(val) {
+    if (!val) val = prompt('Enter quality (1-16) Higher values may be very slow!');
+    if (val) {
+      antialias = val;
+      fractal.draw(antialias);
+      localStorage["fractured.antialias"] = antialias;
+      setAntiAliasMenu();
+    }
+  }
+
+  function setAntiAliasMenu() {
+    $('aa1').className = antialias == 1 ? 'selected_item' : '';
+    $('aa2').className = antialias == 2 ? 'selected_item' : '';
+    $('aa3').className = antialias == 3 ? 'selected_item' : '';
+    $('aa4').className = antialias > 3 ? 'selected_item' : '';
   }
 
 /////////////////////////////////////////////////////////////////////////
@@ -294,6 +262,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       try {
         localStorage.removeItem("fractured.names." + idx);
         localStorage.removeItem("fractured.fractal." + idx);
+        localStorage.removeItem("fractured.thumbnail." + idx);
         currentFractal = localStorage["fractured.currentFractal"] = -1;
         populateFractals();
       } catch(e) {
@@ -313,7 +282,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     var idx_str = localStorage["fractured.fractals"];
     if (idx_str) {
       var idx = parseInt(idx_str);
-      var opt;
       for (var i=1; i<=idx; i++) {
         var namestr = localStorage["fractured.names." + i];
         if (!namestr) continue; //namestr = "unnamed";
@@ -324,15 +292,23 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         if (currentFractal == i) {
           entry.className = "selected_item"
         }
+        if (localStorage["fractured.thumbnail." + i]) {
+          var img = new Image;
+          img.src = localStorage["fractured.thumbnail." + i];
+          img.className = "thumb";
+          span.appendChild(img);
+        }
         span.onclick = Function("selectedFractal(" + i + ")");
         span.appendChild(span.ownerDocument.createTextNode(namestr));
         entry.appendChild(span);
         menu.appendChild(entry);
       }
+    }
 
-      //Update index if unused at end
-      if (opt && i > opt.idx+1)
-        localStorage["fractured.fractals"] = opt.idx;
+    if (!entry) {
+      var entry = document.createElement("li");
+      entry.appendChild(entry.ownerDocument.createTextNode("(empty)"));
+      menu.appendChild(entry);
     }
   }
 
@@ -341,6 +317,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     fractal.load(localStorage["fractured.fractal." + idx]);
     fractal.name = localStorage["fractured.names." + idx];
     $('nameInput').value = fractal.name;
+    autoResize(autoSize);
     applyAndSave();
     populateFractals();
   }
@@ -381,6 +358,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
           try {
             localStorage["fractured.names." + idx] = fractal.name; //namestr;
             localStorage["fractured.fractal." + idx] = source;
+            localStorage["fractured.thumbnail." + idx] = thumbnail();
             populateFractals();
           } catch(e) {
             alert('Storage error! ' + e);
@@ -413,6 +391,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     try {
       localStorage["fractured.names." + idx] = namestr;
       localStorage["fractured.fractal." + idx] = source;
+      localStorage["fractured.thumbnail." + idx] = thumbnail();
       localStorage["fractured.fractals"] = idx;
       localStorage["fractured.currentFractal"] = currentFractal = idx;
       $('nameInput').value = namestr;
@@ -422,6 +401,33 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
     populateFractals();
+
+  }
+
+  function thumbnail() {
+   //Thumbnail image gen
+   var canvas = document.getElementById("fractal-canvas");
+      var oldh = fractal.height;
+      var oldw = fractal.width;
+      fractal.width = fractal.height = 40;
+      fractal.draw(12);
+
+   var result = canvas.toDataURL("image/png")
+
+/*
+ * Thumb generated by browser in canvas, badly aliased
+   var thumb = document.getElementById("thumb");
+   thumb.style.visibility='visible';
+   var context = thumb.getContext('2d');  
+   context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
+   var result = thumb.toDataURL("image/jpeg")
+   thumb.style.visibility='hidden';
+*/
+      fractal.width = oldw;
+      fractal.height = oldh;
+      //fractal.writeShader();
+      fractal.draw(antialias);
+   return result;
   }
 
   function resetState() {
@@ -519,6 +525,12 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         menu.appendChild(entry);
       }
 
+      if (!entry) {
+        var entry = document.createElement("li");
+        entry.appendChild(entry.ownerDocument.createTextNode("(empty)"));
+        menu.appendChild(entry);
+      }
+
       if (currentSession) {
         //Have a saved session #, get the data
         ajaxReadFile('setvariable.php?name=session_id?value=' + currentSession);
@@ -593,8 +605,11 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     if (f_source) {
        formulae = JSON.parse(f_source);
        selected = JSON.parse(localStorage["fractured.selected"]);
+       //Load global settings...
        editorTheme = localStorage["fractured.editorTheme"];
-       autoSize = document.inputs.elements["autosize"].checked = localStorage["fractured.autoSize"];
+       autoSize = document.inputs.elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
+       antialias = localStorage["fractured.antialias"];
+       setAntiAliasMenu();
 
     } else {
        //Standard formulae library
@@ -652,10 +667,10 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     //Load current fractal (as default)
     var source = localStorage["fractured.active"];
     if (source) {
-      //document.inputs.elements["autosize"].checked = autoSize = false;  //Disable autosize on load for now
       fractal.load(source);
       fractal.name = localStorage["fractured.name"];
       $('nameInput').value = fractal.name;
+      autoResize(autoSize);
     }
   }
 
@@ -691,6 +706,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       //Save some global settings
       localStorage["fractured.editorTheme"] = editorTheme;
       localStorage["fractured.autoSize"] = autoSize;
+      localStorage["fractured.antialias"] = antialias;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);
@@ -823,11 +839,11 @@ var rztimeout = undefined;
     if (rztimeout) clearTimeout(rztimeout);
     var timer = false;
     if (typeof(newval) == 'boolean')
-      autoSize = newval;
+      localStorage["fractured.autoSize"] = autoSize = newval;
     else
       timer = true;
 
-    if (autoSize) {
+    if (autoSize == true) {
       fractal.width = window.innerWidth - (showparams ? 388 : 2);
       fractal.height = window.innerHeight - 32;
       fractal.copyToForm();
@@ -893,7 +909,7 @@ var rztimeout = undefined;
     }
     select.style.display = 'none';
     fractal.copyToForm();
-    fractal.draw();
+    fractal.draw(antialias);
     saveState();  //Save param changes
   }
 
@@ -1035,7 +1051,7 @@ var editorFilename;
 
   function addImage(url){
     var img = document.createElement('img');
-    img.setAttribute("width", "100");  
+    //img.setAttribute("width", "100");  
     document.getElementById('image').appendChild(img);
     img.src = url;
   }
@@ -1319,6 +1335,7 @@ function loadFile(source, filename) {
     filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
   } else {
     fractal.load(source);
+    autoResize(autoSize);
   }
   //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
   fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;

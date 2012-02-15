@@ -114,7 +114,7 @@ var formula;
     var themename = sel.options[sel.selectedIndex].innerHTML;
     var theme = "fractured" + themename;
     editor.setOption("theme", theme);
-    window.opener.editorTheme = themename;
+    window.opener.editorTheme = localStorage["fractured.editorTheme"] = themename;
   }
 
 

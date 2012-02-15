@@ -53,20 +53,25 @@
             <li><span onclick="saveFractal();">Save</span></li>
             <li><span onclick="deleteFractal();">Delete</span></li>
             <li><hr></li>
-            <li><span onclick="saveImageJPEG();">Save JPEG</span></li>
-            <li><span onclick="saveImagePNG();">Save PNG</span></li>
-            <!--li><span onclick="toggle('popup');">Test</span></li-->
-            <li><hr></li>
             <li><span class="fly" tabindex="1">Saved Fractals</span>
               <ul id="fractals" class="selectlist">
               </ul>
             </li>
             <li><hr></li>
-            <!--li><span onclick="exportFractal();">Export</span></li-->
+            <li><span onclick="saveImageJPEG();">Save image as JPEG</span></li>
+            <li><span onclick="saveImagePNG();">Save image as PNG</span></li>
             <li><span onclick="exportFractalFile();">Export</span></li>
             <li><span onclick="filetype='fractal'; $('fileupload').click();">Import</span></li>
             <li><span onclick="filetype='palette'; $('fileupload').click();">Import Palette</span></li>
             <li><hr></li>
+            <li><span class="fly" tabindex="1">Anti-aliasing</span>
+              <ul>
+                <li><span id="aa1" onclick="setAntiAlias(1);">1) Low quality</span></li>
+                <li><span id="aa2" onclick="setAntiAlias(2);">2) Medium quality</span></li>
+                <li><span id="aa3" onclick="setAntiAlias(3);">3) High quality</span></li>
+                <li><span id="aa4" onclick="setAntiAlias();">Custom quality</span></li>
+              </ul>
+            </li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
           </ul>
         </li>
@@ -94,7 +99,7 @@
           <li onmousedown="showPanel(this, 'panel1');" id="tab1" class="selected">Parameters</li>
           <li onmousedown="showPanel(this, 'panel2');" class="unselected">Formula</li>
           <li onmousedown="showPanel(this, 'panel3');" class="unselected">Colour</li>
-          <li onmousedown="showPanel(this, 'panel4');" class="unselected">Saved</li>
+          <li onmousedown="showPanel(this, 'panel4');" class="unselected">Actions</li>
           <li onmousedown="showPanel(this, 'panel5');" class="unselected">Info</li>
         </ul>
       </nav>
@@ -292,6 +297,7 @@
       </div>
 
       <div class="panel scroll" id="panel5" style="display: none">
+        <p>Local storage usage:</p>
         <div id="indicatorbg"><div id="indicator"></div></div>
         <div id="debug" style="display: none">
           <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
@@ -339,6 +345,7 @@
     <img src="media/slider.png" id="slider">
     <img src="media/SatVal.png">
     <canvas id="gradient" width="4096" height="1"></canvas>
+    <canvas id="thumb" width="40" height=40"></canvas>
 
     <form name="exporter" action="savefile.php" method="post">
       <input type="hidden" id="export-filename" name="filename"/>

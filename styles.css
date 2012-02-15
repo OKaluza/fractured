@@ -237,7 +237,9 @@ nav {float: left;}
 .selected_item {border: 1px solid #777;}
 .selectlist {overflow-y:auto; overflow-x: hidden; max-height: 300px;}
 .selectlist li {width: 200px;}
-.selectlist span {min-width: 194px;}
+.selectlist span {min-width: 194px; display: inline-block; float: left;}
+
+.thumb {margin: 0px; padding-right: 3px; display: inline-block; float: left;}
 
 /* Tab navigation */
 #tabs ul {

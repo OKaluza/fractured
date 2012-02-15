@@ -97,6 +97,7 @@ int maxiterations;  //Number of iterations to perform
 int count = 0;      //Step counter
 
 //Uniform data
+uniform int antialias;
 uniform bool julia;
 uniform bool perturb;
 uniform real pixelsize;
