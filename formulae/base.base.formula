@@ -5,7 +5,5 @@
 @outrepeat     = real(1);
 //Repeat (Inside)
 @inrepeat      = real(1);
-//Anti-alias
-@antialias     = int(1);
 //Vary Iterations
 @vary          = real(0);

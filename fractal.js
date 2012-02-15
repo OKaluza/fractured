@@ -698,6 +698,7 @@
     this.webgl = webgl;
     this.gl = webgl.gl;
     this.gradientTexture = this.gl.createTexture();
+    this.antialias = 1;
 
     this["base"] = new Formula("base");
     this["fractal"] = new Formula("fractal");
@@ -1028,7 +1029,8 @@
         if (this[type].currentParams[pair2[0]])
           this[type].currentParams[pair2[0]].parse(pair2[1]);
         else //Not defined in formula, skip
-          alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+          if (pair2[0] != "antialias") //Ignored, now a global renderer setting
+            alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
 
       }
     }
@@ -1124,7 +1126,7 @@
           this.origin.im += fheight * 0.5;
         }
         else if (pair[0] == "AntiAlias")
-          this["base"].currentParams["antialias"].value = 1; //pair[1]; Don't override antialias
+          ;//Global property, don't override antialias
         else if (pair[0] == "Rotation")
           this.origin.rotate = pair[1];
         //Selected coords for Julia/Perturb
@@ -1370,14 +1372,6 @@
     //Resize canvas if size settings changed
     this.width = parseInt(document.getElementById("widthInput").value);
     this.height = parseInt(document.getElementById("heightInput").value);
-    if (this.width != this.canvas.width || this.height != this.canvas.height) {
-      this.canvas.width = this.width;
-      this.canvas.height = this.height;
-      this.canvas.setAttribute("width", this.width);
-      this.canvas.setAttribute("height", this.height);
-      this.gl.viewportWidth = this.width;
-      this.gl.viewportHeight = this.height;
-    }
 
     this.julia = document.inputs.elements["julia"].checked ? 1 : 0;
     this.perturb = document.inputs.elements["perturb"].checked ? 1 : 0;
@@ -1502,13 +1496,24 @@
 
     this.webgl.initProgram(vertexShader, fragmentShader);
     //Setup uniforms for fractal program
-    this.webgl.setupProgram(["palette", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
+    this.webgl.setupProgram(["palette", "antialias", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
   }
 
-  Fractal.prototype.draw = function() {
+  Fractal.prototype.draw = function(antialias) {
+    if (antialias) this.antialias = antialias;
+    if (this.width != this.canvas.width || this.height != this.canvas.height) {
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+      this.canvas.setAttribute("width", this.width);
+      this.canvas.setAttribute("height", this.height);
+      this.gl.viewportWidth = this.width;
+      this.gl.viewportHeight = this.height;
+    }
+
     this.gl.useProgram(this.webgl.program);
 
     //Uniform variables
+    this.gl.uniform1i(this.webgl.program.uniforms["antialias"], this.antialias);
     this.gl.uniform1i(this.webgl.program.uniforms["julia"], this.julia);
     this.gl.uniform1i(this.webgl.program.uniforms["perturb"], this.perturb);
     this.gl.uniform4fv(this.webgl.program.uniforms["background"], colours.palette.colours[0].colour.rgbaGL());
