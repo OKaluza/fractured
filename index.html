@@ -58,8 +58,8 @@
               </ul>
             </li>
             <li><hr></li>
-            <li><span onclick="saveImageJPEG();">Save image as JPEG</span></li>
-            <li><span onclick="saveImagePNG();">Save image as PNG</span></li>
+            <li><span onclick="saveImageJPEG();">Save JPEG image</span></li>
+            <li><span onclick="saveImagePNG();">Save PNG image</span></li>
             <li><span onclick="exportFractalFile();">Export</span></li>
             <li><span onclick="filetype='fractal'; $('fileupload').click();">Import</span></li>
             <li><span onclick="filetype='palette'; $('fileupload').click();">Import Palette</span></li>
@@ -72,6 +72,7 @@
                 <li><span id="aa4" onclick="setAntiAlias();">Custom quality</span></li>
               </ul>
             </li>
+            <li><span onclick="defaultMouseActions();">Clear actions</span></li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
           </ul>
         </li>
@@ -99,8 +100,7 @@
           <li onmousedown="showPanel(this, 'panel1');" id="tab1" class="selected">Parameters</li>
           <li onmousedown="showPanel(this, 'panel2');" class="unselected">Formula</li>
           <li onmousedown="showPanel(this, 'panel3');" class="unselected">Colour</li>
-          <li onmousedown="showPanel(this, 'panel4');" class="unselected">Actions</li>
-          <li onmousedown="showPanel(this, 'panel5');" class="unselected">Info</li>
+          <li onmousedown="showPanel(this, 'panel4');" class="unselected">Info</li>
         </ul>
       </nav>
 
@@ -235,68 +235,7 @@
         </form>
       </div>
 
-      <div class="panel" id="panel4" style="display: none">
-        <form class="scroll">
-          <div class="divider"><span class="divider-label">Mouse Actions</span></div>
-          <span onclick="$('testP').appendChild($('testC'))">Click to move</span>
-          <div class="row" id="testC">
-            <span class="label">Left button</span>
-            <span class="field">
-              <select id="left_click" onchange="alert(this.value)">
-                <option value="origin">Set origin</option>
-                <option value="select">Set select</option>
-                <option value="scroll">Drag/scroll</option>
-              </select>
-            </span>
-          </div>
-          <div class="row">
-            <span class="label">Middle button</span>
-            <span class="field">
-              <select id="left_click" onchange="alert(this.value)">
-                <option value="origin">Set origin</option>
-                <option value="select">Set select</option>
-                <option value="scroll">Drag/scroll</option>
-              </select>
-            </span>
-          </div>
-          <div class="row">
-            <span class="label">Right button</span>
-            <span class="field">
-              <select id="left_click" onchange="alert(this.value)">
-                <option value="origin">Set origin</option>
-                <option value="select">Set select</option>
-                <option value="scroll">Drag/scroll</option>
-              </select>
-            </span>
-          </div>
-          <div class="row">
-            <span class="label">Scroll Wheel</span>
-            <span class="field">
-              <select id="right_click" onchange="alert(this.value)">
-                <option value="zoom">Zoom</option>
-                <option value="rotate 1">Rotate 1 degree</option>
-                <option value="rotate 10">Rotate 10 degrees</option>
-              </select>
-            </span>
-          </div>
-
-          <div class="divider" id="testP"><span class="divider-label">Shift</span>
-          </div>
-          <div class="divider"><span class="divider-label">Alt</span>
-          </div>
-          <div class="divider"><span class="divider-label">Ctrl</span>
-          </div>
-          <div class="divider"><span class="divider-label">Shift</span>+<span class="divider-label">Alt</span>
-          </div>
-          <div class="divider"><span class="divider-label">Shift</span>+<span class="divider-label">Ctrl</span>
-          </div>
-          <div class="divider"><span class="divider-label">Ctrl</span>+<span class="divider-label">Alt</span>
-          </div>
-
-        </form>
-      </div>
-
-      <div class="panel scroll" id="panel5" style="display: none">
+      <div class="panel scroll" id="panel4" style="display: none" ondblClick="$('debug').style.display='block'">
         <p>Local storage usage:</p>
         <div id="indicatorbg"><div id="indicator"></div></div>
         <div id="debug" style="display: none">
@@ -306,7 +245,8 @@
           <input type="button" value="Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')"-->
           <input type="button" value="Vertex" onClick="lineOffset=1; openEditor('shaders/shader2d.vert')"-->
         </div>
-        <input type="button" value="Clear log" onClick="consoleClear()" ondblClick="$('debug').style.display='block'">
+        <input type="button" value="Clear log" onClick="consoleClear()">
+        <input type="button" value="Help" onClick="consoleHelp();"">
             <!--textarea id="source-debug">
             </textarea-->
         <div id="consolearea">
