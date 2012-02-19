@@ -1,4 +1,4 @@
-  var rightclick = false;
+  var enableContext = false;
 
   //Handler class from passed functions
   function MouseEventHandler(click, down, move, wheel) {
@@ -17,6 +17,7 @@
 
     this.isdown = false;
     this.button = null;
+    this.dragged = false;
     this.x = 0;
     this.x = 0;
     this.absoluteX = 0;
@@ -35,9 +36,10 @@
     //To disable context menu
     //element.oncontextmenu = function() { return false; }
     element.oncontextmenu = function() {
-      if (rightclick) return true;
-      rightclick = true;
-      setTimeout('rightclick = false;', 300);
+      if (enableContext) {
+        enableContext = false;
+        return true;
+      }
       return false; 
     }
   }
@@ -87,6 +89,8 @@
     var e = event || window.event;
     this.mouse.elementId = e.target.id;
     this.mouse.elementClass = e.target.className;
+    //Clear dragged flag on mouse down
+    this.dragged = false;
 
     this.mouse.update(event);
     if (!this.mouse.isdown) {
@@ -130,6 +134,9 @@
     this.mouse.deltaX = this.mouse.absoluteX - this.mouse.lastX;
     this.mouse.deltaY = this.mouse.absoluteY - this.mouse.lastY;
     var action = this.mouse.handler.move(event, this.mouse);
+
+    //Set dragged flag
+    this.mouse.dragged = this.mouse.isdown;
 
     if (this.mouse.moveUpdate) {
       //Constant update of last position

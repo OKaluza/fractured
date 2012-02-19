@@ -16,7 +16,7 @@ var currentSession = 0; //Selected session
 var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 
-var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt'
+var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt'
 
   //WheelAction - field id and value
   function WheelAction(id, value) {
@@ -25,16 +25,16 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function defaultMouseActions() {
-    mouseActions["left"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
-    mouseActions["right"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
-    mouseActions["middle"] = {'':null, 'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
-    mouseActions["wheel"] = {'':new WheelAction('zoom',1.1), 'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["left"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["right"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["middle"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["wheel"] = {'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
   }
 
   function consoleWrite(str) {
     var console = document.getElementById('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
-    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
+    $('panel4').scrollTop = console.clientHeight - $('panel4').clientHeight + $('panel4').offsetHeight;
   }
 
   function consoleClear() {
@@ -70,8 +70,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
 
     //Load the content from files
     loadSources();
-
-    defaultMouseActions();
   }
 
   //Login session JSON received, load session_menu.php
@@ -238,6 +236,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
   }
 
   function setAntiAliasMenu() {
+    if (!antialias) antialias = 1;
     $('aa1').className = antialias == 1 ? 'selected_item' : '';
     $('aa2').className = antialias == 2 ? 'selected_item' : '';
     $('aa3').className = antialias == 3 ? 'selected_item' : '';
@@ -276,7 +275,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     var menu = document.getElementById('fractals');
     if (menu.hasChildNodes()) {
       while (menu.childNodes.length > 0 )
-      menu.removeChild(menu.firstChild );
+      menu.removeChild(menu.firstChild);
     }
 
     var idx_str = localStorage["fractured.fractals"];
@@ -301,7 +300,8 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         span.onclick = Function("selectedFractal(" + i + ")");
         span.appendChild(span.ownerDocument.createTextNode(namestr));
         entry.appendChild(span);
-        menu.appendChild(entry);
+        //menu.appendChild(entry);
+        menu.insertBefore(entry, menu.firstChild);
       }
     }
 
@@ -319,6 +319,8 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
     $('nameInput').value = fractal.name;
     autoResize(autoSize);
     applyAndSave();
+        if (!localStorage["fractured.thumbnail." + idx])
+            localStorage["fractured.thumbnail." + idx] = thumbnail();
     populateFractals();
   }
 
@@ -440,7 +442,6 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
       currentFractal = -1;  //No fractals to select
       //window.location.reload(false);
     }
-    //localStorage.removeItem("fractured.formulae");
   }
 
   //Import/export all local storage to server
@@ -522,7 +523,8 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         span.onclick = Function("loadSession(" + list[i].id + ")");
         span.appendChild(span.ownerDocument.createTextNode(list[i].date + "\n" + list[i].description));
         entry.appendChild(span);
-        menu.appendChild(entry);
+        //menu.appendChild(entry);
+        menu.insertBefore(entry, menu.firstChild);
       }
 
       if (!entry) {
@@ -620,6 +622,13 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
        editorTheme = 'dark';
     }
 
+    //Custom mouse actions
+    a_source = localStorage["fractured.mouseActions"];
+    if (a_source)
+      mouseActions = JSON.parse(a_source);
+    else
+      defaultMouseActions();
+
     labels = {};
     $("fractal_formula").options.length = 0;
     $("pre_transform_formula").options.length = 0;
@@ -696,6 +705,8 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
         //Get selected
         selected[types[t]] = select.options[select.selectedIndex].value;
       }
+      //Save custom mouse actions
+      localStorage["fractured.mouseActions"] = JSON.stringify(mouseActions);
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formulae);
       //Save selected formulae
@@ -756,7 +767,7 @@ var mouseActions = {}; //left,right,middle,wheel - '', 'shift', 'ctrl', 'alt', '
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
+  var panels = ['panel1', 'panel2', 'panel3', 'panel4'];
   var selectedTab = null;
   function showPanel(tab, name)
   {
@@ -865,25 +876,29 @@ var rztimeout = undefined;
 
 //Fractal canvas mouse event handling
   function canvasMouseClick(event, mouse) {
-    if (event.button > 0) return true;
     var select = document.getElementById("select");
 
     //Convert mouse coords into fractal coords
     var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
 
+
+    var action = null;
+    var button = "left";
+    if (event.button == 1) button = "middle";
+    else if (event.button == 2) button = "right";
+
     if (event.shiftKey && event.altKey) {
-      return true;
+      action = mouseActions[button]["shift+alt"];
     } else if (event.shiftKey && event.ctrlKey) {
-      return true;
+      action = mouseActions[button]["shift+ctrl"];
     } else if (event.altKey && event.ctrlKey) {
-      return true;
+      action = mouseActions[button]["ctrl+alt"];
     } else if (event.ctrlKey) {
-      //Select point for julia set
-      fractal.selectPoint(point);
+      action = mouseActions[button]["ctrl"];
     } else if (event.shiftKey) {
-      return true;
+      action = mouseActions[button]["shift"];
     } else if (event.altKey) {
-      return true;
+      action = mouseActions[button]["alt"];
     } else {
       //Selection box?
       if (select.style.display == 'block') {
@@ -902,11 +917,32 @@ var rztimeout = undefined;
           //Adjust zoom by factor of element width to selection
           fractal.applyZoom(mouse.element.width / select.w);
         }
-      } else {
+      } else if (event.button == 0) {
         //Adjust centre position to match mouse left click
         fractal.setOrigin(point);
+      } else if (event.button > 0) {
+        //Right-click, not dragging
+        if (event.button == 2 && !mouse.dragged) {
+          //Enable the context menu on right click if ctrl+alt+shift held
+          if (event.shiftKey && event.altKey && event.ctrlKey) {
+            enableContext = true;
+            return true;
+          }
+          //Switch to julia set at selected point
+          fractal.selectPoint(point);
+        } else {
+          return true;
+        }
       }
     }
+
+    //Set point to assigned field
+    if (action && $(action + "0")) {
+      $(action + "0").value = point.re;
+      $(action + "1").value = point.im;
+      fractal.applyChanges();
+    }
+
     select.style.display = 'none';
     fractal.copyToForm();
     fractal.draw(antialias);
@@ -967,7 +1003,15 @@ var rztimeout = undefined;
 
   function canvasMouseWheel(event, mouse) {
     var action = null;
-    if (event.shiftKey && event.altKey) {
+    if (!(event.shiftKey || event.altKey || event.ctrlKey)) {
+      /* Zoom */
+      action = new WheelAction(null, 0);
+      if (event.spin < 0)
+         fractal.applyZoom(1/(-event.spin * 1.1));
+      else
+         fractal.applyZoom(event.spin * 1.1);
+
+    } else if (event.shiftKey && event.altKey) {
       action = mouseActions["wheel"]["shift+alt"];
     } else if (event.shiftKey && event.ctrlKey) {
       action = mouseActions["wheel"]["shift+ctrl"];
@@ -979,24 +1023,17 @@ var rztimeout = undefined;
       action = mouseActions["wheel"]["shift"];
     } else if (event.altKey) {
       action = mouseActions["wheel"]["alt"];
-    } else {
-      /* Zoom */
-      action = new WheelAction(null, 0);
-      if (event.spin < 0)
-         fractal.applyZoom(1/(-event.spin * 1.1));
-      else
-         fractal.applyZoom(event.spin * 1.1);
     }
 
-    //Set assigned field
     if (!action) return true; //Default browser action
-    if (action.id) {
+
+    //Assign field value
+    if (action.id && $(action.id)) {
       $(action.id).value = parseFloat($(action.id).value) + event.spin * action.value;
       //applyAndSave();
     }
 
-
-    //Limit to range [0-360)
+    //Limit rotate to range [0-360)
     if (fractal.origin.rotate < 0) fractal.origin.rotate += 360;
     fractal.origin.rotate %= 360;
     fractal.copyToForm();
@@ -1072,33 +1109,52 @@ handleFormMouseDown = function(event) {
       var field;
       if (params)
         field = params.getField(event.target.id);
-      //if (field)
-      //  alert(field.value);
     }
 
-    consoleWrite(event.target.id + " == " + event.target.value);
-    //Test, on middle click (1) assign alt+scroll function to selected field
-    if (event.button == 1) {
-      var value = prompt("Enter value", 1);
+    //Assign function to selected field
+    if (event.shiftKey || event.altKey || event.ctrlKey) {
+      var action = "";
+      var button = "wheel"
+      var target = event.target.id;
+      var value = 0;
+
       if (event.shiftKey && event.altKey) {
-        mouseActions["wheel"]["shift+alt"] = new WheelAction(event.target.id, value);
+        action = "shift+alt";
       } else if (event.shiftKey && event.ctrlKey) {
-        mouseActions["wheel"]["shift+ctrl"] = new WheelAction(event.target.id, value);
+        action = "shift+ctrl";
       } else if (event.altKey && event.ctrlKey) {
-        mouseActions["wheel"]["ctrl+alt"] = new WheelAction(event.target.id, value);
+        action = "ctrl+alt";
       } else if (event.ctrlKey) {
-        mouseActions["wheel"]["ctrl"] = new WheelAction(event.target.id, value);
+        action = "ctrl";
       } else if (event.shiftKey) {
-        mouseActions["wheel"]["shift"] = new WheelAction(event.target.id, value);
+        action = "shift";
       } else if (event.altKey) {
-        mouseActions["wheel"]["alt"] = new WheelAction(event.target.id, value);
-      } else {
-        /* Zoom */
+        action = "alt";
       }
 
-      return false;
+      //Detect two-component (complex number) field
+      if (/_[01]$/i.exec(event.target.id)) {
+        if (event.button == 0) button = "left";
+        else if (event.button == 2) button = "right";
+        else button = "middle";
+        target = event.target.id.slice(0, event.target.id.length-1);
+        if (confirm("Assign position value on [" + action + "] + mouse " + button + "-click to selected field?"))
+          mouseActions[button][action] = target;
+        else {
+          var value = prompt("Assign action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 0.1);
+          if (value) mouseActions["wheel"][action] = new WheelAction(event.target.id, value);
+          return false;
+        }
+
+      } else {
+        //Get increment amount for scroll wheel actions...
+        var value = prompt("Assigning action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 1);
+        if (value) mouseActions["wheel"][action] = new WheelAction(target, value);
+        return false;
+      }
     }
   }
+  return true;
 }
 
 function saveColour(val) {colours.save(val);}
