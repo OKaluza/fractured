@@ -1126,7 +1126,7 @@
           this.origin.im += fheight * 0.5;
         }
         else if (pair[0] == "AntiAlias")
-          ;//Global property, don't override antialias
+          {}//Global property, don't override antialias
         else if (pair[0] == "Rotation")
           this.origin.rotate = pair[1];
         //Selected coords for Julia/Perturb
@@ -1373,8 +1373,8 @@
     this.width = parseInt(document.getElementById("widthInput").value);
     this.height = parseInt(document.getElementById("heightInput").value);
 
-    this.julia = document.inputs.elements["julia"].checked ? 1 : 0;
-    this.perturb = document.inputs.elements["perturb"].checked ? 1 : 0;
+    this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
+    this.perturb = document["inputs"].elements["perturb"].checked ? 1 : 0;
     this.origin.rotate = parseFloat(document.getElementById("rotate").value);
     this.origin.re = parseFloat(document.getElementById("xPosInput").value);
     this.origin.im = parseFloat(document.getElementById("yPosInput").value);
@@ -1398,17 +1398,17 @@
   //Update form controls with fractal data
   Fractal.prototype.copyToForm = function() {
     consoleWrite("copyToForm<hr>");
-    document.inputs.elements["nameInput"].value = this.name;
-    document.inputs.elements["widthInput"].value = this.width;
-    document.inputs.elements["heightInput"].value = this.height;
-    document.inputs.elements["xPosInput"].value = this.origin.re;
-    document.inputs.elements["yPosInput"].value = this.origin.im;
-    document.inputs.elements["xSelInput"].value = this.selected.re;
-    document.inputs.elements["ySelInput"].value = this.selected.im;
-    document.inputs.elements["zoomLevel"].value = this.origin.zoom;
-    document.inputs.elements["rotate"].value = this.origin.rotate;
-    document.inputs.elements["julia"].checked = this.julia;
-    document.inputs.elements["perturb"].checked = this.perturb;
+    document["inputs"].elements["nameInput"].value = this.name;
+    document["inputs"].elements["widthInput"].value = this.width;
+    document["inputs"].elements["heightInput"].value = this.height;
+    document["inputs"].elements["xPosInput"].value = this.origin.re;
+    document["inputs"].elements["yPosInput"].value = this.origin.im;
+    document["inputs"].elements["xSelInput"].value = this.selected.re;
+    document["inputs"].elements["ySelInput"].value = this.selected.im;
+    document["inputs"].elements["zoomLevel"].value = this.origin.zoom;
+    document["inputs"].elements["rotate"].value = this.origin.rotate;
+    document["inputs"].elements["julia"].checked = this.julia;
+    document["inputs"].elements["perturb"].checked = this.perturb;
     $('fractal_formula').value = this["fractal"].selected;
     $('pre_transform_formula').value = this["pre_transform"].selected;
     $('post_transform_formula').value = this["post_transform"].selected;

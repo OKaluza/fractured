@@ -4,8 +4,8 @@ function ajaxReadFile(filename, callback, nocache)
   var http = new XMLHttpRequest();
 
   http.onreadystatechange = function()
-  { 
-    if(http.readyState == 4)
+  {
+    if(http.readyState == 4) {
       if(http.status == 200) {
         consoleWrite("loaded: " + filename);
         if (callback)
@@ -16,7 +16,9 @@ function ajaxReadFile(filename, callback, nocache)
         else
           consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
       }
+    }
   } 
+
   //Add date to url to prevent caching
   if (nocache)
   {
@@ -173,12 +175,5 @@ function callJsonp()
 // you can make it general so it would parse all the responses the page receives based on a response field
 function parseRequest(response)
 {
-  try // try to output this to the javascript console
-  {
-    consoleWrite(response);
-  }
-  catch(an_exception) // alert for the users that don't have a javascript console
-  {
-    alert('product id ' + response.item_id + ': quantity = ' + response.quantity + ' & price = ' + response.price);
-  }
+  consoleWrite(response);
 }
