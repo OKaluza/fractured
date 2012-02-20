@@ -15,6 +15,31 @@ var editorTheme = 'dark';
 var currentSession = 0; //Selected session
 var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
+var offline = false;
+
+//Exports!
+// Store the function in a global property referenced by a string:
+window['pageStart'] = pageStart;
+window['resetState'] = resetState;
+window['exportStateFile'] = exportStateFile;
+window['saveFractal'] = saveFractal;
+window['deleteFractal'] = deleteFractal;
+window['saveImageJPEG'] = saveImageJPEG;
+window['saveImagePNG'] = saveImagePNG;
+window['setAntiAlias'] = setAntiAlias;
+window['defaultMouseActions'] = defaultMouseActions;
+window['toggleParams'] = toggleParams;
+window['applyAndSave'] = applyAndSave;
+window['bgColourMouseClick'] = bgColourMouseClick;
+window['showPanel'] = showPanel;
+window['handleFormMouseDown'] = handleFormMouseDown;
+window['clearFractal'] = clearFractal;
+window['autoResize'] = autoResize;
+window['openEditor'] = openEditor;
+window['consoleClear'] = consoleClear;
+window['consoleHelp'] = consoleHelp;
+window['fileSelected'] = fileSelected;
+window['transferHTML'] = transferHTML;
 
 var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt'
 
@@ -42,6 +67,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     console.innerHTML = '';
   }
 
+  function consoleHelp() {
+    var console = document.getElementById('console');
+    console.innerHTML = 'HELP TEXT GOES HERE';
+  }
+
+
   function pageStart() {
     //Default editor line offset
     formulaOffsets[""] = 1;
@@ -66,17 +97,21 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     ajaxReadFile('session_json.php', sessionGet);
 
     //Load the last program state
-    loadState();
-
+    //loadState();
     //Load the content from files
-    loadSources();
+    //loadSources();
   }
 
   //Login session JSON received, load session_menu.php
   function sessionGet(data) {
     if (!data) {
       //Offline mode?
-      alert('Offline!');
+      consoleWrite('Offline!');
+      offline = true;
+      //Load the last program state
+      loadState();
+      //Load the content from files
+      loadSources();
       return;
     }
 
@@ -134,6 +169,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     var sesmenu = document.getElementById('session_menu');
     sesmenu.innerHTML = html;
+
+      //Load the last program state
+      loadState();
+      //Load the content from files
+      loadSources();
   }
 
   //Update and save
@@ -145,8 +185,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function loadSources() {
     //Load a from list of remaining source files
     for (filename in sources)
-      //if (!sources[filename]) iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
-      if (!sources[filename]) ajaxReadFile(filename, saveSource, true);
+      if (!sources[filename])
+        if (offline)
+          iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
+        else
+          ajaxReadFile(filename, saveSource, true);
   }
 
   //External content load via iframe dynamic insert
@@ -609,7 +652,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
        selected = JSON.parse(localStorage["fractured.selected"]);
        //Load global settings...
        editorTheme = localStorage["fractured.editorTheme"];
-       autoSize = document.inputs.elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
+       autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
        antialias = localStorage["fractured.antialias"];
        setAntiAliasMenu();
 
@@ -1096,7 +1139,7 @@ var editorFilename;
 /////////////////////////////////////////////////////////////////////////
 //Colour picker functions
 
-handleFormMouseDown = function(event) {
+function handleFormMouseDown(event) {
   //Event delegation from parameters form to edit colour params
   event = event || window.event;
   if (event.target.className == "colour") colours.edit(event.target);

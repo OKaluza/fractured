@@ -1,3 +1,5 @@
+window['mouseWheelTimeout'] = mouseWheelTimeout;
+
   var enableContext = false;
 
   //Handler class from passed functions
@@ -130,6 +132,7 @@
   }
 
   function handleMouseMove(event) {
+    if (!this.mouse) return true;
     this.mouse.update(event);
     this.mouse.deltaX = this.mouse.absoluteX - this.mouse.lastX;
     this.mouse.deltaY = this.mouse.absoluteY - this.mouse.lastY;
@@ -167,7 +170,7 @@
       //document.body.style.cursor = "wait";
       //setTimeout('mouseWheelTimout(document.mouse);', 125);
       //setTimeout('mouseWheelTimout(document.mouse);', 50);
-      setTimeout('mouseWheelTimout(document.mouse);', 50);
+      setTimeout('mouseWheelTimeout(document.mouse);', 50);
     }
     this.mouse.spin += event.spin;
 
@@ -179,7 +182,7 @@
     event.returnValue = action;
   } 
 
-  function mouseWheelTimout(mouse) {
+  function mouseWheelTimeout(mouse) {
     //Turn hourglass off
     //document.body.style.cursor = "default";
     mouse.event.spin = mouse.spin;

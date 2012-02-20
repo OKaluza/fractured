@@ -194,7 +194,7 @@
   }
 
   function ModelView() {
-    this.matrix
+    this.matrix = null;
     this.stack = [];
   }
 
