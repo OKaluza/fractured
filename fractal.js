@@ -563,7 +563,7 @@
       //Update the fields
       this.params[name].createFields(this.type, name);
     }
-    consoleWrite("SELECT " + this.type + "," + this.selected); // + " =====> " + this.currentParams.toString());
+    consoleWrite("Set [" + this.type + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
        //consoleTrace();
     //growTextAreas('fractal_inputs');  //Resize expression fields
     //growTextAreas('colour_inputs');  //Resize expression fields
@@ -751,7 +751,7 @@
   }
 
   Fractal.prototype.resetDefaults = function() {
-      consoleWrite("resetDefaults<hr>");
+    //consoleWrite("resetDefaults<hr>");
     //Default aspect & parameters
     this.name = "unnamed"
     this.width = window.innerWidth - (showparams ? 390 : 4);
@@ -905,7 +905,7 @@
 
   //Load fractal from file
   Fractal.prototype.load = function(source) {
-      consoleWrite("load<hr>");
+    //consoleWrite("load<hr>");
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
@@ -1347,7 +1347,7 @@
 
 
   Fractal.prototype.loadParams = function() {
-      consoleWrite("loadParams<hr>");
+    //consoleWrite("loadParams<hr>");
     //Parse param fields from formula code
     this["base"].select();
     this["fractal"].select();
@@ -1397,7 +1397,7 @@
 
   //Update form controls with fractal data
   Fractal.prototype.copyToForm = function() {
-    consoleWrite("copyToForm<hr>");
+    //consoleWrite("copyToForm<hr>");
     document["inputs"].elements["nameInput"].value = this.name;
     document["inputs"].elements["widthInput"].value = this.width;
     document["inputs"].elements["heightInput"].value = this.height;
@@ -1419,13 +1419,6 @@
   //Build and redraw shader from source components
   Fractal.prototype.writeShader = function() {
     //Get formula selections
-    consoleWrite("Building fractal shader using:");
-    consoleWrite("formula: " + this["fractal"].selected);
-    if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
-    if (this["post_transform"].selected != "none") consoleWrite("Post-transform: " + this["post_transform"].selected);
-    if (this["outside_colour"].selected != "none") consoleWrite("Outside colour: " + this["outside_colour"].selected);
-    if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
-
     //Header for all fractal fragment programs
     var header = sources["shaders/fractal-header.frag"];
 
@@ -1479,6 +1472,12 @@
       //Save for debugging
       sources["gen-shader.frag"] = fragmentShader;
       //ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
+      consoleWrite("Building fractal shader using:");
+      consoleWrite("formula: " + this["fractal"].selected);
+      if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
+      if (this["post_transform"].selected != "none") consoleWrite("Post-transform: " + this["post_transform"].selected);
+      if (this["outside_colour"].selected != "none") consoleWrite("Outside colour: " + this["outside_colour"].selected);
+      if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
 
       this.updateShader(fragmentShader);
     } else
@@ -1495,7 +1494,7 @@
     //this.webgl.setupProgram(["texture"]); //Setup as texture program
 
     this.webgl.initProgram(vertexShader, fragmentShader);
-    //Setup uniforms for fractal program
+    //Setup uniforms for fractal program (all these are always set now, do this once at start?)
     this.webgl.setupProgram(["palette", "antialias", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
   }
 
@@ -1539,5 +1538,7 @@
       this.webgl.modelView.scale([1.0, this.canvas.height / this.canvas.width, 1.0]);  //Scale height
 
     this.webgl.draw();
+    if (window.recording)
+      window.outputFrame(); 
   }
 

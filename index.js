@@ -16,6 +16,7 @@ var currentSession = 0; //Selected session
 var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 var offline = false;
+var recording = false;
 
 //Exports!
 // Store the function in a global property referenced by a string:
@@ -70,6 +71,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function consoleHelp() {
     var console = document.getElementById('console');
     console.innerHTML = 'HELP TEXT GOES HERE';
+  }
+
+  function outputFrame() {
+    var canvas = document.getElementById("fractal-canvas");
+    var data = canvas.toDataURL("image/png").substring(22);  //STRIP: data:image/png;base64,
+    ajaxPost("http://localhost:8080/post", data, consoleWrite);
   }
 
 
@@ -1395,6 +1402,11 @@ ColourEditor.prototype.wheel = function(event, mouse) {
     this.palette.colours[i].position = x;
   }
   this.palette.draw(this.editcanvas, true);
+  //If shift held, redraw after change
+  if (event.shiftKey) {
+    this.update();
+    fractal.draw();
+  }
 }
 
 
