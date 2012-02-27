@@ -105,13 +105,6 @@
     });
   }
 
-  CodeMirror.searchFor = function(cm, q) {clearSearch(cm); var state = getSearchState(cm);
-        state.query = parseQuery(q); doSearch(cm);
-        if (cm.lineCount() < 2000) { // This is too expensive on big documents.
-          for (var cursor = cm.getSearchCursor(state.query); cursor.findNext();)
-            state.marked.push(cm.markText(cursor.from(), cursor.to(), "CodeMirror-searching"));
-        }
-     };
   CodeMirror.commands.find = function(cm) {clearSearch(cm); doSearch(cm);};
   CodeMirror.commands.findNext = doSearch;
   CodeMirror.commands.findPrev = function(cm) {doSearch(cm, true);};
