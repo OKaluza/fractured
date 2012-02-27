@@ -42,7 +42,7 @@ window['consoleHelp'] = consoleHelp;
 window['fileSelected'] = fileSelected;
 window['transferHTML'] = transferHTML;
 
-var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt'
+var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
 
   //WheelAction - field id and value
   function WheelAction(id, value) {
@@ -51,10 +51,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function defaultMouseActions() {
-    mouseActions["left"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
-    mouseActions["right"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
-    mouseActions["middle"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
-    mouseActions["wheel"] = {'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null};
+    mouseActions["left"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+    mouseActions["right"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+    mouseActions["middle"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+    mouseActions["wheel"] = {'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
   }
 
   function consoleWrite(str) {
@@ -925,19 +925,18 @@ var rztimeout = undefined;
   }
 
 //Fractal canvas mouse event handling
-  function canvasMouseClick(event, mouse) {
-    var select = document.getElementById("select");
-
-    //Convert mouse coords into fractal coords
-    var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
-
-
+  function getCustomAction(event, button) {
     var action = null;
-    var button = "left";
-    if (event.button == 1) button = "middle";
-    else if (event.button == 2) button = "right";
+    if (!button) {
+      if (event.button == 1) button = "middle";
+      else if (event.button == 2) button = "right";
+      else button = "left";
+    }
+    consoleWrite(button);
 
-    if (event.shiftKey && event.altKey) {
+    if (event.shiftKey && event.altKey && event.ctrlKey) {
+      action = mouseActions[button]["shift+ctrl+alt"];
+    } else if (event.shiftKey && event.altKey) {
       action = mouseActions[button]["shift+alt"];
     } else if (event.shiftKey && event.ctrlKey) {
       action = mouseActions[button]["shift+ctrl"];
@@ -949,6 +948,26 @@ var rztimeout = undefined;
       action = mouseActions[button]["shift"];
     } else if (event.altKey) {
       action = mouseActions[button]["alt"];
+    }
+
+    return action;
+  }
+
+  function canvasMouseClick(event, mouse) {
+    var select = document.getElementById("select");
+
+    //Convert mouse coords into fractal coords
+    var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
+
+    var action = getCustomAction(event);
+
+    if (action) {
+      //Set point to assigned field
+      if ($(action + "0")) {
+        $(action + "0").value = point.re;
+        $(action + "1").value = point.im;
+        fractal.applyChanges();
+      }
     } else {
       //Selection box?
       if (select.style.display == 'block') {
@@ -984,13 +1003,6 @@ var rztimeout = undefined;
           return true;
         }
       }
-    }
-
-    //Set point to assigned field
-    if (action && $(action + "0")) {
-      $(action + "0").value = point.re;
-      $(action + "1").value = point.im;
-      fractal.applyChanges();
     }
 
     select.style.display = 'none';
@@ -1052,7 +1064,7 @@ var rztimeout = undefined;
   }
 
   function canvasMouseWheel(event, mouse) {
-    var action = null;
+    var action = getCustomAction(event, "wheel");
     if (!(event.shiftKey || event.altKey || event.ctrlKey)) {
       /* Zoom */
       action = new WheelAction(null, 0);
@@ -1060,19 +1072,6 @@ var rztimeout = undefined;
          fractal.applyZoom(1/(-event.spin * 1.1));
       else
          fractal.applyZoom(event.spin * 1.1);
-
-    } else if (event.shiftKey && event.altKey) {
-      action = mouseActions["wheel"]["shift+alt"];
-    } else if (event.shiftKey && event.ctrlKey) {
-      action = mouseActions["wheel"]["shift+ctrl"];
-    } else if (event.altKey && event.ctrlKey) {
-      action = mouseActions["wheel"]["ctrl+alt"];
-    } else if (event.ctrlKey) {
-      action = mouseActions["wheel"]["ctrl"];
-    } else if (event.shiftKey) {
-      action = mouseActions["wheel"]["shift"];
-    } else if (event.altKey) {
-      action = mouseActions["wheel"]["alt"];
     }
 
     if (!action) return true; //Default browser action
@@ -1168,7 +1167,9 @@ function handleFormMouseDown(event) {
       var target = event.target.id;
       var value = 0;
 
-      if (event.shiftKey && event.altKey) {
+      if (event.shiftKey && event.altKey && event.ctrlKey) {
+        action = "shift+ctrl+alt";
+      } else if (event.shiftKey && event.altKey) {
         action = "shift+alt";
       } else if (event.shiftKey && event.ctrlKey) {
         action = "shift+ctrl";
