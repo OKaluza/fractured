@@ -10,8 +10,17 @@
 <script src="codemirror/lib/searchcursor.js"></script>
 <script src="codemirror/lib/search.js"></script>
 <script src="codemirror/mode/clike/clike.js"></script>
+<script src="codemirror/mode/javascript/javascript.js"></script>
 <link rel="stylesheet" href="codemirror/lib/codemirror.css">
+
 <link rel="stylesheet" href="codemirror/theme/fractured.css">
+<link rel="stylesheet" href="codemirror/theme/cobalt.css">
+<link rel="stylesheet" href="codemirror/theme/eclipse.css">
+<link rel="stylesheet" href="codemirror/theme/elegant.css">
+<link rel="stylesheet" href="codemirror/theme/monokai.css">
+<link rel="stylesheet" href="codemirror/theme/neat.css">
+<link rel="stylesheet" href="codemirror/theme/night.css">
+<link rel="stylesheet" href="codemirror/theme/rubyblue.css">
 
 <style type="text/css">
 /* Override some codemirror defaults */
@@ -68,17 +77,25 @@ var formula;
   saveEditor = function() {
     editor.save();  //Updates textarea content
     window.opener.sources[filename] = code.value;
-    //Editing compiled shader source?
-    if (filename == "gen-shader.frag")
-      window.opener.fractal.updateShader(code.value);
-    else {
-      if (type) window.opener.fractal[type].select();
-      window.opener.fractal.writeShader();
+	//JS Script?
+	if (filename.indexOf(".js") < 0) {
+      //Editing compiled shader source?
+      if (filename == "gen-shader.frag")
+        window.opener.fractal.updateShader(code.value);
+      else {
+        if (type) window.opener.fractal[type].select();
+        window.opener.fractal.writeShader();
+      }
+      window.opener.fractal.draw();
+    } else {
+      window.opener.runScript()
     }
-    window.opener.fractal.draw();
   }
 
   loadEditor = function() {
+    var editmode = "text/x-glsl";
+    var edittheme = window.opener.editorTheme;
+
     //Copy for fallback to code
     code = document.getElementById('editor');
 
@@ -92,11 +109,30 @@ var formula;
     } else
       filename = param;
 
+    sel = document.getElementById('theme');
+
+    if (filename.indexOf(".js") >= 0) {
+      editmode = "text/javascript";
+      edittheme = window.opener.scriptTheme;
+      var btn = document.getElementById('savebtn');
+      btn.value = "Run";
+      sel.options[sel.length] = new Option("cobalt");
+      sel.options[sel.length] = new Option("eclipse");
+      sel.options[sel.length] = new Option("elegant");
+      sel.options[sel.length] = new Option("monokai");
+      sel.options[sel.length] = new Option("neat");
+      sel.options[sel.length] = new Option("night");
+      sel.options[sel.length] = new Option("rubyblue");
+    } else {
+      sel.options[sel.length] = new Option("light", "fracturedlight");
+      sel.options[sel.length] = new Option("dark", "fractureddark");
+    }
+
     code.value = window.opener.sources[filename];
 
     editor = new CodeMirror.fromTextArea(code, {
-      mode: "text/x-glsl",
-      theme: "fractured" + window.opener.editorTheme,
+      mode: editmode,
+      theme: edittheme,
       height: "100%",
       saveFunction: saveEditor,
       lineNumbers: true,
@@ -106,15 +142,17 @@ var formula;
       /*tabMode: "classic",*/
       matchBrackets: true
     });
-    sel = document.getElementById('theme');
-    sel.value = window.opener.editorTheme;
+    
+    sel.value = edittheme;
   };
 
   function selectTheme(sel) {
-    var themename = sel.options[sel.selectedIndex].innerHTML;
-    var theme = "fractured" + themename;
+    var theme = sel.options[sel.selectedIndex].value;
     editor.setOption("theme", theme);
-    window.opener.editorTheme = localStorage["fractured.editorTheme"] = themename;
+	if (filename.indexOf(".js") < 0)
+      window.opener.editorTheme = localStorage["fractured.editorTheme"] = theme;
+    else
+      window.opener.scriptTheme = localStorage["fractured.scriptTheme"] = theme;
   }
 
 
@@ -131,13 +169,11 @@ function replace() {
 <body onload="loadEditor()" onUnload="window.opener.closeEditor();" >
 
 <div id="buttons">
-  <input type="button" value="Save" onclick="saveEditor()">
+  <input type="button" id="savebtn" value="Save" onclick="saveEditor()">
   <input type="button" value="Export" onclick="exportFile()">
   <input type="button" value="Search >" onclick="search()">
   <input type="text" style="width: 15em" id="query" onkeypress="if(event.keyCode == 13 && this.value!='') search(); return true; ">
   <select id="theme" style="float: right" onchange="selectTheme(this)">
-    <option selected>light</option>
-    <option>dark</option>
   </select>
 </div>
 

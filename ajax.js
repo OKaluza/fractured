@@ -12,7 +12,7 @@ function ajaxReadFile(filename, callback, nocache)
           callback(http.responseText, filename);
       } else {
         if (callback)
-          callback();    //Error callback
+          callback("Error: " + http.status);    //Error callback
         else
           consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
       }
@@ -44,7 +44,7 @@ function ajaxPost(url, params, callback)
           callback(http.responseText);
       } else {
         if (callback)
-          callback();    //Error callback
+          callback("Error, status:" + http.status);    //Error callback
         else
           consoleWrite("Ajax Post Error: returned status code " + http.status + " " + http.statusText);
       }
@@ -55,7 +55,6 @@ function ajaxPost(url, params, callback)
   //Send the proper header information along with the request
   http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   http.setRequestHeader("Content-length", params.length);
-  http.setRequestHeader("Connection", "close");
 
   http.send(params); 
 }
@@ -72,7 +71,6 @@ function ajaxWriteFile(filename, data, callback) {
   //Send the proper header information along with the request
   http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   http.setRequestHeader("Content-length", params.length);
-  http.setRequestHeader("Connection", "close");
 
   http.onreadystatechange = function() 
   {
