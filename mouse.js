@@ -122,6 +122,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
       action = this.mouse.handler.click(event, this.mouse);
       this.mouse.isdown = false;
       this.mouse.button = null;
+      this.mouse.dragged = false;
     }
     //Restore default mouse on document
     document.mouse = defaultMouse;
@@ -138,8 +139,9 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     this.mouse.deltaY = this.mouse.absoluteY - this.mouse.lastY;
     var action = this.mouse.handler.move(event, this.mouse);
 
-    //Set dragged flag
-    this.mouse.dragged = this.mouse.isdown;
+    //Set dragged flag if moved more than limit
+    if (!this.mouse.dragged && this.mouse.isdown && Math.abs(this.mouse.deltaX) + Math.abs(this.mouse.deltaY) > 3)
+      this.mouse.dragged = true;
 
     if (this.mouse.moveUpdate) {
       //Constant update of last position
