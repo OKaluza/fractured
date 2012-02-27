@@ -71,7 +71,14 @@
                 <li><span id="aa4" onclick="setAntiAlias();">Custom quality</span></li>
               </ul>
             </li>
-            <li><span onclick="recording = !recording;">Record ON/OFF</span></li>
+            <li><span class="fly" tabindex="1">Record</span>
+              <ul>
+                <li><span id="recordOn" onclick="record(true);">On</span></li>
+                <li><span id="recordOff" class="selected_item" onclick="record(false);">Off</span></li>
+                <li><span onclick="ajaxReadFile('http://localhost:8080/end', frameDone);">End</span></li>
+              </ul>
+            </li>
+            <li><span onclick="openEditor('script.js')">Script Editor</span></li>
             <li><span onclick="defaultMouseActions();">Clear actions</span></li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
           </ul>
@@ -246,9 +253,7 @@
           <input type="button" value="Vertex" onClick="lineOffset=1; openEditor('shaders/shader2d.vert')"-->
         </div>
         <input type="button" value="Clear log" onClick="consoleClear()">
-        <input type="button" value="Help" onClick="consoleHelp();"">
-            <!--textarea id="source-debug">
-            </textarea-->
+        <input type="button" value="Help" onClick="consoleHelp();">
         <div id="consolearea">
           <div id="console">
             <p>Fractured Studio v0.2 - Owen Kaluza, 2011</p>

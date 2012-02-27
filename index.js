@@ -11,7 +11,8 @@ var antialias = 1;
 var autoSize = true;
 var showparams = true;
 var hasChanged = false;
-var editorTheme = 'dark';
+var editorTheme = 'fractureddark';
+var scriptTheme = 'monokai';
 var currentSession = 0; //Selected session
 var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
@@ -73,12 +74,34 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     console.innerHTML = 'HELP TEXT GOES HERE';
   }
 
-  function outputFrame() {
+  function record(state) {
+    recording = state;
     var canvas = document.getElementById("fractal-canvas");
-    var data = canvas.toDataURL("image/png").substring(22);  //STRIP: data:image/png;base64,
-    ajaxPost("http://localhost:8080/post", data, consoleWrite);
+    canvas.mouse.wheelTimer = !recording;
+    if (recording) {
+      //Ensure a multiple of 2
+      if (fractal.width % 2 == 1) fractal.width -= 1;
+      if (fractal.height % 2 == 1) fractal.height -= 1;
+    }
+    $('recordOn').className = recording ? 'selected_item' : '';
+    $('recordOff').className = !recording ? 'selected_item' : '';
   }
 
+  function outputFrame() {
+    var canvas = document.getElementById("fractal-canvas");
+    var data = canvas.toDataURL("image/png").substring(22);  //Strip from start: "data:image/png;base64,"
+    document.body.style.cursor = "wait";
+    ajaxPost("http://localhost:8080/frame", data, frameDone);
+  }
+
+  function frameDone(response) {
+    document.body.style.cursor = "default";
+    consoleWrite("Request sent");
+  }
+
+  function runScript(filename) {
+    eval(sources["script.js"]);
+  }
 
   function pageStart() {
     //Default editor line offset
@@ -99,6 +122,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Base parameters for all formulae defined in here
     sources["formulae/base.base.formula"] = "";
+
+    //Script
+    sources["script.js"] = "";
 
     //Session to json:
     ajaxReadFile('session_json.php', sessionGet);
@@ -659,6 +685,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
        selected = JSON.parse(localStorage["fractured.selected"]);
        //Load global settings...
        editorTheme = localStorage["fractured.editorTheme"];
+       scriptTheme = localStorage["fractured.scriptTheme"];
        autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
        antialias = localStorage["fractured.antialias"];
        setAntiAliasMenu();
@@ -669,7 +696,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
        selected = {"base" : "base", "fractal" : "mandelbrot", "pre_transform" : "none", "post_transform" : "none",
                     "outside_colour": "default", "inside_colour": "none"};
-       editorTheme = 'dark';
+       editorTheme = 'fractureddark';
+       scriptTheme = 'monokai';
     }
 
     //Custom mouse actions
@@ -698,6 +726,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         if (localStorage[filename])
           sources[filename] = localStorage[filename];
       }
+      //Script
+      sources["script.js"] = localStorage["script.js"];
     }
     //Set selected defaults
     $('fractal_formula').value = selected['fractal'];
@@ -761,11 +791,14 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["fractured.formulae"] = JSON.stringify(formulae);
       //Save selected formulae
       localStorage["fractured.selected"] = JSON.stringify(selected);
+      //Save script
+      localStorage["script.js"] = sources["script.js"];
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
       //Save some global settings
       localStorage["fractured.editorTheme"] = editorTheme;
+      localStorage["fractured.scriptTheme"] = scriptTheme;
       localStorage["fractured.autoSize"] = autoSize;
       localStorage["fractured.antialias"] = antialias;
     } catch(e) {
@@ -909,8 +942,8 @@ var rztimeout = undefined;
       fractal.height = window.innerHeight - 32;
       fractal.copyToForm();
       var canvas = document.getElementById('fractal-canvas');
-      canvas.width = fractal.width-1;
-      canvas.height = fractal.height-1;
+      //canvas.width = fractal.width-1;
+      //canvas.height = fractal.height-1;
 
       if (timer) {
         document.body.style.cursor = "wait";
@@ -1091,9 +1124,6 @@ var rztimeout = undefined;
     //fractal.draw();
     //saveState();  //Save param changes
       applyAndSave();
-
-
-
   }
 
   function bgColourMouseClick() {
@@ -1112,6 +1142,7 @@ var editorFilename;
     editorFilename = filename;
     editorWindow = window.open(encodeURI("editor.html?file=" + filename), filename, "toolbar=no,scrollbars=no,location=no,statusbar=no,menubar=no,resizable=1,width=600,height=700");
   }
+
   function closeEditor() {
     //editorWindow = null;
   }
@@ -1393,23 +1424,26 @@ ColourEditor.prototype.move = function(event, mouse) {
 }
 
 ColourEditor.prototype.wheel = function(event, mouse) {
+  //If shift held, redraw after change
+  this.cycle(0.01 * event.spin, event.shiftKey);
+}
+
+ColourEditor.prototype.cycle = function(inc, update) {
   //Shift all colours cyclically
   for (var i = 2; i < this.palette.colours.length-1; i++)
   {
     var x = this.palette.colours[i].position;
-    x += 0.01 * event.spin;
+    x += inc;
     if (x <= 0) x += 1.0;
     if (x >= 1.0) x -= 1.0;
     this.palette.colours[i].position = x;
   }
   this.palette.draw(this.editcanvas, true);
-  //If shift held, redraw after change
-  if (event.shiftKey) {
+  if (update) {
     this.update();
     fractal.draw();
   }
 }
-
 
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
