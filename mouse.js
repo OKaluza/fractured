@@ -3,6 +3,9 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   var enableContext = false;
 
   //Handler class from passed functions
+  /**
+   * @constructor
+   */
   function MouseEventHandler(click, down, move, wheel) {
     //All these functions should take (event, mouse)
     this.down = down;
@@ -11,6 +14,9 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     this.wheel = wheel;
   }
 
+  /**
+   * @constructor
+   */
   function Mouse(element, handler) {
     this.element = element;
     //Custom handler for mouse actions...
@@ -86,28 +92,44 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     return [curleft,curtop];
   }
 
+  function getMouse(event) {
+    var mouse = event.target.mouse;
+    if (mouse) return mouse;
+    //Attempt to find in parent nodes
+    var target = event.target;
+    var i = 0;
+    while (target != document) {
+      target = target.parentNode;
+      if (target.mouse) return target.mouse;
+    }
+
+    return null;
+  }
+
   function handleMouseDown(event) {
     //Event delegation details
+    var mouse = getMouse(event);
+    if (!mouse) return true;
     var e = event || window.event;
-    this.mouse.elementId = e.target.id;
-    this.mouse.elementClass = e.target.className;
+    mouse.elementId = e.target.id;
+    mouse.elementClass = e.target.className;
     //Clear dragged flag on mouse down
-    this.dragged = false;
+    mouse.dragged = false;
 
-    this.mouse.update(event);
-    if (!this.mouse.isdown) {
-      this.mouse.lastX = this.mouse.absoluteX;
-      this.mouse.lastY = this.mouse.absoluteY;
+    mouse.update(event);
+    if (!mouse.isdown) {
+      mouse.lastX = mouse.absoluteX;
+      mouse.lastY = mouse.absoluteY;
     }
-    this.mouse.isdown = true;
-    this.mouse.button = event.button;
+    mouse.isdown = true;
+    mouse.button = event.button;
     //Set document move & up event handlers to this.mouse object's
-    document.mouse = this.mouse;
+    document.mouse = mouse;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
 
     //Handler for mouse down
-    var action = this.mouse.handler.down(event, this.mouse);
+    var action = mouse.handler.down(event, mouse);
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action;
@@ -115,14 +137,15 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
 
   //Default handlers for up & down, call specific handlers on element
   function handleMouseUp(event) {
+    var mouse = document.mouse;
     var action = true;
-    if (this.mouse.isdown) 
+    if (mouse.isdown) 
     {
-      this.mouse.update(event);
-      action = this.mouse.handler.click(event, this.mouse);
-      this.mouse.isdown = false;
-      this.mouse.button = null;
-      this.mouse.dragged = false;
+      mouse.update(event);
+      action = mouse.handler.click(event, mouse);
+      mouse.isdown = false;
+      mouse.button = null;
+      mouse.dragged = false;
     }
     //Restore default mouse on document
     document.mouse = defaultMouse;
@@ -133,20 +156,20 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   }
 
   function handleMouseMove(event) {
-    if (!this.mouse) return true;
-    this.mouse.update(event);
-    this.mouse.deltaX = this.mouse.absoluteX - this.mouse.lastX;
-    this.mouse.deltaY = this.mouse.absoluteY - this.mouse.lastY;
-    var action = this.mouse.handler.move(event, this.mouse);
+    var mouse = document.mouse;
+    mouse.update(event);
+    mouse.deltaX = mouse.absoluteX - mouse.lastX;
+    mouse.deltaY = mouse.absoluteY - mouse.lastY;
+    var action = mouse.handler.move(event, mouse);
 
     //Set dragged flag if moved more than limit
-    if (!this.mouse.dragged && this.mouse.isdown && Math.abs(this.mouse.deltaX) + Math.abs(this.mouse.deltaY) > 3)
-      this.mouse.dragged = true;
+    if (!mouse.dragged && mouse.isdown && Math.abs(mouse.deltaX) + Math.abs(mouse.deltaY) > 3)
+      mouse.dragged = true;
 
-    if (this.mouse.moveUpdate) {
+    if (mouse.moveUpdate) {
       //Constant update of last position
-      this.mouse.lastX = this.mouse.absoluteX;
-      this.mouse.lastY = this.mouse.absoluteY;
+      mouse.lastX = mouse.absoluteX;
+      mouse.lastY = mouse.absoluteY;
     }
 
     //If handler returns false, prevent default action
@@ -155,6 +178,8 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   }
  
   function handleMouseWheel(event) {
+    var mouse = getMouse(event);
+    if (!mouse) return true;
     var nDelta = 0;
     var action = false;
     if (!event) event = window.event; // For IE, access the global (window) event object
@@ -167,17 +192,17 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     event.spin = nDelta > 0 ? 1 : -1;
 
     //Set timer for 1/8 sec and accumulate spin
-    if (this.mouse.wheelTimer && this.mouse.spin == 0) {
+    if (mouse.wheelTimer && mouse.spin == 0) {
       document.mouse.event = event; //Save event
       //document.body.style.cursor = "wait";
       //setTimeout('mouseWheelTimout(document.mouse);', 125);
       //setTimeout('mouseWheelTimout(document.mouse);', 50);
       setTimeout('mouseWheelTimeout(document.mouse);', 50);
     }
-    this.mouse.spin += event.spin;
+    mouse.spin += event.spin;
 
-    if (!this.mouse.wheelTimer && this.mouse.spin != 0)
-      action = this.mouse.handler.wheel(event, this.mouse);
+    if (!mouse.wheelTimer && mouse.spin != 0)
+      action = mouse.handler.wheel(event, mouse);
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox

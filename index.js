@@ -46,6 +46,9 @@ window['transferHTML'] = transferHTML;
 var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
 
   //WheelAction - field id and value
+  /**
+   * @constructor
+   */
   function WheelAction(id, value) {
     this.id = id;
     this.value = value;
@@ -137,7 +140,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   //Login session JSON received, load session_menu.php
   function sessionGet(data) {
-    if (!data) {
+    if (!data || data.indexOf("Error:") == 0) {
       //Offline mode?
       consoleWrite('Offline!');
       offline = true;
@@ -255,8 +258,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     sources[doc] = srcContent;
 
     var remain = 0;
-    for (filename in sources)
-      if (sources[filename].length == 0) remain++;
+    for (filename in sources) {
+      if (!sources[filename] || sources[filename].length == 0) remain++;
+    }
 
     if (remain == 0)
       appInit();  //All data loaded, call init
@@ -267,7 +271,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     sources[filename] = data; //Save content
     var remain = 0;
     for (filename in sources)
-      if (sources[filename].length == 0) remain++;
+      if (!sources[filename] || sources[filename].length == 0) remain++;
 
     if (remain == 0)
       appInit();  //All data loaded, call init
@@ -368,6 +372,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
           entry.className = "selected_item"
         }
         if (localStorage["fractured.thumbnail." + i]) {
+          //localStorage.removeItem("fractured.thumbnail." + i);
           var img = new Image;
           img.src = localStorage["fractured.thumbnail." + i];
           img.className = "thumb";
@@ -395,6 +400,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     $('nameInput').value = fractal.name;
     autoResize(autoSize);
     applyAndSave();
+        //Generate thumbnails on select!
         if (!localStorage["fractured.thumbnail." + idx])
             localStorage["fractured.thumbnail." + idx] = thumbnail();
     populateFractals();
@@ -965,7 +971,6 @@ var rztimeout = undefined;
       else if (event.button == 2) button = "right";
       else button = "left";
     }
-    consoleWrite(button);
 
     if (event.shiftKey && event.altKey && event.ctrlKey) {
       action = mouseActions[button]["shift+ctrl+alt"];
@@ -1242,6 +1247,9 @@ function handleFormMouseDown(event) {
 function saveColour(val) {colours.save(val);}
 function abortColour() {colours.cancel();}
 
+/**
+ * @constructor
+ */
 function ColourEditor(gl) {
   this.inserting = false;
   this.editing = -1;

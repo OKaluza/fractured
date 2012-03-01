@@ -14,6 +14,9 @@
 
   savevars = {};
 
+  /**
+   * @constructor
+   */
   function Aspect(re, im, rotation, zoom) {
     this.re = re;
     this.im = im;
@@ -65,6 +68,9 @@
   }
 
   //Complex number type
+  /**
+   * @constructor
+   */
   function Complex(real, imag) {
     if (typeof(real) == 'string')
       this.re = parseFloat(real);
@@ -91,6 +97,9 @@
     }
   }
 
+  /**
+   * @constructor
+   */
   function Param(value, type, label) {
     //A parameter object
     this.type = type;
@@ -284,6 +293,9 @@
     }
   }
 
+  /**
+   * @constructor
+   */
   function ParameterSet() {
     //A collection of functions that operate on sets of parameters
   }
@@ -511,6 +523,9 @@
   }
 
   //Contains a formula selection and its parameter set
+  /**
+   * @constructor
+   */
   function Formula(type) {
     this.type = type;
     this.params = {};
@@ -565,8 +580,8 @@
     }
     consoleWrite("Set [" + this.type + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
        //consoleTrace();
-    //growTextAreas('fractal_inputs');  //Resize expression fields
-    //growTextAreas('colour_inputs');  //Resize expression fields
+    growTextAreas('fractal_inputs');  //Resize expression fields
+    growTextAreas('colour_inputs');  //Resize expression fields
   }
 
   Formula.prototype.filename = function() {
@@ -691,7 +706,9 @@
     return code;
   }
 
-
+  /**
+   * @constructor
+   */
   function Fractal(canvas, webgl) {
     //Construct a new default fractal object
     this.canvas = canvas;
@@ -757,7 +774,7 @@
     this.width = window.innerWidth - (showparams ? 390 : 4);
     this.height = window.innerHeight - 34;
     this.origin = new Aspect(0, 0, 0, 0.5); 
-    this.savePos = this.origin;
+    this.savePos = new Aspect(0, 0, 0, 0.5);
     this.selected = new Complex(0, 0);
     this.julia = false;
     this.perturb = false;

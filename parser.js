@@ -259,7 +259,7 @@ parse: function parse(input) {
           default:;
         }
     }
-    return true;
+    //return true;
 }};/* Jison generated lexer */
 var lexer = (function(){var lexer = ({EOF:1,
 parseError:function parseError(str, hash) {

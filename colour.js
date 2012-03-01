@@ -1,3 +1,6 @@
+  /**
+   * @constructor
+   */
   function Palette(source) {
     //Colour palette array
     this.colours = [];
@@ -137,6 +140,9 @@
   }
 
 
+  /**
+   * @constructor
+   */
   function ColourPos(colour, pos) {
     //Stores colour as rgba and position as real [0,1]
     this.position = parseFloat(pos);
@@ -150,6 +156,9 @@
     }
   }
   
+  /**
+   * @constructor
+   */
   function Colour(colour) {
     //Construct... stores colour as r,g,b,a values
     //Can pass in html colour string, HSV object or integer rgba
