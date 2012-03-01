@@ -1,3 +1,6 @@
+  /**
+   * @constructor
+   */
   function WebGL(canvas) {
     this.program = null;
     this.modelView = new ModelView();
@@ -193,6 +196,9 @@
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
   }
 
+  /**
+   * @constructor
+   */
   function ModelView() {
     this.matrix = null;
     this.stack = [];

@@ -1,12 +1,11 @@
 /* DHTML Color Picker */
 /* Originally based on : http://www.colorjack.com/software/dhtml+color+picker.html */
-
-function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
-function $S(o) { o=$(o); if(o) return(o.style); }
-function toggle(v) { $S(v).display=($S(v).display=='none'?'block':'none'); }
 function scale(val, range, min, max) {return clamp(max * val / range, min, max);}
 function clamp(val, min, max) {return Math.max(min, Math.min(max, val));}
 
+/**
+ * @constructor
+ */
 function ColourPicker(savefn, abortfn) {
   this.savefn = savefn;
   this.abortfn = abortfn;

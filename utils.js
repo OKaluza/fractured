@@ -1,3 +1,8 @@
+//JQuery style lookup by id and style
+function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
+function $S(o) { o=$(o); if(o) return(o.style); }
+function toggle(v) { $S(v).display=($S(v).display=='none'?'block':'none'); }
+
 function typeOf(value) {
   var s = typeof value;
   if (s === 'object') {
