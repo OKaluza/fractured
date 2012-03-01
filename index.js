@@ -541,15 +541,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     var idField = document.getElementById("sessid");
     idField.setAttribute("value", currentSession ? currentSession : 0);
 
-    var hiddenField = document.createElement("input");
-    hiddenField.setAttribute("type", "hidden");
-    hiddenField.setAttribute("name", "data");
-    hiddenField.setAttribute("value", getState());
+    //Replace from with frm until hosting bug fixed
+    var data = getState().replace(/from/g,"frm")
+    $("sessdata").value = data;
 
     var form = document.forms["savesession"];
-    form.appendChild(hiddenField);
     form.submit();
-    form.removeChild(hiddenField);
   }
 
   function exportStateFile() {
