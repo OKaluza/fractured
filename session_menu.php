@@ -5,9 +5,10 @@
   {
     //User is logged in
   ?> 
-  <form name="savesession" action="db/session_save.php" method="post">
+  <form name="savesession" action="db/session_save.php" method="post" enctype=multipart/form-data>
     <input type="hidden" id="desc" name="description"/>
     <input type="hidden" id="sessid" name="session_id"/>
+    <input type="hidden" id="sessdata" name="data" value=""/>
   </form>
 
   <li><hr></li>
