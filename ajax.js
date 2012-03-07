@@ -7,7 +7,7 @@ function ajaxReadFile(filename, callback, nocache)
   {
     if(http.readyState == 4) {
       if(http.status == 200) {
-        consoleWrite("loaded: " + filename);
+        //consoleWrite("RECEIVED: " + filename);
         if (callback)
           callback(http.responseText, filename);
       } else {

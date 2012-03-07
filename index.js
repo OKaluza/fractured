@@ -1,3 +1,8 @@
+//TODO:
+//Bugs:
+// Assign action to rotate
+// Load exported fractal, attempt to save (unexpected EOF) (Since turning formula saving back on)
+
 
 //Globals
 var fractal;
@@ -18,30 +23,6 @@ var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 var offline = false;
 var recording = false;
-
-//Exports!
-// Store the function in a global property referenced by a string:
-window['pageStart'] = pageStart;
-window['resetState'] = resetState;
-window['exportStateFile'] = exportStateFile;
-window['saveFractal'] = saveFractal;
-window['deleteFractal'] = deleteFractal;
-window['saveImageJPEG'] = saveImageJPEG;
-window['saveImagePNG'] = saveImagePNG;
-window['setAntiAlias'] = setAntiAlias;
-window['defaultMouseActions'] = defaultMouseActions;
-window['toggleParams'] = toggleParams;
-window['applyAndSave'] = applyAndSave;
-window['bgColourMouseClick'] = bgColourMouseClick;
-window['showPanel'] = showPanel;
-window['handleFormMouseDown'] = handleFormMouseDown;
-window['clearFractal'] = clearFractal;
-window['autoResize'] = autoResize;
-window['openEditor'] = openEditor;
-window['consoleClear'] = consoleClear;
-window['consoleHelp'] = consoleHelp;
-window['fileSelected'] = fileSelected;
-window['transferHTML'] = transferHTML;
 
 var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
 
@@ -133,9 +114,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     ajaxReadFile('session_json.php', sessionGet);
 
     //Load the last program state
-    //loadState();
+    loadState();
     //Load the content from files
-    //loadSources();
+    loadSources();
   }
 
   //Login session JSON received, load session_menu.php
@@ -144,10 +125,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       //Offline mode?
       consoleWrite('Offline!');
       offline = true;
-      //Load the last program state
-      loadState();
-      //Load the content from files
-      loadSources();
       return;
     }
 
@@ -155,7 +132,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     var code = currentLogin.code; //Random
     if (currentLogin.id && currentLogin.id.length == 64) {
       //Have an active login, save and continue
-        consoleWrite("Login retrieved from session: " + data);
+      //  consoleWrite("Login retrieved from session: " + data);
       localStorage['fractured.currentLogin'] = data;
     } else {
       //First attempt to load a stored login session if available
@@ -205,11 +182,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     var sesmenu = document.getElementById('session_menu');
     sesmenu.innerHTML = html;
-
-      //Load the last program state
-      loadState();
-      //Load the content from files
-      loadSources();
   }
 
   //Update and save
@@ -220,12 +192,19 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function loadSources() {
     //Load a from list of remaining source files
-    for (filename in sources)
-      if (!sources[filename])
+    for (filename in sources) {
+      if (supports_html5_storage()) sources[filename] = localStorage[filename];
+      if (!sources[filename]) {
         if (offline)
           iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
         else
           ajaxReadFile(filename, saveSource, true);
+      } else {
+        consoleWrite("restored: " + filename);
+      }
+    }
+    //Check if all loaded yet, if so call appInit()
+    checkSources();
   }
 
   //External content load via iframe dynamic insert
@@ -255,20 +234,21 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     //  srcContent=srcFrame.contentWindow.document.body.textContent;
     //  srcContent=srcFrame.contentWindow.document.body.textContent;
     //}
-    sources[doc] = srcContent;
+    sources[doc] = localStorage[doc] = srcContent;
 
-    var remain = 0;
-    for (filename in sources) {
-      if (!sources[filename] || sources[filename].length == 0) remain++;
-    }
-
-    if (remain == 0)
-      appInit();  //All data loaded, call init
+    consoleWrite("loaded: " + doc);
+    checkSources();
   }
 
   //Source file loaded
-  function saveSource(data, filename){
-    sources[filename] = data; //Save content
+  function saveSource(data, filename) {
+    sources[filename] = localStorage[filename] = data; //Save content
+    consoleWrite("loaded: " + filename);
+    checkSources();
+  }
+
+  function checkSources() {
+    //Check if all loaded yet, if so call appInit()
     var remain = 0;
     for (filename in sources)
       if (!sources[filename] || sources[filename].length == 0) remain++;
@@ -514,8 +494,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
    return result;
   }
 
-  function resetState() {
-    if (confirm('This will clear everything!')) {
+  function resetState(noconfirm) {
+    if (noconfirm || confirm('This will clear everything!')) {
       var login = localStorage["fractured.currentLogin"]; //Save login
       localStorage.clear(); //be careful as this will clear the entire database
       if (login) localStorage["fractured.currentLogin"] = login; //Restore login
@@ -624,6 +604,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function loadSession(id)
   {
+    if (!confirm('Loading new session. This will overwrite everything!')) return;
     currentSession = id;
     ajaxReadFile('db/session_get.php?id=' + id, importState);
   }
@@ -663,7 +644,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function importState(source) {
     var parsed = JSON.parse(source);
-    if (!parsed || !confirm('Loading new session. This will overwrite everything!')) return;
+    if (!parsed) return;
     try {
       localStorage.clear(); //clear the entire database
       for (key in parsed)
@@ -924,6 +905,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     delete localStorage['fractured.currentLogin'];
     delete localStorage['fractured.currentSession']
     delete localStorage['fractured.currentFractal']
+    if (confirm("Clear current session after logout?"))
+      resetState(true);
     ajaxReadFile('db/logout.php', reloadWindow);
   }
 
@@ -1455,7 +1438,10 @@ ColourEditor.prototype.cycle = function(inc, update) {
 function fileSelected(files) {
   var callback = loadFile;
   if (filetype == 'palette') callback = fractal.loadPalette; //loadPalette;
-  if (filetype == 'session') callback = importState;
+  if (filetype == 'session') {
+    if (!confirm('Loading new session. This will overwrite everything!')) return;
+    callback = importState;
+  }
   filesProcess(files, callback);
 }
 
