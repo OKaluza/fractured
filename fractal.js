@@ -891,7 +891,7 @@
       if (this[type].selected != "none" && this[type].currentParams.count() > 0)
           code += "\n[params." + type + "]\n" + this[type].currentParams;
     }
-    /*/Formula code (###)
+    //Formula code (###)
     for (t in types) {
       type = types[t];
       if (this[type].selected != "none") {
@@ -900,7 +900,7 @@
         if (t==4 && this["outside_colour"].selected == this["inside_colour"].selected) break;
         code += "\n[formula." + type + "]\n" + sources[this[type].filename()];
       }
-    }*/
+    }
     code += "\n[palette]\n" + colours.palette;
     return code;
   }
@@ -977,10 +977,10 @@
           var filename = this[type].filename();
           collect = true;
           buffer = "";
-          //###
-          //collectDone = function() {sources[filename] = buffer;}
+          //### Load formula source, buggy?
+          collectDone = function() {sources[filename] = buffer;}
           //Use this instead to skip loading formula code from saved param files
-            collectDone = function() {}
+          //  collectDone = function() {}
         }
         continue;
       }

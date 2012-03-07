@@ -11,7 +11,6 @@
 <link rel="stylesheet" type="text/css" href="reset.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
-<!--
 <script type="text/javascript" src="sha256.js"></script>
 <script type="text/javascript" src="colourPicker.js"></script>
 <script type="text/javascript" src="index.js"></script>
@@ -24,8 +23,9 @@
 
 <script type="text/javascript" src="sylvester.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
--->
+<!--
 <script type="text/javascript" src="fractured-compressed.js"></script>
+-->
 
 </head>
 
@@ -42,7 +42,8 @@
         <li><span class="fly" tabindex="1">Session</span>
           <ul class="dd">
             <li><span onclick="resetState();">New</span></li>
-            <li><span onclick="exportStateFile();">Export</span></li>
+            <li><span onclick="exportState();">Export</span></li>
+            <!--li><span onclick="exportStateFile();">Export</span></li-->
             <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
             <div id="session_menu"></div>
           </ul>
@@ -302,12 +303,12 @@
   </div>
   <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
 
-  <div id="popup" class="popup">
+  <div id="popup" class="popup" style="display: none">
     <div class="popclose" onclick="toggle('popup');">X</div>
     This a vertically and horizontally centered popup.
   </div>
 
-  <div id="openid_form" class="popup">
+  <div id="openid_form" class="popup" style="display: none">
     <div class="popclose" onclick="toggle('openid_form');">X</div>
     <img src="media/logos/logo_openid.png" alt="OpenID">
     <form action="authenticate.php" method="post" name="login_form">
