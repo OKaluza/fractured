@@ -1,8 +1,9 @@
 //TODO:
+//Write help screen
+//Allow disabling of thumbnails (set size?)
+//Scripting/video recording features? - disable/hide?
 //Bugs:
 // Assign action to rotate
-// Load exported fractal, attempt to save (unexpected EOF) (Since turning formula saving back on)
-
 
 //Globals
 var fractal;
@@ -137,7 +138,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     } else {
       //First attempt to load a stored login session if available
       if (localStorage["fractured.currentLogin"]) {
-          consoleWrite('Loading stored login : ' + localStorage["fractured.currentLogin"]);
+        //consoleWrite('Loading stored login : ' + localStorage["fractured.currentLogin"]);
         currentLogin = JSON.parse(localStorage["fractured.currentLogin"]);
         if (currentLogin.id && currentLogin.id.length == 64) {
           //Hash the once-off code with the login id
@@ -153,10 +154,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function setLogin(data) {
-      consoleWrite("login_get response: " + data);
+    //consoleWrite("login_get response: " + data);
     //Called with result from ajax login query
     if (data && data.length > 0) {
-        consoleWrite("Saved login, new Login received from server: " + data)
+      //consoleWrite("Saved login, new Login received from server: " + data)
       localStorage['fractured.currentLogin'] = data;
     } else {
       //Failed, clear the login key?

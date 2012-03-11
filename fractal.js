@@ -564,6 +564,8 @@
 
     //Save existing param set
     var oldparams = this.params[name];
+    //if (oldparams && oldparams.toString().length > 0) alert(oldparams);
+
     //Create new empty param set
     this.params[name] = new ParameterSet();
     //Save a reference to active parameters
@@ -574,7 +576,8 @@
       //Load the parameter set for selected formula
       this.params[name].parseFormula(code);
       //Copy previously values if available
-      this.params[name].restoreValues(oldparams);
+      if (oldparams && oldparams.toString().length > 0) //TODO: Better way of checking there are params
+        this.params[name].restoreValues(oldparams);
       //Update the fields
       this.params[name].createFields(this.type, name);
     }
