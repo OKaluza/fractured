@@ -39,7 +39,7 @@ function ajaxPost(url, params, callback)
   { 
     if(http.readyState == 4)
       if(http.status == 200) {
-        consoleWrite("POST: " + url + "&" + params);
+        //consoleWrite("POST: " + url + "&" + params);
         if (callback)
           callback(http.responseText);
       } else {
