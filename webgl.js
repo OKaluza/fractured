@@ -119,19 +119,22 @@
 
     this.program.vshader = this.compileShader(vs, this.gl.VERTEX_SHADER);
     this.program.fshader = this.compileShader(fs, this.gl.FRAGMENT_SHADER);
+    if (this.program.vshader && this.program.fshader) {
+      this.gl.attachShader(this.program, this.program.vshader);
+      this.gl.attachShader(this.program, this.program.fshader);
 
-    this.gl.attachShader(this.program, this.program.vshader);
-    this.gl.attachShader(this.program, this.program.fshader);
-
-    this.gl.linkProgram(this.program);
-
-    if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
-      alert("Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program));
-    }
+      this.gl.linkProgram(this.program);
+   
+      if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+        alert("Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program));
+      }
+    } else
+      this.program = null;
   }
 
   //Setup and load uniforms specific to the fractal program
   WebGL.prototype.setupProgram = function(uniforms) {
+    if (!this.program) return;
     this.program.vertexPositionAttribute = this.gl.getAttribLocation(this.program, "aVertexPosition");
     this.gl.enableVertexAttribArray(this.program.vertexPositionAttribute);
     //this.program.textureCoordAttribute = this.gl.getAttribLocation(this.program, "aTextureCoord");

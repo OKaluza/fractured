@@ -17,13 +17,14 @@ var antialias = 1;
 var autoSize = true;
 var showparams = true;
 var hasChanged = false;
-var editorTheme = 'fractureddark';
-var scriptTheme = 'monokai';
 var currentSession = 0; //Selected session
 var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 var offline = false;
 var recording = false;
+//Timers
+var rztimeout = undefined;
+
 
 var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
 
@@ -188,7 +189,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   //Update and save
   function applyAndSave() {
     fractal.applyChanges();
-    saveState();
+    saveActive();
   }
 
   function loadSources() {
@@ -669,10 +670,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
        formulae = JSON.parse(f_source);
        selected = JSON.parse(localStorage["fractured.selected"]);
        //Load global settings...
-       editorTheme = localStorage["fractured.editorTheme"];
-       scriptTheme = localStorage["fractured.scriptTheme"];
        autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
-       antialias = localStorage["fractured.antialias"];
+       antialias = parseInt(localStorage["fractured.antialias"]);
        setAntiAliasMenu();
 
     } else {
@@ -681,8 +680,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
        selected = {"base" : "base", "fractal" : "mandelbrot", "pre_transform" : "none", "post_transform" : "none",
                     "outside_colour": "default", "inside_colour": "none"};
-       editorTheme = 'fractureddark';
-       scriptTheme = 'monokai';
+       localStorage["fractured.editorTheme"] = 'fractureddark';
+       localStorage["fractured.scriptTheme"] = 'monokai';
     }
 
     //Custom mouse actions
@@ -778,14 +777,22 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["fractured.selected"] = JSON.stringify(selected);
       //Save script
       localStorage["script.js"] = sources["script.js"];
+      //Save some global settings
+      localStorage["fractured.autoSize"] = autoSize;
+      localStorage["fractured.antialias"] = antialias;
+      //Save current fractal (as default)
+      saveActive();
+    } catch(e) {
+      //data wasn’t successfully saved due to quota exceed so throw an error
+      alert('Quota exceeded! ' + e);
+    }
+  }
+
+  function saveActive() {
+    try {
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
-      //Save some global settings
-      localStorage["fractured.editorTheme"] = editorTheme;
-      localStorage["fractured.scriptTheme"] = scriptTheme;
-      localStorage["fractured.autoSize"] = autoSize;
-      localStorage["fractured.antialias"] = antialias;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);
@@ -914,8 +921,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 /////////////////////////////////////////////////////////////////////////
 //Event handling
 
-var rztimeout = undefined;
-
   function autoResize(newval) {
     if (rztimeout) clearTimeout(rztimeout);
     var timer = false;
@@ -941,7 +946,8 @@ var rztimeout = undefined;
   }
 
   function beforeUnload() {
-    if (hasChanged) return "There are un-saved changes"
+    saveState();
+    //if (hasChanged) return "There are un-saved changes"
   }
 
 //Fractal canvas mouse event handling
@@ -1027,7 +1033,8 @@ var rztimeout = undefined;
     select.style.display = 'none';
     fractal.copyToForm();
     fractal.draw(antialias);
-    saveState();  //Save param changes
+    //Save param changes
+    saveActive();
   }
 
   function canvasMouseDown(event, mouse) {

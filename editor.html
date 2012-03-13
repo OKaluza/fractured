@@ -94,7 +94,7 @@ var formula;
 
   loadEditor = function() {
     var editmode = "text/x-glsl";
-    var edittheme = window.opener.editorTheme;
+    var edittheme = localStorage["fractured.editorTheme"];
 
     //Copy for fallback to code
     code = document.getElementById('editor');
@@ -113,7 +113,7 @@ var formula;
 
     if (filename.indexOf(".js") >= 0) {
       editmode = "text/javascript";
-      edittheme = window.opener.scriptTheme;
+      edittheme = localStorage["fractured.scriptTheme"];
       var btn = document.getElementById('savebtn');
       btn.value = "Run";
       sel.options[sel.length] = new Option("cobalt");
@@ -150,9 +150,9 @@ var formula;
     var theme = sel.options[sel.selectedIndex].value;
     editor.setOption("theme", theme);
 	if (filename.indexOf(".js") < 0)
-      window.opener.editorTheme = localStorage["fractured.editorTheme"] = theme;
+      localStorage["fractured.editorTheme"] = theme;
     else
-      window.opener.scriptTheme = localStorage["fractured.scriptTheme"] = theme;
+      localStorage["fractured.scriptTheme"] = theme;
   }
 
 
