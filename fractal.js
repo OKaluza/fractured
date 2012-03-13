@@ -249,14 +249,13 @@
 
   Param.prototype.declare = function(key) {
     //Return GLSL const declaration for this parameter
-    var com = this.label ? "//" + this.label + "\n" : "";
+    var comment = this.label ? "//" + this.label + "\n" : "";
     type = this.type;
     if (this.type == 'list') type = 'int';
     if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
-
-    if (this.type == 'expression') return com + "#define " + key + " " + this.toGLSL() + "\n";
-    if (this.type.indexOf('function') > 0) return com + "#define " + key + "(args) " + this.value + "(args)\n";
-    return com + "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
+    if (this.type == 'expression') return comment + "#define " + key + " " + this.toGLSL() + "\n";
+    if (this.type.indexOf('function') > 0) return comment + "#define " + key + "(args) " + this.value + "(args)\n";
+    return comment + "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
   }
 
   Param.prototype.setFromElement = function(key) {
@@ -394,8 +393,8 @@
   }
 
   //Add fields for all our parameters dynamically to the page
-  ParameterSet.prototype.createFields = function(type, name) {
-    var field_area = document.getElementById(type + "_params");
+  ParameterSet.prototype.createFields = function(category, name) {
+    var field_area = document.getElementById(category + "_params");
     var divider = document.createElement("div");
     divider.className = "divider";
     sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
@@ -405,7 +404,7 @@
       label = labels[name];
       var divlabel = document.createElement("span");
       divlabel.className = "divider-label";
-      divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[type] + ": " + label));
+      divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[category] + ": " + label));
       divider.appendChild(divlabel);
     }
 
@@ -446,20 +445,20 @@
       {
         case -1: //Boolean
           input = document.createElement("input");
-          input.id = type + '_' + key;
+          input.id = category + '_' + key;
           input.type = "checkbox";
           input.checked = this[key].value;
           spanin.appendChild(input);
           //Checkbox label
           var lab = document.createElement("label");
-          lab.setAttribute("for", type + '_' + key);
+          lab.setAttribute("for", category + '_' + key);
           lab.appendChild(lab.ownerDocument.createTextNode(fieldlabel));
           spanin.appendChild(lab);
           break;
         case 0: //Integer
         case 1: //real
           input = document.createElement("input");
-          input.id = type + '_' + key;
+          input.id = category + '_' + key;
           input.type = "number";
           if (this[key].type == 1) input.setAttribute("step", 0.1);
           input.value = this[key].value;
@@ -469,14 +468,14 @@
           input = [null, null];
           input[0] = document.createElement("input");
           input[0].type = "number";
-          input[0].id = type + '_' + key + '_0';
+          input[0].id = category + '_' + key + '_0';
           input[0].setAttribute("step", 0.1);
           input[0].value = this[key].value.re;
           spanin.appendChild(input[0]);
           //Create second field
           input[1] = document.createElement("input");
           input[1].type = "number";
-          input[1].id = type + '_' + key + '_1';
+          input[1].id = category + '_' + key + '_1';
           input[1].setAttribute("step", 0.1);
           input[1].value = this[key].value.im;
           spanin.appendChild(input[1]);
@@ -526,10 +525,10 @@
   /**
    * @constructor
    */
-  function Formula(type) {
-    this.type = type;
+  function Formula(category) {
+    this.category = category;
     this.params = {};
-    if (type == "base")
+    if (category == "base")
       this.select("base");
     else
       this.reselect();
@@ -541,7 +540,7 @@
 
   Formula.prototype.selectByIndex = function(idx) {
     //Select by index from select control
-    var sel = $(this.type + '_formula');
+    var sel = $(this.category + '_formula');
     if (idx != undefined)
       sel.selectedIndex = idx;
     var name = sel.options[sel.selectedIndex].value;
@@ -552,11 +551,11 @@
     //Formula selected, parse it's parameters
     if (name) this.selected = name;
     else name = this.selected;  //Re-selecting current
-    //consoleWrite("Selecting " + name + " for " + this.type + "_params");
+    //consoleWrite("Selecting " + name + " for " + this.category + "_params");
 
     //Delete any existing dynamic form fields
-    var element = document.getElementById(this.type + "_params");
-    if (!element) alert("Element is null! " + type + " - " + name);
+    var element = document.getElementById(this.category + "_params");
+    if (!element) alert("Element is null! " + this.category + " - " + name);
     if (element.hasChildNodes()) {
       while (element.childNodes.length > 0 )
         element.removeChild(element.firstChild );       
@@ -576,19 +575,19 @@
       //Load the parameter set for selected formula
       this.params[name].parseFormula(code);
       //Copy previously values if available
-      if (oldparams && oldparams.toString().length > 0) //TODO: Better way of checking there are params
-        this.params[name].restoreValues(oldparams);
+      //if (oldparams && oldparams.toString().length > 0) //TODO: Better way of checking there are params
+      this.params[name].restoreValues(oldparams);
       //Update the fields
-      this.params[name].createFields(this.type, name);
+      this.params[name].createFields(this.category, name);
     }
-    consoleWrite("Set [" + this.type + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
+    consoleWrite("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
        //consoleTrace();
     growTextAreas('fractal_inputs');  //Resize expression fields
     growTextAreas('colour_inputs');  //Resize expression fields
   }
 
   Formula.prototype.filename = function() {
-    return formulaFilename(this.type, this.selected);
+    return formulaFilename(this.category, this.selected);
   }
 
   Formula.prototype.getSource = function() {
@@ -615,7 +614,7 @@
 
     //Create defines for formula entry points
     code += "\n";
-    if (this.type == "fractal") {
+    if (this.category == "fractal") {
       if (!initreg.exec(code)) code += "#define init()\n"; else code = code.replace(initreg, "void init()");
       if (!resetreg.exec(code)) code += "#define reset()\n"; else code = code.replace(resetreg, "void reset()");
       //If use znext expression if found, otherwise use function, define default if not found
@@ -654,7 +653,7 @@
       if (!this.currentParams["escape"]) code += "#define escape 4.0\n";
       if (!this.currentParams["bailtest"]) code += "#define bailtest norm\n";
 
-    } else if (this.type.indexOf("transform") > -1) {
+    } else if (this.category.indexOf("transform") > -1) {
       if (!initreg.exec(code)) code += "#define :init()\n";
       if (!resetreg.exec(code)) code += "#define :reset()\n";
       if (!transformreg.exec(code)) code += "#define :transform()\n";
@@ -663,7 +662,7 @@
       code = code.replace(resetreg, "void :reset()");
       code = code.replace(transformreg, "void :transform()");
 
-    } else if (this.type.indexOf("colour") > -1) {
+    } else if (this.category.indexOf("colour") > -1) {
       if (!initreg.exec(code)) code += "#define :init()\n";
       if (!resetreg.exec(code)) code += "#define :reset()\n";
       if (!calcreg.exec(code)) code += "#define :calc()\n";
@@ -698,13 +697,13 @@
     //Strip out param definitions, replace with declarations
     var head = firstIdx >= 0 ? code.slice(0, firstIdx) : "";
     var body = code.slice(lastIdx, code.length);
-    //alert(type + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
+    //alert(this.catageory + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
     code = head + params.slice(0, params.length-1) + body;
 
     //Replace remaining : symbols with formula type and "_"
     //(to prevent namespace clashes in globals/function names/params)
     //(: is used only for tenary operator ?: in glsl)
-    code = code.replace(/:([a-zA-Z_])/g, this.type + "_$1");
+    code = code.replace(/:([a-zA-Z_])/g, this.category + "_$1");
 
     return code;
   }
@@ -794,33 +793,33 @@
     this["inside_colour"].selectByIndex(0);
   }
 
-  Fractal.prototype.editFormula = function(type) {
-    if (this[type].selected != "none")
-      openEditor(type);
-      //openEditor(this[type].filename());
+  Fractal.prototype.editFormula = function(category) {
+    if (this[category].selected != "none")
+      openEditor(category);
+      //openEditor(this[category].filename());
   }
 
   Fractal.prototype.newFormula = function(select) {
-    var type = select;
-    if (type.indexOf('colour') > 0) type = 'colour';
-    if (type.indexOf('transform') > 0) type = 'transform';
+    var category = select;
+    if (category.indexOf('colour') > 0) category = 'colour';
+    if (category.indexOf('transform') > 0) category = 'transform';
 
-    var label = prompt("Please enter name for new " + type + " formula", "");
+    var label = prompt("Please enter name for new " + category + " formula", "");
     if (!label) return;
 
     //Add the formula
-    var name = addFormula(type, label);
+    var name = addFormula(category, label);
 
     //Template, default source
     var def;
-    if (type == 'fractal')
+    if (category == 'fractal')
       def = sources["formulae/mandelbrot.fractal.formula"];
-    else if (type == 'transform')
+    else if (category == 'transform')
       def = sources["formulae/functions.transform.formula"];
     else
       def = sources["formulae/default.colour.formula"];
 
-    sources["formulae/" + name + "." + type + ".formula"] = def;
+    sources["formulae/" + name + "." + category + ".formula"] = def;
 
     this[select].select(name); //Set selected
     $(select + '_formula').value = name;
@@ -887,21 +886,18 @@
                "inside_colour=" + this["inside_colour"].selected + "\n" +
                "\n[params.base]\n" + this["base"].currentParams;
 
-    var types = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
-    //Parameter values
-    for (t in types) {
-      type = types[t];
-      if (this[type].selected != "none" && this[type].currentParams.count() > 0)
-          code += "\n[params." + type + "]\n" + this[type].currentParams;
-    }
-    //Formula code (###)
-    for (t in types) {
-      type = types[t];
-      if (this[type].selected != "none") {
+    var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
+    for (t in categories) {
+      //Parameter values
+      var category = categories[t];
+      if (this[category].selected != "none" && this[category].currentParams.count() > 0)
+          code += "\n[params." + category + "]\n" + this[category].currentParams;
+      //Formula code (###)
+      if (this[category].selected != "none") {
         //Don't save formula source twice if same used
         if (t==3 && this["post_transform"].selected == this["pre_transform"].selected) continue;
         if (t==4 && this["outside_colour"].selected == this["inside_colour"].selected) break;
-        code += "\n[formula." + type + "]\n" + sources[this[type].filename()];
+        code += "\n[formula." + category + "]\n" + sources[this[category].filename()];
       }
     }
     code += "\n[palette]\n" + colours.palette;
@@ -950,48 +946,36 @@
     var lines = source.split("\n"); // split on newlines
     var section = "";
 
-    var buffer = "";
-    var collect = false;
-    var collectDone;
     //var formulas = {};
 
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i].trim();
       if (line[0] == "[") {
-        if (collect) {
-          //Finished collecting lines, call processor function
-          collectDone(buffer);
-          collectDone = null;
-          collect = false;
-        }
-
+        var buffer = "";
         section = line.slice(1, line.length-1);
 
         if (section == "palette"){
           //Collect lines into palette data
-          collect = true;
-          buffer = "";
-          //collectDone = colours.read; 
-          collectDone = function(data) {colours.read(data);}
+          for (var j = i+1; j < lines.length; j++) {
+            if (lines[j][0] == "[") break;
+            buffer += lines[j] + "\n";
+          }
+          colours.read(buffer);
+          i = j-1;
         } else if (section.slice(0, 8) == "formula.") {
-          //Collect lines into formula code
+          //Collect lines into formula code (###)
           var pair1 = section.split(".");
-          var type = pair1[1];
-          var filename = this[type].filename();
-          collect = true;
-          buffer = "";
-          //### Load formula source, buggy?
-          collectDone = function() {sources[filename] = buffer;}
-          //Use this instead to skip loading formula code from saved param files
-          //  collectDone = function() {}
+          var filename = this[pair1[1]].filename();
+          for (var j = i+1; j < lines.length; j++) {
+            if (lines[j][0] == "[") break;
+            buffer += lines[j] + "\n";
+          }
+          i = j-1;
+          sources[filename] = buffer;
         }
         continue;
       }
 
-      if (collect) {
-        buffer += lines[i] + "\n";
-        continue;
-      }
       if (!line) continue;
 
       if (section == "fractal") {
@@ -1029,34 +1013,31 @@
         }
       } else if (section.slice(0, 7) == "params.") {
         var pair1 = section.split(".");
-        var type = pair1[1];
-        var formula = this[type].selected;
+        var category = pair1[1];
+        var formula = this[category].selected;
         //Old style params.transform, add ":" to params
-        if (type == "post_transform" && line.indexOf(":") < 0) {
+        if (category == "post_transform" && line.indexOf(":") < 0) {
           line = ":" + line;
         }
-        //Check if using old style [params.formula] instead of [params.type]
-        //if (type != "base" && type in formulas) {
-        //  type = formula;
-        //  if (type.indexOf('colour') > 0) {
+        //Check if using old style [params.formula] instead of [params.category]
+        //if (category != "base" && category in formulas) {
+        //  category = formula;
+        //  if (category.indexOf('colour') > 0) {
         //    line = line.replace(/_in_/g, "_");
         //    line = line.replace(/_out_/g, "_");
-        //    line = line.replace(pair1[1], type);
+        //    line = line.replace(pair1[1], category);
         //  }
         //}
-        if (!type) type = "base";
+        if (!category) category = "base";
         var pair2 = line.split("=");
-        if (this[type].currentParams[pair2[0]])
-          this[type].currentParams[pair2[0]].parse(pair2[1]);
+        if (this[category].currentParams[pair2[0]])
+          this[category].currentParams[pair2[0]].parse(pair2[1]);
         else //Not defined in formula, skip
           if (pair2[0] != "antialias") //Ignored, now a global renderer setting
             alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
 
       }
     }
-
-    //Process the palette data
-    if (buffer) colours.read(buffer);
 
     //Select formulae and update parameters
     this.loadParams();
@@ -1316,43 +1297,43 @@
     }
 
     //Colour formulae param conversion
-    function convertColourParams(type, formula) {
-      var typename = type + "_colour";
-      var params = formula[typename].currentParams;
+    function convertColourParams(category, formula) {
+      var catname = category + "_colour";
+      var params = formula[catname].currentParams;
 
-      if (formula[typename].selected == "smooth") {
+      if (formula[catname].selected == "smooth") {
         params[":type2"].value = false;
-        if (saved[type] == "Smooth 2")
+        if (saved[category] == "Smooth 2")
           params[":type2"].value = true;
         //???? Override these? or leave?
         params[":power"].value = "2";
         params[":bailout"].value = saved["bailout"]; //"4";
       }
 
-      if (formula[typename].selected == "triangle_inequality") {
+      if (formula[catname].selected == "triangle_inequality") {
         //???? Override these? or leave?
         params[":power"].value = "2";
         params[":bailout"].value = saved["bailout"]; //"4";
       }
 
-      if (formula[typename].selected == "exponential_smoothing") {
+      if (formula[catname].selected == "exponential_smoothing") {
         params[":diverge"].value = true;
         params[":converge"].value = false;
         params[":use_z_old"].value = false;
-        if (saved[type] == "Exp. Smoothing - Xdiverge")
+        if (saved[category] == "Exp. Smoothing - Xdiverge")
           params[":use_z_old"].value = true;
-        if (saved[type] == "Exp. Smoothing - converge") {
+        if (saved[category] == "Exp. Smoothing - converge") {
           params[":diverge"].value = false;
           params[":converge"].value = true;
           params[":use_z_old"].value = true;
         }
-        if (saved[type] == "Exp. Smoothing - Both") {
+        if (saved[category] == "Exp. Smoothing - Both") {
           params[":converge"].value = true;
           params[":use_z_old"].value = true;
         }
       }
 
-      if (formula[typename].selected == "gaussian_integers") {
+      if (formula[catname].selected == "gaussian_integers") {
         params[":mode"].parse(saved["param2"].re);
         params[":colourby"].parse(saved["param2"].im);
       }
@@ -1529,6 +1510,7 @@
       this.gl.viewportHeight = this.height;
     }
 
+    if (!this.webgl.program) return;
     this.gl.useProgram(this.webgl.program);
 
     //Uniform variables
