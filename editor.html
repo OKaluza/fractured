@@ -77,8 +77,8 @@ var formula;
   saveEditor = function() {
     editor.save();  //Updates textarea content
     window.opener.sources[filename] = code.value;
-	//JS Script?
-	if (filename.indexOf(".js") < 0) {
+    //JS Script?
+    if (filename.indexOf(".js") < 0) {
       //Editing compiled shader source?
       if (filename == "gen-shader.frag")
         window.opener.fractal.updateShader(code.value);
@@ -149,7 +149,7 @@ var formula;
   function selectTheme(sel) {
     var theme = sel.options[sel.selectedIndex].value;
     editor.setOption("theme", theme);
-	if (filename.indexOf(".js") < 0)
+    if (filename.indexOf(".js") < 0)
       localStorage["fractured.editorTheme"] = theme;
     else
       localStorage["fractured.scriptTheme"] = theme;
