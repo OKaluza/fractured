@@ -14,7 +14,6 @@ complex :zmin, :zmax, :normfac;
 real :rmin, :rmax, :rave, :total, :itermin, :itermax;
 
 reset:
-{
   :rmin = 1.0e12;
   :rmax = 0.0;
   :rave = 0.0;
@@ -33,10 +32,8 @@ reset:
     :normfac = :normfact;    //factor normalisation
   if (:normalise == 3)
     :normfac = :normfunc(z); //f(z) normalisation
-}
 
 calc:
-{
   complex temp, remain;
 
   //Mode = round/truncate/floor/ceiling
@@ -65,10 +62,8 @@ calc:
      :zmax = z;
      :itermax = real(count+1);
   }
-}
 
 result:
-{
   real index, t;
   
   // minimum distance
@@ -115,6 +110,5 @@ result:
   if (:colourby == 8)
     index = :rmax / (:rmin + 1.e-12);
 
-  return gradient(repeat * index);
-}
+  colour = gradient(repeat * index);
 

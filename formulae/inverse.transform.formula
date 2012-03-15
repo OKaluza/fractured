@@ -5,7 +5,5 @@
 @:radius = real(1);
 
 reset:
-{
   pixel = @:center + div(@:radius, (pixel - @:center));
-}
 

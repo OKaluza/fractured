@@ -14,8 +14,6 @@
 //Converge
 @converge = real(0.00005);
 
-//Converge test
 converged:
-{
-  return bailtest(z-(1,0)) < converge;
-}
+  //Converge test
+  converged = bailtest(z-(1,0)) < converge;

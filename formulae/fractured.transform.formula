@@ -16,20 +16,15 @@
 @:compat = bool(true);
 
 init:
-{
   //HACK for old fractals
   if (:compat)
     maxiterations--;
-}
 
 reset:
-{
   //Circle limit
   if (:circle > 0.0 && len > :circle) discard;
-}
 
 transform:
-{
   //Apply every N steps
   if (:N > 1 && mod(real(count),real(:N)) != 0.0) return;
   
@@ -49,5 +44,3 @@ transform:
   //HACK for old fractals!
   if (:compat)  
     count++;
-}
-

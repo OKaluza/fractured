@@ -9,12 +9,10 @@
 
 //Reset, called once for each pixel before iterating
 reset:
-{
   //Reset fractal, standard doesn't work with this algorithm
   z = pixel;
   if (julia)
     z = selected;
   else
     if (perturb) z = (0,0);
-}
 

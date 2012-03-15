@@ -8,20 +8,18 @@
 
 real :il, :lp;
 
-init:
-{
-  //Inverse log of (power)
-  :il = 1.0/log(:power);
-  //Additional for Smooth 2
-  :lp = log(2.0 * log(sqrt(@:bailout))) * :il;
-}
-
 #define logexp(z) log(log(cabs(z)))
 //Inside version!
 //#define logexp(z) loge(complex(log(cabs(z)))).x
 
+
+init:
+  //Inverse log of (power)
+  :il = 1.0/log(:power);
+  //Additional for Smooth 2
+  :lp = log(2.0 * log(sqrt(@:bailout))) * :il;
+
 result:
-{
   real mu;
   if (:type2)
     //Smooth2 colouring
@@ -30,7 +28,5 @@ result:
     //Smooth1 colouring
     mu = real(count+1) - logexp(z) * :il;
   
-  return gradient(repeat * mu / real(maxiterations));
-}
-
+  colour = gradient(repeat * mu / real(maxiterations));
 
