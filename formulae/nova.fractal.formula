@@ -11,13 +11,9 @@
 @converge = real(0.00001);
 
 converged:
-{
-  return bailtest(z-z_1) < converge;
-}
+  converged = bailtest(z-z_1) < converge;
 
 //Reset, called once for each pixel before iterating
 reset:
-{
   //Nova init
   if (!julia && !perturb) z = C(1);
-}

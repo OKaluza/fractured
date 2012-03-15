@@ -101,7 +101,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
 
     //Get shader source files on server
-    sources["shaders/fractal-header.frag"] = "";
     sources["shaders/fractal-shader.frag"] = "";
     sources["shaders/complex-math.frag"] = "";
     sources["shaders/shader2d.vert"] = "";
@@ -195,7 +194,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function loadSources() {
     //Load a from list of remaining source files
     for (filename in sources) {
-      if (supports_html5_storage()) sources[filename] = localStorage[filename];
+      //if (supports_html5_storage()) sources[filename] = localStorage[filename];
       if (!sources[filename]) {
         if (offline)
           iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
@@ -251,12 +250,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function checkSources() {
     //Check if all loaded yet, if so call appInit()
-    var remain = 0;
+    var remain = false;
     for (filename in sources)
-      if (!sources[filename] || sources[filename].length == 0) remain++;
+      if (!sources[filename] || sources[filename].length == 0) {remain=true; break;}
 
-    if (remain == 0)
-      appInit();  //All data loaded, call init
+    if (!remain) appInit();  //All data loaded, call init
   }
 
   //Once we have source data, app can be initialised
@@ -707,8 +705,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         var name = addFormula(type, formulae[type][i]);
         //Load sources from local storage
         var filename = formulaFilename(type, name);
-        if (localStorage[filename])
-          sources[filename] = localStorage[filename];
+          sources[filename] = "";
+        //if (localStorage[filename])
+        //  sources[filename] = localStorage[filename];
       }
       //Script
       sources["script.js"] = localStorage["script.js"];
@@ -946,7 +945,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function beforeUnload() {
-    saveState();
+    //saveState(); //TODO: If this done here, reset doesn't work...
     //if (hasChanged) return "There are un-saved changes"
   }
 

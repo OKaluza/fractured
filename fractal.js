@@ -594,97 +594,87 @@
     return sources[this.filename()];
   }
 
-  Formula.prototype.getCode = function() {
+  Formula.prototype.getCodeSections = function() {
     var code = this.getSource();
-    if (this.selected == "same")
-      code = "#define inside_colour_result outside_colour_result\n";
+    var section = "data";
+    var sections = {"init" : "", "reset" : "", "znext" : "", "escaped" : "", "converged" : "", "calc" : "", "result" : "", "transform" : ""};
+    var match;
+    var lastIdx = 0;
+    var reg = /^([a-z]+):/gm;
 
-    //Check code for required functions, where not found create defaults
-    //This allows minimal formula files by leaving out functions where they use the standard approach
-    var initreg = /^init:/gm;
-    var resetreg = /^reset:/gm;
-    var znextreg = /^znext:/gm;
-    var escapedreg = /^escaped:/gm;
-    var convergedreg = /^converged:/gm;
-    var calcreg = /^calc:/gm;
-    var resultreg = /^result:/gm;
-    var transformreg = /^transform:/gm;
+//////////////////////////////////
+    //Replace remaining : symbols with formula type and "_"
+    //(to prevent namespace clashes in globals/function names/params)
+    //(: is used only for tenary operator ?: in glsl)
+    code = code.replace(/:([a-zA-Z_])/g, this.category + "_$1");
+//////////////////////////////////
 
-    //Create defines for formula entry points
-    code += "\n";
+    //Get section blocks by finding start labels:
+    while (match = reg.exec(code)) {
+      //Save the previous section
+      sections[section] = code.slice(lastIdx, reg.lastIndex - match[0].length - 1);
+      lastIdx = reg.lastIndex;
+      section = match[1]; //match[0].substr(0, match[0].length-1);
+    }
+    //Save the final section
+    sections[section] = code.slice(lastIdx);
+
+    //Defaults for missing sections
     if (this.category == "fractal") {
-      if (!initreg.exec(code)) code += "#define init()\n"; else code = code.replace(initreg, "void init()");
-      if (!resetreg.exec(code)) code += "#define reset()\n"; else code = code.replace(resetreg, "void reset()");
       //If use znext expression if found, otherwise use function, define default if not found
-      if (!znextreg.exec(code)) {
-        if (!this.currentParams["znext"])
-          code += "#define znext sqr(z)+c\n";
-      } else {
-        code = code.replace(znextreg, "complex znext()");
-        code += "#define znext znext()\n";
-      }
-
-      var converge_defined = false;
-      if (!convergedreg.exec(code)) {
-        if (!this.currentParams["converged"])
-          code += "#define converged false\n";
+      if (sections["znext"].length == 0) {
+        if (this.currentParams["znext"])
+          sections["znext"] = "\n  z = znext;\n";
         else
-          converge_defined = true;
-      } else {
-        code = code.replace(convergedreg, "bool converged()");
-        code += "#define converged converged()\n";
-        converge_defined = true;
+          sections["znext"] = "\n  z = sqr(z)+c;\n";
       }
 
-      if (!escapedreg.exec(code)) {
-        if (!this.currentParams["escaped"]) {
-          if (converge_defined && !this.currentParams["escape"])
-            code += "#define escaped false\n";  //If converge test provided, default escape test to false
-          else {
-            code += "#define escaped (bailtest(z) > escape)\n";
-          }
+      var converged_defined = false;
+      if (sections["converged"].length == 0) {
+        if (!this.currentParams["converged"]) {
+          //No converged test defined
+          sections["converged"] = "\n  bool converged = false;\n";
+          converged_defined = true;
         }
-      } else {
-        code = code.replace(escapedreg, "bool escaped()");
-        code += "#define escaped escaped()\n";
-      }
-      if (!this.currentParams["escape"]) code += "#define escape 4.0\n";
-      if (!this.currentParams["bailtest"]) code += "#define bailtest norm\n";
+      } else
+        sections["data"] += "\n  bool converged;\n";
 
-    } else if (this.category.indexOf("transform") > -1) {
-      if (!initreg.exec(code)) code += "#define :init()\n";
-      if (!resetreg.exec(code)) code += "#define :reset()\n";
-      if (!transformreg.exec(code)) code += "#define :transform()\n";
+      if (sections["escaped"].length == 0) {
+        //No escaped test defined
+        if (!this.currentParams["escaped"]) {
+          //If no converged test either create a default bailout
+          if (!converged_defined || this.currentParams["escape"])
+            sections["escaped"] = "\n  bool escaped = bailtest(z) > escape;\n";
+        }
+      } else
+        sections["data"] += "\n  bool escaped;\n";
 
-      code = code.replace(initreg, "void :init()");
-      code = code.replace(resetreg, "void :reset()");
-      code = code.replace(transformreg, "void :transform()");
+      if (!this.currentParams["escape"]) sections["data"] += "\n#define escape 4.0\n";
+      if (!this.currentParams["bailtest"]) sections["data"] += "\n#define bailtest norm\n";
 
     } else if (this.category.indexOf("colour") > -1) {
-      if (!initreg.exec(code)) code += "#define :init()\n";
-      if (!resetreg.exec(code)) code += "#define :reset()\n";
-      if (!calcreg.exec(code)) code += "#define :calc()\n";
-      if (!resultreg.exec(code) && this.selected != "same") code += "#define :result(A) background\n";
+      //Default colour result
+      if (sections["result"].length == 0)
+        sections["result"] = "\n  colour = background;\n";
 
-      code = code.replace(initreg, "void :init()");
-      code = code.replace(resetreg, "void :reset()");
-      code = code.replace(calcreg, "void :calc()");
-      code = code.replace(resultreg, "rgba :result(in real repeat)");
+      //Same colouring, always use the outside result...
+      if (this.selected == "same")
+        sections["calc"] = "\n  in_set = false;\n";
     }
 
-    return code;
+    return sections;
   }
 
   Formula.prototype.getParsedFormula = function() {
     //Get formula definition
-    var code = this.getCode();
-    //var codelines = code.split("\n").length;
+    var sections = this.getCodeSections();
+    var data = sections["data"];
 
     //Get block of param declarations by finding first and last match index
     var match;
     var firstIdx = -1;
     var lastIdx = 0;
-    while (match = paramreg.exec(code)) {
+    while (match = paramreg.exec(data)) {
       if (firstIdx < 0) firstIdx = paramreg.lastIndex - match[0].length;
       lastIdx = paramreg.lastIndex;
     }
@@ -693,17 +683,18 @@
     var params = this.currentParams.toCode();
 
     //Strip out param definitions, replace with declarations
-    var head = firstIdx >= 0 ? code.slice(0, firstIdx) : "";
-    var body = code.slice(lastIdx, code.length);
+    var head = firstIdx >= 0 ? data.slice(0, firstIdx) : "";
+    var body = data.slice(lastIdx, data.length);
     //alert(this.catageory + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
-    code = head + params.slice(0, params.length-1) + body;
+    data = head + params.slice(0, params.length-1) + body;
 
     //Replace remaining : symbols with formula type and "_"
     //(to prevent namespace clashes in globals/function names/params)
     //(: is used only for tenary operator ?: in glsl)
-    code = code.replace(/:([a-zA-Z_])/g, this.category + "_$1");
+    sections["data"] = data.replace(/:([a-zA-Z_])/g, this.category + "_$1");
 
-    return code;
+    //return code;
+    return sections;
   }
 
   /**
@@ -969,7 +960,7 @@
             buffer += lines[j] + "\n";
           }
           i = j-1;
-          sources[filename] = buffer;
+          ////sources[filename] = buffer;
         }
         continue;
       }
@@ -1418,43 +1409,45 @@
   //Build and redraw shader from source components
   Fractal.prototype.writeShader = function() {
     //Get formula selections
-    //Header for all fractal fragment programs
-    var header = sources["shaders/fractal-header.frag"];
 
     //Base code
     var base = this["base"].getParsedFormula();
 
     //Code for selected formula
-    var code = this["fractal"].getParsedFormula();
+    var form = this["fractal"].getParsedFormula();
 
     //Code for selected transforms
-    var pretransformcode = this["pre_transform"].getParsedFormula();
-    var posttransformcode = this["post_transform"].getParsedFormula();
+    var pretransform = this["pre_transform"].getParsedFormula();
+    var posttransform = this["post_transform"].getParsedFormula();
 
     //Code for selected colouring algorithms
-    var outcolourcode = this["outside_colour"].getParsedFormula();
-    var incolourcode = this["inside_colour"].getParsedFormula();
+    var outcolour = this["outside_colour"].getParsedFormula();
+    var incolour = this["inside_colour"].getParsedFormula();
 
     //Core code for all fractal fragment programs
     var shader = sources["shaders/fractal-shader.frag"];
-    var complex = sources["shaders/complex-math.frag"];
 
-    //Combine into final shader, saving line offsets
-    var fragmentShader = header + base;
-    formulaOffsets["fractal"] = fragmentShader.split("\n").length;
-    fragmentShader += code;
-    formulaOffsets["pre_transform"] = fragmentShader.split("\n").length;
-    fragmentShader += pretransformcode;
-    formulaOffsets["post_transform"] = fragmentShader.split("\n").length;
-    fragmentShader += posttransformcode;
-    formulaOffsets["outside_colour"] = fragmentShader.split("\n").length;
-    fragmentShader += outcolourcode;
-    formulaOffsets["inside_colour"] = fragmentShader.split("\n").length;
-    fragmentShader += incolourcode;
-        //###
-        //$('source-debug').value = fragmentShader;
+    //TODO: Another solution required for line number error reporting
+    formulaOffsets["fractal"] = shader.split("\n").length;
+    formulaOffsets["pre_transform"] = formulaOffsets["fractal"];
+    formulaOffsets["post_transform"] = formulaOffsets["fractal"];
+    formulaOffsets["outside_colour"] = formulaOffsets["fractal"];
+    formulaOffsets["inside_colour"] = formulaOffsets["fractal"];
 
-    fragmentShader += shader + complex;
+    //Replace ---SECTION--- with formula code
+    shader = this.insertTemplate(shader, "DATA", base.data + pretransform.data + posttransform.data + form.data + incolour.data + outcolour.data, 2);
+    shader = this.insertTemplate(shader, "INIT", pretransform.init + form.init + incolour.init + outcolour.init, 2);
+    shader = this.insertTemplate(shader, "INIT2", posttransform.init, 2);
+    shader = this.insertTemplate(shader, "RESET0", pretransform.reset, 4);
+    shader = this.insertTemplate(shader, "RESET", form.reset + posttransform.reset + incolour.reset + outcolour.reset, 4);
+    shader = this.insertTemplate(shader, "ZNEXT", pretransform.transform + form.znext + posttransform.transform, 6);
+    shader = this.insertTemplate(shader, "ESCAPED", form.escaped, 6);
+    shader = this.insertTemplate(shader, "CONVERGED", form.converged, 6);
+    shader = this.insertTemplate(shader, "COLOUR_CALC", outcolour.calc + incolour.calc, 6);
+    shader = this.insertTemplate(shader, "INSIDE_COLOUR", incolour.result, 6);
+    shader = this.insertTemplate(shader, "OUTSIDE_COLOUR", outcolour.result, 6);
+
+    var fragmentShader = shader + sources["shaders/complex-math.frag"];
 
     //Remove param declarations, replace with newline to preserve line numbers
     //fragmentShader = fragmentShader.replace(paramreg, "//(Param removed)\n");
@@ -1481,6 +1474,25 @@
       this.updateShader(fragmentShader);
     } else
       consoleWrite("Build skipped, shader not changed");
+  }
+
+  Fractal.prototype.insertTemplate = function(shader, template, source, indent) {
+    //var regex = new RegExp("^\s*---" + template + "---");
+    var regex = new RegExp("---" + template + "---");
+    var spaces = "          ";
+    spaces = spaces.substr(0, indent);
+
+      var reg = /^\s*/gm;
+      var match;
+      while (match = reg.exec(source)) {
+        //Replace the matched param with value
+        source = source.slice(0, reg.lastIndex) + spaces + source.slice(reg.lastIndex, source.length);
+        reg.lastIndex += indent;
+      }
+
+    //source = source.replace(/^\s*/gm, spaces);
+    //Replaces a template section with the passed source
+    return shader.replace(regex, source);
   }
 
   Fractal.prototype.updateShader = function(fragmentShader, vertexShader) {

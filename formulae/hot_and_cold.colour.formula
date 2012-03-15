@@ -18,24 +18,18 @@ int :closecalls;
 int :farcalls;
 
 reset:
-{
   :closecalls=0;
   :farcalls=0;
-}
 
 calc:
-{
   real dist = norm(z);
   if (dist < @:closedist)
     :closecalls++;
   else if (@:bailout - dist < @:fardist)
     :farcalls++;
-}
 
 result:
-{
   //return gradient(repeat * real(:closecalls) / real(count));
   rgba hcolour = @:hotcolour * (real(:closecalls)/real(count));
   rgba ccolour = @:coldcolour * (real(:farcalls)/real(count));
-  return rgba(hcolour.rgb + ccolour.xyz, 1.0);
-}
+  colour = rgba(hcolour.rgb + ccolour.xyz, 1.0);

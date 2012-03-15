@@ -13,6 +13,4 @@
 
 //Reset, called once for each pixel before iterating
 reset:
-{
   z = pixel;
-}

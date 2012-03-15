@@ -1,5 +1,3 @@
 //Default colouring algorithm, does nothing but return the count
 result:
-{
-  return gradient(repeat * real(count) / real(maxiterations));
-}
+  colour = gradient(repeat * real(count) / real(maxiterations));

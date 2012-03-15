@@ -7,11 +7,9 @@
 
 //Get next z(n+1), performs an iteration step
 znext:
-{
   //(diagonally stretched)
   //z = x + yi
   //x(n+1) = y(n) + x(c)
   //y(n+1) = y(n)^2 - x(n)^2 + y(c)
-  return complex(z.y + c.x, pow(z.y, p) - pow(z.x, p) + c.y);
-}
+  z = complex(z.y + c.x, pow(z.y, p) - pow(z.x, p) + c.y);
 

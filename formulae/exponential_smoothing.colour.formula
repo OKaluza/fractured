@@ -10,30 +10,24 @@ real :sum = 0.0;
 real :csum = 0.0;
 
 reset:
-{
   :sum = 0.0;
   :csum = 0.0;  
-}
 
 calc:
-{
-  complex zval = z;
+  complex :zval = z;
   if (:use_z_old)
-    zval = z_1 - z;
+    :zval = z_1 - z;
   
   if (:diverge)
-    :sum += exp(-cabs(zval));
+    :sum += exp(-cabs(:zval));
 
   if (:converge)
-    :csum += exp(-1.0/cabs(zval));  
-}
+    :csum += exp(-1.0/cabs(:zval));  
 
 result:
-{
   real mu = :sum;
   if (!:diverge || :converge && converged)
     mu =  :csum;
     
-  return gradient(repeat * mu / real(maxiterations));
-}
+  colour = gradient(repeat * mu / real(maxiterations));
 
