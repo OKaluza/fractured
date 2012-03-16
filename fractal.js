@@ -1425,7 +1425,7 @@
     var incolour = this["inside_colour"].getParsedFormula();
 
     //Core code for all fractal fragment programs
-    var shader = sources["shaders/fractal-shader.frag"];
+    var shader = sources["shaders/glsl-header.frag"] + sources["shaders/fractal-shader.frag"];
 
     //TODO: Another solution required for line number error reporting
     formulaOffsets["fractal"] = shader.split("\n").length;

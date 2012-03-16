@@ -26,21 +26,22 @@ reset:
 
 transform:
   //Apply every N steps
-  if (:N > 1 && mod(real(count),real(:N)) != 0.0) return;
-  
-  //Apply induction, on z(n-1) (*) or z(n-2) (@)
-  if (:induct_on > 0)
+  if (:N <= 1 || mod(real(count),real(:N)) == 0.0)
   {
-    if (:induct_on == 1)
-      z += mul(z_1, :induct);
-    else if (:induct_on == 2)
-      z += mul(z_2, :induct);
+    //Apply induction, on z(n-1) (*) or z(n-2) (@)
+    if (:induct_on > 0)
+    {
+      if (:induct_on == 1)
+        z += mul(z_1, :induct);
+      else if (:induct_on == 2)
+        z += mul(z_2, :induct);
+    }
+
+    //Apply separate functions to real/imaginary components
+    z = :z_fn(z);
+    z = complex(:re_fn(z.x), :im_fn(z.y));
+
+    //HACK for old fractals!
+    if (:compat)  
+      count++;
   }
-
-  //Apply separate functions to real/imaginary components
-  z = :z_fn(z);
-  z = complex(:re_fn(z.x), :im_fn(z.y));
-
-  //HACK for old fractals!
-  if (:compat)  
-    count++;
