@@ -20,7 +20,7 @@ var hasChanged = false;
 var currentSession = 0; //Selected session
 var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
-var offline = false;
+var offline = null;
 var recording = false;
 //Timers
 var rztimeout = undefined;
@@ -101,6 +101,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
 
     //Get shader source files on server
+    sources["shaders/glsl-header.frag"] = "";
     sources["shaders/fractal-shader.frag"] = "";
     sources["shaders/complex-math.frag"] = "";
     sources["shaders/shader2d.vert"] = "";
@@ -128,6 +129,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       offline = true;
       return;
     }
+    offline = false;
 
     var currentLogin = JSON.parse(data);
     var code = currentLogin.code; //Random
@@ -192,6 +194,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function loadSources() {
+    //Wait until we know if server is available...
+    if (offline == null) {
+      setTimeout("loadSources();", 250);
+      return;
+    }
     //Load a from list of remaining source files
     for (filename in sources) {
       //if (supports_html5_storage()) sources[filename] = localStorage[filename];
