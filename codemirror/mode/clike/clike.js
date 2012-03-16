@@ -3,6 +3,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       keywords = parserConfig.keywords || {},
       blockKeywords = parserConfig.blockKeywords || {},
       modifiers = parserConfig.modifiers || {},
+      labels = parserConfig.labels || {},
       types = parserConfig.types || {},
       stdlib = parserConfig.stdlib || {}, 
       stdvar = parserConfig.stdvar || {},
@@ -45,7 +46,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       stream.eatWhile(isOperatorChar);
       return "operator";
     }
-    stream.eatWhile(/[\w\$_]/);
+    stream.eatWhile(/[\w\$_:]/);
     var cur = stream.current();
     if (keywords.propertyIsEnumerable(cur)) {
       if (blockKeywords.propertyIsEnumerable(cur)) curPunc = "newstatement";
@@ -53,6 +54,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     }
     if (atoms.propertyIsEnumerable(cur)) return "atom";
     if (modifiers.propertyIsEnumerable(cur)) return "modifier";
+    if (labels.propertyIsEnumerable(cur)) return "label";
     if (types.propertyIsEnumerable(cur)) return "type";
     if (stdlib.propertyIsEnumerable(cur)) return "stdlib";
     if (stdvar.propertyIsEnumerable(cur)) return "stdvar";
@@ -261,6 +263,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     blockKeywords: words("do else for if switch while"),
     atoms: words("true false PI TWO_PI E"),
     modifiers: words("attribute const in inout out varying uniform"),
+    labels: words("init: reset: znext: escaped: converged: transform: calc: result:"),
     types: words("bool bvec2 bvec3 bvec4 float int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 
       "sampler1D sampler1DShadow sampler2D sampler2DShadow sampler3D samplerCube " + 
       "vec2 vec3 vec4 void struct " + 
@@ -321,7 +324,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
         }
         stream.eatWhile(/[\w\$_:]/);
         return "param";
-      },
+      }/*,
       ":": function(stream, state) {
         if (stream.eat('"')) {
           state.tokenize = tokenAtString;
@@ -329,7 +332,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
         }
         stream.eatWhile(/[\w\$_@]/);
         return "local";
-      }
+      }*/
     }
   });
 }());
