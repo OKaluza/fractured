@@ -5,7 +5,7 @@
 <!-- This is supposed to tell IE to use Chrome Frame if available-->
 <meta http-equiv="X-UA-Compatible" content="chrome=1">
 
-<title>Fractured - WebGL Fractal Art Studio</title>
+<title>Fractured - Fractal Art Studio</title>
 
 <!--link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'-->
 <link rel="stylesheet" type="text/css" href="reset.css">
@@ -41,6 +41,17 @@
       <ul id="nav">
         <li><span class="fly" tabindex="1">Session</span>
           <ul class="dd">
+            <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
+              <ul class="dd">
+                <li><span onclick="window.location.reload();">Reload</span></li>
+                <li><span onclick="openEditor('gen-shader.frag');">Generated Source</span></li>
+                <li><span onclick="openEditor('shaders/fractal-shader.frag');">Body Template</span></li>
+                <li><span onclick="openEditor('shaders/complex-math.frag');">Complex Library</span></li>
+                <li><span onclick="openEditor('shaders/shader2d.vert');">Vertex Shader</span></li>
+                <li><hr></li>
+                <li><span onclick="fractal.clShader(); //openEditor('fractured.cl');">OpenCL Shader</span></li>
+              </ul>
+            </li>
             <li><span onclick="resetState();">New</span></li>
             <li><span onclick="exportState();">Export</span></li>
             <!--li><span onclick="exportStateFile();">Export</span></li-->
@@ -72,7 +83,7 @@
                 <li><span id="aa4" onclick="setAntiAlias();">Custom quality</span></li>
               </ul>
             </li>
-            <li><span class="fly" tabindex="1">Record</span>
+            <li style="display: none" id="recordmenu"><span class="fly" tabindex="1">Record</span>
               <ul>
                 <li><span id="recordOn" onclick="record(true);">On</span></li>
                 <li><span id="recordOff" class="selected_item" onclick="record(false);">Off</span></li>
@@ -243,15 +254,10 @@
         </form>
       </div>
 
-      <div class="panel scroll" id="panel4" style="display: none" ondblClick="$('debug').style.display='block'">
+      <div class="panel scroll" id="panel4" style="display: none">
         <p>Local storage usage:</p>
         <div id="indicatorbg"><div id="indicator"></div></div>
-        <div id="debug" style="display: none">
-          <input type="button" value="Source" onClick="lineOffset=1; openEditor('gen-shader.frag')">
-          <input type="button" value="Body" onClick="lineOffset=1; openEditor('shaders/fractal-shader.frag')">
-          <input type="button" value="Complex" onClick="lineOffset=1; openEditor('shaders/complex-math.frag')"-->
-          <input type="button" value="Vertex" onClick="lineOffset=1; openEditor('shaders/shader2d.vert')"-->
-        </div>
+
         <input type="button" value="Clear log" onClick="consoleClear()">
         <input type="button" value="Help" onClick="consoleHelp();">
         <div id="consolearea">

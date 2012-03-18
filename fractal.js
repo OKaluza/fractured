@@ -39,6 +39,7 @@
     var unit = 2.0 / this.zoom;
     var pixel = unit / element.width; //height?
     //consoleWrite(element.width + " x " + element.height + " ==> " + size[0] + " x " + size[1]);
+    if (this.zoom > 100) consoleWrite("Warning, precision too low, pixel size: " + pixel);
     return pixel;
 //    return new Array(pwidth,pheight);
   }
@@ -860,7 +861,7 @@
   }
 
   //Save fractal (write param/source file)
-  Fractal.prototype.toString = function() {
+  Fractal.prototype.toString = function(saveformulae) {
     var code = "[fractal]\n" +
                "width=" + this.gl.viewportWidth + "\n" +
                "height=" + this.gl.viewportHeight + "\n" +
@@ -882,7 +883,7 @@
       if (this[category].selected != "none" && this[category].currentParams.count() > 0)
           code += "\n[params." + category + "]\n" + this[category].currentParams;
       //Formula code (###)
-      if (this[category].selected != "none") {
+      if (saveformulae && this[category].selected != "none") {
         //Don't save formula source twice if same used
         if (t==3 && this["post_transform"].selected == this["pre_transform"].selected) continue;
         if (t==4 && this["outside_colour"].selected == this["inside_colour"].selected) break;
@@ -911,6 +912,7 @@
   //Load fractal from file
   Fractal.prototype.load = function(source) {
     //consoleWrite("load<hr>");
+    var confirmed = false;
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
@@ -952,7 +954,7 @@
           colours.read(buffer);
           i = j-1;
         } else if (section.slice(0, 8) == "formula.") {
-          //Collect lines into formula code (###)
+          //Collect lines into formula code
           var pair1 = section.split(".");
           var filename = this[pair1[1]].filename();
           for (var j = i+1; j < lines.length; j++) {
@@ -960,7 +962,12 @@
             buffer += lines[j] + "\n";
           }
           i = j-1;
-          ////sources[filename] = buffer;
+          //Confirm formula load for now (###)
+          if (buffer.length > 0) {
+            if (confirmed || confirm("Formula code found, replace formula with new code from this fractal?"))
+              sources[filename] = buffer;
+            confirmed = true;
+          }
         }
         continue;
       }
@@ -1372,6 +1379,11 @@
     this.selected.im = parseFloat(document.getElementById("ySelInput").value);
     this.origin.zoom = parseFloat(document.getElementById("zoomLevel").value);
 
+    //Limit rotate to range [0-360)
+    if (this.origin.rotate < 0) this.origin.rotate += 360;
+    this.origin.rotate %= 360;
+    document["inputs"].elements["rotate"].value = this.origin.rotate;
+
     //Copy form values to defined parameters
     this["base"].currentParams.setFromForm();
     this["fractal"].currentParams.setFromForm();
@@ -1406,8 +1418,8 @@
     $('inside_colour_formula').value = this["inside_colour"].selected;
   }
 
-  //Build and redraw shader from source components
-  Fractal.prototype.writeShader = function() {
+  //Create shader from source components
+  Fractal.prototype.generateShader = function(header) {
     //Get formula selections
 
     //Base code
@@ -1425,7 +1437,7 @@
     var incolour = this["inside_colour"].getParsedFormula();
 
     //Core code for all fractal fragment programs
-    var shader = sources["shaders/glsl-header.frag"] + sources["shaders/fractal-shader.frag"];
+    var shader = sources[header] + sources["shaders/fractal-shader.frag"];
 
     //TODO: Another solution required for line number error reporting
     formulaOffsets["fractal"] = shader.split("\n").length;
@@ -1447,17 +1459,23 @@
     shader = this.insertTemplate(shader, "INSIDE_COLOUR", incolour.result, 6);
     shader = this.insertTemplate(shader, "OUTSIDE_COLOUR", outcolour.result, 6);
 
-    var fragmentShader = shader + sources["shaders/complex-math.frag"];
+    shader = shader + sources["shaders/complex-math.frag"];
 
     //Remove param declarations, replace with newline to preserve line numbers
-    //fragmentShader = fragmentShader.replace(paramreg, "//(Param removed)\n");
+    //shader = shader.replace(paramreg, "//(Param removed)\n");
 
     //Replace any (x,y) constants with complex(x,y)
     var creg = /([^a-zA-Z_])\(([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)/g;
-    fragmentShader = fragmentShader.replace(creg, "$1complex($2,$4)");
+    shader = shader.replace(creg, "$1complex($2,$4)");
 
     //Finally replace any @ symbols used to reference params in code
-    fragmentShader = fragmentShader.replace(/@/g, "");
+    return shader.replace(/@/g, "");
+  }
+
+  //Build and redraw shader
+  Fractal.prototype.writeShader = function() {
+    //Create the GLSL shader
+    var fragmentShader = this.generateShader("shaders/glsl-header.frag");
 
     //Only recompile if data has changed!
     if (sources["gen-shader.frag"] != fragmentShader) {
@@ -1472,6 +1490,42 @@
       if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
 
       this.updateShader(fragmentShader);
+    } else
+      consoleWrite("Build skipped, shader not changed");
+  }
+
+  //Build OpenCL shader
+  Fractal.prototype.clShader = function() {
+    //Create the GLSL shader
+    var kernel = this.generateShader("shaders/opencl-header.cl");
+
+    //For testing, set parameters as constants...
+    var testingsrc = "Test parameters...\n#define TESTING\n" + 
+      "__constant const real zoom = " + this.origin.zoom + ";\n" +
+      "__constant const real rotation = " + this.origin.rotate + ";\n" +
+      "__constant const real pixelsize = " + this.origin.pixelSize(this.canvas) + ";\n" +
+      "__constant const complex dims = complex(" + this.width + "," + this.height + ");\n" +
+      "__constant const complex origin = complex(" + this.origin.re + "," + this.origin.im + ");\n" +
+      "__constant const complex selected = complex(" + this.selected.re + "," + this.selected.im + ");\n" +
+      "__constant const rgba background = " + colours.palette.colours[0].colour.rgbaGLSL() + ";\n" +
+      "__constant const int antialias = " + this.antialias + ";\n" +
+      "__constant const int julia = " + this.julia + ";\n" +
+      "__constant const int perturb = " + this.perturb + ";\n";
+
+    kernel = kernel.replace(/---TESTING---/, testingsrc);
+
+    //Switch to C-style casts
+    kernel = kernel.replace(/complex\(/g, "(complex)(");
+    kernel = kernel.replace(/real\(/g, "(real)(");
+    kernel = kernel.replace(/float\(/g, "(float)(");
+    kernel = kernel.replace(/int\(/g, "(int)(");
+    kernel = kernel.replace(/rgba\(/g, "(rgba)(");
+
+    //Only recompile if data has changed!
+    if (sources["fractured.cl"] != kernel) {
+      sources["fractured.cl"] = kernel;
+      //Save for debugging
+        ajaxWriteFile("fractured.cl", kernel, consoleWrite);
     } else
       consoleWrite("Build skipped, shader not changed");
   }

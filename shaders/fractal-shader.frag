@@ -1,4 +1,4 @@
-//Additional maths functions
+//Maths library prototypes
 #define R(x) real(x)
 #define C(x) complex(real(x),0.0)
 #define CI(x) complex(0.0,real(x))
@@ -9,25 +9,18 @@
 
 #define PI  R(3.141592654)
 #define E   R(2.718281828)
-
-#ifdef GLSL
-real __OVERLOADABLE__ log10(in real r);
-real __OVERLOADABLE__ trunc(in real x);
-real __OVERLOADABLE__ round(in real x);
-real __OVERLOADABLE__ cosh(in real x);
-real __OVERLOADABLE__ tanh(in real x);
-real __OVERLOADABLE__ sinh(in real x);
-real __OVERLOADABLE__ acosh(in real x);
-real __OVERLOADABLE__ atanh(in real x);
-real __OVERLOADABLE__ asinh(in real x);
-#else
-real __OVERLOADABLE__ atan(in real x, in real y);
-#endif
 real __OVERLOADABLE__ inv(in real r);
 real __OVERLOADABLE__ neg(in real x);
 real __OVERLOADABLE__ sqr(in real x);
 real __OVERLOADABLE__ cube(in real x);
 //Complex number functions
+real __OVERLOADABLE__ manhattan(in complex z);
+real __OVERLOADABLE__ norm(in complex z);
+real __OVERLOADABLE__ cabs(in real x);
+real __OVERLOADABLE__ cabs(in complex z);
+real __OVERLOADABLE__ arg(in complex z);
+real __OVERLOADABLE__ imag(in complex z);
+bool __OVERLOADABLE__ equals(complex z1, complex z2, real tolerance);
 complex __OVERLOADABLE__ add(in complex a, in complex b);
 complex __OVERLOADABLE__ add(in real a, in complex b);
 complex __OVERLOADABLE__ add(in complex a, in real b);
@@ -74,13 +67,6 @@ complex __OVERLOADABLE__ round(in complex z);
 complex __OVERLOADABLE__ flip(in complex z);
 complex __OVERLOADABLE__ sqr(in complex z);
 complex __OVERLOADABLE__ cube(in complex z);
-bool __OVERLOADABLE__ equals(complex z1, complex z2, real tolerance);
-real __OVERLOADABLE__ manhattan(in complex z);
-real __OVERLOADABLE__ norm(in complex z);
-real __OVERLOADABLE__ cabs(in real x);
-real __OVERLOADABLE__ cabs(in complex z);
-real __OVERLOADABLE__ arg(in complex z);
-real __OVERLOADABLE__ imag(in complex z);
 
 main_function()
 {
@@ -201,7 +187,7 @@ main_function()
   }
   
   //Average to get final colour
-  set_result(result_colour / real(antialias*antialias));
+  set_result(result_colour / float(antialias*antialias));
 }
 
 

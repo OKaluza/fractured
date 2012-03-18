@@ -1,9 +1,9 @@
 //TODO:
 //Write help screen
 //Allow disabling of thumbnails (set size?)
-//Scripting/video recording features? - disable/hide?
+//fractured.cl writing is turned on, disable for release
 //Bugs:
-// Assign action to rotate
+//Editing params in formula, if defaults changed and existing un-edited should overwrite?
 
 //Globals
 var fractal;
@@ -90,6 +90,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function pageStart() {
+    //If debug mode enabled, show extra menus
+    var query = decodeURI(window.location.href).split("?")[1]; //whole querystring including ?
+    if (query == 'debug') {
+      $S('debugmenu').display = 'block';
+      $S('recordmenu').display = 'block';
+    }
+
     //Default editor line offset
     formulaOffsets[""] = 1;
 
@@ -102,6 +109,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Get shader source files on server
     sources["shaders/glsl-header.frag"] = "";
+    sources["shaders/opencl-header.cl"] = "";
     sources["shaders/fractal-shader.frag"] = "";
     sources["shaders/complex-math.frag"] = "";
     sources["shaders/shader2d.vert"] = "";
@@ -201,7 +209,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
     //Load a from list of remaining source files
     for (filename in sources) {
-      //if (supports_html5_storage()) sources[filename] = localStorage[filename];
+      //Load from local storage first if available (TODO: way to force load from server / reset)
+      if (supports_html5_storage()) sources[filename] = localStorage[filename];
       if (!sources[filename]) {
         if (offline)
           iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
@@ -275,6 +284,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     document.onmousemove = handleMouseMove;
     window.onresize = autoResize;
     window.onbeforeunload = beforeUnload;
+    window.onunload = pageUnload;
 
     //Init WebGL
     var webgl = new WebGL(canvas);
@@ -404,7 +414,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function exportFractal() {
     //Export without server side script
     fractal.applyChanges();
-    source = fractal + "";
+    source = fractal.toString(true);  //Save formulae when exporting
     //var exportLink = document.createElement('a');
     //exportLink.setAttribute('href', 'data:text/fractal;base64,' + window.btoa(source));
     //exportLink.appendChild(document.createTextNode('test.csv'));
@@ -457,6 +467,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
        }
     } while (i <= idx);
     if (namestr != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
+    if (namestr == checkstr && !confirm('Save new fractal as "' + namestr + '"?')) return;
     namestr = checkstr;
     idx++;  //Increment index
     try {
@@ -473,6 +484,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
     populateFractals();
 
+    //$('nameInput').focus();  //Select name field
   }
 
   function thumbnail() {
@@ -496,13 +508,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 */
       fractal.width = oldw;
       fractal.height = oldh;
-      //fractal.writeShader();
       fractal.draw(antialias);
    return result;
   }
 
   function resetState(noconfirm) {
     if (noconfirm || confirm('This will clear everything!')) {
+      hasChanged = false;
       var login = localStorage["fractured.currentLogin"]; //Save login
       localStorage.clear(); //be careful as this will clear the entire database
       if (login) localStorage["fractured.currentLogin"] = login; //Restore login
@@ -544,7 +556,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function exportFractalFile() {
     fractal.applyChanges();
-    exportFile(fractal.name + ".fractal", "text/fractal-source", fractal + "");
+    source = fractal.toString(true);  //Save formulae when exporting
+    exportFile(fractal.name + ".fractal", "text/fractal-source", source);
   }
 
   function exportFile(filename, content, data) {
@@ -712,9 +725,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         var name = addFormula(type, formulae[type][i]);
         //Load sources from local storage
         var filename = formulaFilename(type, name);
-          sources[filename] = "";
-        //if (localStorage[filename])
-        //  sources[filename] = localStorage[filename];
+        //sources[filename] = "";
+        //Necessary? Should always do this now anyway when available for standard formulae
+        if (localStorage[filename] && !sources[filename]) //Added check to only write when not yet in sources
+          sources[filename] = localStorage[filename];
       }
       //Script
       sources["script.js"] = localStorage["script.js"];
@@ -951,9 +965,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
   }
 
-  function beforeUnload() {
-    //saveState(); //TODO: If this done here, reset doesn't work...
+  function beforeUnload(event) {
     //if (hasChanged) return "There are un-saved changes"
+  }
+
+  function pageUnload(event) {
+    if (hasChanged && confirm("Save session changes?"))
+      saveState();
   }
 
 //Fractal canvas mouse event handling
@@ -1097,32 +1115,25 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function canvasMouseWheel(event, mouse) {
     var action = getCustomAction(event, "wheel");
+    //alert(action.id);
     if (!(event.shiftKey || event.altKey || event.ctrlKey)) {
-      /* Zoom */
+      // Zoom
       action = new WheelAction(null, 0);
       if (event.spin < 0)
          fractal.applyZoom(1/(-event.spin * 1.1));
       else
          fractal.applyZoom(event.spin * 1.1);
+      //Update form fields
+      fractal.copyToForm();
     }
 
     if (!action) return true; //Default browser action
 
     //Assign field value
-    if (action.id && $(action.id)) {
+    if (action.id && $(action.id))
       $(action.id).value = parseFloat($(action.id).value) + event.spin * action.value;
-      //applyAndSave();
-    }
 
-    //Limit rotate to range [0-360)
-    if (fractal.origin.rotate < 0) fractal.origin.rotate += 360;
-    fractal.origin.rotate %= 360;
-    fractal.copyToForm();
-
-    //fractal.copyToForm();
-    //fractal.draw();
-    //saveState();  //Save param changes
-      applyAndSave();
+    applyAndSave();
   }
 
   function bgColourMouseClick() {

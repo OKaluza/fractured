@@ -76,6 +76,7 @@ var formula;
 
   saveEditor = function() {
     editor.save();  //Updates textarea content
+    window.opener.hasChanged = true;  //Flag changes made
     window.opener.sources[filename] = code.value;
     //JS Script?
     if (filename.indexOf(".js") < 0) {
