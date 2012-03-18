@@ -1,3 +1,99 @@
+//Maths functions
+real __OVERLOADABLE__ inv(in real r)  {return 1.0/r;}
+real __OVERLOADABLE__ neg(in real x)  {return -x;}
+real __OVERLOADABLE__ sqr(in real x)  {return x*x;}
+real __OVERLOADABLE__ cube(in real x) {return x*x*x;}
+
+bool __OVERLOADABLE__ equals(in complex z1, in complex z2, real tolerance)
+{
+  return distance(z1, z2) <= abs(tolerance);
+}
+
+real __OVERLOADABLE__ manhattan(in complex z)
+{
+  return abs(z.x) + abs(z.y);
+}
+
+real __OVERLOADABLE__ norm(in complex z)
+{
+  return dot(z,z);
+}
+
+real __OVERLOADABLE__ cabs(in real x) {return abs(x);}
+
+real __OVERLOADABLE__ cabs(in complex z)
+{
+  return length(z);
+}
+
+real __OVERLOADABLE__ arg(in complex z)
+{
+  return atan(z.y,z.x);
+}
+
+real __OVERLOADABLE__ imag(in complex z)
+{
+  return z.y;
+}
+
+#ifdef GLSL
+//Functions only required for GLSL, predefined in OpenCL
+real __OVERLOADABLE__ log10(in real r)
+{
+  return log(r) / log(10.0);
+}
+
+real __OVERLOADABLE__ trunc(in real x)
+{
+  return real(int(x));
+}
+
+real __OVERLOADABLE__ round(in real x)
+{
+  return real(int(x + (x < 0.0 ? -0.5 : 0.5)));
+}
+
+// Hyperbolic Sine (e^x - e^-x) / 2
+real __OVERLOADABLE__ sinh(in real x)
+{
+  real tmp = exp(x);
+  return 0.5 * (tmp - 1.0 / tmp);
+}
+
+/// Hyperbolic Cosine (e^x + e^-x) / 2
+real __OVERLOADABLE__ cosh(in real x)
+{
+  real tmp = exp(x);
+  return 0.5 * (tmp + 1.0 / tmp);
+}
+
+// Hyperbolic Tangent (sinh / cosh)
+real __OVERLOADABLE__ tanh(in real x)
+{
+  real tmp = exp(x);
+  real invtmp = 1.0 / tmp;
+  return (tmp - invtmp) / (tmp + invtmp);
+}
+
+// Hyperbolic arc sine log(x+sqrt(1+x^2))
+real __OVERLOADABLE__ asinh(in real x)
+{
+  return log(x + sqrt(1.0+x*x));
+}
+
+// Hyperbolic arc cosine 2log(sqrt((x+1)/2) + sqrt((x-1)/2))
+real __OVERLOADABLE__ acosh(in real x)
+{
+  return 2.0 * log(sqrt(0.5*x+0.5) + sqrt(0.5*x-0.5));
+}
+
+// Hyperbolic arc tangent (log (1+x) - log (1-x))/2 
+real __OVERLOADABLE__ atanh(in real x)
+{
+  return (log(1.0+x) - log(1.0-x)) / 2.0;
+}
+#endif
+
 complex __OVERLOADABLE__ add(in complex a, in complex b) {return a + b;}
 complex __OVERLOADABLE__ add(in real a, in complex b) {return C(a) + b;}
 complex __OVERLOADABLE__ add(in complex a, in real b) {return a + C(b);}
@@ -43,8 +139,6 @@ complex __OVERLOADABLE__ inv(in complex z)
   return conj(z) / norm(z);
 }
 
-real __OVERLOADABLE__ inv(in real r) {return 1.0/r;}
-
 complex __OVERLOADABLE__ loge(in complex z)
 {
   return complex(log(cabs(z)), arg(z));
@@ -55,63 +149,12 @@ complex __OVERLOADABLE__ log10(in complex z)
   return loge(z) / loge(C(10));
 }
 
-#ifdef GLSL
-real __OVERLOADABLE__ log10(in real r)
-{
-  return log(r) / log(10.0);
-}
-#else
-//Define the 2 parameter atan function as an overload
-real __OVERLOADABLE__ atan(in real x, in real y)
-{
-  return atan2(x,y);
-}
-#endif
-
 complex __OVERLOADABLE__ loge(in real r)
 {
   if (r < 0.0)
     return complex(log(-r), PI);
   else
     return complex(log(r), 0.0);
-}
-
-real __OVERLOADABLE__ manhattan(in complex z)
-{
-  return abs(z.x) + abs(z.y);
-}
-
-real __OVERLOADABLE__ norm(in complex z)
-{
-  return dot(z,z);
-}
-
-real __OVERLOADABLE__ cabs(in real x) {return abs(x);}
-
-//complex abs = length/magnitude = sqrt(norm) = sqrt(dot(z,z))
-real __OVERLOADABLE__ cabs(in complex z)
-{
-  return length(z); //sqrt(dot(z,z));
-}
-
-real __OVERLOADABLE__ arg(in complex z)
-{
-  return atan(z.y,z.x);
-}
-
-real __OVERLOADABLE__ neg(in real x)
-{
-  return -x;
-}
-
-real __OVERLOADABLE__ sqr(in real x)
-{
-  return x*x;
-}
-
-real __OVERLOADABLE__ cube(in real x)
-{
-  return x*x*x;
 }
 
 complex __OVERLOADABLE__ neg(in complex z)
@@ -189,48 +232,6 @@ complex __OVERLOADABLE__ cpow(in complex base, in complex exponent)
   //real scalar = exp(temp.x);
   //return complex(scalar * cos(temp.y), scalar * sin(temp.y));
 }
-
-#ifdef GLSL
-// Hyperbolic Sine (e^x - e^-x) / 2
-real __OVERLOADABLE__ sinh(in real x)
-{
-  real tmp = exp(x);
-  return 0.5 * (tmp - 1.0 / tmp);
-}
-
-/// Hyperbolic Cosine (e^x + e^-x) / 2
-real __OVERLOADABLE__ cosh(in real x)
-{
-  real tmp = exp(x);
-  return 0.5 * (tmp + 1.0 / tmp);
-}
-
-// Hyperbolic Tangent (sinh / cosh)
-real __OVERLOADABLE__ tanh(in real x)
-{
-  real tmp = exp(x);
-  real invtmp = 1.0 / tmp;
-  return (tmp - invtmp) / (tmp + invtmp);
-}
-
-// Hyperbolic arc sine log(x+sqrt(1+x^2))
-real __OVERLOADABLE__ asinh(in real x)
-{
-  return log(x + sqrt(1.0+x*x));
-}
-
-// Hyperbolic arc cosine 2log(sqrt((x+1)/2) + sqrt((x-1)/2))
-real __OVERLOADABLE__ acosh(in real x)
-{
-  return 2.0 * log(sqrt(0.5*x+0.5) + sqrt(0.5*x-0.5));
-}
-
-// Hyperbolic arc tangent (log (1+x) - log (1-x))/2 
-real __OVERLOADABLE__ atanh(in real x)
-{
-  return (log(1.0+x) - log(1.0-x)) / 2.0;
-}
-#endif
 
 complex __OVERLOADABLE__ cexp(in complex z) 
 {
@@ -357,23 +358,6 @@ complex __OVERLOADABLE__ csqrt(in complex z)
   return complex(abs(z.y / t), u);
 }
 
-bool __OVERLOADABLE__ equals(in complex z1, in complex z2, real tolerance)
-{
-  return distance(z1, z2) <= abs(tolerance);
-}
-
-#ifdef GLSL
-real __OVERLOADABLE__ trunc(in real x)
-{
-  return real(int(x));
-}
-
-real __OVERLOADABLE__ round(in real x)
-{
-  return real(int(x + (x < 0.0 ? -0.5 : 0.5)));
-}
-#endif
-
 complex __OVERLOADABLE__ trunc(in complex z)
 {
   return complex(trunc(z.x), trunc(z.y));
@@ -400,10 +384,5 @@ complex __OVERLOADABLE__ cube(in complex z)
   real y2 = z.y * z.y;
   return complex(z.x*x2 - z.x*y2 - z.x*y2 - y2*z.x, 
                  x2*z.y + x2*z.y + z.y*x2 - y2*z.y);
-}
-
-real __OVERLOADABLE__ imag(in complex z)
-{
-  return z.y;
 }
 
