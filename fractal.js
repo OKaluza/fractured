@@ -656,20 +656,22 @@
       if (sections["converged"].length == 0) {
         if (!this.currentParams["converged"]) {
           //No converged test defined
-          sections["converged"] = "\n  bool converged = false;\n";
+          sections["data"] += "\n  bool converged = false;\n";
+          //sections["converged"] = "\n  converged = false;\n";
           converged_defined = false;
         }
       } else
-        sections["data"] += "\n  bool converged;\n";
+        sections["data"] += "\n  bool converged = false;\n";
 
       if (sections["escaped"].length == 0) {
         //No escaped test defined
         if (!this.currentParams["escaped"]) {
           //If no converged test either create a default bailout
           if (!converged_defined || this.currentParams["escape"])
-            sections["escaped"] = "\n  bool escaped = bailtest(z) > escape;\n";
-          else
-            sections["data"] += "\n  bool escaped = false;\n";
+            sections["escaped"] = "\n  escaped = bailtest(z) > escape;\n";
+          //else
+          //  sections["data"] += "\n  bool escaped = false;\n";
+          sections["data"] += "\n  bool escaped = false;\n";
         }
       } else
         sections["data"] += "\n  bool escaped;\n";
