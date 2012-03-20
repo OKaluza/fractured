@@ -39,7 +39,7 @@
     var unit = 2.0 / this.zoom;
     var pixel = unit / element.width; //height?
     //consoleWrite(element.width + " x " + element.height + " ==> " + size[0] + " x " + size[1]);
-    if (this.zoom > 100) consoleWrite("Warning, precision too low, pixel size: " + pixel);
+    //if (this.zoom > 100) consoleWrite("Warning, precision too low, pixel size: " + pixel);
     return pixel;
 //    return new Array(pwidth,pheight);
   }
@@ -375,19 +375,30 @@
   }
 
   //Copy existing values from previous parameter set to new one
-  ParameterSet.prototype.restoreValues = function(other) {
+  ParameterSet.prototype.restoreValues = function(other, defaults) {
     if (!other) return;
     for (key in this)
     {
       if (typeof(this[key]) != 'object') continue;
 
+      var temp = this[key].value;
       if (other[key]) {
-        if (this[key].type == other[key].type)
-          this[key].value = other[key].value
-        else
-          consoleWrite("!! Type mismatch: " + this[key].type + " != " + other[key].type + " -- " + key + ", discarded: " + other[key].value);
-        //consoleWrite("Restored value for " + name + " : " + saved);
+        if (this[key].type == other[key].type) {
+          //Replace original value only when changed from default
+          //This means if parameter is edited, changing the formula default will not change its value
+          //But if it is still the default, it will be updated to the new default
+          if (other[key].value != defaults[key].value) {
+            this[key].value = other[key].value
+            //consoleWrite("Restored value for " + key + " : " + temp + " ==> " + this[key].value);
+          }
+        } else
+          //If we changed a parameter type then value can't and shouldn't be restored
+          consoleWrite("Parameter type changed: " + this[key].type + " != " + other[key].type + 
+                       " -- " + key + ", value discarded: " + other[key].value);
       }
+
+      //Save the new default value
+      defaults[key].value = temp;
     }
   }
 
@@ -396,8 +407,8 @@
     var field_area = document.getElementById(category + "_params");
     var divider = document.createElement("div");
     divider.className = "divider";
-    sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
-                    "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
+    var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
+                        "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
     var label = "";
     if (name != "base") {
       label = labels[name];
@@ -527,6 +538,8 @@
   function Formula(category) {
     this.category = category;
     this.params = {};
+    this.defaultparams = {};
+    this.lineoffsets = {};
     if (category == "base")
       this.select("base");
     else
@@ -570,10 +583,17 @@
 
     if (this.selected != "none") {
       var code = this.getSource();
+
+      //Copy the default params if not yet set
+      if (!this.defaultparams[name]) {
+        this.defaultparams[name] = new ParameterSet();
+        this.defaultparams[name].parseFormula(code);
+      }
+
       //Load the parameter set for selected formula
       this.params[name].parseFormula(code);
-      //Copy previously values
-      this.params[name].restoreValues(oldparams);
+      //Copy previous values
+      this.params[name].restoreValues(oldparams, this.defaultparams[name]);
       //Update the fields
       this.params[name].createFields(this.category, name);
     }
@@ -601,6 +621,8 @@
     var lastIdx = 0;
     var reg = /^([a-z]+):/gm;
 
+    this.lineoffsets = {};
+
 //////////////////////////////////
     //Replace remaining : symbols with formula type and "_"
     //(to prevent namespace clashes in globals/function names/params)
@@ -612,11 +634,13 @@
     while (match = reg.exec(code)) {
       //Save the previous section
       sections[section] = code.slice(lastIdx, reg.lastIndex - match[0].length - 1);
+      this.lineoffsets[section] = code.slice(0, lastIdx).split("\n").length +1;
       lastIdx = reg.lastIndex;
       section = match[1]; //match[0].substr(0, match[0].length-1);
     }
     //Save the final section
     sections[section] = code.slice(lastIdx);
+    this.lineoffsets[section] = code.slice(0, lastIdx).split("\n").length +1;
 
     //Defaults for missing sections
     if (this.category == "fractal") {
@@ -715,6 +739,8 @@
     this["post_transform"] = new Formula("post_transform");
     this["inside_colour"] = new Formula("inside_colour");
     this["outside_colour"] = new Formula("outside_colour");
+
+    this.offsets = [];
 
     this.resetDefaults();
     this.copyToForm();
@@ -1418,46 +1444,44 @@
     $('inside_colour_formula').value = this["inside_colour"].selected;
   }
 
+  function LineOffset(category, section, value) {
+    this.category = category;
+    this.section = section;
+    this.value = value;
+  }
+  LineOffset.prototype.toString = function() {
+    return "CAT: " + this.category + " SECTION: " + this.section + " == " + this.value;
+  }
+
   //Create shader from source components
   Fractal.prototype.generateShader = function(header) {
     //Get formula selections
-
-    //Base code
-    var base = this["base"].getParsedFormula();
-
-    //Code for selected formula
-    var form = this["fractal"].getParsedFormula();
-
-    //Code for selected transforms
-    var pretransform = this["pre_transform"].getParsedFormula();
-    var posttransform = this["post_transform"].getParsedFormula();
-
-    //Code for selected colouring algorithms
-    var outcolour = this["outside_colour"].getParsedFormula();
-    var incolour = this["inside_colour"].getParsedFormula();
+    var selections = {"base" : this["base"].getParsedFormula(), 
+                      "fractal" : this["fractal"].getParsedFormula(),
+                      "pre_transform" : this["pre_transform"].getParsedFormula(),
+                      "post_transform" : this["post_transform"].getParsedFormula(),
+                      "outside_colour" : this["outside_colour"].getParsedFormula(),
+                      "inside_colour" : this["inside_colour"].getParsedFormula()};
 
     //Core code for all fractal fragment programs
     var shader = sources[header] + sources["shaders/fractal-shader.frag"];
 
-    //TODO: Another solution required for line number error reporting
-    formulaOffsets["fractal"] = shader.split("\n").length;
-    formulaOffsets["pre_transform"] = formulaOffsets["fractal"];
-    formulaOffsets["post_transform"] = formulaOffsets["fractal"];
-    formulaOffsets["outside_colour"] = formulaOffsets["fractal"];
-    formulaOffsets["inside_colour"] = formulaOffsets["fractal"];
-
     //Replace ---SECTION--- with formula code
-    shader = this.insertTemplate(shader, "DATA", base.data + pretransform.data + posttransform.data + form.data + incolour.data + outcolour.data, 2);
-    shader = this.insertTemplate(shader, "INIT", pretransform.init + form.init + incolour.init + outcolour.init, 2);
-    shader = this.insertTemplate(shader, "INIT2", posttransform.init, 2);
-    shader = this.insertTemplate(shader, "RESET0", pretransform.reset, 4);
-    shader = this.insertTemplate(shader, "RESET", form.reset + posttransform.reset + incolour.reset + outcolour.reset, 4);
-    shader = this.insertTemplate(shader, "ZNEXT", pretransform.transform + form.znext + posttransform.transform, 6);
-    shader = this.insertTemplate(shader, "ESCAPED", form.escaped, 6);
-    shader = this.insertTemplate(shader, "CONVERGED", form.converged, 6);
-    shader = this.insertTemplate(shader, "COLOUR_CALC", outcolour.calc + incolour.calc, 6);
-    shader = this.insertTemplate(shader, "INSIDE_COLOUR", incolour.result, 6);
-    shader = this.insertTemplate(shader, "OUTSIDE_COLOUR", outcolour.result, 6);
+    this.offsets = [];
+    shader = this.insertTemplate(shader, selections, "DATA", "data", ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
+    shader = this.insertTemplate(shader, selections, "INIT", "init", ["pre_transform", "fractal", "inside_colour", "outside_colour"], 2);
+    shader = this.insertTemplate(shader, selections, "INIT2", "init", ["post_transform"], 2);
+    shader = this.insertTemplate(shader, selections, "RESET0", "reset", ["pre_transform"], 4);
+    shader = this.insertTemplate(shader, selections, "RESET", "reset", ["fractal", "post_transform", "inside_colour", "outside_colour"], 4);
+    shader = this.insertTemplate(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 6);
+    shader = this.insertTemplate(shader, selections, "ZNEXT", "znext", ["fractal"], 6);
+    shader = this.insertTemplate(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 6);
+    shader = this.insertTemplate(shader, selections, "ESCAPED", "escaped", ["fractal"], 6);
+    shader = this.insertTemplate(shader, selections, "CONVERGED", "converged", ["fractal"], 6);
+    shader = this.insertTemplate(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 6);
+    shader = this.insertTemplate(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 6);
+    shader = this.insertTemplate(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 6);
+    this.offsets.push(LineOffset("(end)", "(end)", shader.split("\n").length));
 
     shader = shader + sources["shaders/complex-math.frag"];
 
@@ -1470,6 +1494,45 @@
 
     //Finally replace any @ symbols used to reference params in code
     return shader.replace(/@/g, "");
+  }
+
+  Fractal.prototype.insertTemplate = function(shader, selections, template, section, sourcelist, indent) {
+    var source = "//***" + template + "***\n";
+    //var regex = new RegExp("^\s*---" + template + "---");
+    var regex = new RegExp("---" + template + "---");
+    var spaces = "          ";
+    spaces = spaces.substr(0, indent);
+
+    //Save the line offset where template inserted
+    var pos = regex.exec(shader).index;
+    var offset = shader.slice(0, pos).split("\n").length;
+    //  consoleWrite("<br>" + section + "-->" + template + " STARTING offset == " + offset);
+
+    //Get sources
+    for (s in sourcelist) {
+      //Get code for this section from each of the sources
+      var code = selections[sourcelist[s]][section];
+      if (!code) continue;
+
+      //Replace spaces at line beginnings with specified indent
+      //source = source.replace(/^\s*/gm, spaces);
+      var reg = /^\s*/gm;
+      var match;
+      while (match = reg.exec(code)) {
+        code = code.slice(0, reg.lastIndex) + spaces + code.slice(reg.lastIndex, code.length);
+        reg.lastIndex += indent;
+      }
+
+      //Save offset for this section from this formula selection
+      this.offsets.push(new LineOffset(sourcelist[s], section, offset + source.split("\n").length - 1));
+      //consoleWrite(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
+
+      //Concatentate to final code to insert at template position
+      source += code + "\n";
+    }
+
+    //Replaces a template section with the passed source
+    return shader.replace(regex, source);
   }
 
   //Build and redraw shader
@@ -1530,25 +1593,6 @@
       consoleWrite("Build skipped, shader not changed");
   }
 
-  Fractal.prototype.insertTemplate = function(shader, template, source, indent) {
-    //var regex = new RegExp("^\s*---" + template + "---");
-    var regex = new RegExp("---" + template + "---");
-    var spaces = "          ";
-    spaces = spaces.substr(0, indent);
-
-      var reg = /^\s*/gm;
-      var match;
-      while (match = reg.exec(source)) {
-        //Replace the matched param with value
-        source = source.slice(0, reg.lastIndex) + spaces + source.slice(reg.lastIndex, source.length);
-        reg.lastIndex += indent;
-      }
-
-    //source = source.replace(/^\s*/gm, spaces);
-    //Replaces a template section with the passed source
-    return shader.replace(regex, source);
-  }
-
   Fractal.prototype.updateShader = function(fragmentShader, vertexShader) {
     //Default vertex shader
     if (!vertexShader)
@@ -1558,7 +1602,35 @@
     //this.webgl.initProgram(sources("default.vert"), sources("default.frag"));
     //this.webgl.setupProgram(["texture"]); //Setup as texture program
 
-    this.webgl.initProgram(vertexShader, fragmentShader);
+    var errors = this.webgl.initProgram(vertexShader, fragmentShader);
+
+    if (errors) {
+      var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
+                          "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
+      //alert(errors);
+      var reg = /0:(\d+)/;
+      var match = reg.exec(errors);
+      if (match) {
+        var lineno = parseInt(match[1]);
+        //alert(match[1]);
+        var last = null
+        for (i in this.offsets) {
+          if (last) {
+            //consoleWrite("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
+            if (lineno >= this.offsets[last].value && lineno < this.offsets[i].value) {
+              var section = this.offsets[last].section;
+              //Adjust the line number
+              lineno -= this.offsets[last].value + 1;
+              lineno += this[this.offsets[last].category].lineoffsets[section];
+              alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + sectionnames[this.offsets[last].category] + " formula: " + labels[this[this.offsets[last].category].selected] + "\n--------------\n" + errors);
+              break;
+            }
+          }
+          last = i;
+        }
+      } else alert(error);  //Simply show compile error
+    }
+
     //Setup uniforms for fractal program (all these are always set now, do this once at start?)
     this.webgl.setupProgram(["palette", "antialias", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
   }
