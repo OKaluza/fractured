@@ -2,8 +2,6 @@
 //Write help screen
 //Allow disabling of thumbnails (set size?)
 //fractured.cl writing is turned on, disable for release
-//Bugs:
-//Editing params in formula, if defaults changed and existing un-edited should overwrite?
 
 //Globals
 var fractal;
