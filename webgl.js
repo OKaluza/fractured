@@ -90,8 +90,8 @@
     this.gl.shaderSource(shader, source);
     this.gl.compileShader(shader);
     if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      alert("Compile failed: " + this.gl.getShaderInfoLog(shader));
-      return null;
+      //alert("Compile failed: " + this.gl.getShaderInfoLog(shader));
+      return this.gl.getShaderInfoLog(shader);
     }
     return shader;
   }
@@ -117,9 +117,13 @@
 
     this.program = this.gl.createProgram();
 
+    var errors = null;
     this.program.vshader = this.compileShader(vs, this.gl.VERTEX_SHADER);
+    if (typeof(this.program.vshader) == 'string') errors = this.program.vshader;
     this.program.fshader = this.compileShader(fs, this.gl.FRAGMENT_SHADER);
-    if (this.program.vshader && this.program.fshader) {
+    if (typeof(this.program.fshader) == 'string') errors = this.program.fshader;
+
+    if (typeof(this.program.vshader) == 'object' && typeof(this.program.fshader) == 'object') {
       this.gl.attachShader(this.program, this.program.vshader);
       this.gl.attachShader(this.program, this.program.fshader);
 
@@ -128,8 +132,11 @@
       if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
         alert("Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program));
       }
-    } else
+    } else {
       this.program = null;
+    }
+      
+    return errors;
   }
 
   //Setup and load uniforms specific to the fractal program

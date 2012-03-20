@@ -12,7 +12,6 @@ var colours;
 //Source files list
 var sources = {};
 var labels = {};
-var formulaOffsets = {}; //line numbering offset counts for each formula
 var antialias = 1;
 var autoSize = true;
 var showparams = true;
@@ -96,9 +95,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       $S('debugmenu').display = 'block';
       $S('recordmenu').display = 'block';
     }
-
-    //Default editor line offset
-    formulaOffsets[""] = 1;
 
     // Check for the various File API support.
     if (window.File && window.FileReader && window.FileList) {

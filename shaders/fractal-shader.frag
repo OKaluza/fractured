@@ -149,8 +149,10 @@ main_function()
 
         //Run next calc step
         count = i;
-        //z = znext;
+
+        ---PRE_TRANSFORM---
         ---ZNEXT---
+        ---POST_TRANSFORM---
 
         ---ESCAPED---
         ---CONVERGED---
