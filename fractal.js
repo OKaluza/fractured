@@ -628,12 +628,12 @@
           sections["znext"] = "\n  z = sqr(z)+c;\n";
       }
 
-      var converged_defined = false;
+      var converged_defined = true;
       if (sections["converged"].length == 0) {
         if (!this.currentParams["converged"]) {
           //No converged test defined
           sections["converged"] = "\n  bool converged = false;\n";
-          converged_defined = true;
+          converged_defined = false;
         }
       } else
         sections["data"] += "\n  bool converged;\n";
@@ -644,6 +644,8 @@
           //If no converged test either create a default bailout
           if (!converged_defined || this.currentParams["escape"])
             sections["escaped"] = "\n  bool escaped = bailtest(z) > escape;\n";
+          else
+            sections["data"] += "\n  bool escaped = false;\n";
         }
       } else
         sections["data"] += "\n  bool escaped;\n";
