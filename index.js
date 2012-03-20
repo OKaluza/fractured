@@ -483,8 +483,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
     populateFractals();
-
-    //$('nameInput').focus();  //Select name field
   }
 
   function thumbnail() {

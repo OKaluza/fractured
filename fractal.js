@@ -134,8 +134,11 @@
         this.typeid = 1;
         if (typeof(value) == 'number')
           this.value = value;
-        if (typeof(value) == 'string')
+        if (typeof(value) == 'string') {
           this.value = parseFloat(value);
+          if (isNaN(this.value))  //Attempt to parse as complex and take real component
+            this.value = parseComplex(value).re;
+        }
         break;
       case 'complex':
         this.typeid = 2;
@@ -147,13 +150,8 @@
           else
             this.value = value; //Assume is a Complex already
         }
-        if (typeof(value) == 'string') {
-          var match = complexreg.exec(value);
-          if (match && match[1] && match[3])
-            this.value = new Complex(match[1], match[3]);
-          else
-            this.value = new Complex(parseFloat(value), 0);
-        }
+        if (typeof(value) == 'string')
+          this.value = parseComplex(value);
         break;
       case 'real_function':
         this.typeid = 4;
@@ -1002,8 +1000,8 @@
             //if (lines[j] != oldline) consoleWrite(oldline + " ==> " + lines[j]);
           }
           //Formula name
-          //alert("formulas[" + pair[1] + "] = " + pair[0]);
           this[pair[0]].select(pair[1]);
+          //alert("formulas[" + pair[1] + "] = " + pair[0]);
           //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
           //alert(pair[0] + " == " + formulas[pair[0]]);
         }
