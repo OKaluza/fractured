@@ -52,9 +52,9 @@ typedef struct __attribute__ ((packed)) Input
   complex selected;
   rgba background;
 
-  int antialias;
-  int julia;
-  int perturb;
+  float antialias;
+  float julia;
+  float perturb;
 } Input;
 
 complex rotate2d(complex v, real angle)
@@ -94,7 +94,7 @@ __kernel void fractured(__global struct Input* input, read_only image2d_t palett
   rgba pixel = calcpixel(coord, palette); 
 #else
   complex coord = input->origin + convert(pos, size, input->zoom, input->rotation);
-  rgba pixel = calcpixel(coord, input->antialias, input->julia, input->perturb, input->pixelsize, 
+  rgba pixel = calcpixel(coord, (int)input->antialias, (int)input->julia, (int)input->perturb, input->pixelsize, 
                          dims, input->origin, input->selected, palette, input->background);
 #endif
 
