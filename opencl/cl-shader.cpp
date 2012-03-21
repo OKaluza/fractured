@@ -53,9 +53,9 @@ typedef struct Input
   rgba background;
 
   //Possibly a problem with size of int types
-  cl_int antialias;
-  cl_int julia;
-  cl_int perturb;
+  cl_float antialias;
+  cl_float julia;
+  cl_float perturb;
 } Input;
 
 int main(int argc, char** argv)

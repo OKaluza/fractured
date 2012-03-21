@@ -727,6 +727,15 @@
   /**
    * @constructor
    */
+  function LineOffset(category, section, value) {
+    this.category = category;
+    this.section = section;
+    this.value = value;
+  }
+
+  /**
+   * @constructor
+   */
   function Fractal(canvas, webgl) {
     //Construct a new default fractal object
     this.canvas = canvas;
@@ -1446,15 +1455,6 @@
     $('inside_colour_formula').value = this["inside_colour"].selected;
   }
 
-  function LineOffset(category, section, value) {
-    this.category = category;
-    this.section = section;
-    this.value = value;
-  }
-  LineOffset.prototype.toString = function() {
-    return "CAT: " + this.category + " SECTION: " + this.section + " == " + this.value;
-  }
-
   //Create shader from source components
   Fractal.prototype.generateShader = function(header) {
     //Get formula selections
@@ -1470,19 +1470,19 @@
 
     //Replace ---SECTION--- with formula code
     this.offsets = [];
-    shader = this.insertTemplate(shader, selections, "DATA", "data", ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
-    shader = this.insertTemplate(shader, selections, "INIT", "init", ["pre_transform", "fractal", "inside_colour", "outside_colour"], 2);
-    shader = this.insertTemplate(shader, selections, "INIT2", "init", ["post_transform"], 2);
-    shader = this.insertTemplate(shader, selections, "RESET0", "reset", ["pre_transform"], 4);
-    shader = this.insertTemplate(shader, selections, "RESET", "reset", ["fractal", "post_transform", "inside_colour", "outside_colour"], 4);
-    shader = this.insertTemplate(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 6);
-    shader = this.insertTemplate(shader, selections, "ZNEXT", "znext", ["fractal"], 6);
-    shader = this.insertTemplate(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 6);
-    shader = this.insertTemplate(shader, selections, "ESCAPED", "escaped", ["fractal"], 6);
-    shader = this.insertTemplate(shader, selections, "CONVERGED", "converged", ["fractal"], 6);
-    shader = this.insertTemplate(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 6);
-    shader = this.insertTemplate(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 6);
-    shader = this.insertTemplate(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 6);
+    shader = this.templateInsert(shader, selections, "DATA", "data", ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "INIT", "init", ["pre_transform", "fractal", "inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "INIT2", "init", ["post_transform"], 2);
+    shader = this.templateInsert(shader, selections, "RESET0", "reset", ["pre_transform"], 4);
+    shader = this.templateInsert(shader, selections, "RESET", "reset", ["fractal", "post_transform", "inside_colour", "outside_colour"], 4);
+    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 6);
+    shader = this.templateInsert(shader, selections, "ZNEXT", "znext", ["fractal"], 6);
+    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 6);
+    shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 6);
+    shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 6);
+    shader = this.templateInsert(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 6);
+    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 6);
+    shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 6);
     this.offsets.push(LineOffset("(end)", "(end)", shader.split("\n").length));
 
     shader = shader + sources["shaders/complex-math.frag"];
@@ -1498,17 +1498,16 @@
     return shader.replace(/@/g, "");
   }
 
-  Fractal.prototype.insertTemplate = function(shader, selections, template, section, sourcelist, indent) {
-    var source = "//***" + template + "***\n";
-    //var regex = new RegExp("^\s*---" + template + "---");
-    var regex = new RegExp("---" + template + "---");
+  Fractal.prototype.templateInsert = function(shader, selections, marker, section, sourcelist, indent) {
+    var source = "//***" + marker + "***\n";
+    var regex = new RegExp("---" + marker + "---");
     var spaces = "          ";
     spaces = spaces.substr(0, indent);
 
-    //Save the line offset where template inserted
+    //Save the line offset where inserted
     var pos = regex.exec(shader).index;
     var offset = shader.slice(0, pos).split("\n").length;
-    //  consoleWrite("<br>" + section + "-->" + template + " STARTING offset == " + offset);
+    //  consoleWrite("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
 
     //Get sources
     for (s in sourcelist) {
@@ -1529,7 +1528,7 @@
       this.offsets.push(new LineOffset(sourcelist[s], section, offset + source.split("\n").length - 1));
       //consoleWrite(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
 
-      //Concatentate to final code to insert at template position
+      //Concatentate to final code to insert at marker position
       source += code + "\n";
     }
 
