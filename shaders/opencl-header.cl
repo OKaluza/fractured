@@ -30,13 +30,7 @@ rgba read_palette(image2d_t palette, float mu)
   return (rgba)(p.x/255.0, p.y/255.0, p.z/255.0, p.w/255.0); 
 }
 
-//---TESTING---
-
-#ifdef TESTING  //use constant parameters
-#define main_function() rgba calcpixel(complex coord, image2d_t palette)
-#else
 #define main_function() rgba calcpixel(complex coord, int antialias, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
-#endif
 
 #define set_result(c) return c;
 main_function();  //Prototype
@@ -52,9 +46,9 @@ typedef struct __attribute__ ((packed)) Input
   complex selected;
   rgba background;
 
-  float antialias;
-  float julia;
-  float perturb;
+  uchar antialias;
+  uchar julia;
+  uchar perturb;
 } Input;
 
 complex rotate2d(complex v, real angle)
@@ -89,15 +83,9 @@ __kernel void fractured(__global struct Input* input, read_only image2d_t palett
   int2 size = (int2)(get_global_size(0), get_global_size(1));
   complex dims = (complex)(size.x, size.y);
 
-#ifdef TESTING
-  complex coord = origin + convert(pos, size, zoom, rotation);
-  rgba pixel = calcpixel(coord, palette); 
-#else
   complex coord = input->origin + convert(pos, size, input->zoom, input->rotation);
-  rgba pixel = calcpixel(coord, (int)input->antialias, (int)input->julia, (int)input->perturb, input->pixelsize, 
+  rgba pixel = calcpixel(coord, input->antialias, input->julia, input->perturb, input->pixelsize, 
                          dims, input->origin, input->selected, palette, input->background);
-#endif
-
   write_imageui(output, (int2)(pos.x, pos.y), (uint4)(255*pixel.x,255*pixel.y,255*pixel.z,255*pixel.w));
 }
 

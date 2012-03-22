@@ -53,6 +53,16 @@ real __OVERLOADABLE__ round(in real x)
   return real(int(x + (x < 0.0 ? -0.5 : 0.5)));
 }
 
+complex __OVERLOADABLE__ round(in complex z)
+{
+  return complex(round(z.x), round(z.y));
+}
+
+complex __OVERLOADABLE__ trunc(in complex z)
+{
+  return complex(trunc(z.x), trunc(z.y));
+}
+
 // Hyperbolic Sine (e^x - e^-x) / 2
 real __OVERLOADABLE__ sinh(in real x)
 {
@@ -356,16 +366,6 @@ complex __OVERLOADABLE__ csqrt(in complex z)
 
   if (z.y < 0.0) u = -u;
   return complex(abs(z.y / t), u);
-}
-
-complex __OVERLOADABLE__ trunc(in complex z)
-{
-  return complex(trunc(z.x), trunc(z.y));
-}
-
-complex __OVERLOADABLE__ round(in complex z)
-{
-  return complex(round(z.x), round(z.y));
 }
 
 complex __OVERLOADABLE__ flip(in complex z)

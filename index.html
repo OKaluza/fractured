@@ -23,6 +23,7 @@
 
 <script type="text/javascript" src="sylvester.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
+<script type="text/javascript" src="webcl.js"></script>
 <!--
 <script type="text/javascript" src="fractured-compressed.js"></script>
 -->
@@ -35,7 +36,7 @@
 
   <header id="header">
 
-    <h2>Fractured Studio v0.2</h2>
+    <h2>Fractured Studio v0.4</h2>
 
     <nav>
       <ul id="nav">
@@ -48,8 +49,10 @@
                 <li><span onclick="openEditor('shaders/fractal-shader.frag');">Body Template</span></li>
                 <li><span onclick="openEditor('shaders/complex-math.frag');">Complex Library</span></li>
                 <li><span onclick="openEditor('shaders/shader2d.vert');">Vertex Shader</span></li>
+                <li><span onclick="openEditor('fractured.cl');">OpenCL Shader</span></li>
                 <li><hr></li>
-                <li><span onclick="fractal.clShader(); //openEditor('fractured.cl');">OpenCL Shader</span></li>
+                <li><span onclick="window.location = '/index.html?webcl-debug';">WebCL Mode</span></li>
+                <li><span onclick="window.location = '/index.html?webcl-double-debug';">WebCL Double</span></li>
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
@@ -271,6 +274,9 @@
             <p><a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a> for the design the colour picker is based on.</p>
             <p>Vector and Matrix Math: <a href="http://sylvester.jcoglan.com/">sylvester.js</a></p>
             <p><a href="http://learningwebgl.com/">Learning WebGL</a></p>
+            <p>References used when adding WebCL support:</p>
+            <p><a href="http://webcl.nokiaresearch.com/">Nokia Research WebCL</a></p>
+            <p><a href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">WebCL Examples</a></p>
             <p>Some fractal formulae from <a href="http://gnofract4d.sourceforge.net/">Gnofract</a></p>
             <br>
             <p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p>

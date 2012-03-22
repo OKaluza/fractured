@@ -2,8 +2,12 @@
 //Write help screen
 //Allow disabling of thumbnails (set size?)
 //fractured.cl writing is turned on, disable for release
+//Initial load: slow, need status display
+//Save/load session - slow, needs status or no reload
 
 //Globals
+var reloadsources = false;
+var mode = "WebGL";
 var fractal;
 var defaultMouse;
 var colours;
@@ -89,9 +93,19 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function pageStart() {
     //If debug mode enabled, show extra menus
     var query = decodeURI(window.location.href).split("?")[1]; //whole querystring including ?
-    if (query == 'debug') {
-      $S('debugmenu').display = 'block';
-      $S('recordmenu').display = 'block';
+    if (query) {
+      if (query.indexOf('debug') >= 0) {
+        $S('debugmenu').display = 'block';
+        $S('recordmenu').display = 'block';
+      }
+      if (query.indexOf('webcl') >= 0) {
+        mode = "WebCL";
+        if (query.indexOf('double') >= 0)
+          mode = "WebCL-double";
+      }
+      if (query.indexOf('reload') >= 0) {
+        reloadsources = true;
+      }
     }
 
     // Check for the various File API support.
@@ -203,8 +217,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
     //Load a from list of remaining source files
     for (filename in sources) {
-      //Load from local storage first if available (TODO: way to force load from server / reset)
-      if (supports_html5_storage()) sources[filename] = localStorage[filename];
+      //Load from local storage first if available (force load from server by passing "reload" on url)
+      if (!reloadsources && supports_html5_storage()) sources[filename] = localStorage[filename];
       if (!sources[filename]) {
         if (offline)
           iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
@@ -280,11 +294,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     window.onbeforeunload = beforeUnload;
     window.onunload = pageUnload;
 
-    //Init WebGL
-    var webgl = new WebGL(canvas);
-
     //Create a fractal object
-    fractal = new Fractal(canvas, webgl);
+    fractal = new Fractal(canvas, mode);
     fractal.antialias = antialias;
     setAntiAliasMenu();
 
@@ -1256,7 +1267,7 @@ function ColourEditor(gl) {
   this.gradientcanvas = document.getElementById('gradient')
 
   //Load texture data and draw palette
-  fractal.gradientTexture.image = this.gradientcanvas;
+  if (fractal.webgl) fractal.gradientTexture.image = this.gradientcanvas;
   //Create default palette object
   this.palette = new Palette();
   this.palette.draw(this.editcanvas, true);

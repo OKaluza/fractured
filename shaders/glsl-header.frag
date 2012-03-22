@@ -35,4 +35,6 @@ real __OVERLOADABLE__ sinh(in real x);
 real __OVERLOADABLE__ acosh(in real x);
 real __OVERLOADABLE__ atanh(in real x);
 real __OVERLOADABLE__ asinh(in real x);
+complex __OVERLOADABLE__ round(in complex z);
+complex __OVERLOADABLE__ trunc(in complex z);
 

@@ -736,12 +736,22 @@
   /**
    * @constructor
    */
-  function Fractal(canvas, webgl) {
+  function Fractal(canvas, renderer) {
     //Construct a new default fractal object
     this.canvas = canvas;
-    this.webgl = webgl;
-    this.gl = webgl.gl;
-    this.gradientTexture = this.gl.createTexture();
+    if (renderer == "WebGL") {
+      //Init WebGL
+      this.webgl = new WebGL(canvas);
+      this.gl = this.webgl.gl;
+      this.gradientTexture = this.gl.createTexture();
+    } else if (renderer == "WebCL") {
+      //Init WebCL testing
+      this.webcl = new WebCL_(canvas);
+    } else if (renderer == "WebCL-double") {
+      //Init WebCL testing (double precision)
+      this.webcl = new WebCL_(canvas, true);
+    }
+
     this.antialias = 1;
 
     this["base"] = new Formula("base");
@@ -793,7 +803,8 @@
   }
 
   Fractal.prototype.updateTexture = function() {
-    this.webgl.updateTexture(this.gradientTexture);
+    if (this.webgl)
+      this.webgl.updateTexture(this.gradientTexture);
   }
 
   Fractal.prototype.resetDefaults = function() {
@@ -900,8 +911,8 @@
   //Save fractal (write param/source file)
   Fractal.prototype.toString = function(saveformulae) {
     var code = "[fractal]\n" +
-               "width=" + this.gl.viewportWidth + "\n" +
-               "height=" + this.gl.viewportHeight + "\n" +
+               "width=" + this.canvas.width + "\n" +
+               "height=" + this.canvas.height + "\n" +
                this.origin +
                "selected=" + this.selected + "\n" +
                "julia=" + this.julia + "\n" +
@@ -1538,6 +1549,10 @@
 
   //Build and redraw shader
   Fractal.prototype.writeShader = function() {
+    if (!this.webgl) {
+      this.clKernel();
+      return;
+    }
     //Create the GLSL shader
     var fragmentShader = this.generateShader("shaders/glsl-header.frag");
 
@@ -1558,8 +1573,8 @@
       consoleWrite("Build skipped, shader not changed");
   }
 
-  //Build OpenCL shader
-  Fractal.prototype.clShader = function() {
+  //Build OpenCL kernel
+  Fractal.prototype.clKernel = function() {
     //Create the GLSL shader
     var kernel = this.generateShader("shaders/opencl-header.cl");
 
@@ -1575,8 +1590,9 @@
       "__constant const int antialias = " + this.antialias + ";\n" +
       "__constant const int julia = " + this.julia + ";\n" +
       "__constant const int perturb = " + this.perturb + ";\n";
+    //consoleWrite(testingsrc);
 
-    kernel = kernel.replace(/---TESTING---/, testingsrc);
+    //kernel = kernel.replace(/---TESTING---/, testingsrc);
 
     //Switch to C-style casts
     kernel = kernel.replace(/complex\(/g, "(complex)(");
@@ -1586,10 +1602,11 @@
     kernel = kernel.replace(/rgba\(/g, "(rgba)(");
 
     //Only recompile if data has changed!
-    if (sources["fractured.cl"] != kernel) {
+    if (sources["fractured.cl"] != kernel || this.webcl.width != this.width || this.webcl.height != this.height) {
       sources["fractured.cl"] = kernel;
       //Save for debugging
-        ajaxWriteFile("fractured.cl", kernel, consoleWrite);
+      //  ajaxWriteFile("fractured.cl", kernel, consoleWrite);
+      var errors = this.webcl.initProgram(kernel, this.width, this.height);
     } else
       consoleWrite("Build skipped, shader not changed");
   }
@@ -1643,8 +1660,16 @@
       this.canvas.height = this.height;
       this.canvas.setAttribute("width", this.width);
       this.canvas.setAttribute("height", this.height);
-      this.gl.viewportWidth = this.width;
-      this.gl.viewportHeight = this.height;
+      if (this.gl) {
+        this.gl.viewportWidth = this.width;
+        this.gl.viewportHeight = this.height;
+      }
+    }
+
+    //WebCL testing
+    if (!this.webgl) {
+      this.webcl.draw(this);
+      return;
     }
 
     if (!this.webgl.program) return;
