@@ -62,8 +62,6 @@ complex __OVERLOADABLE__ csqrt(in complex z);
 complex __OVERLOADABLE__ neg(in complex z);
 complex __OVERLOADABLE__ conj(in complex z);
 complex __OVERLOADABLE__ polar(in real r, in real theta);
-complex __OVERLOADABLE__ trunc(in complex z);
-complex __OVERLOADABLE__ round(in complex z);
 complex __OVERLOADABLE__ flip(in complex z);
 complex __OVERLOADABLE__ sqr(in complex z);
 complex __OVERLOADABLE__ cube(in complex z);

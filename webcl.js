@@ -1,8 +1,9 @@
   /**
    * @constructor
    */
-  function WebCL(canvas) {
+  function WebCL_(canvas, fp64) {
      this.canvas = canvas;
+     this.gradientcanvas = document.getElementById('gradient');
      try {
        if (window.WebCL == undefined) {
          alert("Unfortunately your system does not support WebCL");
@@ -20,25 +21,41 @@
        alert(e.message);
        throw e;
      }
+     this.threads = 128;
+     this.fp64 = (fp64 != undefined);
   }
 
 
-  WebCL.prototype.initProgram = function(kernelSrc) {
+  WebCL_.prototype.initProgram = function(kernelSrc, width, height) {
+    if (!this.ctx) return;
+    if (this.fp64) kernelSrc = "#define FP64\n" + kernelSrc;
+
+    this.inBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
+
+    //Adjust width/height, ensure is a multiple of work-group size
+    this.width = width;
+    this.height = height;
+    for (var i=this.threads; i<4096; i+= this.threads) {
+      if (i >= this.width) this.width = i;
+      if (i >= this.height) this.height = i;
+      if (i >= this.width && i >= this.height) break;
+    }
+
     this.program = this.ctx.createProgramWithSource(kernelSrc);
     try {
       this.program.buildProgram ([this.devices[0]], "");
     } catch(e) {
       alert ("Failed to build WebCL program. Error "
-             + program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_STATUS)
+             + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_STATUS)
              + ":  " 
-             + program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_LOG));
+             + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_LOG));
       throw e;
     }
     this.kernel = this.program.createKernel ("fractured");
-    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, 4*14);  //14*float(assumes 4-byte float!)
-      var format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UINT};
-    this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, 1024, 1);
-    this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, canvas.width, canvas.height);
+    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3);
+    var format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
+    this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, format, this.gradientcanvas.width, 1, 0);
+    this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, format, this.width, this.height, 0);
     this.kernel.setKernelArg (0, this.input);
     this.kernel.setKernelArg (1, this.palette);
     this.kernel.setKernelArg (2, this.output);
@@ -47,151 +64,51 @@
     
   }
 
-  WebCL.prototype.draw = function(fractal) {
-    var gradientcanvas = document.getElementById('gradient');
-    ctx_g = gradientcanvas.canvas.getContext("2d");
-    var gradient = ctx_g.getImageData(0, 0, 1024, 1);
+  WebCL_.prototype.draw = function(fractal) {
+     try {
+      ctx_g = this.gradientcanvas.getContext("2d");
+      var gradient = ctx_g.getImageData(0, 0, this.gradientcanvas.width, 1);
 
-    //Pass additional args
-    //this.kernel.setKernelArg (2, value, WebCL.types.FLOAT);
-    var inBuffer = new Float32Array(14);
-    var background = colours.palette.colours[0].colour;
-    inBuffer[0] = fractal.origin.zoom;
-    inBuffer[1] = fractal.origin.rotation;
-    inBuffer[2] = fractal.origin.pixelSize(this.canvas);
-    inBuffer[3] = fractal.origin.re;
-    inBuffer[4] = fractal.origin.im;
-    inBuffer[5] = fractal.selected.re;
-    inBuffer[6] = fractal.selected.im;
-    inBuffer[7] = background.red/255.0;
-    inBuffer[8] = background.green/255.0;
-    inBuffer[9] = background.blue/255.0;
-    inBuffer[10] = background.alpha;
-    inBuffer[11] = fractal.antialias;
-    inBuffer[12] = fractal.julia;
-    inBuffer[13] = fractal.perturb;
+      //Pass additional args
+      //this.kernel.setKernelArg (2, value, WebCL.types.FLOAT);
+      var background = colours.palette.colours[0].colour;
+      this.inBuffer[0] = fractal.origin.zoom;
+      this.inBuffer[1] = fractal.origin.rotate;
+      this.inBuffer[2] = fractal.origin.pixelSize(this.canvas);
+      this.inBuffer[3] = fractal.origin.re;
+      this.inBuffer[4] = fractal.origin.im;
+      this.inBuffer[5] = fractal.selected.re;
+      this.inBuffer[6] = fractal.selected.im;
 
-    this.queue.enqueueReadBuffer(this.input, false, 0, 4*14, inBuffer, []);    
+      var inBuffer2 = new Int8Array([fractal.antialias, fractal.julia, fractal.perturb]);
 
-    this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [1024,1,1], 0, 0, gradient, []);
+      var size = this.inBuffer.byteLength;
+      this.queue.enqueueWriteBuffer(this.input, false, 0,        size, this.inBuffer, []);    
+      this.queue.enqueueWriteBuffer(this.input, false, size,     4*4,  background.rgbaGL(), []);    
+      this.queue.enqueueWriteBuffer(this.input, false, size+4*4, 3,    inBuffer2, []);    
 
-    // Init ND-range
-    var localWS = [0,0];
-    var globalWS = [ canvas.width, canvas.height ];
+      this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], gradient.width*4, 0, gradient.data, []);
 
-    this.queue.enqueueNDRangeKernel(this.kernel, globalWS.length, [], globalWS, localWS, []);
+      // Init ND-range
+      consoleWrite("WebCL execute: Global (" + this.width + "x" + this.height + 
+                   ") Local (" + this.width/this.threads + "x" + this.height/this.threads + ")");
+      var localWS = [this.width/this.threads,this.height/this.threads];
+      var globalWS = [this.width, this.height];
 
-    ctx_c = this.canvas.getContext("2d");
-    var outImage = ctx_c.createImageData(canvas.width, canvas.height);
+      this.queue.enqueueNDRangeKernel(this.kernel, globalWS.length, [], globalWS, localWS, []);
 
-    this.queue.enqueueReadImage(this.output, false, [0,0,0], [canvas.width,canvas.height,1], 0, 0, outImage, []);
+      ctx_c = this.canvas.getContext("2d");
+      var outImage = ctx_c.createImageData(this.canvas.width, this.canvas.height);
 
-    this.queue.finish();
+      this.queue.enqueueReadImage(this.output, false, [0,0,0], [this.canvas.width,this.canvas.height,1], 0, 0, outImage.data, []);
 
-    ctx_c.putImageData(outImage, 0, 0);
+      this.queue.finish();
 
-  }
+      ctx_c.putImageData(outImage, 0, 0);
 
-/*
-var ctx_c, imgd, nc = 30, maxCol = nc*3, cr,cg,cb;
-
-function init_pix() {
-   var canvas = document.getElementById("canvas");
-   if (!canvas.getContext) return;
-   ctx_c = canvas.getContext("2d");
-   var st = 255/nc;
-   cr = new Array(maxCol); cg = new Array(maxCol); cb = new Array(maxCol);
-   for (var i = 0; i < nc; i++){
-     var d = Math.floor(st*i);
-     cr[i] = 255 - d;  cr[i+nc] = 0;  cr[i+2*nc] = d;
-     cg[i] = d;  cg[i+nc] = 255 - d;  cg[i+2*nc] = 0;
-     cb[i] = 0;  cb[i+nc] = d;  cb[i+2*nc] = 255 - d;
-   }
-   cr[maxCol] = cg[maxCol] = cb[maxCol] = 0;
-   imgd = ctx_c.createImageData(512, 512);
-}
-
-function CL_mandelbrot () {
-  try {
-    if (window.WebCL == undefined) {
-      alert("Unfortunately your system does not support WebCL");
-      return false;
-    }
-
-    var n = 512;
-    init_pix();
-    var platforms = WebCL.getPlatformIDs();
-    var ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
-                                            platforms[0]],
-                                           WebCL.CL_DEVICE_TYPE_DEFAULT);
-    var devices = ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
-                     
-    var kernelSrc = loadKernel("clProgramMandelbrot");
-    var program = ctx.createProgramWithSource(kernelSrc);
-    try {
-      program.buildProgram ([devices[0]], "");
     } catch(e) {
-      alert ("Failed to build WebCL program. Error "
-             + program.getProgramBuildInfo (devices[0], 
-                                            WebCL.CL_PROGRAM_BUILD_STATUS)
-             + ":  " 
-             + program.getProgramBuildInfo (devices[0], 
-                                            WebCL.CL_PROGRAM_BUILD_LOG));
+      alert(e.message);
       throw e;
     }
-    var kernel = program.createKernel ("ckMandelbrot");
-    var bufMax = ctx.createBuffer (WebCL.CL_MEM_WRITE_ONLY, 4*n*n);
-    kernel.setKernelArg (0, bufMax);
-    kernel.setKernelArg (1, 10000*300, WebCL.types.FLOAT);
-            
-    var cmdQueue = ctx.createCommandQueue (devices[0], 0);
-    
-    // Init ND-range
-    var localWS = [8,8];
-    var globalWS = [ n, n ];
-
-    cmdQueue.enqueueNDRangeKernel(kernel, globalWS.length, [], globalWS, localWS, []);
-    var outBuffer = new Int32Array(4*n*n);
-    cmdQueue.enqueueReadBuffer (bufMax, false, 0, 4*n*n, outBuffer, []);    
-    cmdQueue.finish ();
-
- var pix = imgd.data, c = 0, ic;
- for (var t = 0; t < 512*512; t++) {
-   var i = outBuffer[t];
-   if (i == 512) ic = maxCol;
-   else ic = i % maxCol;
-   pix[c++] = cr[ic];  pix[c++] = cg[ic];  pix[c++] = cb[ic];  pix[c++] = 255;
- }
- ctx_c.putImageData(imgd, 0, 0);
-
-  
-  } catch(e) {
-    alert(e.message);
-    throw e;
   }
-}
-
-#ifdef cl_khr_fp64
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-#else
-#pragma OPENCL EXTENSION cl_amd_fp64 : enable
-#endif
-
-__constant int test = 0;   //Read only
-
-#define real float
-
-  __kernel void ckMandelbrot(__global int* max, float scale){
-    int x = get_global_id(0),  y = get_global_id(1);
-    real Cr = (x - 256) / scale + .407476;
-    real Ci = (y - 256) / scale + .234204;
-    real I=0, R=0,  I2=0, R2=0;
-    int n=0;
-    while ( (R2+I2 < 2.) && (n < 512) ){
-      I=(R+R)*I+Ci;  R=R2-I2+Cr;  R2=R*R;  I2=I*I;  n++;
-    }
-    max[y*512 + x] = n;
-  }
-*/
-
 
