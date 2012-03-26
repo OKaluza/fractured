@@ -71,7 +71,7 @@ main_function()
   //Globals
   complex z;
   complex c;
-  complex pixel;      //Current pixel coord
+  complex point;      //Current point coord
   complex z_1;        //Value of z(n-1)
   complex z_2;        //Value of z(n-2)
   int maxiterations;  //Number of iterations to perform
@@ -79,10 +79,7 @@ main_function()
 
   ---DATA---
 
-  rgba result_colour = rgba(0.0,0.0,0.0,0.0);
   rgba colour = rgba(0.0,0.0,0.0,0.0);
-
-  ---INIT---
 
   //Largest dimension
   real dim = dims.y > dims.x ? dims.y : dims.x;
@@ -101,93 +98,81 @@ main_function()
   else
     maxiterations = iterations;
   
-  ---INIT2---
-    
   float inc = pixelsize / real(antialias); //Width of variable over fragment
-  for (int j=0; j<16; j++)
+
+  //Init fractal
+  point = coord + complex(real(k)*inc, real(j)*inc);
+
+  ---INIT---
+
+  if (julia)
   {
-    if (j >= antialias) break;
-    for (int k=0; k<16; k++)
-    {
-      if (k >= antialias) break;
-      //Reset fractal
-      pixel = coord + complex(real(k)*inc, real(j)*inc);
-
-      ---RESET0---
-
-      if (julia)
-      {
-        //Julia set default
-        z = pixel;
-        c = selected;
-      }
-      else
-      {
-        //Mandelbrot set default
-        if (perturb) 
-          z = selected; //Perturbation
-        else
-          z = (0,0);
-        c = pixel;
-      }
-      z_1 = z_2 = (0,0);
-
-      //Formula specific reset...
-      ---RESET---
-
-      //Iterate the fractal formula
-      //(Loop counter can only be compared to constant in GL ES 2.0)
-      bool in_set = true;
-      for (int i=0; i <= iterations*2; i++)
-      {
-        //Update z(n-2)
-        z_2 = z_1;
-        //Save current z value for z(n-1)
-        z_1 = z;
-
-        //Run next calc step
-        count = i;
-
-        ---PRE_TRANSFORM---
-        ---ZNEXT---
-        ---POST_TRANSFORM---
-
-        ---ESCAPED---
-        ---CONVERGED---
-
-        //Check bailout conditions
-        if (escaped || converged)
-        {
-          in_set = false;
-          break;
-        }
-
-        //Colour calcs...
-        ---COLOUR_CALC---
-
-        //Check iterations remain
-        if (i == maxiterations) break;
-      }
-
-      if (in_set)
-      {
-        //Inside colour: normalised colour index [0,1]
-        real repeat = inrepeat;
-        ---INSIDE_COLOUR---
-      }
-      else
-      {
-        //Outside colour: normalised colour index [0,1]
-        real repeat = outrepeat;
-        ---OUTSIDE_COLOUR---
-      }
-
-      result_colour += colour;
-    }
+    //Julia set default
+    z = point;
+    c = selected;
   }
-  
-  //Average to get final colour
-  set_result(result_colour / float(antialias*antialias));
+  else
+  {
+    //Mandelbrot set default
+    if (perturb) 
+      z = selected; //Perturbation
+    else
+      z = (0,0);
+    c = point;
+  }
+  z_1 = z_2 = (0,0);
+
+  //Formula specific reset...
+  ---RESET---
+
+  //Iterate the fractal formula
+  //(Loop counter can only be compared to constant in GL ES 2.0)
+  bool in_set = true;
+  for (int i=0; i <= iterations*2; i++)
+  {
+    //Update z(n-2)
+    z_2 = z_1;
+    //Save current z value for z(n-1)
+    z_1 = z;
+
+    //Run next calc step
+    count = i;
+
+    ---PRE_TRANSFORM---
+    ---ZNEXT---
+    ---POST_TRANSFORM---
+
+    ---ESCAPED---
+    ---CONVERGED---
+
+    //Check bailout conditions
+    if (escaped || converged)
+    {
+      in_set = false;
+      break;
+    }
+
+    //Colour calcs...
+    ---COLOUR_CALC---
+
+    //Check iterations remain
+    if (i == maxiterations) break;
+  }
+
+  if (in_set)
+  {
+    //Inside colour: normalised colour index [0,1]
+    real repeat = inrepeat;
+    ---INSIDE_COLOUR---
+  }
+  else
+  {
+    //Outside colour: normalised colour index [0,1]
+    real repeat = outrepeat;
+    ---OUTSIDE_COLOUR---
+  }
+
+  set_result(colour);
 }
 
 

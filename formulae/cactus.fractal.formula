@@ -1,5 +1,5 @@
 //z(n+1) = 
-@znext = expression(z^p + z*(pixel-1) - pixel);
+@znext = expression(z^p + z*(point-1) - point);
 //Power (p)
 @p = real(3);
 //Escape
@@ -7,10 +7,10 @@
 //Bailout Test
 @bailtest = bailout_function(norm);
 
-//Reset, called once for each pixel before iterating
+//Reset, called immediately before iterating
 reset:
   //Reset fractal, standard doesn't work with this algorithm
-  z = pixel;
+  z = point;
   if (julia)
     z = selected;
   else

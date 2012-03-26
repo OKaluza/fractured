@@ -743,7 +743,6 @@
       //Init WebGL
       this.webgl = new WebGL(canvas);
       this.gl = this.webgl.gl;
-      this.gradientTexture = this.gl.createTexture();
     } else if (renderer == "WebCL") {
       //Init WebCL testing
       this.webcl = new WebCL_(canvas);
@@ -804,7 +803,7 @@
 
   Fractal.prototype.updateTexture = function() {
     if (this.webgl)
-      this.webgl.updateTexture(this.gradientTexture);
+      this.webgl.updateTexture(this.webgl.gradientTexture, colours.gradientcanvas);
   }
 
   Fractal.prototype.resetDefaults = function() {
@@ -1482,18 +1481,16 @@
     //Replace ---SECTION--- with formula code
     this.offsets = [];
     shader = this.templateInsert(shader, selections, "DATA", "data", ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "INIT", "init", ["pre_transform", "fractal", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "INIT2", "init", ["post_transform"], 2);
-    shader = this.templateInsert(shader, selections, "RESET0", "reset", ["pre_transform"], 4);
-    shader = this.templateInsert(shader, selections, "RESET", "reset", ["fractal", "post_transform", "inside_colour", "outside_colour"], 4);
-    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 6);
-    shader = this.templateInsert(shader, selections, "ZNEXT", "znext", ["fractal"], 6);
-    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 6);
-    shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 6);
-    shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 6);
-    shader = this.templateInsert(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 6);
-    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 6);
-    shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 6);
+    shader = this.templateInsert(shader, selections, "INIT", "init", ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "RESET", "reset", ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 4);
+    shader = this.templateInsert(shader, selections, "ZNEXT", "znext", ["fractal"], 4);
+    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 4);
+    shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 4);
+    shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 4);
+    shader = this.templateInsert(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 4);
+    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 4);
+    shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 4);
     this.offsets.push(LineOffset("(end)", "(end)", shader.split("\n").length));
 
     shader = shader + sources["shaders/complex-math.frag"];
@@ -1686,7 +1683,8 @@
     this.gl.uniform1f(this.webgl.program.uniforms["pixelsize"], this.origin.pixelSize(this.canvas));
 
     //Gradient texture
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.gradientTexture);
+    this.gl.activeTexture(this.gl.TEXTURE0);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.webgl.gradientTexture);
     this.gl.uniform1i(this.webgl.program.paletteUniform, 0);
 
     //Apply translation to origin, any rotation and scaling (inverse of zoom factor)
@@ -1701,7 +1699,7 @@
     else if (this.canvas.height > this.canvas.width)
       this.webgl.modelView.scale([1.0, this.canvas.height / this.canvas.width, 1.0]);  //Scale height
 
-    this.webgl.draw();
+    this.webgl.draw(this.antialias);
     if (window.recording)
       window.outputFrame(); 
   }

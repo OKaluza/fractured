@@ -13,7 +13,7 @@
 converged:
   converged = bailtest(z-z_1) < converge;
 
-//Reset, called once for each pixel before iterating
+//Reset, called immediately before iterating
 reset:
   //Nova init
   if (!julia && !perturb) z = C(1);

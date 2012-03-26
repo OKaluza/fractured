@@ -24,15 +24,19 @@
     }
   }
 
-  WebGL.prototype.draw = function() {
+  WebGL.prototype.draw = function(antialias) {
+    if (antialias == undefined) antialias = 1;
       //Enable this to render frame to texture 
       //this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, rttFramebuffer);
 
     //var bg = colours[0].colour.rgbaGL();
     //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
     this.gl.clearColor(0, 0, 0, 0);
-    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+    //this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
     this.gl.enable(this.gl.BLEND);
+      this.gl.blendColor(0, 0, 0, 1.0/(antialias*antialias));
+      this.gl.blendEquationSeparate( this.gl.FUNC_ADD, this.gl.FUNC_ADD );
+      this.gl.blendFuncSeparate( this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA, this.gl.ONE, this.gl.ONE );
 
     //if (!fractal.julia) {
       this.gl.viewport(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
@@ -52,8 +56,19 @@
     //Rotation & translation matrix
     this.gl.uniformMatrix4fv(this.program.mvMatrixUniform, false, this.modelView.get());
 
-    //Draw!
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
+    //Draw and blend multiple passes for anti-aliasing
+    var blendinc = 0;
+    var data = new Int8Array(this.gl.viewportWidth * this.gl.viewportHeight * 4);
+    for (var j=0; j<antialias; j++) {
+      for (var k=0; k<antialias; k++) {
+            this.gl.blendColor(0, 0, 0, 1.0-blendinc);
+            blendinc += 1.0/(antialias*antialias);
+        this.gl.uniform1i(this.program.jUniform, j);
+        this.gl.uniform1i(this.program.kUniform, k);
+        //Draw!
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
+      }
+    }
 
     return; //Below is to display rendered texture
 /*
@@ -150,14 +165,15 @@
     for (i in uniforms)
       this.program.uniforms[uniforms[i]] = this.gl.getUniformLocation(this.program, uniforms[i]);
     this.program.mvMatrixUniform = this.gl.getUniformLocation(this.program, "uMVMatrix");
+    //j/k
+      this.program.jUniform = this.gl.getUniformLocation(this.program, "j");
+      this.program.kUniform = this.gl.getUniformLocation(this.program, "k");
   }
 
-  WebGL.prototype.updateTexture = function(texture) {
+  WebGL.prototype.updateTexture = function(texture, image) {
+    this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, texture.image);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
-    //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
   }
 
@@ -197,13 +213,27 @@
     this.vertexPositionBuffer.itemSize = 2;
     this.vertexPositionBuffer.numItems = 4;
 
-    //Texture coords for rendered texture
-    textureCoordBuffer = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, textureCoordBuffer);
+    //Gradient texture
+    this.gl.activeTexture(this.gl.TEXTURE0);
+    this.gradientTexture = this.gl.createTexture();
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.gradientTexture);
+
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+      //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_LOD, 0);
+      //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAX_LOD, 0);
+      //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAX_LEVEL, 0);
+      //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.GENERATE_MIPMAP, this.GL_FALSE);
+    //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP);
+
+    /*/Texture coords for rendered texture
+    this.textureCoordBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureCoordBuffer);
     var textureCoords = [1.0, 1.0,  0.0, 1.0,  1.0, 0.0,  0.0, 0.0];
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(textureCoords), this.gl.STATIC_DRAW);
     this.textureCoordBuffer.itemSize = 2;
     this.textureCoordBuffer.numItems = 4;
+    */
   }
 
   /**

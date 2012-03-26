@@ -1,3 +1,4 @@
-//Default colouring algorithm, does nothing but return the count
+//Default colouring algorithm
+//Applies iteration count and repeat parameter to get a colour from the gradient palette
 result:
   colour = gradient(repeat * real(count) / real(maxiterations));

@@ -6,18 +6,14 @@
 //Bailout
 @:bailout = expression(escape);
 
-real :il, :lp;
-
 #define logexp(z) log(log(cabs(z)))
 //Inside version!
 //#define logexp(z) loge(complex(log(cabs(z)))).x
 
-
-init:
-  //Inverse log of (power)
-  :il = 1.0/log(:power);
-  //Additional for Smooth 2
-  :lp = log(2.0 * log(sqrt(@:bailout))) * :il;
+//Inverse log of (power)
+real :il = 1.0/log(:power);
+//Additional for Smooth 2
+real :lp = log(2.0 * log(sqrt(@:bailout))) * :il;
 
 result:
   real mu;

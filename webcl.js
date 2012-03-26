@@ -52,7 +52,7 @@
       throw e;
     }
     this.kernel = this.program.createKernel ("fractured");
-    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3);
+    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3 + 2*4);
     var format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, format, this.gradientcanvas.width, 1, 0);
     this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, format, this.width, this.height, 0);
@@ -81,11 +81,13 @@
       this.inBuffer[6] = fractal.selected.im;
 
       var inBuffer2 = new Int8Array([fractal.antialias, fractal.julia, fractal.perturb]);
+      var inBuffer3 = new Int32Array([fractal.width, fractal.height]);
 
       var size = this.inBuffer.byteLength;
-      this.queue.enqueueWriteBuffer(this.input, false, 0,        size, this.inBuffer, []);    
-      this.queue.enqueueWriteBuffer(this.input, false, size,     4*4,  background.rgbaGL(), []);    
-      this.queue.enqueueWriteBuffer(this.input, false, size+4*4, 3,    inBuffer2, []);    
+      this.queue.enqueueWriteBuffer(this.input, false, 0,          size, this.inBuffer, []);    
+      this.queue.enqueueWriteBuffer(this.input, false, size,       4*4,  background.rgbaGL(), []);    
+      this.queue.enqueueWriteBuffer(this.input, false, size+4*4,   3,    inBuffer2, []);    
+      this.queue.enqueueWriteBuffer(this.input, false, size+4*4+3, 2*4,  inBuffer3, []);    
 
       this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], gradient.width*4, 0, gradient.data, []);
 
