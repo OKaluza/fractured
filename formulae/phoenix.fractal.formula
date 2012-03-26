@@ -11,6 +11,6 @@
 //Bailout Test
 @bailtest = bailout_function(norm);
 
-//Reset, called once for each pixel before iterating
+//Reset, called immediately before iterating
 reset:
-  z = pixel;
+  z = point;

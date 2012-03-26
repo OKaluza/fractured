@@ -12,15 +12,17 @@ precision highp float;
 #define gradient(mu) texture2D(palette, vec2(mu, 0.0))
 
 //Uniform data
+uniform int j;
+uniform int k;
 uniform int antialias;
 uniform bool julia;
 uniform bool perturb;
 uniform real pixelsize;
 uniform complex dims;
-uniform complex origin; 
-uniform complex selected; 
-uniform sampler2D palette; 
-uniform rgba background; 
+uniform complex origin;
+uniform complex selected;
+uniform sampler2D palette;
+uniform rgba background;
 
 //Current complex coordinate
 varying complex coord;

@@ -1,4 +1,4 @@
-//Burning ship with subtracted pixel coord (mirrored)
+//Burning ship with subtracted coord (mirrored)
 //z(n+1) = 
 @znext = expression(abs(z)^p - c); 
 //Power (p)

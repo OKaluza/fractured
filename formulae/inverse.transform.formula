@@ -4,6 +4,7 @@
 //Radius
 @:radius = real(1);
 
-reset:
-  pixel = @:center + div(@:radius, (pixel - @:center));
+//Init, called before setting initial conditions
+init:
+  point = @:center + div(@:radius, (point - @:center));
 

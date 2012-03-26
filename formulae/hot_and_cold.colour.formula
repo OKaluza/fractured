@@ -14,12 +14,8 @@
 //Cold colour
 @:coldcolour = rgba(127, 200, 250, 1.0);
 
-int :closecalls;
-int :farcalls;
-
-reset:
-  :closecalls=0;
-  :farcalls=0;
+int :closecalls = 0;
+int :farcalls = 0;
 
 calc:
   real dist = norm(z);
@@ -32,4 +28,4 @@ result:
   //return gradient(repeat * real(:closecalls) / real(count));
   rgba hcolour = @:hotcolour * (real(:closecalls)/real(count));
   rgba ccolour = @:coldcolour * (real(:farcalls)/real(count));
-  colour = rgba(hcolour.rgb + ccolour.xyz, 1.0);
+  colour = rgba(hcolour.xyz + ccolour.xyz, 1.0);

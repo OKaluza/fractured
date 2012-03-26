@@ -309,7 +309,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function setAntiAlias(val) {
     if (!val) val = prompt('Enter quality (1-16) Higher values may be very slow!');
-    if (val) {
+    if (val && val > 0 && val <= 16) {
       antialias = val;
       fractal.draw(antialias);
       localStorage["fractured.antialias"] = antialias;
@@ -728,10 +728,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         var name = addFormula(type, formulae[type][i]);
         //Load sources from local storage
         var filename = formulaFilename(type, name);
-        //sources[filename] = "";
-        //Necessary? Should always do this now anyway when available for standard formulae
-        if (localStorage[filename] && !sources[filename]) //Added check to only write when not yet in sources
-          sources[filename] = localStorage[filename];
+        if (reloadsources)  //Forced reload from server?
+          sources[filename] = "";
+        else
+          //Necessary? Should always do this now anyway when available for standard formulae
+          if (localStorage[filename] && !sources[filename]) //Added check to only write when not yet in sources
+            sources[filename] = localStorage[filename];
       }
       //Script
       sources["script.js"] = localStorage["script.js"];
@@ -1266,8 +1268,6 @@ function ColourEditor(gl) {
   this.editcanvas = document.getElementById('palette')
   this.gradientcanvas = document.getElementById('gradient')
 
-  //Load texture data and draw palette
-  if (fractal.webgl) fractal.gradientTexture.image = this.gradientcanvas;
   //Create default palette object
   this.palette = new Palette();
   this.palette.draw(this.editcanvas, true);

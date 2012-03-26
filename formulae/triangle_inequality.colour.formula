@@ -4,14 +4,11 @@
 //Bailout
 @:bailout = expression(escape);
 
-real :il, :lp;
+real :il = 1.0/log(:power);  //Inverse log of (power)
+real :lp = log(log(@:bailout)/2.0);
 real :sum = 10.0;
 real :sum2 = 5.0;
 real :ac = 0.0;
-
-init:
-  :il = 1.0/log(:power);  //Inverse log of (power).  
-  :lp = log(log(@:bailout)/2.0);
 
 reset:
   :sum = 0.0;

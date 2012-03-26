@@ -9,10 +9,6 @@
 real :sum = 0.0;
 real :csum = 0.0;
 
-reset:
-  :sum = 0.0;
-  :csum = 0.0;  
-
 calc:
   complex :zval = z;
   if (:use_z_old)

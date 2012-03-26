@@ -30,7 +30,7 @@ rgba read_palette(image2d_t palette, float mu)
   return (rgba)(p.x/255.0, p.y/255.0, p.z/255.0, p.w/255.0); 
 }
 
-#define main_function() rgba calcpixel(complex coord, int antialias, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
+#define main_function() rgba calcpixel(complex coord, int antialias, int j, int k, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
 
 #define set_result(c) return c;
 main_function();  //Prototype
@@ -49,6 +49,9 @@ typedef struct __attribute__ ((packed)) Input
   uchar antialias;
   uchar julia;
   uchar perturb;
+
+  int width;
+  int height;
 } Input;
 
 complex rotate2d(complex v, real angle)
@@ -80,12 +83,26 @@ complex convert(int2 pos, int2 size, real zoom, real rotation)
 __kernel void fractured(__global struct Input* input, read_only image2d_t palette, write_only image2d_t output)
 {
   int2 pos = (int2)(get_global_id(0), get_global_id(1));
-  int2 size = (int2)(get_global_size(0), get_global_size(1));
-  complex dims = (complex)(size.x, size.y);
-
+  int2 size = (int2)(input->width, input->height);
+  complex dims = (complex)(input->width, input->height);
   complex coord = input->origin + convert(pos, size, input->zoom, input->rotation);
-  rgba pixel = calcpixel(coord, input->antialias, input->julia, input->perturb, input->pixelsize, 
+
+  //Draw and blend in multiple passes for anti-aliasing
+  rgba pixel = (rgba)(0);
+  for (int j=0; j<input->antialias; j++) {
+    for (int k=0; k<input->antialias; k++) {
+      pixel += calcpixel(coord, input->antialias, j, k, input->julia, input->perturb, input->pixelsize, 
                          dims, input->origin, input->selected, palette, input->background);
+    }
+  }
+  float aa = (float)input->antialias*(float)input->antialias;
+  pixel /= (rgba)(aa);
+  //pixel.x /= aa;
+  //pixel.y /= aa;
+  //pixel.z /= aa;
+  //pixel.w /= aa;
+  //rgba pixel = calcpixel(coord, input->antialias, input->julia, input->perturb, input->pixelsize, 
+  //                       dims, input->origin, input->selected, palette, input->background);
   write_imageui(output, (int2)(pos.x, pos.y), (uint4)(255*pixel.x,255*pixel.y,255*pixel.z,255*pixel.w));
 }
 
