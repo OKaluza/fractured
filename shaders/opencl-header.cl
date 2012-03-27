@@ -30,7 +30,7 @@ rgba read_palette(image2d_t palette, float mu)
   return (rgba)(p.x/255.0, p.y/255.0, p.z/255.0, p.w/255.0); 
 }
 
-#define main_function() rgba calcpixel(complex coord, int antialias, int j, int k, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
+#define main_function() rgba calcpixel(complex coord, complex offset, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
 
 #define set_result(c) return c;
 main_function();  //Prototype
@@ -91,7 +91,8 @@ __kernel void fractured(__global struct Input* input, read_only image2d_t palett
   rgba pixel = (rgba)(0);
   for (int j=0; j<input->antialias; j++) {
     for (int k=0; k<input->antialias; k++) {
-      pixel += calcpixel(coord, input->antialias, j, k, input->julia, input->perturb, input->pixelsize, 
+      complex offset = (complex)((real)j/(real)input->antialias-0.5, (real)k/(real)input->antialias-0.5);
+      pixel += calcpixel(coord, offset, input->julia, input->perturb, input->pixelsize, 
                          dims, input->origin, input->selected, palette, input->background);
     }
   }

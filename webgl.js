@@ -61,10 +61,12 @@
     var data = new Int8Array(this.gl.viewportWidth * this.gl.viewportHeight * 4);
     for (var j=0; j<antialias; j++) {
       for (var k=0; k<antialias; k++) {
-            this.gl.blendColor(0, 0, 0, 1.0-blendinc);
-            blendinc += 1.0/(antialias*antialias);
-        this.gl.uniform1i(this.program.jUniform, j);
-        this.gl.uniform1i(this.program.kUniform, k);
+          var blendval = 1.0 - blendinc;
+          blendval *= blendval;// * blendval;
+          this.gl.blendColor(0, 0, 0, blendval);
+          consoleWrite(blendval);
+          blendinc += 1.0/(antialias*antialias);
+        this.gl.uniform2f(this.program.uniforms['offset'], j/antialias-0.5, k/antialias-0.5);
         //Draw!
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
       }
@@ -165,9 +167,6 @@
     for (i in uniforms)
       this.program.uniforms[uniforms[i]] = this.gl.getUniformLocation(this.program, uniforms[i]);
     this.program.mvMatrixUniform = this.gl.getUniformLocation(this.program, "uMVMatrix");
-    //j/k
-      this.program.jUniform = this.gl.getUniformLocation(this.program, "j");
-      this.program.kUniform = this.gl.getUniformLocation(this.program, "k");
   }
 
   WebGL.prototype.updateTexture = function(texture, image) {
