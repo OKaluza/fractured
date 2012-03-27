@@ -98,10 +98,8 @@ main_function()
   else
     maxiterations = iterations;
   
-  float inc = pixelsize / real(antialias); //Width of variable over fragment
-
   //Init fractal
-  point = coord + complex(real(k)*inc, real(j)*inc);
+  point = coord + complex(offset.x*pixelsize, offset.y*pixelsize);
 
   ---INIT---
 

@@ -1622,9 +1622,9 @@
     if (errors) {
       var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
                           "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
-      //alert(errors);
       var reg = /0:(\d+)/;
       var match = reg.exec(errors);
+      var found = false;
       if (match) {
         var lineno = parseInt(match[1]);
         //alert(match[1]);
@@ -1637,17 +1637,21 @@
               //Adjust the line number
               lineno -= this.offsets[last].value + 1;
               lineno += this[this.offsets[last].category].lineoffsets[section];
-              alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + sectionnames[this.offsets[last].category] + " formula: " + labels[this[this.offsets[last].category].selected] + "\n--------------\n" + errors);
+              alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + 
+                    sectionnames[this.offsets[last].category] + " formula: " + 
+                    labels[this[this.offsets[last].category].selected] + "\n--------------\n" + errors);
+              found = true;
               break;
             }
           }
           last = i;
         }
-      } else alert(error);  //Simply show compile error
+      }
+      if (!found) alert(errors);  //Simply show compile error
     }
 
     //Setup uniforms for fractal program (all these are always set now, do this once at start?)
-    this.webgl.setupProgram(["palette", "antialias", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
+    this.webgl.setupProgram(["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
   }
 
   Fractal.prototype.draw = function(antialias) {
@@ -1673,7 +1677,6 @@
     this.gl.useProgram(this.webgl.program);
 
     //Uniform variables
-    this.gl.uniform1i(this.webgl.program.uniforms["antialias"], this.antialias);
     this.gl.uniform1i(this.webgl.program.uniforms["julia"], this.julia);
     this.gl.uniform1i(this.webgl.program.uniforms["perturb"], this.perturb);
     this.gl.uniform4fv(this.webgl.program.uniforms["background"], colours.palette.colours[0].colour.rgbaGL());

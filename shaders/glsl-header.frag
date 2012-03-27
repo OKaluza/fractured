@@ -12,9 +12,7 @@ precision highp float;
 #define gradient(mu) texture2D(palette, vec2(mu, 0.0))
 
 //Uniform data
-uniform int j;
-uniform int k;
-uniform int antialias;
+uniform complex offset;
 uniform bool julia;
 uniform bool perturb;
 uniform real pixelsize;
