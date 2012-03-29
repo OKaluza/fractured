@@ -283,6 +283,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   //Once we have source data, app can be initialised
   function appInit() {
+    toggle('popup');
     //Fractal canvas event handling
     var canvas = document.getElementById("fractal-canvas");
     canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));

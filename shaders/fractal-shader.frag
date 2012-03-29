@@ -76,6 +76,7 @@ main_function()
   complex z_2;        //Value of z(n-2)
   int maxiterations;  //Number of iterations to perform
   int count = 0;      //Step counter
+  bool escaped, converged;
 
   ---DATA---
 
@@ -125,7 +126,6 @@ main_function()
 
   //Iterate the fractal formula
   //(Loop counter can only be compared to constant in GL ES 2.0)
-  bool in_set = true;
   for (int i=0; i <= iterations*2; i++)
   {
     //Update z(n-2)
@@ -140,15 +140,13 @@ main_function()
     ---ZNEXT---
     ---POST_TRANSFORM---
 
-    ---ESCAPED---
-    ---CONVERGED---
-
     //Check bailout conditions
-    if (escaped || converged)
-    {
-      in_set = false;
-      break;
-    }
+    escaped = true;
+    ---ESCAPED---
+    escaped = false;
+    converged = true;
+    ---CONVERGED---
+    converged = false;
 
     //Colour calcs...
     ---COLOUR_CALC---
@@ -157,20 +155,19 @@ main_function()
     if (i == maxiterations) break;
   }
 
-  if (in_set)
-  {
-    //Inside colour: normalised colour index [0,1]
-    real repeat = inrepeat;
-    ---INSIDE_COLOUR---
-  }
-  else
+  if (escaped || converged)
   {
     //Outside colour: normalised colour index [0,1]
     real repeat = outrepeat;
     ---OUTSIDE_COLOUR---
   }
+  else
+  {
+    //Inside colour: normalised colour index [0,1]
+    real repeat = inrepeat;
+    ---INSIDE_COLOUR---
+  }
 
   set_result(colour);
 }
-
 

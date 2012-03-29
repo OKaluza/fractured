@@ -656,25 +656,18 @@
       if (sections["converged"].length == 0) {
         if (!this.currentParams["converged"]) {
           //No converged test defined
-          sections["data"] += "\n  bool converged = false;\n";
-          //sections["converged"] = "\n  converged = false;\n";
           converged_defined = false;
         }
-      } else
-        sections["data"] += "\n  bool converged = false;\n";
+      }
 
       if (sections["escaped"].length == 0) {
         //No escaped test defined
         if (!this.currentParams["escaped"]) {
           //If no converged test either create a default bailout
           if (!converged_defined || this.currentParams["escape"])
-            sections["escaped"] = "\n  escaped = bailtest(z) > escape;\n";
-          //else
-          //  sections["data"] += "\n  bool escaped = false;\n";
-          sections["data"] += "\n  bool escaped = false;\n";
+            sections["escaped"] = "\n  if (bailtest(z) > escape) break;\n";
         }
-      } else
-        sections["data"] += "\n  bool escaped;\n";
+      }
 
       if (!this.currentParams["escape"]) sections["data"] += "\n#define escape 4.0\n";
       if (!this.currentParams["bailtest"]) sections["data"] += "\n#define bailtest norm\n";
@@ -686,7 +679,7 @@
 
       //Same colouring, always use the outside result...
       if (this.selected == "same")
-        sections["calc"] = "\n  in_set = false;\n";
+        sections["calc"] = "\n  escaped = true;\n";
     }
 
     return sections;

@@ -14,4 +14,4 @@
 
 converged:
   //Converge test
-  converged = bailtest(z-(1,0)) < converge;
+  if (bailtest(z-(1,0)) < converge) break;
