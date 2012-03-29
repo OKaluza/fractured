@@ -303,7 +303,7 @@
   <div id="hidden" style="display: none">
     <img src="media/slider.png" id="slider">
     <img src="media/SatVal.png">
-    <canvas id="gradient" width="4096" height="1"></canvas>
+    <canvas id="gradient" width="2048" height="1"></canvas>
     <canvas id="thumb" width="40" height=40"></canvas>
 
     <form name="exporter" action="savefile.php" method="post">
@@ -314,9 +314,11 @@
   </div>
   <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
 
-  <div id="popup" class="popup" style="display: none">
+  <div id="popup" class="popup">
     <div class="popclose" onclick="toggle('popup');">X</div>
-    This a vertically and horizontally centered popup.
+    <div id="popupmessage">
+    Downloading source files...
+    </div>
   </div>
 
   <div id="openid_form" class="popup" style="display: none">

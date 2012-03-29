@@ -35,7 +35,7 @@
     //Adjust width/height, ensure is a multiple of work-group size
     this.width = width;
     this.height = height;
-    for (var i=this.threads; i<4096; i+= this.threads) {
+    for (var i=this.threads; i<2048; i+= this.threads) {
       if (i >= this.width) this.width = i;
       if (i >= this.height) this.height = i;
       if (i >= this.width && i >= this.height) break;
