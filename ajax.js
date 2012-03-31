@@ -83,8 +83,6 @@ function ajaxWriteFile(filename, data, callback) {
   http.send(params);
 }
 
-
-
 function ajaxUploadFile(file, callback) {
   var fileName = file.name;
   var fileSize = file.size;
@@ -96,40 +94,6 @@ function ajaxUploadFile(file, callback) {
     //callback(fileData);  //Call passed function on data directly
     var fileData = reader.result + "\r\n";
     callback(fileData, file.name);  //Call passed function on data directly
-/* This is all for uploading to the server...
-
-    var boundary = "fileboundary"; //Boundary name
-    var uri = "uploader.php"; //Path to script for handling the file sent
-
-    var http = new XMLHttpRequest(); //Create the object to handle async requests
-
-    http.onreadystatechange = function() 
-    {
-      if(http.readyState == 4)
-        if (http.status == 200) {
-          alert(http.responseText);
-          //callback("./upload" + fileName);  //Call passed function on filename
-        } else
-          alert("Error: returned status code " + http.status + " " + http.statusText);
-    }
-
-    http.open("POST", uri, true); //Open a request to the web address set
-    //Next two lines set headers to fool receiving server into thinking they were sent via form
-    http.setRequestHeader("Content-Type", "multipart/form-data, boundary="+boundary);
-    http.setRequestHeader("Content-Length", fileSize);
-
-    //Set up the body of the POST data includes the name & image data.
-    var body = "--" + boundary + "\r\n";
-    body += "Content-Disposition: form-data; name='file'; filename='" + fileName + "'\r\n";
-    body += "Content-Type: application/octet-stream\r\n\r\n";
-    body += fileData + "\r\n";
-    //body += reader.result + "\r\n";
-    body += "--" + boundary + "--";
-
-    //Use sendAsBinary to send binary data. If you are sending text just use send.
-    //http.sendAsBinary(body);
-    http.send(body);
-  */
   }
   return true;
 }

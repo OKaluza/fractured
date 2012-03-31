@@ -64,7 +64,7 @@
           var blendval = 1.0 - blendinc;
           blendval *= blendval;// * blendval;
           this.gl.blendColor(0, 0, 0, blendval);
-          consoleWrite(blendval);
+          //consoleWrite(blendval);
           blendinc += 1.0/(antialias*antialias);
         this.gl.uniform2f(this.program.uniforms['offset'], j/antialias-0.5, k/antialias-0.5);
         //Draw!
