@@ -1,5 +1,3 @@
-//Bugs: load saved ini, change a parameter, load again, parameter still changed
-
   //Regular expressions
   var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
   var boolreg = /(true|false)/i;
@@ -751,13 +749,6 @@
 
     this.antialias = 1;
 
-    this["base"] = new Formula("base");
-    this["fractal"] = new Formula("fractal");
-    this["pre_transform"] = new Formula("pre_transform");
-    this["post_transform"] = new Formula("post_transform");
-    this["inside_colour"] = new Formula("inside_colour");
-    this["outside_colour"] = new Formula("outside_colour");
-
     this.offsets = [];
 
     this.resetDefaults();
@@ -818,6 +809,11 @@
 
     //Reset default base params
     this["base"] = new Formula("base");
+    this["fractal"] = new Formula("fractal");
+    this["pre_transform"] = new Formula("pre_transform");
+    this["post_transform"] = new Formula("post_transform");
+    this["inside_colour"] = new Formula("inside_colour");
+    this["outside_colour"] = new Formula("outside_colour");
   }
 
   Fractal.prototype.formulaDefaults = function() {
@@ -1627,8 +1623,7 @@
     }
   }
 
-  Fractal.prototype.draw = function(antialias) {
-    if (antialias) this.antialias = antialias;
+  Fractal.prototype.draw = function() {
     if (this.width != this.canvas.width || this.height != this.canvas.height) {
       this.canvas.width = this.width;
       this.canvas.height = this.height;
