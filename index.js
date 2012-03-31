@@ -91,6 +91,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function pageStart() {
+    showPanel($('tab4'), 'panel4');
     //If debug mode enabled, show extra menus
     var query = decodeURI(window.location.href).split("?")[1]; //whole querystring including ?
     if (query) {
@@ -118,6 +119,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     //Get shader source files on server
     sources["shaders/glsl-header.frag"] = "";
     sources["shaders/opencl-header.cl"] = "";
+    sources["shaders/complex-header.frag"] = "";
     sources["shaders/fractal-shader.frag"] = "";
     sources["shaders/complex-math.frag"] = "";
     sources["shaders/shader2d.vert"] = "";
@@ -283,7 +285,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   //Once we have source data, app can be initialised
   function appInit() {
-    toggle('popup');
+    showPanel($('tab1'), 'panel1');
     //Fractal canvas event handling
     var canvas = document.getElementById("fractal-canvas");
     canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));

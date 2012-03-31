@@ -81,7 +81,7 @@ var formula;
     //JS Script?
     if (filename.indexOf(".js") < 0) {
       //Editing compiled shader source?
-      if (filename == "gen-shader.frag")
+      if (filename == "generated.shader")
         window.opener.fractal.updateShader(code.value);
       else {
         if (type) window.opener.fractal[type].select();

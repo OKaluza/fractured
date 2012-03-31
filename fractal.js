@@ -1,3 +1,5 @@
+//Bugs: load saved ini, change a parameter, load again, parameter still changed
+
   //Regular expressions
   var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
   var boolreg = /(true|false)/i;
@@ -398,7 +400,10 @@
       }
 
       //Save the new default value
-      defaults[key].value = temp;
+      if (defaults[key])
+        defaults[key].value = temp;
+      else
+        consoleWrite("!No defaults entry for [" + key + "] to save value: " + temp);
     }
   }
 
@@ -952,7 +957,7 @@
   //Load fractal from file
   Fractal.prototype.load = function(source) {
     //consoleWrite("load<hr>");
-    var confirmed = false;
+    var confirmed = null;
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
@@ -1004,9 +1009,11 @@
           i = j-1;
           //Confirm formula load for now (###)
           if (buffer.length > 0) {
-            if (confirmed || confirm("Formula code found, replace formula with new code from this fractal?"))
+            if (confirmed == null) confirmed = confirm("Formula code found, replace formula with new code from this fractal?");
+            if (confirmed) {
               sources[filename] = buffer;
-            confirmed = true;
+              consoleWrite("Replacing formula code for: " + filename);
+            }
           }
         }
         continue;
@@ -1190,7 +1197,6 @@
         }
         else if (pair[0] == "VariableIterations")
           this["base"].currentParams["vary"].parse(pair[1]);
-
         //Following parameters need to be created rather than just set values, save for processing later
         else if (pair[0] == "Bailout")
           saved["bailout"] = parseFloat(pair[1]);
@@ -1468,24 +1474,25 @@
                       "outside_colour" : this["outside_colour"].getParsedFormula(),
                       "inside_colour" : this["inside_colour"].getParsedFormula()};
 
-    //Core code for all fractal fragment programs
-    var shader = sources[header] + sources["shaders/fractal-shader.frag"];
+    //Add headers + core code template
+    var shader = sources[header] + sources["shaders/complex-header.frag"] + sources["shaders/fractal-shader.frag"];
 
-    //Replace ---SECTION--- with formula code
+    //Replace ---SECTION--- in template with formula code
     this.offsets = [];
     shader = this.templateInsert(shader, selections, "DATA", "data", ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
     shader = this.templateInsert(shader, selections, "INIT", "init", ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
     shader = this.templateInsert(shader, selections, "RESET", "reset", ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 4);
-    shader = this.templateInsert(shader, selections, "ZNEXT", "znext", ["fractal"], 4);
-    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 4);
-    shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 4);
-    shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 4);
-    shader = this.templateInsert(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 4);
-    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 4);
-    shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 4);
+    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 2);
+    shader = this.templateInsert(shader, selections, "ZNEXT", "znext", ["fractal"], 2);
+    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 2);
+    shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 2);
+    shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 2);
+    shader = this.templateInsert(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
     this.offsets.push(LineOffset("(end)", "(end)", shader.split("\n").length));
 
+    //Append the complex maths library
     shader = shader + sources["shaders/complex-math.frag"];
 
     //Remove param declarations, replace with newline to preserve line numbers
@@ -1539,18 +1546,31 @@
 
   //Build and redraw shader
   Fractal.prototype.writeShader = function() {
-    if (!this.webgl) {
-      this.clKernel();
-      return;
+    var source;
+    if (this.webgl) {
+      //Create the GLSL shader
+      var source = this.generateShader("shaders/glsl-header.frag");
+    } else {
+      //Build OpenCL kernel
+      source = this.generateShader("shaders/opencl-header.cl");
+
+      //Switch to C-style casts
+      source = source.replace(/complex\(/g, "(complex)(");
+      source = source.replace(/real\(/g, "(real)(");
+      source = source.replace(/float\(/g, "(float)(");
+      source = source.replace(/int\(/g, "(int)(");
+      source = source.replace(/rgba\(/g, "(rgba)(");
+
+      //Force rebuild on size change
+      if (this.webcl.width != this.width || this.webcl.height != this.height)
+        sources["generated.shader"] = "";
     }
-    //Create the GLSL shader
-    var fragmentShader = this.generateShader("shaders/glsl-header.frag");
 
     //Only recompile if data has changed!
-    if (sources["gen-shader.frag"] != fragmentShader) {
+    if (sources["generated.shader"] != source) {
       //Save for debugging
-      sources["gen-shader.frag"] = fragmentShader;
-      //ajaxWriteFile("gen-shader.frag", fragmentShader, consoleWrite);
+      sources["generated.shader"] = source;
+      //ajaxWriteFile("generated.shader", source, consoleWrite);
       consoleWrite("Building fractal shader using:");
       consoleWrite("formula: " + this["fractal"].selected);
       if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
@@ -1558,60 +1578,23 @@
       if (this["outside_colour"].selected != "none") consoleWrite("Outside colour: " + this["outside_colour"].selected);
       if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
 
-      this.updateShader(fragmentShader);
+      //Compile the shader using WebGL or WebCL
+      var errors;
+      if (this.webgl) {
+        errors = this.webgl.initProgram(sources["shaders/shader2d.vert"], source);
+        //Setup uniforms for fractal program (all these are always set now, do this once at start?)
+        this.webgl.setupProgram(["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
+      } else {
+        errors = this.webcl.initProgram(source, this.width, this.height);
+      }
+
+      this.parseErrors(errors);
+
     } else
       consoleWrite("Build skipped, shader not changed");
   }
 
-  //Build OpenCL kernel
-  Fractal.prototype.clKernel = function() {
-    //Create the GLSL shader
-    var kernel = this.generateShader("shaders/opencl-header.cl");
-
-    //For testing, set parameters as constants...
-    var testingsrc = "Test parameters...\n#define TESTING\n" + 
-      "__constant const real zoom = " + this.origin.zoom + ";\n" +
-      "__constant const real rotation = " + this.origin.rotate + ";\n" +
-      "__constant const real pixelsize = " + this.origin.pixelSize(this.canvas) + ";\n" +
-      "__constant const complex dims = complex(" + this.width + "," + this.height + ");\n" +
-      "__constant const complex origin = complex(" + this.origin.re + "," + this.origin.im + ");\n" +
-      "__constant const complex selected = complex(" + this.selected.re + "," + this.selected.im + ");\n" +
-      "__constant const rgba background = " + colours.palette.colours[0].colour.rgbaGLSL() + ";\n" +
-      "__constant const int antialias = " + this.antialias + ";\n" +
-      "__constant const int julia = " + this.julia + ";\n" +
-      "__constant const int perturb = " + this.perturb + ";\n";
-    //consoleWrite(testingsrc);
-
-    //kernel = kernel.replace(/---TESTING---/, testingsrc);
-
-    //Switch to C-style casts
-    kernel = kernel.replace(/complex\(/g, "(complex)(");
-    kernel = kernel.replace(/real\(/g, "(real)(");
-    kernel = kernel.replace(/float\(/g, "(float)(");
-    kernel = kernel.replace(/int\(/g, "(int)(");
-    kernel = kernel.replace(/rgba\(/g, "(rgba)(");
-
-    //Only recompile if data has changed!
-    if (sources["fractured.cl"] != kernel || this.webcl.width != this.width || this.webcl.height != this.height) {
-      sources["fractured.cl"] = kernel;
-      //Save for debugging
-      //  ajaxWriteFile("fractured.cl", kernel, consoleWrite);
-      var errors = this.webcl.initProgram(kernel, this.width, this.height);
-    } else
-      consoleWrite("Build skipped, shader not changed");
-  }
-
-  Fractal.prototype.updateShader = function(fragmentShader, vertexShader) {
-    //Default vertex shader
-    if (!vertexShader)
-      vertexShader = sources["shaders/shader2d.vert"];
-
-    //Load a default shader setup
-    //this.webgl.initProgram(sources("default.vert"), sources("default.frag"));
-    //this.webgl.setupProgram(["texture"]); //Setup as texture program
-
-    var errors = this.webgl.initProgram(vertexShader, fragmentShader);
-
+  Fractal.prototype.parseErrors = function(errors) {
     if (errors) {
       var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
                           "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
@@ -1642,9 +1625,6 @@
       }
       if (!found) alert(errors);  //Simply show compile error
     }
-
-    //Setup uniforms for fractal program (all these are always set now, do this once at start?)
-    this.webgl.setupProgram(["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
   }
 
   Fractal.prototype.draw = function(antialias) {
