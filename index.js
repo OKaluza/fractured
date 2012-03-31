@@ -1,9 +1,9 @@
 //TODO:
 //Write help screen
 //Allow disabling of thumbnails (set size?)
-//fractured.cl writing is turned on, disable for release
-//Initial load: slow, need status display
 //Save/load session - slow, needs status or no reload
+//Antialias setting not being restored
+//Check: that error reporting works in WebCL mode
 
 //Globals
 var reloadsources = false;
@@ -14,7 +14,6 @@ var colours;
 //Source files list
 var sources = {};
 var labels = {};
-var antialias = 1;
 var autoSize = true;
 var showparams = true;
 var hasChanged = false;
@@ -299,7 +298,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Create a fractal object
     fractal = new Fractal(canvas, mode);
-    fractal.antialias = antialias;
+    fractal.antialias = parseInt(localStorage["fractured.antialias"]);
     setAntiAliasMenu();
 
     //Colour editing and palette management
@@ -313,19 +312,19 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function setAntiAlias(val) {
     if (!val) val = prompt('Enter quality (1-16) Higher values may be very slow!');
     if (val && val > 0 && val <= 16) {
-      antialias = val;
-      fractal.draw(antialias);
-      localStorage["fractured.antialias"] = antialias;
+      fractal.antialias = val;
+      localStorage["fractured.antialias"] = fractal.antialias;
       setAntiAliasMenu();
+      fractal.draw();
     }
   }
 
   function setAntiAliasMenu() {
-    if (!antialias) antialias = 1;
-    $('aa1').className = antialias == 1 ? 'selected_item' : '';
-    $('aa2').className = antialias == 2 ? 'selected_item' : '';
-    $('aa3').className = antialias == 3 ? 'selected_item' : '';
-    $('aa4').className = antialias > 3 ? 'selected_item' : '';
+    if (!fractal.antialias) fractal.antialias = 1;
+    $('aa1').className = fractal.antialias == 1 ? 'selected_item' : '';
+    $('aa2').className = fractal.antialias == 2 ? 'selected_item' : '';
+    $('aa3').className = fractal.antialias == 3 ? 'selected_item' : '';
+    $('aa4').className = fractal.antialias > 3 ? 'selected_item' : '';
   }
 
 /////////////////////////////////////////////////////////////////////////
@@ -514,7 +513,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 */
       fractal.width = oldw;
       fractal.height = oldh;
-      fractal.draw(antialias);
+      fractal.draw();
    return result;
   }
 
@@ -695,7 +694,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
        selected = JSON.parse(localStorage["fractured.selected"]);
        //Load global settings...
        autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
-       antialias = parseInt(localStorage["fractured.antialias"]);
+       //fractal.antialias = parseInt(localStorage["fractured.antialias"]);
        setAntiAliasMenu();
 
     } else {
@@ -807,7 +806,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["script.js"] = sources["script.js"];
       //Save some global settings
       localStorage["fractured.autoSize"] = autoSize;
-      localStorage["fractured.antialias"] = antialias;
+      //localStorage["fractured.antialias"] = fractal.antialias;
       //Save current fractal (as default)
       saveActive();
     } catch(e) {
@@ -1064,7 +1063,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     select.style.display = 'none';
     fractal.copyToForm();
-    fractal.draw(antialias);
+    fractal.draw();
     //Save param changes
     saveActive();
   }
@@ -1501,6 +1500,7 @@ function loadFile(source, filename) {
   if (filename.indexOf(".ini") > -1) {
     fractal.iniLoader(source);
     filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
+    applyAndSave();
   } else {
     fractal.load(source);
     autoResize(autoSize);
