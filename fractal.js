@@ -2,7 +2,7 @@
   var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
-  var complexreg = /\(?([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)?/;
+  var complexreg = /\(?([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\s*,\s*([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\)?/;
 
   //Take real, return real
   var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "ident", "log", "log10", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
@@ -91,8 +91,8 @@
   function parseComplex(value) {
     //Parse string as complex number
     var match = complexreg.exec(value);
-    if (match && match[1] && match[3]) {
-      return new Complex(match[1], match[3]);
+    if (match && match[1] && match[4]) {
+      return new Complex(parseFloat(match[1]), parseFloat(match[4]));
     } else {
       return new Complex(parseFloat(value), 0);
     }
@@ -963,6 +963,7 @@
     //4. For each formula, load formula params into params[formula]
     //5. Load palette
     //Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
+    source = source.replace(/_primes/g, "_integers");
     source = source.replace(/exp_smooth/g, "exponential_smoothing");
     source = source.replace(/magnet(\d)/g, "magnet_$1");
     source = source.replace(/burningship/g, "burning_ship");
@@ -974,6 +975,7 @@
     else
       source = source.replace(/^bailout=/gm, "escape=");
     source = source.replace(/^bailoutc=/gm, "converge=");
+      var saved = {}; //Another patch addition, remove once all converted
 
     var lines = source.split("\n"); // split on newlines
     var section = "";
@@ -1072,7 +1074,18 @@
         if (this[category].currentParams[pair2[0]])
           this[category].currentParams[pair2[0]].parse(pair2[1]);
         else //Not defined in formula, skip
-          if (pair2[0] != "antialias") //Ignored, now a global renderer setting
+          if (pair2[0] == "vary") { //Moved to fractured transform, hack to transfer param from old saves
+            if (parseFloat(pair2[1]) > 0) {
+              this["post_transform"].select("fractured");
+              saved["vary"] = pair2[1];
+            }
+          } else if (pair2[0] == "inrepeat") { //Moved to colour, hack to transfer param from old saves
+            if (parseFloat(pair2[1]) != 1)
+              saved["inrepeat"] = pair2[1];
+          } else if (pair2[0] == "outrepeat") { //Moved to colour, hack to transfer param from old saves
+            if (parseFloat(pair2[1]) != 1)
+              saved["outrepeat"] = pair2[1];
+          } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
             alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
 
       }
@@ -1080,6 +1093,23 @@
 
     //Select formulae and update parameters
     this.loadParams();
+
+    //Amend changed params, remove this when saved fractals updated
+    var reup = false;
+    if (saved["vary"]) {
+      this["post_transform"].currentParams[":vary"].parse(saved["vary"]); 
+      reup  = true;
+      this["base"].currentParams["iterations"].value *= 2;
+    }
+    if (saved["inrepeat"]) {
+      this["inside_colour"].currentParams[":repeat"].parse(saved["inrepeat"]);
+      reup  = true;
+    }
+    if (saved["outrepeat"]) {
+      this["outside_colour"].currentParams[":repeat"].parse(saved["outrepeat"]);
+      reup  = true;
+    }
+    if (reup) this.loadParams();
   }
 
   //Conversion from my old fractal ini files
@@ -1178,11 +1208,14 @@
           saved["smooth"] = pair[1];
         else if (pair[0] == "PaletteRepeat") {
           //Initially copy to both repeat params
-          this["base"].currentParams["outrepeat"].parse(pair[1]);
-          this["base"].currentParams["inrepeat"].parse(pair[1]);
+          saved["inrepeat"] = parseFloat(pair[1]);
+          saved["outrepeat"] = parseFloat(pair[1]);
+          //this["base"].currentParams["outrepeat"].parse(pair[1]);
+          //this["base"].currentParams["inrepeat"].parse(pair[1]);
         }
         else if (pair[0] == "PaletteRepeatIn")
-          this["base"].currentParams["inrepeat"].parse(pair[1]);
+          saved["inrepeat"] = parseFloat(pair[1]);
+          //this["base"].currentParams["inrepeat"].parse(pair[1]);
         else if (pair[0] == "Outside") {
           saved["outside"] = pair[1];
           this['outside_colour'].select(convertFormulaName(pair[1]));
@@ -1191,8 +1224,13 @@
           saved["inside"] = pair[1];
           this['inside_colour'].select(convertFormulaName(pair[1]));
         }
-        else if (pair[0] == "VariableIterations")
-          this["base"].currentParams["vary"].parse(pair[1]);
+        else if (pair[0] == "VariableIterations") {
+          if (parseFloat(pair[1]) > 0) {
+            this["post_transform"].select("fractured");
+            this["post_transform"].currentParams[":vary"].parse(pair[1]);
+            this["base"].currentParams["iterations"].value *= 2;
+          }
+        }
         //Following parameters need to be created rather than just set values, save for processing later
         else if (pair[0] == "Bailout")
           saved["bailout"] = parseFloat(pair[1]);
@@ -1334,10 +1372,13 @@
         this['post_transform'].currentParams[":induct_on"].value = 1;
     }
 
-    //Colour formulae param conversion
+    //Colour formula param conversion
     function convertColourParams(category, formula) {
       var catname = category + "_colour";
       var params = formula[catname].currentParams;
+
+      if (params[":repeat"])
+        params[":repeat"].value = category.indexOf('in') == 0 ? saved["inrepeat"] : saved["outrepeat"];
 
       if (formula[catname].selected == "smooth") {
         params[":type2"].value = false;
@@ -1549,6 +1590,9 @@
     } else {
       //Build OpenCL kernel
       source = this.generateShader("shaders/opencl-header.cl");
+
+      var native_fn = /(cos|exp|log|log2|log10|sin|sqrt|tan)\(/g;
+      //source = source.replace(native_fn, "native_$1(");
 
       //Switch to C-style casts
       source = source.replace(/complex\(/g, "(complex)(");

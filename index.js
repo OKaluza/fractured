@@ -692,6 +692,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     var f_source;
     if (supports_html5_storage()) f_source = localStorage["fractured.formulae"];
     if (f_source) {
+        //HACK!! TODO: remove
+        f_source = f_source.replace(/primes/g, "integers");
        formulae = JSON.parse(f_source);
        selected = JSON.parse(localStorage["fractured.selected"]);
        //Load global settings...

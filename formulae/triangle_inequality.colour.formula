@@ -1,4 +1,6 @@
 //Triangle Inequality
+//Palette repeat
+@:repeat = real(1);
 //Power
 @:power = expression(p);
 //Bailout
@@ -33,5 +35,5 @@ result:
   //Correct version:
   //real f = :il * (:lp - log(log(cabs(z))));
   real idx = :sum2 + (:sum - :sum2) * (f+1.0);
-  colour = gradient(repeat * idx);
+  colour = gradient(:repeat * idx);
 

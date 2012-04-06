@@ -1,4 +1,8 @@
 //Orbit traps
+
+//Palette repeat
+@:repeat = real(1);
+
 real :closest = 1000000.0;
 
 calc:
@@ -6,4 +10,4 @@ calc:
   if (d < :closest) :closest = d;  
 
 result:
-  colour = gradient(repeat * :closest);
+  colour = gradient(:repeat * :closest);
