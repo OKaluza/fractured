@@ -12,14 +12,28 @@
 @:N = int(1);
 //Circle limit
 @:circle = real(0);
+//Vary Iterations
+@:vary = real(0);
 //Compatibility mode
 @:compat = bool(true);
 
 init:
-  //HACK for old fractals
-  if (:compat)
-    maxiterations--;
+  //Get radius in pixels
+  real radius = 0.5 * dim * pixelsize;
+  //Get distance from current coord to origin divided by radius
+  real len = cabs(coord - origin) / radius;  
 
+  //Variable iterations? Adjust limit
+  if (:vary > 0.0)
+  {
+    //Vary in circle of 1/2 dim*pixelsize radius
+    real d = len * :vary;
+    limit = int(real(iterations) * (0.5 + d * 0.5));
+  }
+
+  //Hack for old fractals
+  if (:compat) limit--;
+  
 reset:
   //Circle limit
   if (:circle > 0.0 && len > :circle) discard;
@@ -45,3 +59,4 @@ transform:
     if (:compat)  
       count++;
   }
+

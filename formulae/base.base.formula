@@ -1,9 +1,3 @@
 //Base parameter definitions
 //Iterations
-@iterations    = int(100);
-//Repeat (Outside)
-@outrepeat     = real(1);
-//Repeat (Inside)
-@inrepeat      = real(1);
-//Vary Iterations
-@vary          = real(0);
+@iterations = int(100);

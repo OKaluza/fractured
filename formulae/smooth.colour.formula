@@ -1,4 +1,6 @@
 //Smooth colouring algorithm
+//Palette repeat
+@:repeat = real(1);
 //Type 2
 @:type2 = bool(false);
 //Power
@@ -24,5 +26,5 @@ result:
     //Smooth1 colouring
     mu = real(count+1) - logexp(z) * :il;
   
-  colour = gradient(repeat * mu / real(maxiterations));
+  colour = gradient(:repeat * mu / real(limit));
 

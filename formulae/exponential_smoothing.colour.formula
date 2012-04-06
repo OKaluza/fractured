@@ -1,4 +1,6 @@
 //Exponential smoothing
+//Palette repeat
+@:repeat = real(1);
 //Divergent
 @:diverge = bool(true);
 //Convergent
@@ -25,5 +27,5 @@ result:
   if (!:diverge || :converge && converged)
     mu =  :csum;
     
-  colour = gradient(repeat * mu / real(maxiterations));
+  colour = gradient(:repeat * mu / real(limit));
 
