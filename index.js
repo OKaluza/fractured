@@ -2,8 +2,9 @@
 //Write help screen
 //Allow disabling of thumbnails (set size?)
 //Save/load session - slow, needs status or no reload
-//Antialias setting not being restored
+//Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
+//Move "clear" option to fractal menu as "New"
 
 //Globals
 var reloadsources = false;
@@ -416,6 +417,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     //De-select
     currentFractal = -1;
     populateFractals();
+    applyAndSave();
   }
 
   function exportFractal() {
@@ -694,9 +696,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
        selected = JSON.parse(localStorage["fractured.selected"]);
        //Load global settings...
        autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
-       //fractal.antialias = parseInt(localStorage["fractured.antialias"]);
-       setAntiAliasMenu();
-
     } else {
        //Standard formulae library
        formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
@@ -806,7 +805,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["script.js"] = sources["script.js"];
       //Save some global settings
       localStorage["fractured.autoSize"] = autoSize;
-      //localStorage["fractured.antialias"] = fractal.antialias;
       //Save current fractal (as default)
       saveActive();
     } catch(e) {

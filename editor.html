@@ -9,9 +9,11 @@
 <script src="codemirror/lib/codemirror.js"></script>
 <script src="codemirror/lib/searchcursor.js"></script>
 <script src="codemirror/lib/search.js"></script>
+<script src="codemirror/lib/dialog.js"></script>
 <script src="codemirror/mode/clike/clike.js"></script>
 <script src="codemirror/mode/javascript/javascript.js"></script>
 <link rel="stylesheet" href="codemirror/lib/codemirror.css">
+<link rel="stylesheet" href="codemirror/lib/dialog.css">
 
 <link rel="stylesheet" href="codemirror/theme/fractured.css">
 <link rel="stylesheet" href="codemirror/theme/cobalt.css">
@@ -30,7 +32,6 @@
   line-height: 1.1em;
 }
 .CodeMirror-scroll {height: 100%;}
-.searched {background: yellow; color: navy}
 
 body {
   background: #ffe;
@@ -48,8 +49,8 @@ html, body {
 }
 #buttons input,select{ 
   float: left;
-  width: 80px; height: 24px;
-  margin: 2px; padding: 0px 0px 2px 0px;
+  height: 24px;
+  margin: 2px; padding: 0px 4px 2px 4px;
   font-size: 10pt;
 }
 
@@ -157,10 +158,13 @@ var formula;
 
 
 function search() {
-  CodeMirror.searchFor(editor, document.getElementById("query").value);
+  CodeMirror.commands["clearSearch"](editor);
+  CodeMirror.commands["findNext"](editor);
 }
 
 function replace() {
+  CodeMirror.commands["clearSearch"](editor);
+  CodeMirror.commands["replace"](editor);
 }
 </script>
 
@@ -171,8 +175,11 @@ function replace() {
 <div id="buttons">
   <input type="button" id="savebtn" value="Save" onclick="saveEditor()">
   <input type="button" value="Export" onclick="exportFile()">
-  <input type="button" value="Search >" onclick="search()">
-  <input type="text" style="width: 15em" id="query" onkeypress="if(event.keyCode == 13 && this.value!='') search(); return true; ">
+  <input type="button" value="Find" onclick="search()">
+  <input type="button" value="Replace" onclick="replace()">
+  <input type="button" value=" < " onclick="CodeMirror.commands['findPrevious'](editor);">
+  <input type="button" value=" > " onclick="CodeMirror.commands['findNext'](editor);">
+  <input type="button" value="Replace All" onclick="CodeMirror.commands['replaceAll'](editor);">
   <select id="theme" style="float: right" onchange="selectTheme(this)">
   </select>
 </div>
