@@ -14,25 +14,32 @@
 @:circle = real(0);
 //Vary Iterations
 @:vary = real(0);
+//Min Iterations
+@:miniter = int(50);
 //Compatibility mode
 @:compat = bool(true);
 
 init:
-  //Get radius in pixels
-  real radius = 0.5 * dim * pixelsize;
+  //Get radius in pixels of circle within largest dimension
+  real radius = 0.5 * (dims.y > dims.x ? dims.y : dims.x) * pixelsize;
   //Get distance from current coord to origin divided by radius
   real len = cabs(coord - origin) / radius;  
 
   //Variable iterations? Adjust limit
   if (:vary > 0.0)
   {
-    //Vary in circle of 1/2 dim*pixelsize radius
-    real d = len * :vary;
-    limit = int(real(iterations) * (0.5 + d * 0.5));
+    //Half distance to farthest corner
+    real r2 = 0.5 * cabs(dims) * pixelsize;
+    //Distance from current coord to origin divided by r2
+    real l2 = cabs(coord - origin) / r2;  
+    //Vary over [miniter,iterations] in circle
+    real d = l2 * :vary;
+    limit = :miniter + int(real(iterations - :miniter) * d);
+    //if (limit > iterations) limit = iterations;
   }
 
   //Hack for old fractals
-  if (:compat) limit--;
+  if (:compat) limit++;
   
 reset:
   //Circle limit
@@ -54,9 +61,5 @@ transform:
     //Apply separate functions to real/imaginary components
     z = :z_fn(z);
     z = complex(:re_fn(z.x), :im_fn(z.y));
-
-    //HACK for old fractals!
-    if (:compat)  
-      count++;
   }
 
