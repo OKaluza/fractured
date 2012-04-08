@@ -387,7 +387,7 @@
           //Replace original value only when changed from default
           //This means if parameter is edited, changing the formula default will not change its value
           //But if it is still the default, it will be updated to the new default
-          if (other[key].value != defaults[key].value) {
+          if (!defaults[key] || other[key].value != defaults[key].value) {
             this[key].value = other[key].value
             //consoleWrite("Restored value for " + key + " : " + temp + " ==> " + this[key].value);
           }
@@ -1098,6 +1098,7 @@
     var reup = false;
     if (saved["vary"]) {
       this["post_transform"].currentParams[":vary"].parse(saved["vary"]); 
+      this["post_transform"].currentParams[":miniter"].value = this["base"].currentParams["iterations"].value; 
       reup  = true;
       this["base"].currentParams["iterations"].value *= 2;
     }
@@ -1228,6 +1229,7 @@
           if (parseFloat(pair[1]) > 0) {
             this["post_transform"].select("fractured");
             this["post_transform"].currentParams[":vary"].parse(pair[1]);
+            this["post_transform"].currentParams[":miniter"].value = this["base"].currentParams["iterations"].value; 
             this["base"].currentParams["iterations"].value *= 2;
           }
         }
@@ -1605,33 +1607,35 @@
       if (this.webcl.width != this.width || this.webcl.height != this.height)
         sources["generated.shader"] = "";
     }
-
     //Only recompile if data has changed!
-    if (sources["generated.shader"] != source) {
-      //Save for debugging
-      sources["generated.shader"] = source;
-      //ajaxWriteFile("generated.shader", source, consoleWrite);
-      consoleWrite("Building fractal shader using:");
-      consoleWrite("formula: " + this["fractal"].selected);
-      if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
-      if (this["post_transform"].selected != "none") consoleWrite("Post-transform: " + this["post_transform"].selected);
-      if (this["outside_colour"].selected != "none") consoleWrite("Outside colour: " + this["outside_colour"].selected);
-      if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
-
-      //Compile the shader using WebGL or WebCL
-      var errors;
-      if (this.webgl) {
-        errors = this.webgl.initProgram(sources["shaders/shader2d.vert"], source);
-        //Setup uniforms for fractal program (all these are always set now, do this once at start?)
-        this.webgl.setupProgram(["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
-      } else {
-        errors = this.webcl.initProgram(source, this.width, this.height);
-      }
-
-      this.parseErrors(errors);
-
-    } else
+    if (sources["generated.shader"] != source)
+      this.updateShader(source);
+    else
       consoleWrite("Build skipped, shader not changed");
+  }
+
+  Fractal.prototype.updateShader = function(source) {
+    //Save for debugging
+    sources["generated.shader"] = source;
+    //ajaxWriteFile("generated.shader", source, consoleWrite);
+    consoleWrite("Building fractal shader using:");
+    consoleWrite("formula: " + this["fractal"].selected);
+    if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
+    if (this["post_transform"].selected != "none") consoleWrite("Post-transform: " + this["post_transform"].selected);
+    if (this["outside_colour"].selected != "none") consoleWrite("Outside colour: " + this["outside_colour"].selected);
+    if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
+
+    //Compile the shader using WebGL or WebCL
+    var errors;
+    if (this.webgl) {
+      errors = this.webgl.initProgram(sources["shaders/shader2d.vert"], source);
+      //Setup uniforms for fractal program (all these are always set now, do this once at start?)
+      this.webgl.setupProgram(["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
+    } else {
+      errors = this.webcl.initProgram(source, this.width, this.height);
+    }
+
+    this.parseErrors(errors);
   }
 
   Fractal.prototype.parseErrors = function(errors) {

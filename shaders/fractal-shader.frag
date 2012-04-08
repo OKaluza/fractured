@@ -13,9 +13,6 @@ main_function()
   int limit = iterations;   //Max iterations
   rgba colour = rgba(0.0,0.0,0.0,0.0);
 
-  //Largest dimension
-  real dim = dims.y > dims.x ? dims.y : dims.x;
-
   //Init fractal
   point = coord + complex(offset.x*pixelsize, offset.y*pixelsize);
 
@@ -43,7 +40,7 @@ main_function()
 
   //Iterate the fractal formula
   //(Loop counter can only be compared to constant in GL ES 2.0)
-  for (int i=0; i <= iterations; i++)
+  for (int i=0; i < iterations; i++)
   {
     //Second iterations check: "limit" can be overridden to cut short iterations,
     //"iterations" must be a constant because of lame OpenGL ES 2.0 limitations on loops
@@ -55,7 +52,7 @@ main_function()
       z_1 = z;
 
       //Run next calc step
-      count = i;
+      count = i+1;  //Current step count
 
       ---PRE_TRANSFORM---
       ---ZNEXT---
@@ -72,6 +69,9 @@ main_function()
       //Colour calcs...
       ---COLOUR_CALC---
     }
+    else
+    //Breaking out of loop doesn't seem to work on windows, hence if clause above
+      break;
   }
 
   if (escaped || converged)

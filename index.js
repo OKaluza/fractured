@@ -5,6 +5,9 @@
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
 //Move "clear" option to fractal menu as "New"
+//New session, get logged out? (Maybe only when $SESSION timed out too)
+//What happens when fractal file loaded with formula not in lists, should insert new formula
+//Define a new formula, then use ?reload - fail
 
 //Globals
 var reloadsources = false;

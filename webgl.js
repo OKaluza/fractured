@@ -32,23 +32,14 @@
     //var bg = colours[0].colour.rgbaGL();
     //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
     this.gl.clearColor(0, 0, 0, 0);
-    //this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
     this.gl.enable(this.gl.BLEND);
-      this.gl.blendColor(0, 0, 0, 1.0/(antialias*antialias));
-      this.gl.blendEquationSeparate( this.gl.FUNC_ADD, this.gl.FUNC_ADD );
-      this.gl.blendFuncSeparate( this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA, this.gl.ONE, this.gl.ONE );
+    this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
 
     //if (!fractal.julia) {
       this.gl.viewport(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     //} else
     //  this.gl.viewport(50, 50, 200, 200);
-
-    /* This is a test to show transparency bug in webgl:
-    this.gl.clearColor(0.1, 0.1, 0, 0.0);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-    return;*/
-
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexPositionBuffer);
     this.gl.vertexAttribPointer(this.program.vertexPositionAttribute, this.vertexPositionBuffer.itemSize, this.gl.FLOAT, false, 0, 0);

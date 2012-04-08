@@ -1,9 +1,9 @@
 <?php
   $data = $_POST['data'];
   $file = $_POST['filename'];
-  $type = $_POST['type'];
+  $type = $_POST['content'];
 
-  if ($type === "png" || $type === "jpeg")
+  if (strpos($type, "png") !== false || strpos($type, "jpeg") !== false)
   {
     //removing the "data:image/png;base64," part
     $uri = substr($data,strpos($data,",")+1);
@@ -16,5 +16,5 @@
   header("Content-type: " . $type);
   header("Content-length: " . strlen($data));
   header("Content-Disposition: attachment; filename=\"".$file."\"");
-    echo $data;
+  echo $data;
 ?>
