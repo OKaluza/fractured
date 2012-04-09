@@ -1,9 +1,9 @@
 //Z function
 @:z_fn = complex_function(ident);
 //Real function
-@:re_fn = real_function(abs);
+@:re_fn = real_function(ident);
 //Imag function
-@:im_fn = real_function(abs);
+@:im_fn = real_function(ident);
 //Induct on
 @:induct_on = list('|z(n-1)|z(n-2)');
 //Induction
@@ -38,8 +38,8 @@ init:
     //if (limit > iterations) limit = iterations;
   }
 
-  //Hack for old fractals
-  if (:compat) limit++;
+  //Hack for old fractals (also requires iterations increased by 1)
+  if (:compat) limit--;
   
 reset:
   //Circle limit
@@ -62,4 +62,7 @@ transform:
     z = :z_fn(z);
     z = complex(:re_fn(z.x), :im_fn(z.y));
   }
+
+  //Hack for old fractals
+  if (:compat && i==limit-1) count++;
 

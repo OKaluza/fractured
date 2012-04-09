@@ -707,7 +707,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
        selected = {"base" : "base", "fractal" : "mandelbrot", "pre_transform" : "none", "post_transform" : "none",
                     "outside_colour": "default", "inside_colour": "none"};
-       localStorage["fractured.editorTheme"] = 'fractureddark';
+       localStorage["fractured.editorTheme"] = 'fracturedlight';
        localStorage["fractured.scriptTheme"] = 'monokai';
     }
 
@@ -1141,7 +1141,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Assign field value
     if (action.id && $(action.id))
-      $(action.id).value = parseFloat($(action.id).value) + event.spin * action.value;
+      $(action.id).value = parseReal($(action.id).value, 1) + event.spin * action.value;
 
     applyAndSave();
   }

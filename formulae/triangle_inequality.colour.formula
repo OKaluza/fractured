@@ -6,7 +6,7 @@
 //Bailout
 @:bailout = expression(escape);
 
-real :il = 1.0/log(:power);  //Inverse log of (power)
+real :il = 1.0/log(@:power);  //Inverse log of (power)
 real :lp = log(log(@:bailout)/2.0);
 real :sum = 10.0;
 real :sum2 = 5.0;
@@ -19,7 +19,7 @@ reset:
 
 calc:
   :sum2 = :sum;
-  if (count > 0)
+  if (count > 1)
   {
     real az2 = cabs(z - c);
     real lowbound = abs(az2 - :ac);
@@ -30,7 +30,7 @@ result:
   :sum /= real(count);
   :sum2 /= real(count-1);
     //Fractured version!
-    complex x1 = loge(complex(log(cabs(z))));
+    complex x1 = loge(C(log(cabs(z))));
     real f = :il * (:lp - x1.x);
   //Correct version:
   //real f = :il * (:lp - log(log(cabs(z))));

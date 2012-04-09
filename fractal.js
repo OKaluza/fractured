@@ -74,12 +74,12 @@
    */
   function Complex(real, imag) {
     if (typeof(real) == 'string')
-      this.re = parseFloat(real);
+      this.re = parseReal(real);
     else
       this.re = real;
 
     if (typeof(imag) == 'string')
-      this.im = parseFloat(imag);
+      this.im = parseReal(imag);
     else
       this.im = imag;
   }
@@ -92,10 +92,20 @@
     //Parse string as complex number
     var match = complexreg.exec(value);
     if (match && match[1] && match[4]) {
-      return new Complex(parseFloat(match[1]), parseFloat(match[4]));
+      return new Complex(parseReal(match[1]), parseReal(match[4]));
     } else {
-      return new Complex(parseFloat(value), 0);
+      return new Complex(parseReal(value), 0);
     }
+  }
+
+  function parseReal(value, invalid_default) {
+    //Parse string as real number, uses parseReal but always returns a valid 
+    //number (empty/invalid returns 0)
+    var n = parseFloat(value);
+    //Check is number
+    if (!isNaN(n) && isFinite(n)) return n;
+    //Return zero or default if provided
+    return invalid_default == undefined ? 0.0 : invalid_default;
   }
 
   /**
@@ -135,7 +145,7 @@
         if (typeof(value) == 'number')
           this.value = value;
         if (typeof(value) == 'string') {
-          this.value = parseFloat(value);
+          this.value = parseReal(value);
           if (isNaN(this.value))  //Attempt to parse as complex and take real component
             this.value = parseComplex(value).re;
         }
@@ -272,14 +282,11 @@
         this.value = parseInt(this.input.value);
         break;
       case 1: //real = entry
-        if (this.input.value == "") this.input.value = 0;
-        this.value = parseFloat(this.input.value);
+        this.value = parseReal(this.input.value);
         break;
       case 2: //complex = 2 x entry
-        if (this.input[0].value == "") this.input[0].value = 0;
-        if (this.input[1].value == "") this.input[1].value = 0;
-        this.value.re = parseFloat(this.input[0].value);
-        this.value.im = parseFloat(this.input[1].value);
+        this.value.re = parseReal(this.input[0].value);
+        this.value.im = parseReal(this.input[1].value);
         break;
       case 4: //Function name
       case 6: //Expression
@@ -1027,7 +1034,7 @@
         if (pair[0] == "width" || pair[0] == "height")
           this[pair[0]] = parseInt(pair[1]);
         else if (pair[0] == "zoom" || pair[0] == "rotate")
-          this.origin[pair[0]] = parseFloat(pair[1]);
+          this.origin[pair[0]] = parseReal(pair[1]);
         else if (pair[0] == "origin" || pair[0] == "selected") {
           var c = parseComplex(pair[1]);
           this[pair[0]].re = c.re;
@@ -1075,15 +1082,15 @@
           this[category].currentParams[pair2[0]].parse(pair2[1]);
         else //Not defined in formula, skip
           if (pair2[0] == "vary") { //Moved to fractured transform, hack to transfer param from old saves
-            if (parseFloat(pair2[1]) > 0) {
+            if (parseReal(pair2[1]) > 0) {
               this["post_transform"].select("fractured");
               saved["vary"] = pair2[1];
             }
           } else if (pair2[0] == "inrepeat") { //Moved to colour, hack to transfer param from old saves
-            if (parseFloat(pair2[1]) != 1)
+            if (parseReal(pair2[1]) != 1)
               saved["inrepeat"] = pair2[1];
           } else if (pair2[0] == "outrepeat") { //Moved to colour, hack to transfer param from old saves
-            if (parseFloat(pair2[1]) != 1)
+            if (parseReal(pair2[1]) != 1)
               saved["outrepeat"] = pair2[1];
           } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
             alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
@@ -1119,6 +1126,7 @@
     this.resetDefaults();
     this.formulaDefaults();
     var saved = {};
+    this["post_transform"].select("fractured");
 
     function convertFormulaName(name) {
       //Conversion for my old fractal ini formula descriptors
@@ -1171,11 +1179,11 @@
         else if (pair[0] == "PerturbFlag" || pair[0] == "zFlag")
           this.perturb = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "Iterations")
-          this["base"].currentParams["iterations"].value = parseInt(pair[1]); 
+          this["base"].currentParams["iterations"].value = parseInt(pair[1]) + 1;   //Extra iteration in loop
         else if (pair[0] == "Xstart")
-          this.origin.re = parseFloat(pair[1]);
+          this.origin.re = parseReal(pair[1]);
         else if (pair[0] == "Ystart")
-          this.origin.im = parseFloat(pair[1]);
+          this.origin.im = parseReal(pair[1]);
         else if (pair[0] == "Width")
           this.width = pair[1];
         else if (pair[0] == "Height")
@@ -1185,7 +1193,7 @@
         else if (pair[0] == "UnitsPerPixel")
         {
           //Old files provide units per pixel and top left coord (already saved in origin)
-          var upp = parseFloat(pair[1]);
+          var upp = parseReal(pair[1]);
           var fwidth = this.width * upp;
           var fheight = this.height * upp;
           //Use largest zoom calculated from units per pixel * pixels in each dimension
@@ -1202,20 +1210,20 @@
           this.origin.rotate = pair[1];
         //Selected coords for Julia/Perturb
         else if (pair[0] == "CXstart")
-          this.selected.re = parseFloat(pair[1]);
+          this.selected.re = parseReal(pair[1]);
         else if (pair[0] == "CYstart")
-          this.selected.im = parseFloat(pair[1]);
+          this.selected.im = parseReal(pair[1]);
         else if (pair[0] == "Smooth")
           saved["smooth"] = pair[1];
         else if (pair[0] == "PaletteRepeat") {
           //Initially copy to both repeat params
-          saved["inrepeat"] = parseFloat(pair[1]);
-          saved["outrepeat"] = parseFloat(pair[1]);
+          saved["inrepeat"] = parseReal(pair[1]);
+          saved["outrepeat"] = parseReal(pair[1]);
           //this["base"].currentParams["outrepeat"].parse(pair[1]);
           //this["base"].currentParams["inrepeat"].parse(pair[1]);
         }
         else if (pair[0] == "PaletteRepeatIn")
-          saved["inrepeat"] = parseFloat(pair[1]);
+          saved["inrepeat"] = parseReal(pair[1]);
           //this["base"].currentParams["inrepeat"].parse(pair[1]);
         else if (pair[0] == "Outside") {
           saved["outside"] = pair[1];
@@ -1226,7 +1234,7 @@
           this['inside_colour'].select(convertFormulaName(pair[1]));
         }
         else if (pair[0] == "VariableIterations") {
-          if (parseFloat(pair[1]) > 0) {
+          if (parseReal(pair[1]) > 0) {
             this["post_transform"].select("fractured");
             this["post_transform"].currentParams[":vary"].parse(pair[1]);
             this["post_transform"].currentParams[":miniter"].value = this["base"].currentParams["iterations"].value; 
@@ -1235,11 +1243,11 @@
         }
         //Following parameters need to be created rather than just set values, save for processing later
         else if (pair[0] == "Bailout")
-          saved["bailout"] = parseFloat(pair[1]);
+          saved["bailout"] = parseReal(pair[1]);
         else if (pair[0] == "Power")
-          saved["power"] = parseFloat(pair[1]);
+          saved["power"] = parseReal(pair[1]);
         else if (pair[0] == "Power2")
-          saved["power2"] = parseFloat(pair[1]);
+          saved["power2"] = parseReal(pair[1]);
         else if (pair[0] == "function1")
           saved["re_fn"] = parseInt(pair[1]);
         else if (pair[0] == "function2")
@@ -1348,8 +1356,6 @@
     //Functions and ops
     if (!saved["inductop"]) saved["inductop"] = "0";
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
-      this["post_transform"].select("fractured");
-
       var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
 
       this['post_transform'].currentParams[":re_fn"].parse(fns[parseInt(saved["re_fn"])]);
@@ -1388,13 +1394,13 @@
           params[":type2"].value = true;
         //???? Override these? or leave?
         params[":power"].value = "2";
-        params[":bailout"].value = saved["bailout"]; //"4";
+        params[":bailout"].value = saved["bailout"] ? saved["bailout"] : "escape";
       }
 
       if (formula[catname].selected == "triangle_inequality") {
         //???? Override these? or leave?
         params[":power"].value = "2";
-        params[":bailout"].value = saved["bailout"]; //"4";
+        params[":bailout"].value = saved["bailout"] ? saved["bailout"] : "escape";
       }
 
       if (formula[catname].selected == "exponential_smoothing") {
@@ -1452,17 +1458,17 @@
     //Update palette
     colours.update();
     //Resize canvas if size settings changed
-    this.width = parseInt(document.getElementById("widthInput").value);
-    this.height = parseInt(document.getElementById("heightInput").value);
+    this.width = parseInt($("widthInput").value);
+    this.height = parseInt($("heightInput").value);
 
     this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
     this.perturb = document["inputs"].elements["perturb"].checked ? 1 : 0;
-    this.origin.rotate = parseFloat(document.getElementById("rotate").value);
-    this.origin.re = parseFloat(document.getElementById("xPosInput").value);
-    this.origin.im = parseFloat(document.getElementById("yPosInput").value);
-    this.selected.re = parseFloat(document.getElementById("xSelInput").value);
-    this.selected.im = parseFloat(document.getElementById("ySelInput").value);
-    this.origin.zoom = parseFloat(document.getElementById("zoomLevel").value);
+    this.origin.rotate = parseReal($("rotate").value);
+    this.origin.re = parseReal($("xPosInput").value);
+    this.origin.im = parseReal($("yPosInput").value);
+    this.selected.re = parseReal($("xSelInput").value);
+    this.selected.im = parseReal($("ySelInput").value);
+    this.origin.zoom = parseReal($("zoomLevel").value);
 
     //Limit rotate to range [0-360)
     if (this.origin.rotate < 0) this.origin.rotate += 360;
