@@ -281,10 +281,8 @@ nav {float: left;}
 #tabs .unselected {
   padding-top: 1px;
   /* Alpha+black gradient */
-  background-image: -webkit-gradient(linear, left bottom, left top,
-    from(rgba(0,0,0,0.5)), color-stop(60%, rgba(0,0,0,0.0)));
-  background-image: -moz-linear-gradient(center bottom, 
-    rgba(0,0,0,0.5), rgba(0,0,0,0.0) 60%);
+  background-image: -moz-linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.0));
+  background-image: -webkit-linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.0));
 }
 
 #controls {

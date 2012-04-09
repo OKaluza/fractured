@@ -44,34 +44,29 @@ main_function()
   {
     //Second iterations check: "limit" can be overridden to cut short iterations,
     //"iterations" must be a constant because of lame OpenGL ES 2.0 limitations on loops
-    if (i <= limit)
-    {
-      //Update z(n-2)
-      z_2 = z_1;
-      //Save current z value for z(n-1)
-      z_1 = z;
+    if (i == limit) break;
 
-      //Run next calc step
-      count = i+1;  //Current step count
+    //Update z(n-2)
+    z_2 = z_1;
+    //Save current z value for z(n-1)
+    z_1 = z;
 
-      ---PRE_TRANSFORM---
-      ---ZNEXT---
-      ---POST_TRANSFORM---
+    //Run next calc step
+    count = i+1;  //Current step count
+    ---PRE_TRANSFORM---
+    ---ZNEXT---
+    ---POST_TRANSFORM---
 
-      //Check bailout conditions
-      escaped = true;
-      ---ESCAPED---
-      escaped = false;
-      converged = true;
-      ---CONVERGED---
-      converged = false;
+    //Check bailout conditions
+    escaped = true;
+    ---ESCAPED---
+    escaped = false;
+    converged = true;
+    ---CONVERGED---
+    converged = false;
 
-      //Colour calcs...
-      ---COLOUR_CALC---
-    }
-    else
-    //Breaking out of loop doesn't seem to work on windows, hence if clause above
-      break;
+    //Colour calcs...
+    ---COLOUR_CALC---
   }
 
   if (escaped || converged)
