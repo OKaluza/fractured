@@ -958,9 +958,8 @@
   }
 
   //Load fractal from file
-  Fractal.prototype.load = function(source) {
+  Fractal.prototype.load = function(source, confirmed) {
     //consoleWrite("load<hr>");
-    var confirmed = null;
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
@@ -1014,7 +1013,7 @@
           i = j-1;
           //Confirm formula load for now (###)
           if (buffer.length > 0) {
-            if (confirmed == null) confirmed = confirm("Formula code found, replace formula with new code from this fractal?");
+            if (confirmed == undefined) confirmed = confirm("Formula code found, replace formula with new code from this fractal?");
             if (confirmed) {
               sources[filename] = buffer;
               consoleWrite("Replacing formula code for: " + filename);

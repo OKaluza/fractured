@@ -77,6 +77,7 @@
             <li><hr></li>
             <li><span onclick="saveImageJPEG();">Save JPEG image</span></li>
             <li><span onclick="saveImagePNG();">Save PNG image</span></li>
+            <li><span onclick="uploadFractalFile();">Upload</span></li>
             <li><span onclick="exportFractalFile();">Export</span></li>
             <li><span onclick="filetype='fractal'; $('fileupload').click();">Import</span></li>
             <li><span onclick="filetype='palette'; $('fileupload').click();">Import Palette</span></li>
@@ -131,11 +132,14 @@
 
       <div class="panel" id="panel1">
 
-        <form id="param_inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
+        <form id="param_inputs" name="inputs" action="db/fractal_save.php" enctype=multipart/form-data" method="post" class="scroll" onmousedown="handleFormMouseDown(event)">
+          <!-- this is for uploading fractals to server -->
+          <input type="hidden" id="source" name="source" value=""/>
+          <input type="hidden" id="public" name="public" value="1"/>
 
           <div class="row">
             <span class="label">Name</span>
-            <span class="field"><input type="text" id="nameInput" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
+            <span class="field"><input type="text" id="nameInput" name="description" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
               <input type="button" value="Clear" onclick="clearFractal();">
             </span>
           </div>
