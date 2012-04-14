@@ -8,6 +8,7 @@
 //New session, get logged out? (Maybe only when $SESSION timed out too)
 //What happens when fractal file loaded with formula not in lists, should insert new formula
 //Define a new formula, then use ?reload - fail
+//Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (palette repeat)
 
 //Globals
 var reloadsources = false;
@@ -26,6 +27,7 @@ var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 var offline = null;
 var recording = false;
+var restored = "";
 //Timers
 var rztimeout = undefined;
 
@@ -96,7 +98,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function pageStart() {
     showPanel($('tab4'), 'panel4');
     //If debug mode enabled, show extra menus
-    var query = decodeURI(window.location.href).split("?")[1]; //whole querystring including ?
+    var query = decodeURI(window.location.href).split("?")[1]; //whole querystring after ?
     if (query) {
       if (query.indexOf('debug') >= 0) {
         $S('debugmenu').display = 'block';
@@ -110,6 +112,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       if (query.indexOf('reload') >= 0) {
         reloadsources = true;
       }
+    }
+    var hash = decodeURI(window.location.href).split("#")[1]; //whole querystring after #
+    if (hash) {
+      ajaxReadFile('db/fractal_get.php?id=' + hash, fractalGet);
     }
 
     // Check for the various File API support.
@@ -140,6 +146,21 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     loadState();
     //Load the content from files
     loadSources();
+  }
+
+  //Fractal load from hash
+  function fractalGet(data) {
+    if (!data || data.indexOf("Error:") == 0) {
+      alert("Fractal load failed!");
+      return;
+    }
+
+    //if (fractal) {
+    //  fractal.load(data);
+    //  autoResize(autoSize);
+    //} else
+      restored = data;
+
   }
 
   //Login session JSON received, load session_menu.php
@@ -302,14 +323,24 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Create a fractal object
     fractal = new Fractal(canvas, mode);
-    fractal.antialias = parseInt(localStorage["fractured.antialias"]);
+    fractal.antialias = localStorage["fractured.antialias"] ? parseInt(localStorage["fractured.antialias"]) : 2;
     setAntiAliasMenu();
 
     //Colour editing and palette management
     colours = new ColourEditor();
 
     //Draw & update
-    loadLastFractal();  //Restore last if any
+    if (restored.length > 0) {
+      var lines = restored.split("\n"); // split on newlines
+      var name = lines[0];
+      lines.splice(0,1);
+      fractal.load(lines.join('\n'), true); //Always replace formula code
+      autoResize(autoSize);
+      restored = "";
+      fractal.name = name;
+      $('nameInput').value = fractal.name;
+    } else
+      loadLastFractal();  //Restore last if any
     fractal.applyChanges();
   }
 
@@ -547,8 +578,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       //session_id = 0;   ??
     }
 
-    var idField = document.getElementById("sessid");
-    idField.setAttribute("value", currentSession ? currentSession : 0);
+    $("sessid").value = currentSession ? currentSession : 0;
 
     //Replace from with frm until hosting bug fixed
     var data = getState().replace(/from/g,"frm")
@@ -562,6 +592,14 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     var d=new Date();
     var fname = "workspace " + d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + ".fractured";
     exportFile(fname, "text/fractal-workspace", getState());
+  }
+
+  function uploadFractalFile() {
+    fractal.applyChanges();
+    $("source").value = fractal.toString(true);  //Save formulae when exporting
+    $("public").value = 1; //prompt('');
+    var form = document.forms["inputs"];
+    form.submit();
   }
 
   function exportFractalFile() {
