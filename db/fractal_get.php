@@ -11,20 +11,12 @@
   {
     $row = mysql_fetch_assoc($result);
     //Return the first row result JSON (should only be one)
-    echo $row["name"] . "\n";
-    echo $row["source"];
+    echo $row["name"] . "\n" . $row["source"];
   }
 
   //Close to free resources
   mysql_close();
 
-/*
-  echo "<script language='javascript'>";
-  echo "localStorage['fractured.name'] = " . $row["name"] . ";";
-  echo "localStorage['fractured.active'] = " . $row["source"] . ";";
-  echo "window.location = '/'";
-  echo "</script>";
-*/
   exit();
 ?>
 
