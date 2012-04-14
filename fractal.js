@@ -1676,7 +1676,8 @@
     }
   }
 
-  Fractal.prototype.draw = function() {
+  Fractal.prototype.draw = function(antialias) {
+    if (antialias != undefined) this.antialias = antialias;
     if (this.width != this.canvas.width || this.height != this.canvas.height) {
       this.canvas.width = this.width;
       this.canvas.height = this.height;
