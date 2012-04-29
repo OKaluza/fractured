@@ -4,7 +4,6 @@
 //Save/load session - slow, needs status or no reload
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
-//Move "clear" option to fractal menu as "New"
 //New session, get logged out? (Maybe only when $SESSION timed out too)
 //What happens when fractal file loaded with formula not in lists, should insert new formula
 //Define a new formula, then use ?reload - fail
@@ -16,9 +15,6 @@ var mode = "WebGL";
 var fractal;
 var defaultMouse;
 var colours;
-//Source files list
-var sources = {};
-var labels = {};
 var autoSize = true;
 var showparams = true;
 var hasChanged = false;
@@ -30,7 +26,6 @@ var recording = false;
 var restored = "";
 //Timers
 var rztimeout = undefined;
-
 
 var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
 
@@ -92,10 +87,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function runScript(filename) {
-    eval(sources["script.js"]);
+    eval(sources["include/script.js"]);
   }
 
-  function pageStart() {
+  function appInit() {
+    if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
+
     showPanel($('tab4'), 'panel4');
     //If debug mode enabled, show extra menus
     var query = decodeURI(window.location.href).split("?")[1]; //whole querystring after ?
@@ -118,34 +115,39 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       ajaxReadFile('db/fractal_get.php?id=' + hash, fractalGet);
     }
 
-    // Check for the various File API support.
-    if (window.File && window.FileReader && window.FileList) {
-      // Great success! All required File APIs are supported.
-    } else {
-      consoleWrite('The File APIs are not fully supported in this browser.');
-    }
-
-    //Get shader source files on server
-    sources["shaders/glsl-header.frag"] = "";
-    sources["shaders/opencl-header.cl"] = "";
-    sources["shaders/complex-header.frag"] = "";
-    sources["shaders/fractal-shader.frag"] = "";
-    sources["shaders/complex-math.frag"] = "";
-    sources["shaders/shader2d.vert"] = "";
-
-    //Base parameters for all formulae defined in here
-    sources["formulae/base.base.formula"] = "";
-
-    //Script
-    sources["script.js"] = "";
-
     //Session to json:
     ajaxReadFile('session_json.php', sessionGet);
 
     //Load the last program state
     loadState();
-    //Load the content from files
-    loadSources();
+
+    //Initialise app
+    showPanel($('tab1'), 'panel1');
+    //Fractal canvas event handling
+    var canvas = document.getElementById("fractal-canvas");
+    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
+    canvas.mouse.wheelTimer = true;
+    defaultMouse = document.mouse = canvas.mouse;
+    document.onmouseup = handleMouseUp;
+    document.onmousemove = handleMouseMove;
+    window.onresize = autoResize;
+    window.onbeforeunload = beforeUnload;
+    window.onunload = pageUnload;
+
+    //Create a fractal object
+    fractal = new Fractal(canvas, mode);
+    fractal.antialias = localStorage["fractured.antialias"] ? parseInt(localStorage["fractured.antialias"]) : 2;
+    setAntiAliasMenu();
+
+    //Colour editing and palette management
+    colours = new ColourEditor();
+
+    //Draw & update
+    if (restored.length > 0)
+      restoreFractal();
+    else
+      loadLastFractal();  //Restore last if any
+    fractal.applyChanges();
   }
 
   //Fractal load from hash
@@ -155,12 +157,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       return;
     }
 
-    //if (fractal) {
-    //  fractal.load(data);
-    //  autoResize(autoSize);
-    //} else
-      restored = data;
-
+    restored = data;
+    if (fractal)
+      restoreFractal();
+    //If not yet ready, defer load until later
   }
 
   //Login session JSON received, load session_menu.php
@@ -235,113 +235,19 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     saveActive();
   }
 
-  function loadSources() {
-    //Wait until we know if server is available...
-    if (offline == null) {
-      setTimeout("loadSources();", 250);
-      return;
-    }
-    //Load a from list of remaining source files
-    for (filename in sources) {
-      //Load from local storage first if available (force load from server by passing "reload" on url)
-      if (!reloadsources && supports_html5_storage()) sources[filename] = localStorage[filename];
-      if (!sources[filename]) {
-        if (offline)
-          iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
-        else
-          ajaxReadFile(filename, saveSource, true);
-      } else {
-        consoleWrite("restored: " + filename);
-      }
-    }
-    //Check if all loaded yet, if so call appInit()
-    checkSources();
-  }
 
-  //External content load via iframe dynamic insert
-  function iframeReadFile(doc) {
-   //Unfortunately doesn't work in chrome for local files in sub-directories,
-   //Stupidly it treats them as from another domain
 
-    // create a new iframe element
-    var iframe = document.createElement('iframe');
-    // set the src attribute to that url
-    iframe.setAttribute('src', doc);
-    iframe.setAttribute('name', doc);
-    iframe.setAttribute('onload', 'transferHTML(this)');
-    // insert the script into our page
-      consoleWrite("Loading " + doc);
-      //<iframe onload="transferHTML();" id="hiddenContent" name=""></iframe>
-    document.getElementById('hidden').appendChild(iframe);
-  }
-
-  function transferHTML(srcFrame) {
-    var doc = srcFrame.name;
-    srcContent='';
-    //if (srcFrame.contentDocument) {
-      srcContent=srcFrame.contentDocument.body.textContent; //innerHTML; //textContent;
-    //}
-    //else if (srcFrame.contentWindow) {
-    //  srcContent=srcFrame.contentWindow.document.body.textContent;
-    //  srcContent=srcFrame.contentWindow.document.body.textContent;
-    //}
-    sources[doc] = localStorage[doc] = srcContent;
-
-    consoleWrite("loaded: " + doc);
-    checkSources();
-  }
-
-  //Source file loaded
-  function saveSource(data, filename) {
-    sources[filename] = localStorage[filename] = data; //Save content
-    consoleWrite("loaded: " + filename);
-    checkSources();
-  }
-
-  function checkSources() {
-    //Check if all loaded yet, if so call appInit()
-    var remain = false;
-    for (filename in sources)
-      if (!sources[filename] || sources[filename].length == 0) {remain=true; break;}
-
-    if (!remain) appInit();  //All data loaded, call init
-  }
-
-  //Once we have source data, app can be initialised
-  function appInit() {
-    showPanel($('tab1'), 'panel1');
-    //Fractal canvas event handling
-    var canvas = document.getElementById("fractal-canvas");
-    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
-    canvas.mouse.wheelTimer = true;
-    defaultMouse = document.mouse = canvas.mouse;
-    document.onmouseup = handleMouseUp;
-    document.onmousemove = handleMouseMove;
-    window.onresize = autoResize;
-    window.onbeforeunload = beforeUnload;
-    window.onunload = pageUnload;
-
-    //Create a fractal object
-    fractal = new Fractal(canvas, mode);
-    fractal.antialias = localStorage["fractured.antialias"] ? parseInt(localStorage["fractured.antialias"]) : 2;
-    setAntiAliasMenu();
-
-    //Colour editing and palette management
-    colours = new ColourEditor();
-
-    //Draw & update
+  function restoreFractal() {
     if (restored.length > 0) {
       var lines = restored.split("\n"); // split on newlines
       var name = lines[0];
       lines.splice(0,1);
-      fractal.load(lines.join('\n'), true); //Always replace formula code
+      fractal.load(lines.join('\n'));
       autoResize(autoSize);
       restored = "";
       fractal.name = name;
       $('nameInput').value = fractal.name;
-    } else
-      loadLastFractal();  //Restore last if any
-    fractal.applyChanges();
+    }
   }
 
   function setAntiAlias(val) {
@@ -445,9 +351,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     populateFractals();
   }
 
-  function clearFractal() {
+  function newFractal() {
     fractal.resetDefaults();
     fractal.formulaDefaults();
+    fractal.copyToForm();
     //De-select
     currentFractal = -1;
     populateFractals();
@@ -731,26 +638,20 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function loadState() {
     //Load formulae from local storage (or defaults if not found)
-    var formulae;
-    var selected;
-    var f_source;
-    if (supports_html5_storage()) f_source = localStorage["fractured.formulae"];
-    if (f_source) {
-        //HACK!! TODO: remove
-        f_source = f_source.replace(/primes/g, "integers");
-       formulae = JSON.parse(f_source);
-       selected = JSON.parse(localStorage["fractured.selected"]);
-       //Load global settings...
-       autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
-    } else {
-       //Standard formulae library
-       formulae = {"fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
-
-       selected = {"base" : "base", "fractal" : "mandelbrot", "pre_transform" : "none", "post_transform" : "none",
-                    "outside_colour": "default", "inside_colour": "none"};
-       localStorage["fractured.editorTheme"] = 'fracturedlight';
-       localStorage["fractured.scriptTheme"] = 'monokai';
+    var f_source = localStorage["fractured.formulae"];
+    if (f_source) { //{ alert("NO FORMULAE DEFINED!"); return;}
+         //HACK!! TODO: remove
+         f_source = f_source.replace(/primes/g, "integers");
+      formula_list = JSON.parse(f_source); //localStorage["fractured.formula"]);
     }
+
+    //Selected formulae
+    if (localStorage["fractured.selected"])
+      selected = JSON.parse(localStorage["fractured.selected"]);
+
+
+    //Load global settings...
+    autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
 
     //Custom mouse actions
     a_source = localStorage["fractured.mouseActions"];
@@ -759,38 +660,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     else
       defaultMouseActions();
 
-    labels = {};
-    $("fractal_formula").options.length = 0;
-    $("pre_transform_formula").options.length = 0;
-    $("post_transform_formula").options.length = 0;
-    $("outside_colour_formula").options.length = 0;
-    $("inside_colour_formula").options.length = 0;
-    addToSelect("pre_transform", "none", "");
-    addToSelect("post_transform", "none", "");
-    addToSelect("outside_colour", "none", "");
-    addToSelect("inside_colour", "none", "");
-    addToSelect("inside_colour", "same", "As above");
-    for (type in formulae) {
-      for (i in formulae[type]) {
-        var name = addFormula(type, formulae[type][i]);
-        //Load sources from local storage
-        var filename = formulaFilename(type, name);
-        if (reloadsources)  //Forced reload from server?
-          sources[filename] = "";
-        else
-          //Necessary? Should always do this now anyway when available for standard formulae
-          if (localStorage[filename] && !sources[filename]) //Added check to only write when not yet in sources
-            sources[filename] = localStorage[filename];
-      }
-      //Script
-      sources["script.js"] = localStorage["script.js"];
-    }
-    //Set selected defaults
-    $('fractal_formula').value = selected['fractal'];
-    $('pre_transform_formula').value = selected['pre_transform'];
-    $('post_transform_formula').value = selected['post_transform'];
-    $('outside_colour_formula').value = selected['outside_colour'];
-    $('inside_colour_formula').value = selected['inside_colour'];
+    //Create formula entries in drop-downs (and any saved load sources)
+    updateFormulaLists();
+
+    //Default script
+    if (localStorage["include/script.js"]) sources["include/script.js"] = localStorage["include/script.js"];
 
     //Get list of saved fractals
     if (!supports_html5_storage()) return;
@@ -822,33 +696,15 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function saveState() {
     //Read the lists
     try {
-      var types = ["fractal", "transform", "colour"];
-      var selects = ["fractal", "pre_transform", "outside_colour"];
-      var formulae = {};
-      var selected = {};
-      for (t in types) {
-        var start = 0;
-        if (t > 0) start = 1; //Skip "none"
-        var selname = selects[t] + "_formula";
-        select = $(selname);
-        formulae[types[t]] = [];
-        for (i=start; i<select.length; i++) {
-          var filename = formulaFilename(types[t], select.options[i].value);
-          formulae[types[t]][i-start] = select.options[i].text;
-          //Store formula source using filename key
-          localStorage[filename] = sources[filename];
-        }
-        //Get selected
-        selected[types[t]] = select.options[select.selectedIndex].value;
-      }
       //Save custom mouse actions
       localStorage["fractured.mouseActions"] = JSON.stringify(mouseActions);
       //Save formulae
-      localStorage["fractured.formulae"] = JSON.stringify(formulae);
+      localStorage["fractured.formulae"] = JSON.stringify(formula_list);
       //Save selected formulae
+      saveSelections(); //Get formula selections into selected variable
       localStorage["fractured.selected"] = JSON.stringify(selected);
       //Save script
-      localStorage["script.js"] = sources["script.js"];
+      localStorage["include/script.js"] = sources["include/script.js"];
       //Save some global settings
       localStorage["fractured.autoSize"] = autoSize;
       //Save current fractal (as default)
@@ -869,47 +725,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       alert('Quota exceeded! ' + e);
     }
   }
-
-  function getNameFromLabel(label) {
-    if (!label) return undefined;
-    var name = label.replace(/[^\w]+/g,'_').toLowerCase();
-    if (labels[name] != undefined) {
-      alert("Formula: " + name + " already exists!");
-      return undefined;
-    }
-    return name;
-  }
-
-  function addToSelect(type, name, label) {
-    select = $(type + "_formula");
-    select.options[select.length] = new Option(label, name);
-  }
-
-  function addFormula(type, label, name) {
-    if (name == undefined) name = getNameFromLabel(label);
-    if (!labels[name]) {
-      //Source not yet loaded
-      sources["formulae/" + name + "." + type + ".formula"] = "";
-      labels[name] = label;
-    }
-    if (type.indexOf("colour") > -1) {
-      addToSelect("outside_colour", name, label);
-      addToSelect("inside_colour", name, label);
-    } else if (type.indexOf("transform") > -1) {
-      addToSelect("pre_transform", name, label);
-      addToSelect("post_transform", name, label);
-    } else
-      addToSelect(type, name, label);
-    return name;
-  }
-
-  function formulaFilename(type, name) {
-    var ext = type;
-    if (type.indexOf("colour") > -1) ext = "colour";
-    if (type.indexOf("transform") > -1) ext = "transform";
-    return "formulae/" + name + "." + ext + ".formula";
-  }
-
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
@@ -1202,10 +1017,6 @@ var editorFilename;
     if (!filename) return;
     editorFilename = filename;
     editorWindow = window.open(encodeURI("editor.html?file=" + filename), filename, "toolbar=no,scrollbars=no,location=no,statusbar=no,menubar=no,resizable=1,width=600,height=700");
-  }
-
-  function closeEditor() {
-    //editorWindow = null;
   }
 
   function hrefImage() {
@@ -1511,7 +1322,8 @@ ColourEditor.prototype.cycle = function(inc, update) {
 //File upload handling
 function fileSelected(files) {
   var callback = loadFile;
-  if (filetype == 'palette') callback = fractal.loadPalette; //loadPalette;
+  if (filetype == 'palette') callback = fractal.loadPalette;
+  if (filetype == 'formula') callback = fractal.importFormula;
   if (filetype == 'session') {
     if (!confirm('Loading new session. This will overwrite everything!')) return;
     callback = importState;
@@ -1520,11 +1332,12 @@ function fileSelected(files) {
 }
 
 function filesProcess(files, callback) {
-  for (var i = 0; i < files.length; i++) {
-    var file = files[i];
-    //alert(file.name + " -- " + file.size);
-    //new ajaxUploadFile(file, callback);
-    //User html5 fileReader api (works offline)
+  // Check for the various File API support.
+  if (window.File && window.FileReader) { // && window.FileList) {
+    //All required File APIs are supported.
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      //User html5 fileReader api (works offline)
       var reader = new FileReader();
 
       // Closure to capture the file information.
@@ -1537,6 +1350,9 @@ function filesProcess(files, callback) {
 
       // Read in the file (AsText/AsDataURL/AsArrayBuffer/AsBinaryString)
       reader.readAsText(file);
+    }
+  } else {
+    alert('The File APIs are not fully supported in this browser.');
   }
 }
 

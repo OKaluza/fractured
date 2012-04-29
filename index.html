@@ -13,7 +13,9 @@
 
 <script type="text/javascript" src="sha256.js"></script>
 <script type="text/javascript" src="colourPicker.js"></script>
+<script type="text/javascript" src="formulae.js"></script>
 <script type="text/javascript" src="index.js"></script>
+<script type="text/javascript" src="bootstrap.js"></script>
 <script type="text/javascript" src="utils.js"></script>
 <script type="text/javascript" src="ajax.js"></script>
 <script type="text/javascript" src="mouse.js"></script>
@@ -30,9 +32,7 @@
 
 </head>
 
-<body onload="pageStart();" id="body">
-
-
+<body onload="appInit();" id="body">
 
   <header id="header">
 
@@ -67,6 +67,7 @@
         </li>
         <li><span class="fly" tabindex="1">Fractal</span>
           <ul class="dd">
+            <li><span onclick="newFractal();">New</span></li>
             <li><span onclick="saveFractal();">Save</span></li>
             <li><span onclick="deleteFractal();">Delete</span></li>
             <li><hr></li>
@@ -75,12 +76,21 @@
               </ul>
             </li>
             <li><hr></li>
-            <li><span onclick="saveImageJPEG();">Save JPEG image</span></li>
-            <li><span onclick="saveImagePNG();">Save PNG image</span></li>
+            <li><span class="fly" tabindex="1">Save as image file</span>
+              <ul>
+                <li><span onclick="saveImageJPEG();">Save JPEG</span></li>
+                <li><span onclick="saveImagePNG();">Save PNG</span></li>
+              </ul>
+            </li>
             <li><span onclick="uploadFractalFile();">Upload</span></li>
             <li><span onclick="exportFractalFile();">Export</span></li>
-            <li><span onclick="filetype='fractal'; $('fileupload').click();">Import</span></li>
-            <li><span onclick="filetype='palette'; $('fileupload').click();">Import Palette</span></li>
+            <li><span class="fly" tabindex="1">Import</span>
+              <ul>
+                <li><span onclick="filetype='fractal'; $('fileupload').click();">Fractal</span></li>
+                <li><span onclick="filetype='palette'; $('fileupload').click();">Palette</span></li>
+                <li><span onclick="filetype='formula'; $('fileupload').click();">Formula</span></li>
+              </ul>
+            </li>
             <li><hr></li>
             <li><span class="fly" tabindex="1">Anti-aliasing</span>
               <ul>
@@ -141,7 +151,6 @@
           <div class="row">
             <span class="label">Name</span>
             <span class="field"><input type="text" id="nameInput" name="description" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
-              <input type="button" value="Clear" onclick="clearFractal();">
             </span>
           </div>
           <div class="row">

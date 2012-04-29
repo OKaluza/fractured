@@ -83,21 +83,6 @@ function ajaxWriteFile(filename, data, callback) {
   http.send(params);
 }
 
-function ajaxUploadFile(file, callback) {
-  var fileName = file.name;
-  var fileSize = file.size;
-  var fileType = file.type;
-  var reader = new FileReader(); //Create FileReader object to read the data
-  reader.readAsText(file); //Start reading the file
-
-  reader.onload = function() { //Execute this when the file is successfully read
-    //callback(fileData);  //Call passed function on data directly
-    var fileData = reader.result + "\r\n";
-    callback(fileData, file.name);  //Call passed function on data directly
-  }
-  return true;
-}
-
 //Request from server, responds when done with file data + passed name to callback function
 function ajaxRequestPost(callback)
 { 

@@ -4,6 +4,7 @@
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
 
+<script src="utils.js"></script>
 
 <!-- CodeMirror-->
 <script src="codemirror/lib/codemirror.js"></script>
@@ -78,7 +79,11 @@ var formula;
   saveEditor = function() {
     editor.save();  //Updates textarea content
     window.opener.hasChanged = true;  //Flag changes made
-    window.opener.sources[filename] = code.value;
+    if (type)
+       window.opener.formula_list[filename].source = code.value;
+    else
+      window.opener.sources[filename] = code.value;
+
     //JS Script?
     if (filename.indexOf(".js") < 0) {
       //Editing compiled shader source?
@@ -96,7 +101,7 @@ var formula;
 
   loadEditor = function() {
     var editmode = "text/x-glsl";
-    var edittheme = localStorage["fractured.editorTheme"];
+    var edittheme = localStorageDefault("fractured.editorTheme", "fracturedlight");
 
     //Copy for fallback to code
     code = document.getElementById('editor');
@@ -105,17 +110,21 @@ var formula;
     var param = query ? query.split("=")[1] : "";
 
     type = "";
-    if (param.indexOf('.') == -1) {
-      type = param;
-      filename = window.opener.fractal[type].filename();
+    filename = param;
+    var pos = param.indexOf('#');
+    if (pos > 0) {
+      filename = param.substr(0, pos);
+      type = param.substr(pos+1);
+      code.value = window.opener.formula_list[filename].source;
     } else
-      filename = param;
+      code.value = window.opener.sources[filename];
+
 
     sel = document.getElementById('theme');
 
     if (filename.indexOf(".js") >= 0) {
       editmode = "text/javascript";
-      edittheme = localStorage["fractured.scriptTheme"];
+      edittheme = localStorageDefault("fractured.scriptTheme", "monokai");
       var btn = document.getElementById('savebtn');
       btn.value = "Run";
       sel.options[sel.length] = new Option("cobalt");
@@ -129,8 +138,6 @@ var formula;
       sel.options[sel.length] = new Option("light", "fracturedlight");
       sel.options[sel.length] = new Option("dark", "fractureddark");
     }
-
-    code.value = window.opener.sources[filename];
 
     editor = new CodeMirror.fromTextArea(code, {
       mode: editmode,
@@ -170,7 +177,7 @@ function replace() {
 
 </head>
 
-<body onload="loadEditor()" onUnload="window.opener.closeEditor();" >
+<body onload="loadEditor()">
 
 <div id="buttons">
   <input type="button" id="savebtn" value="Save" onclick="saveEditor()">
