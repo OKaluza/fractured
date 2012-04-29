@@ -6,7 +6,7 @@
     this.modelView = new ModelView();
 
     try {
-      this.gl = canvas.getContext("experimental-webgl", { alpha: true } );
+      this.gl = canvas.getContext("experimental-webgl", { antialias: true } );
 
       this.gl.viewportWidth = canvas.width;
       this.gl.viewportHeight = canvas.height;

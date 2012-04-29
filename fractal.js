@@ -421,7 +421,7 @@
                         "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
     var label = "";
     if (name != "base") {
-      label = labels[name];
+      label = formula_list[formulaKey(category, name)].label;
       var divlabel = document.createElement("span");
       divlabel.className = "divider-label";
       divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[category] + ": " + label));
@@ -551,7 +551,7 @@
     this.defaultparams = {};
     this.lineoffsets = {};
     if (category == "base")
-      this.select("base");
+      this.select("default");
     else
       this.reselect();
   }
@@ -613,14 +613,14 @@
     growTextAreas('colour_inputs');  //Resize expression fields
   }
 
-  Formula.prototype.filename = function() {
-    return formulaFilename(this.category, this.selected);
+  Formula.prototype.getkey = function() {
+    return formulaKey(this.category, this.selected);
   }
 
   Formula.prototype.getSource = function() {
     if (this.selected == "none" || this.selected == "same")
       return "";
-    return sources[this.filename()];
+    return formula_list[this.getkey()].source;
   }
 
   Formula.prototype.getCodeSections = function() {
@@ -833,79 +833,54 @@
 
   Fractal.prototype.editFormula = function(category) {
     if (this[category].selected != "none")
-      openEditor(category);
-      //openEditor(this[category].filename());
+      openEditor(this[category].getkey() + "#" + category);
   }
 
   Fractal.prototype.newFormula = function(select) {
-    var category = select;
-    if (category.indexOf('colour') > 0) category = 'colour';
-    if (category.indexOf('transform') > 0) category = 'transform';
-
-    var label = prompt("Please enter name for new " + category + " formula", "");
+    var type = categoryToType(select);
+    var label = prompt("Please enter name for new " + type + " formula", "");
     if (!label) return;
 
     //Add the formula
-    var name = addFormula(category, label);
+    var f = new FormulaEntry(type, label, null);
+    if (!f) return;
 
-    //Template, default source
-    var def;
-    if (category == 'fractal')
-      def = sources["formulae/mandelbrot.fractal.formula"];
-    else if (category == 'transform')
-      def = sources["formulae/functions.transform.formula"];
-    else
-      def = sources["formulae/default.colour.formula"];
-
-    sources["formulae/" + name + "." + category + ".formula"] = def;
-
-    this[select].select(name); //Set selected
-    $(select + '_formula').value = name;
+    this[select].select(f.name); //Set selected
+    $(select + '_formula').value = f.name;
     this.editFormula(select);
+  }
+
+  Fractal.prototype.importFormula = function(source, filename) {
+    if (!formula_list[filename]) {
+      //New formula
+      alert("TODO: insert new formula");
+      return;
+    }
+    if (formula_list[filename].source == source) return;
+    if (confirm("Replace formula definition " + filename + " with new definition from this file?")) {
+      formula_list[filename].source = source;
+      consoleWrite("Replacing formula code for: " + filename);
+    } else {
+      //TODO: Create a new formula entry for this fractal
+      alert("TODO: insert as new formula");
+    }
   }
 
   Fractal.prototype.deleteFormula = function(select) {
     var sel = $(select + '_formula');
-    var selidx = sel.selectedIndex;
-    var label = labels[sel.options[selidx].value];
+    var key = formulaKey(select, sel.options[sel.selectedIndex].value);
+    var label = formula_list[key].label;
     if (!label || !confirm('Really delete the "' + label + '" formula?')) return;
-    //pre/post?
-    if (select.indexOf("transform") > -1) {
-      if (select == 'pre_transform') {
-        if (selidx < 1) return;
-        var post = $('post_transform_formula');
-        post.options.remove(selidx);
-        if (post.options[post.selectedIndex+1] == null)
-          this['post_transform'].select(post.options[0].value);
-      } else if (select == 'post_transform') {
-        if (selidx < 2) return;
-        var pre = $('pre_transform_formula');
-        pre.options.remove(selidx);
-        if (pre.options[pre.selectedIndex] == null)
-          this['pre_transform'].select(pre.options[0].value);
-      }
-    }
-    //inside/outside?
-    if (select.indexOf("colour") > -1) {
-      if (select == 'outside_colour') {
-        if (selidx < 1) return;
-        var insel = $('inside_colour_formula');
-        insel.options.remove(selidx+1);
-        if (insel.options[insel.selectedIndex+1] == null)
-          this['inside_colour'].select(insel.options[0].value);
-      } else if (select == 'inside_colour') {
-        if (selidx < 2) return;
-        var outsel = $('outside_colour_formula');
-        outsel.options.remove(selidx-1);
-        if (outsel.options[outsel.selectedIndex] == null)
-          this['outside_colour'].select(outsel.options[0].value);
-      }
-    }
-    sel.remove(selidx);
-    sources[this[select].filename()] = null;
-    labels[this[select].selected] = null;
+    delete formula_list[key];
+    saveSelections(); //Update formula selections into selected variable
+    updateFormulaLists();
     //Finally, reselect
-    this[select].select(sel.options[0].value);
+    this["fractal"].reselect();
+    this["pre_transform"].reselect();
+    this["post_transform"].reselect();
+    this["outside_colour"].reselect();
+    this["inside_colour"].reselect();
+    hasChanged = true;  //Flag formula changes
   }
 
   //Save fractal (write param/source file)
@@ -935,7 +910,7 @@
         //Don't save formula source twice if same used
         if (t==3 && this["post_transform"].selected == this["pre_transform"].selected) continue;
         if (t==4 && this["outside_colour"].selected == this["inside_colour"].selected) break;
-        code += "\n[formula." + category + "]\n" + sources[this[category].filename()];
+        code += "\n[formula." + category + "]\n" + this[category].getSource();
       }
     }
     code += "\n[palette]\n" + colours.palette;
@@ -958,7 +933,7 @@
   }
 
   //Load fractal from file
-  Fractal.prototype.load = function(source, confirmed) {
+  Fractal.prototype.load = function(source) {
     //consoleWrite("load<hr>");
     //Reset everything...
     this.resetDefaults();
@@ -1005,20 +980,15 @@
         } else if (section.slice(0, 8) == "formula.") {
           //Collect lines into formula code
           var pair1 = section.split(".");
-          var filename = this[pair1[1]].filename();
+          var filename = this[pair1[1]].getkey();
           for (var j = i+1; j < lines.length; j++) {
             if (lines[j][0] == "[") break;
             buffer += lines[j] + "\n";
           }
           i = j-1;
           //Confirm formula load for now (###)
-          if (buffer.length > 0) {
-            if (confirmed == undefined) confirmed = confirm("Formula code found, replace formula with new code from this fractal?");
-            if (confirmed) {
-              sources[filename] = buffer;
-              consoleWrite("Replacing formula code for: " + filename);
-            }
-          }
+          if (buffer.length > 0)
+            this.importFormula(buffer, filename);
         }
         continue;
       }
@@ -1108,11 +1078,11 @@
       reup  = true;
       this["base"].currentParams["iterations"].value *= 2;
     }
-    if (saved["inrepeat"]) {
+    if (saved["inrepeat"] && this["inside_colour"].currentParams[":repeat"] != undefined) {
       this["inside_colour"].currentParams[":repeat"].parse(saved["inrepeat"]);
       reup  = true;
     }
-    if (saved["outrepeat"]) {
+    if (saved["outrepeat"] && this["outside_colour"].currentParams[":repeat"] != undefined) {
       this["outside_colour"].currentParams[":repeat"].parse(saved["outrepeat"]);
       reup  = true;
     }
@@ -1519,7 +1489,7 @@
                       "inside_colour" : this["inside_colour"].getParsedFormula()};
 
     //Add headers + core code template
-    var shader = sources[header] + sources["shaders/complex-header.frag"] + sources["shaders/fractal-shader.frag"];
+    var shader = sources[header] + sources["include/complex-header.frag"] + sources["include/fractal-shader.frag"];
 
     //Replace ---SECTION--- in template with formula code
     this.offsets = [];
@@ -1532,12 +1502,12 @@
     shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 2);
     shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 2);
     shader = this.templateInsert(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
     shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
-    this.offsets.push(LineOffset("(end)", "(end)", shader.split("\n").length));
+    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
+    this.offsets.push(new LineOffset("(end)", "(end)", shader.split("\n").length));
 
     //Append the complex maths library
-    shader = shader + sources["shaders/complex-math.frag"];
+    shader = shader + sources["include/complex-math.frag"];
 
     //Remove param declarations, replace with newline to preserve line numbers
     //shader = shader.replace(paramreg, "//(Param removed)\n");
@@ -1593,10 +1563,10 @@
     var source;
     if (this.webgl) {
       //Create the GLSL shader
-      var source = this.generateShader("shaders/glsl-header.frag");
+      var source = this.generateShader("include/glsl-header.frag");
     } else {
       //Build OpenCL kernel
-      source = this.generateShader("shaders/opencl-header.cl");
+      source = this.generateShader("include/opencl-header.cl");
 
       var native_fn = /(cos|exp|log|log2|log10|sin|sqrt|tan)\(/g;
       //source = source.replace(native_fn, "native_$1(");
@@ -1633,7 +1603,7 @@
     //Compile the shader using WebGL or WebCL
     var errors;
     if (this.webgl) {
-      errors = this.webgl.initProgram(sources["shaders/shader2d.vert"], source);
+      errors = this.webgl.initProgram(sources["include/shader2d.vert"], source);
       //Setup uniforms for fractal program (all these are always set now, do this once at start?)
       this.webgl.setupProgram(["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
     } else {
@@ -1662,9 +1632,10 @@
               //Adjust the line number
               lineno -= this.offsets[last].value + 1;
               lineno += this[this.offsets[last].category].lineoffsets[section];
+              var key = formulaKey(this.offsets[last].category, this[this.offsets[last].category].selected);
               alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + 
                     sectionnames[this.offsets[last].category] + " formula: " + 
-                    labels[this[this.offsets[last].category].selected] + "\n--------------\n" + errors);
+                    formula_list[key].label + "\n--------------\n" + errors);
               found = true;
               break;
             }

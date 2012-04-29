@@ -1,3 +1,10 @@
+//Get key from local storage or return default if not found
+function localStorageDefault(key, def) {
+  if (localStorage[key])
+    return localStorage[key];
+  return def;
+}
+
 //JQuery style lookup by id and style
 function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
 function $S(o) { o=$(o); if(o) return(o.style); }
