@@ -1,7 +1,10 @@
 //Get key from local storage or return default if not found
 function localStorageDefault(key, def) {
-  if (localStorage[key])
-    return localStorage[key];
+  return varDefault(localStorage[key], def);
+}
+
+function varDefault(variable, def) {
+  if (variable) return variable;
   return def;
 }
 
@@ -38,6 +41,12 @@ function isEmpty(o) {
     }
   }
   return true;
+}
+
+if (!String.prototype.toTitleCase) {
+  String.prototype.toTitleCase = function () {
+    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+  };
 }
 
 if (!String.prototype.entityify) {

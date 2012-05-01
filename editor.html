@@ -5,6 +5,7 @@
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
 
 <script src="utils.js"></script>
+<script src="formulae.js"></script>
 
 <!-- CodeMirror-->
 <script src="codemirror/lib/codemirror.js"></script>
@@ -73,7 +74,7 @@ var type;
 var formula;
 
   exportFile = function() {
-    window.opener.exportFile(filename, "text/fractal-formula", code.value);
+    window.opener.exportFile(filenameToName(filename) + "." + categoryToType(type) + ".formula", "text/fractal-formula", code.value);
   }
 
   saveEditor = function() {

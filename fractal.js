@@ -420,7 +420,7 @@
     var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
                         "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
     var label = "";
-    if (name != "base") {
+    if (category != "base") {
       label = formula_list[formulaKey(category, name)].label;
       var divlabel = document.createElement("span");
       divlabel.className = "divider-label";
@@ -620,7 +620,11 @@
   Formula.prototype.getSource = function() {
     if (this.selected == "none" || this.selected == "same")
       return "";
-    return formula_list[this.getkey()].source;
+    var key = this.getkey();
+    if (formula_list[key])
+      return formula_list[key].source;
+    alert("No entry found: " + key);
+    return "";
   }
 
   Formula.prototype.getCodeSections = function() {
@@ -842,7 +846,11 @@
     if (!label) return;
 
     //Add the formula
-    var f = new FormulaEntry(type, label, null);
+    var key = this[select].getkey();
+    var source = null;
+    if (formula_list[key])
+       source = formula_list[key].source;
+    var f = new FormulaEntry(type, label, source);
     if (!f) return;
 
     this[select].select(f.name); //Set selected
@@ -851,19 +859,21 @@
   }
 
   Fractal.prototype.importFormula = function(source, filename) {
-    if (!formula_list[filename]) {
-      //New formula
-      alert("TODO: insert new formula");
-      return;
+    if (formula_list[filename]) {
+      if (formula_list[filename].source == source) return;
+
+      if (confirm("Replace formula definition " + filename + " with new definition from this file?")) {
+        formula_list[filename].source = source;
+        consoleWrite("Replacing formula code for: " + filename);
+        return;
+      }
     }
-    if (formula_list[filename].source == source) return;
-    if (confirm("Replace formula definition " + filename + " with new definition from this file?")) {
-      formula_list[filename].source = source;
-      consoleWrite("Replacing formula code for: " + filename);
-    } else {
-      //TODO: Create a new formula entry for this fractal
-      alert("TODO: insert as new formula");
-    }
+
+    //New formula
+    var type = "fractal";
+    if (filename.indexOf("colour") > -1) type = "colour";
+    if (filename.indexOf("transform") > -1) type = "transform";
+    var f = new FormulaEntry(type, nameToLabel(filenameToName(filename)), source);
   }
 
   Fractal.prototype.deleteFormula = function(select) {
@@ -980,15 +990,24 @@
         } else if (section.slice(0, 8) == "formula.") {
           //Collect lines into formula code
           var pair1 = section.split(".");
-          var filename = this[pair1[1]].getkey();
+          var category = pair1[1];
           for (var j = i+1; j < lines.length; j++) {
             if (lines[j][0] == "[") break;
             buffer += lines[j] + "\n";
           }
           i = j-1;
-          //Confirm formula load for now (###)
-          if (buffer.length > 0)
-            this.importFormula(buffer, filename);
+          //formula load (###)
+          if (buffer.length > 0) {
+            var filename = this[category].getkey();
+            //New entry?
+            if (formula_list[filename].source == "-")
+              formula_list[filename].source == buffer;
+            else if (formula_list[filename].source != buffer) {
+              //Existing entry, new definition, create as: formula_name#x
+              var name = filenameToName(filename);
+              var f = new FormulaEntry(categoryToType(category), nameToLabel(name), null, buffer);
+            }
+          }
         }
         continue;
       }
@@ -1022,7 +1041,12 @@
             if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", ":");
             //if (lines[j] != oldline) consoleWrite(oldline + " ==> " + lines[j]);
           }
-          //Formula name
+          //Formula name, create entry if none
+          var filename = formulaKey(pair[0], pair[1]);
+          if (!formula_list[filename] && filename.substr(filename.lastIndexOf("/")+1) != "none") {
+            var f = new FormulaEntry(categoryToType(pair[0]), nameToLabel(pair[1]), null, "-");
+          }
+
           this[pair[0]].select(pair[1]);
           //alert("formulas[" + pair[1] + "] = " + pair[0]);
           //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
