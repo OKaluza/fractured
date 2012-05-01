@@ -639,15 +639,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function loadState() {
     //Load formulae from local storage (or defaults if not found)
     var f_source = localStorage["fractured.formulae"];
-    if (f_source) { //{ alert("NO FORMULAE DEFINED!"); return;}
+    if (f_source && f_source.length < 400) f_source = null; //Old formula list
+    if (f_source) {
          //HACK!! TODO: remove
          f_source = f_source.replace(/primes/g, "integers");
       formula_list = JSON.parse(f_source); //localStorage["fractured.formula"]);
     }
-
-    //Selected formulae
-    if (localStorage["fractured.selected"])
-      selected = JSON.parse(localStorage["fractured.selected"]);
 
 
     //Load global settings...
@@ -700,9 +697,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["fractured.mouseActions"] = JSON.stringify(mouseActions);
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formula_list);
-      //Save selected formulae
-      saveSelections(); //Get formula selections into selected variable
-      localStorage["fractured.selected"] = JSON.stringify(selected);
       //Save script
       localStorage["include/script.js"] = sources["include/script.js"];
       //Save some global settings

@@ -11,10 +11,16 @@ function FormulaEntry(type, label, source, name) {
   if (name == undefined)
     name = label.replace(/[^\w]+/g,'_').toLowerCase();
 
-  if (formula_list[type + "/" + name] != undefined) {
-    alert("Formula: " + name + " already exists!");
-    return undefined;
+  //Automatically rename until unique
+  var count = 0;
+  var basename = name;
+  while (formula_list[type + "/" + name] != undefined) {
+    //alert("Formula: " + name + " already exists!");
+    //return undefined;
+    count++;
+    name = basename + "#" + count;
   }
+  if (name != basename) label = label + " #" + count;
 
   if (!source) {
     //Default sources for new formulae
@@ -34,7 +40,10 @@ function FormulaEntry(type, label, source, name) {
   this.source = source;
 
   //Add to the global list
-  formula_list[type + "/" + name] = this;
+  var key = type + "/" + name;
+  formula_list[key] = this;
+  //Add to selects
+  addSelectEntry(formula_list[key]);
 }
 
 function updateFormulaLists() {
@@ -53,24 +62,26 @@ function updateFormulaLists() {
 
   //Run through the list and add to select lists
   for (key in formula_list) {
-    entry = formula_list[key];
-    if (!entry.type) alert(key);
-    if (entry.type.indexOf("colour") > -1) {
-      entry.field = addToSelect("outside_colour", entry.name, entry.label);
-      entry.field = addToSelect("inside_colour", entry.name, entry.label);
-    } else if (entry.type.indexOf("transform") > -1) {
-      entry.field = addToSelect("pre_transform", entry.name, entry.label);
-      entry.field = addToSelect("post_transform", entry.name, entry.label);
-    } else if (entry.type.indexOf("fractal") > -1)
-      entry.field = addToSelect(entry.type, entry.name, entry.label);
+    addSelectEntry(formula_list[key]);
   }
 
   //Set selected defaults
-  $('fractal_formula').value = selected['fractal'] ? selected['fractal'] : $("fractal_formula").options[0].value;
-  $('pre_transform_formula').value = selected['pre_transform'] ? selected['pre_transform'] : "none";
-  $('post_transform_formula').value = selected['post_transform'] ? selected['post_transform'] : "none";
-  $('outside_colour_formula').value = selected['outside_colour'] ? selected['outside_colour'] : $("outside_colour_formula").options[1].value;
-  $('inside_colour_formula').value = selected['inside_colour'] ? selected['inside_colour'] : "none";
+  $('fractal_formula').value = varDefault(selected['fractal'], $("fractal_formula").options[0].value);
+  $('pre_transform_formula').value = varDefault(selected['pre_transform'], "none");
+  $('post_transform_formula').value = varDefault(selected['post_transform'], "none");
+  $('outside_colour_formula').value = varDefault(selected['outside_colour'], $("outside_colour_formula").options[1].value);
+  $('inside_colour_formula').value = varDefault(selected['inside_colour'], "none");
+}
+
+function addSelectEntry(entry) {
+  if (entry.type.indexOf("colour") > -1) {
+    entry.field = addToSelect("outside_colour", entry.name, entry.label);
+    entry.field = addToSelect("inside_colour", entry.name, entry.label);
+  } else if (entry.type.indexOf("transform") > -1) {
+    entry.field = addToSelect("pre_transform", entry.name, entry.label);
+    entry.field = addToSelect("post_transform", entry.name, entry.label);
+  } else if (entry.type.indexOf("fractal") > -1)
+    entry.field = addToSelect(entry.type, entry.name, entry.label);
 }
 
 function addToSelect(type, name, label) {
@@ -80,22 +91,14 @@ function addToSelect(type, name, label) {
 }
 
 function saveSelections() {
-  var types = ["fractal", "transform", "colour"];
-  var selects = ["fractal", "pre_transform", "outside_colour"];
+  var selects = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
   selected = {};
-  for (t in types) {
-    var start = 0;
-    if (t > 0) start = 1; //Skip "none"
-    var selname = selects[t] + "_formula";
+  for (s in selects) {
+    var selname = selects[s] + "_formula";
     var select = $(selname);
     //Get selected
-    selected[types[t]] = select.options[select.selectedIndex].value;
+    selected[selects[s]] = select.options[select.selectedIndex].value;
   }
-}
-
-function toTitleCase(str)
-{
-  return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
 
 function categoryToType(category) {
@@ -115,4 +118,16 @@ function formulaFilename(category, label) {
 
 function formulaKey(category, label) {
   return categoryToType(category) + "/" + labelToName(label);
+}
+
+function nameToLabel(name) {
+  return name.replace(/_/g,' ').toTitleCase();
+}
+
+function filenameToName(filename) {
+  var start = filename.lastIndexOf('/')+1;
+  var end = filename.indexOf('.');
+  if (start < 0) start = 0;
+  if (end < 0) end = filename.length;
+  return filename.substr(start, end);
 }
