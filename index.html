@@ -59,8 +59,7 @@
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
-            <li><span onclick="exportState();">Export</span></li>
-            <!--li><span onclick="exportStateFile();">Export</span></li-->
+            <li><span onclick="exportStateFile();">Export</span></li>
             <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
             <div id="session_menu"></div>
           </ul>
@@ -75,6 +74,18 @@
               <ul id="fractals" class="selectlist">
               </ul>
             </li>
+            <li><span class="fly" tabindex="1">Formula Sets</span>
+              <ul>
+                <li><span class="fly" tabindex="1">Public</span>
+                  <ul id="formulae-public" class="selectlist">
+                  </ul>
+                </li>
+                <li><span class="fly" tabindex="1">Private</span>
+                  <ul id="formulae-private" class="selectlist">
+                  </ul>
+                </li>
+              </ul>
+            </li>
             <li><hr></li>
             <li><span class="fly" tabindex="1">Save as image file</span>
               <ul>
@@ -82,8 +93,13 @@
                 <li><span onclick="saveImagePNG();">Save PNG</span></li>
               </ul>
             </li>
-            <li><span onclick="uploadFractalFile();">Upload</span></li>
-            <li><span onclick="exportFractalFile();">Export</span></li>
+            <li><span class="fly" tabindex="1">Upload / Share</span>
+              <ul>
+                <li><span onclick="uploadFractalFile();">Fractal</span></li>
+                <li><span onclick="uploadFormulaFile();">Formula Set</span></li>
+              </ul>
+            </li>
+            <li><span onclick="exportFractalFile();">Export to file</span></li>
             <li><span class="fly" tabindex="1">Import</span>
               <ul>
                 <li><span onclick="filetype='fractal'; $('fileupload').click();">Fractal</span></li>
@@ -112,7 +128,7 @@
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
           </ul>
         </li>
-        <li><span onclick="applyAndSave();">Draw</span></li>
+        <li><span onclick="fractal.applyChanges();">Draw</span></li>
       </ul>
 
     </nav>
@@ -326,6 +342,11 @@
     <form name="exporter" action="savefile.php" method="post">
       <input type="hidden" id="export-filename" name="filename"/>
       <input type="hidden" id="export-content" name="content"/>
+    </form>
+    <form name="formulae" action="db/formula_save.php" method="post" enctype=multipart/form-data>
+      <input type="hidden" id="formula-name" name="name"/>
+      <input type="hidden" id="formula-data" name="data" value=""/>
+      <input type="hidden" id="formula-public" name="public"/>
     </form>
 
   </div>
