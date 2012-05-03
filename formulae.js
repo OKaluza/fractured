@@ -8,8 +8,7 @@ var selected = {};
  * @constructor
  */
 function FormulaEntry(type, label, source, name) {
-  if (name == undefined)
-    name = label.replace(/[^\w]+/g,'_').toLowerCase();
+  if (name == undefined) name = labelToName(label);
 
   //Automatically rename until unique
   var count = 0;
@@ -18,9 +17,9 @@ function FormulaEntry(type, label, source, name) {
     //alert("Formula: " + name + " already exists!");
     //return undefined;
     count++;
-    name = basename + "#" + count;
+    name = basename + "_(" + count + ")";
   }
-  if (name != basename) label = label + " #" + count;
+  if (name != basename) label = label + " (" + count + ")";
 
   if (!source) {
     //Default sources for new formulae
@@ -44,6 +43,10 @@ function FormulaEntry(type, label, source, name) {
   formula_list[key] = this;
   //Add to selects
   addSelectEntry(formula_list[key]);
+}
+
+FormulaEntry.prototype.toString = function() {
+  return "[" + this.type + "/" + this.name + "] = " + this.source;
 }
 
 function updateFormulaLists() {
@@ -109,7 +112,7 @@ function categoryToType(category) {
 }
 
 function labelToName(label) {
-  return label.replace(/[^\w]+/g,'_').toLowerCase();
+  return label.replace(/[^\w()]+/g,'_').toLowerCase();
 }
 
 function formulaFilename(category, label) {

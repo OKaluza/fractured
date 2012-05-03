@@ -987,27 +987,6 @@
           }
           colours.read(buffer);
           i = j-1;
-        } else if (section.slice(0, 8) == "formula.") {
-          //Collect lines into formula code
-          var pair1 = section.split(".");
-          var category = pair1[1];
-          for (var j = i+1; j < lines.length; j++) {
-            if (lines[j][0] == "[") break;
-            buffer += lines[j] + "\n";
-          }
-          i = j-1;
-          //formula load (###)
-          if (buffer.length > 0) {
-            var filename = this[category].getkey();
-            //New entry?
-            if (formula_list[filename].source == "-")
-              formula_list[filename].source == buffer;
-            else if (formula_list[filename].source != buffer) {
-              //Existing entry, new definition, create as: formula_name#x
-              var name = filenameToName(filename);
-              var f = new FormulaEntry(categoryToType(category), nameToLabel(name), null, buffer);
-            }
-          }
         }
         continue;
       }
@@ -1041,13 +1020,48 @@
             if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", ":");
             //if (lines[j] != oldline) consoleWrite(oldline + " ==> " + lines[j]);
           }
+
           //Formula name, create entry if none
-          var filename = formulaKey(pair[0], pair[1]);
-          if (!formula_list[filename] && filename.substr(filename.lastIndexOf("/")+1) != "none") {
-            var f = new FormulaEntry(categoryToType(pair[0]), nameToLabel(pair[1]), null, "-");
+          var name = pair[1];
+          var category = pair[0];
+          var filename = formulaKey(category, name);
+          if (filename.substr(filename.lastIndexOf("/")+1) != "none") {
+            //Read ahead to get formula definition!
+            var formula_section = "";
+            for (var j=i+1; j < lines.length; j++) {
+              if (lines[j][0] == "[")
+                formula_section = lines[j].slice(1, lines[j].lastIndexOf("]"));
+              if (formula_section == "formula." + category) break;
+            }
+              
+            //Included definition for this formula?
+            if (formula_section == "formula." + category) {
+              //Collect lines into formula code
+              var buffer = "";
+              for (j = j+1; j < lines.length; j++) {
+                if (lines[j][0] == "[") break;
+                buffer += lines[j] + "\n";
+              }
+
+              //formula load (###)
+              if (buffer.length > 0) {
+                //New entry?
+                if (!formula_list[filename]) {
+                  consoleWrite("Imported new formula: " + filename);
+                  var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
+                  hasChanged = true;  //Flag formula changes
+                } else if (formula_list[filename].source.trim() != buffer.trim()) {
+                  //Existing entry, new definition, create as: formula_name#x
+                  var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
+                  name = f.name; //Get new name
+                  consoleWrite("Imported new formula definition for existing formula: " + filename + ", saved as " + name);
+                  hasChanged = true;  //Flag formula changes
+                }
+              }
+            }
           }
 
-          this[pair[0]].select(pair[1]);
+          this[category].select(name);
           //alert("formulas[" + pair[1] + "] = " + pair[0]);
           //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
           //alert(pair[0] + " == " + formulas[pair[0]]);
@@ -1073,7 +1087,7 @@
         var pair2 = line.split("=");
         if (this[category].currentParams[pair2[0]])
           this[category].currentParams[pair2[0]].parse(pair2[1]);
-        else //Not defined in formula, skip
+        else { //Not defined in formula, skip
           if (pair2[0] == "vary") { //Moved to fractured transform, hack to transfer param from old saves
             if (parseReal(pair2[1]) > 0) {
               this["post_transform"].select("fractured");
@@ -1087,7 +1101,7 @@
               saved["outrepeat"] = pair2[1];
           } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
             alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
-
+        }
       }
     }
 
@@ -1111,6 +1125,7 @@
       reup  = true;
     }
     if (reup) this.loadParams();
+    this.applyChanges();
   }
 
   //Conversion from my old fractal ini files
@@ -1424,6 +1439,7 @@
 
     //Update parameters to form
     this.loadParams();
+    this.applyChanges();
   }
 
 
@@ -1479,6 +1495,7 @@
     //Update shader code & redraw
     this.writeShader();
     this.draw();
+    hasChanged = true;  //Flag changes to active fractal instead of automatically saving
   }
 
   //Update form controls with fractal data
