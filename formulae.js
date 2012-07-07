@@ -120,7 +120,12 @@ function formulaFilename(category, label) {
 }
 
 function formulaKey(category, label) {
-  return categoryToType(category) + "/" + labelToName(label);
+  var key = categoryToType(category) + "/" + labelToName(label);
+  if (!formula_list[key]) {
+    //consoleWrite("No formula entry found for: " + category + " / " + label);
+    return null;
+  }
+  return key;
 }
 
 function nameToLabel(name) {

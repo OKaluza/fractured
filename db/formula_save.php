@@ -8,6 +8,11 @@
   $public = $_POST["public"];
   if (!$desc) $desc = '';
 
+  if ($user <= 0) {
+    header("Location: {$goto}");
+    exit();
+  }
+
   //Get submitted details
   //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
   if(get_magic_quotes_gpc()) {
@@ -22,10 +27,9 @@
 
   $query = "INSERT INTO formula (user_id, date, name, data, public) values('$user', '$mysqldate', '$name', '$data', '$public');";
   $result = mysql_query($query);
-        echo $query;
   //echo mysql_error();
 
   mysql_close();
-  //header("Location: {$goto}");
+  header("Location: {$goto}");
   exit();
 ?>

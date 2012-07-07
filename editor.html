@@ -79,6 +79,7 @@ var formula;
 
   saveEditor = function() {
     editor.save();  //Updates textarea content
+    if (!window.opener.hasChanged) consoleWrite("Formula update detected, will prompt to save session");
     window.opener.hasChanged = true;  //Flag changes made
     if (type)
        window.opener.formula_list[filename].source = code.value;

@@ -1,6 +1,13 @@
 <?php
 session_start();
 require 'openid.php';
+
+function error_msg($msg) {
+  echo '<!doctype html><html><head><script language="javascript">alert("';
+  echo $msg;
+  echo '"); window.location = "/";</script></head></html>';
+}
+
 try 
 {
   # Change 'localhost' to your domain name.
@@ -19,7 +26,7 @@ try
   }
   elseif ($openid->mode == 'cancel')
   {
-    echo 'User has canceled authentication!';
+    error_msg("OpenID: User has cancelled authentication!");
   } 
   else 
   {
@@ -35,12 +42,11 @@ try
       header('Location: db/user.php');
     }
     else
-      echo 'User has not logged in.';
+      error_msg("OpenID: User has not logged in!");
   }
 } 
 catch(ErrorException $e) 
 {
-  echo "ERROR: ";
-  echo $e->getMessage();
+  error_msg("OpenID Error: " . $e->getMessage());
 }
 ?>
