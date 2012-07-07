@@ -38,8 +38,8 @@
   Aspect.prototype.pixelSize = function(element) {
     var unit = 2.0 / this.zoom;
     var pixel = unit / element.width; //height?
-    //consoleWrite(element.width + " x " + element.height + " ==> " + size[0] + " x " + size[1]);
-    //if (this.zoom > 100) consoleWrite("Warning, precision too low, pixel size: " + pixel);
+    //consoleDebug(element.width + " x " + element.height + " ==> " + size[0] + " x " + size[1]);
+    //if (this.zoom > 100) consoleDebug("Warning, precision too low, pixel size: " + pixel);
     return pixel;
 //    return new Array(pwidth,pheight);
   }
@@ -207,7 +207,7 @@
         this.value = value;
         break;
     }
-    //consoleWrite(this.label + " parsed as " + this.type + " value = " + this.value);
+    //consoleDebug(this.label + " parsed as " + this.type + " value = " + this.value);
   }
 
   Param.prototype.toGLSL = function() {
@@ -270,7 +270,7 @@
   Param.prototype.setFromElement = function(key) {
     //Get param value from associated form field
     if (!this.input) return;
-    //if (this.typeid != 2 && !field) {consoleWrite("No field found for: " + key); return;}
+    //if (this.typeid != 2 && !field) {consoleDebug("No field found for: " + key); return;}
     switch (this.typeid)
     {
       case -1: //Boolean = checkbox
@@ -343,7 +343,7 @@
     for (key in this)
     {
       if (typeof(this[key]) == 'object') {
-        //consoleWrite(key + " = " + this[key].value);
+        //consoleDebug(key + " = " + this[key].value);
         code += this[key].declare(key);
       }
     }
@@ -396,11 +396,11 @@
           //But if it is still the default, it will be updated to the new default
           if (!defaults[key] || other[key].value != defaults[key].value) {
             this[key].value = other[key].value
-            //consoleWrite("Restored value for " + key + " : " + temp + " ==> " + this[key].value);
+            //consoleDebug("Restored value for " + key + " : " + temp + " ==> " + this[key].value);
           }
         } else
           //If we changed a parameter type then value can't and shouldn't be restored
-          consoleWrite("Parameter type changed: " + this[key].type + " != " + other[key].type + 
+          consoleDebug("Parameter type changed: " + this[key].type + " != " + other[key].type + 
                        " -- " + key + ", value discarded: " + other[key].value);
       }
 
@@ -421,7 +421,14 @@
                         "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
     var label = "";
     if (category != "base") {
-      label = formula_list[formulaKey(category, name)].label;
+      var key = formulaKey(category, name);
+      if (!formula_list[key]) {
+        //Formula from fractal has been deleted and attempting to select...
+        alert("Formula does not exist!: " + category + " --> " + name);
+        return;
+      }
+      label = formula_list[key].label;
+      //label = formula_list[formulaKey(category, name)].label;
       var divlabel = document.createElement("span");
       divlabel.className = "divider-label";
       divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[category] + ": " + label));
@@ -573,7 +580,7 @@
     //Formula selected, parse it's parameters
     if (name) this.selected = name;
     else name = this.selected;  //Re-selecting current
-    //consoleWrite("Selecting " + name + " for " + this.category + "_params");
+    //consoleDebug("Selecting " + name + " for " + this.category + "_params");
 
     //Delete any existing dynamic form fields
     var element = document.getElementById(this.category + "_params");
@@ -591,7 +598,7 @@
     //Save a reference to active parameters
     this.currentParams = this.params[name];
 
-    if (this.selected != "none") {
+    if (this.selected != "none" && this.selected != "same") {
       var code = this.getSource();
 
       //Copy the default params if not yet set
@@ -607,7 +614,7 @@
       //Update the fields
       this.params[name].createFields(this.category, name);
     }
-    consoleWrite("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
+    //consoleDebug("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
        //consoleTrace();
     growTextAreas('fractal_inputs');  //Resize expression fields
     growTextAreas('colour_inputs');  //Resize expression fields
@@ -618,9 +625,10 @@
   }
 
   Formula.prototype.getSource = function() {
-    if (this.selected == "none" || this.selected == "same")
-      return "";
+    //if (this.selected == "none" || this.selected == "same")
+    //  return "";
     var key = this.getkey();
+    if (!key) return "";
     if (formula_list[key])
       return formula_list[key].source;
     alert("No entry found: " + key);
@@ -807,7 +815,7 @@
   }
 
   Fractal.prototype.resetDefaults = function() {
-    //consoleWrite("resetDefaults<hr>");
+    //consoleDebug("resetDefaults<hr>");
     //Default aspect & parameters
     this.name = "unnamed"
     this.width = window.innerWidth - (showparams ? 390 : 4);
@@ -858,27 +866,28 @@
     this.editFormula(select);
   }
 
-  Fractal.prototype.importFormula = function(source, filename) {
-    if (formula_list[filename]) {
-      if (formula_list[filename].source == source) return;
+  Fractal.prototype.importFormula = function(source, key) {
+    if (formula_list[key]) {
+      if (formula_list[key].source == source) return;
 
-      if (confirm("Replace formula definition " + filename + " with new definition from this file?")) {
-        formula_list[filename].source = source;
-        consoleWrite("Replacing formula code for: " + filename);
+      if (confirm("Replace formula definition " + key + " with new definition from this file?")) {
+        formula_list[key].source = source;
+        consoleDebug("Replacing formula code for: " + key);
         return;
       }
     }
 
     //New formula
     var type = "fractal";
-    if (filename.indexOf("colour") > -1) type = "colour";
-    if (filename.indexOf("transform") > -1) type = "transform";
-    var f = new FormulaEntry(type, nameToLabel(filenameToName(filename)), source);
+    if (key.indexOf("colour") > -1) type = "colour";
+    if (key.indexOf("transform") > -1) type = "transform";
+    var f = new FormulaEntry(type, nameToLabel(keyToName(key)), source);
   }
 
   Fractal.prototype.deleteFormula = function(select) {
     var sel = $(select + '_formula');
     var key = formulaKey(select, sel.options[sel.selectedIndex].value);
+    if (!key) return;
     var label = formula_list[key].label;
     if (!label || !confirm('Really delete the "' + label + '" formula?')) return;
     delete formula_list[key];
@@ -890,6 +899,7 @@
     this["post_transform"].reselect();
     this["outside_colour"].reselect();
     this["inside_colour"].reselect();
+    if (!hasChanged) consoleDebug("Formula delete detected, will prompt to save session");
     hasChanged = true;  //Flag formula changes
   }
 
@@ -944,7 +954,7 @@
 
   //Load fractal from file
   Fractal.prototype.load = function(source) {
-    //consoleWrite("load<hr>");
+    //consoleDebug("load<hr>");
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
@@ -1018,14 +1028,14 @@
             lines[j] = lines[j].replace("formula." + pair[1], "formula." + pair[0]);
             if (pair[0] == "inside_colour") lines[j] = lines[j].replace(pair[1] + "_in_", ":");
             if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", ":");
-            //if (lines[j] != oldline) consoleWrite(oldline + " ==> " + lines[j]);
+            //if (lines[j] != oldline) consoleDebug(oldline + " ==> " + lines[j]);
           }
 
           //Formula name, create entry if none
           var name = pair[1];
           var category = pair[0];
-          var filename = formulaKey(category, name);
-          if (filename.substr(filename.lastIndexOf("/")+1) != "none") {
+          var key = formulaKey(category, name);
+          if (key) {
             //Read ahead to get formula definition!
             var formula_section = "";
             for (var j=i+1; j < lines.length; j++) {
@@ -1046,15 +1056,17 @@
               //formula load (###)
               if (buffer.length > 0) {
                 //New entry?
-                if (!formula_list[filename]) {
-                  consoleWrite("Imported new formula: " + filename);
+                if (!formula_list[key]) {
+                  consoleDebug("Imported new formula: " + key);
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
+                  if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
                   hasChanged = true;  //Flag formula changes
-                } else if (formula_list[filename].source.trim() != buffer.trim()) {
+                } else if (formula_list[key].source.trim() != buffer.trim()) {
                   //Existing entry, new definition, create as: formula_name#x
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
                   name = f.name; //Get new name
-                  consoleWrite("Imported new formula definition for existing formula: " + filename + ", saved as " + name);
+                  consoleDebug("Imported new formula definition for existing formula: " + key + ", saved as " + name);
+                  if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
                   hasChanged = true;  //Flag formula changes
                 }
               }
@@ -1444,7 +1456,7 @@
 
 
   Fractal.prototype.loadParams = function() {
-    //consoleWrite("loadParams<hr>");
+    //consoleDebug("loadParams<hr>");
     //Parse param fields from formula code
     this["base"].select();
     this["fractal"].select();
@@ -1463,7 +1475,7 @@
   }
 
   //Apply any changes to parameters or formula selections and redraw
-  Fractal.prototype.applyChanges = function() {
+  Fractal.prototype.applyChanges = function(flagChange) {
     //Update palette
     colours.update();
     //Resize canvas if size settings changed
@@ -1495,12 +1507,15 @@
     //Update shader code & redraw
     this.writeShader();
     this.draw();
-    hasChanged = true;  //Flag changes to active fractal instead of automatically saving
+    if (flagChange) {
+      if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
+      hasChanged = true;  //Flag changes to active fractal instead of automatically saving
+    }
   }
 
   //Update form controls with fractal data
   Fractal.prototype.copyToForm = function() {
-    //consoleWrite("copyToForm<hr>");
+    //consoleDebug("copyToForm<hr>");
     document["inputs"].elements["nameInput"].value = this.name;
     document["inputs"].elements["widthInput"].value = this.width;
     document["inputs"].elements["heightInput"].value = this.height;
@@ -1570,7 +1585,7 @@
     //Save the line offset where inserted
     var pos = regex.exec(shader).index;
     var offset = shader.slice(0, pos).split("\n").length;
-    //  consoleWrite("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
+    //  consoleDebug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
 
     //Get sources
     for (s in sourcelist) {
@@ -1589,7 +1604,7 @@
 
       //Save offset for this section from this formula selection
       this.offsets.push(new LineOffset(sourcelist[s], section, offset + source.split("\n").length - 1));
-      //consoleWrite(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
+      //consoleDebug(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
 
       //Concatentate to final code to insert at marker position
       source += code + "\n";
@@ -1626,15 +1641,13 @@
     //Only recompile if data has changed!
     if (sources["generated.shader"] != source)
       this.updateShader(source);
-    else
-      consoleWrite("Build skipped, shader not changed");
   }
 
   Fractal.prototype.updateShader = function(source) {
     //Save for debugging
     sources["generated.shader"] = source;
-    //ajaxWriteFile("generated.shader", source, consoleWrite);
-    consoleWrite("Building fractal shader using:");
+    //ajaxWriteFile("generated.shader", source, consoleDebug);
+    consoleWrite("Rebuilding fractal shader using:");
     consoleWrite("formula: " + this["fractal"].selected);
     if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
     if (this["post_transform"].selected != "none") consoleWrite("Post-transform: " + this["post_transform"].selected);
@@ -1667,17 +1680,19 @@
         var last = null
         for (i in this.offsets) {
           if (last) {
-            //consoleWrite("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
+            //consoleDebug("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
             if (lineno >= this.offsets[last].value && lineno < this.offsets[i].value) {
               var section = this.offsets[last].section;
               //Adjust the line number
               lineno -= this.offsets[last].value + 1;
               lineno += this[this.offsets[last].category].lineoffsets[section];
               var key = formulaKey(this.offsets[last].category, this[this.offsets[last].category].selected);
-              alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + 
-                    sectionnames[this.offsets[last].category] + " formula: " + 
-                    formula_list[key].label + "\n--------------\n" + errors);
-              found = true;
+              if (key) {
+                alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + 
+                      sectionnames[this.offsets[last].category] + " formula: " + 
+                      formula_list[key].label + "\n--------------\n" + errors);
+                found = true;
+              }
               break;
             }
           }

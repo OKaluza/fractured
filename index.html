@@ -15,7 +15,6 @@
 <script type="text/javascript" src="colourPicker.js"></script>
 <script type="text/javascript" src="formulae.js"></script>
 <script type="text/javascript" src="index.js"></script>
-<script type="text/javascript" src="bootstrap.js"></script>
 <script type="text/javascript" src="utils.js"></script>
 <script type="text/javascript" src="ajax.js"></script>
 <script type="text/javascript" src="mouse.js"></script>
@@ -26,6 +25,8 @@
 <script type="text/javascript" src="sylvester.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
 <script type="text/javascript" src="webcl.js"></script>
+
+<script type="text/javascript" src="bootstrap.js"></script>
 <!--
 <script type="text/javascript" src="fractured-compressed.js"></script>
 -->
@@ -61,7 +62,49 @@
             <li><span onclick="resetState();">New</span></li>
             <li><span onclick="exportStateFile();">Export</span></li>
             <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
-            <div id="session_menu"></div>
+            <div id="session_user_menu" style="display: none">
+              <form name="savesession" action="db/session_save.php" method="post" enctype=multipart/form-data>
+                <input type="hidden" id="desc" name="description"/>
+                <input type="hidden" id="sessid" name="session_id"/>
+                <input type="hidden" id="sessdata" name="data" value=""/>
+              </form>
+
+              <li><hr></li>
+              <li><span class="fly" tabindex="1">Saved Sessions</span>
+                <ul id="sessions" class="selectlist">
+                </ul>
+              </li>
+              <li><hr></li>
+              <li><span onclick="uploadState();">Save</span></li>
+              <li><span onclick="deleteSelectedState();">Delete</span></li>
+
+              <li><hr></li>
+              <li><span onclick="logout();">Logout</span></li>
+            </div>
+            <div id="session_login_menu">
+              <li><span class="fly" tabindex="1">Login with</span>
+                <ul class="login">
+                  <li><span onclick="toggle('openid_form'); $('openid').focus();">
+                    <img src="media/logos/logo_openid.png" alt="OpenID">
+                  </span></li>
+                  <li><span onclick="login('https://www.google.com/accounts/o8/id');">
+                    <img src="media/logos/logo_google.png" alt="Google">
+                  </span></li>
+                  <li><span onclick="login('https://me.yahoo.com');">
+                    <img src="media/logos/logo_yahoo.png" alt="Yahoo">
+                  </span></li>
+                  <li><span onclick="login('http://myopenid.com');">
+                    <img src="media/logos/logo_myopenid.png" alt="MyOpenID">
+                  </span></li>
+                  <li><span onclick="login('http://openid.aol.com');">
+                    <img src="media/logos/logo_aol.png" alt="AOL">
+                  </span></li>
+                  <li><span onclick="login('http://openid.stackexchange.com');">
+                    <img src="media/logos/logo_stackexchange.png" alt="Stack Exchange">
+                  </span></li>
+                </ul>
+              </li>
+            </div>
           </ul>
         </li>
         <li><span class="fly" tabindex="1">Fractal</span>
@@ -76,14 +119,15 @@
             </li>
             <li><span class="fly" tabindex="1">Formula Sets</span>
               <ul>
-                <li><span class="fly" tabindex="1">Public</span>
+                <li><span class="fly" tabindex="1">Shared</span>
                   <ul id="formulae-public" class="selectlist">
                   </ul>
                 </li>
-                <li><span class="fly" tabindex="1">Private</span>
+                <li><span class="fly" tabindex="1">Uploaded</span>
                   <ul id="formulae-private" class="selectlist">
                   </ul>
                 </li>
+                <li><span onclick="deleteFormulae();">Delete from server</span></li>
               </ul>
             </li>
             <li><hr></li>
@@ -95,8 +139,10 @@
             </li>
             <li><span class="fly" tabindex="1">Upload / Share</span>
               <ul>
-                <li><span onclick="uploadFractalFile();">Fractal</span></li>
-                <li><span onclick="uploadFormulaFile();">Formula Set</span></li>
+                <li><span onclick="uploadFractalFile(1);">Share Fractal</span></li>
+                <li><span onclick="uploadFormulaFile(1);">Share Formula Set</span></li>
+                <li><span onclick="uploadFractalFile(0);">Upload Fractal</span></li>
+                <li><span onclick="uploadFormulaFile(0);">Upload Formula Set</span></li>
               </ul>
             </li>
             <li><span onclick="exportFractalFile();">Export to file</span></li>
@@ -128,7 +174,7 @@
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
           </ul>
         </li>
-        <li><span onclick="fractal.applyChanges();">Draw</span></li>
+        <li><span onclick="fractal.applyChanges(true);">Draw</span></li>
       </ul>
 
     </nav>
@@ -364,7 +410,6 @@
   <div id="popup" class="popup">
     <div class="popclose" onclick="toggle('popup');">X</div>
     <div id="popupmessage">
-    Saving session...
     </div>
   </div>
 

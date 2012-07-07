@@ -9,6 +9,11 @@
   $desc = $_POST["description"];
   if (!$desc) $desc = '';
 
+  if ($user <= 0) {
+    header("Location: {$goto}");
+    exit();
+  }
+
   //Get submitted comment details
   //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
   if(get_magic_quotes_gpc()) {

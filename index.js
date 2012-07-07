@@ -8,6 +8,7 @@
 //What happens when fractal file loaded with formula not in lists, should insert new formula
 //Define a new formula, then use ?reload - fail
 //Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (palette repeat)
+//Public/private for fractals & formulae
 
 //Globals
 var reloadsources = false;
@@ -24,6 +25,7 @@ var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 var offline = null;
 var recording = false;
+var debug = true;//false; //Always enabled for testing
 var restored = "";
 //Timers
 var rztimeout = undefined;
@@ -44,6 +46,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     mouseActions["right"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
     mouseActions["middle"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
     mouseActions["wheel"] = {'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+  }
+
+  function consoleDebug(str) {
+    if (debug) consoleWrite(str);
   }
 
   function consoleWrite(str) {
@@ -84,7 +90,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function frameDone(response) {
     document.body.style.cursor = "default";
-    consoleWrite("Request sent");
+    consoleDebug("Request sent");
   }
 
   function runScript(filename) {
@@ -101,6 +107,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     var query = decodeURI(window.location.href).split("?")[1]; //whole querystring after ?
     if (query) {
       if (query.indexOf('debug') >= 0) {
+        debug = true;
         $S('debugmenu').display = 'block';
         $S('recordmenu').display = 'block';
       }
@@ -113,16 +120,16 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         reloadsources = true;
       }
     }
-    var hash = decodeURI(window.location.href).split("#")[1]; //whole querystring after #
-    if (hash && !offline) {
-      ajaxReadFile('db/fractal_get.php?id=' + hash, fractalGet);
-    }
 
-    //Session to json:
     if (!offline) {
+      //Load fractal from #ID
+      var hash = decodeURI(window.location.href).split("#")[1]; //whole querystring after #
+      if (hash) ajaxReadFile('db/fractal_get.php?id=' + hash, fractalGet);
+
+      //Session to json:
       ajaxReadFile('session_json.php', sessionGet);
       //Load public formula list from server
-      ajaxReadFile('db/formula_get.php?public=1', loadFormulaeList);
+      ajaxReadFile('db/formula_get.php', loadFormulaeList);
     }
 
     //Load the last program state
@@ -172,7 +179,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   //Login session JSON received, load session_menu.php
   function sessionGet(data) {
-    if (!data || data.indexOf("Error:") == 0) {
+    if (!data || data.indexOf("Error") == 0) {
       //Offline mode?
       consoleWrite('Offline!');
       offline = true;
@@ -180,60 +187,71 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
     offline = false;
 
+    //data is {id, user, [code]}
     var currentLogin = JSON.parse(data);
-    var code = currentLogin.code; //Random
+    var code = currentLogin.code; //Random once-off code
     if (currentLogin.id && currentLogin.id.length == 64) {
       //Have an active login, save and continue
-      //  consoleWrite("Login retrieved from session: " + data);
+      consoleDebug("Login retrieved from session: " + data);
       localStorage['fractured.currentLogin'] = data;
     } else {
       //First attempt to load a stored login session if available
       if (localStorage["fractured.currentLogin"]) {
-        //consoleWrite('Loading stored login : ' + localStorage["fractured.currentLogin"]);
-        currentLogin = JSON.parse(localStorage["fractured.currentLogin"]);
-        if (currentLogin.id && currentLogin.id.length == 64) {
-          //Hash the once-off code with the login id
-          var hash = SHA256(currentLogin.id + code);
-          ajaxPost('db/login_get.php', 'user=' + currentLogin.user + '&hash=' + hash, setLogin);
-          return;
+        consoleDebug('Loading stored login : ' + localStorage["fractured.currentLogin"]);
+        try {
+          currentLogin = JSON.parse(localStorage["fractured.currentLogin"]);
+          if (currentLogin.id && currentLogin.id.length == 64) {
+            //Hash the once-off code with the login id
+            var hash = SHA256(currentLogin.id + code);
+            ajaxPost('db/login_get.php', 'user=' + currentLogin.user + '&hash=' + hash, setLogin);
+            return;
+          }
+        } catch (e) {
+          consoleWrite("Error parsing saved login");
+          delete localStorage["fractured.currentLogin"];
         }
       }
     }
 
     //Load and insert session details
-    ajaxReadFile('session_menu.php', sessionLoaded);
+    sessionLoaded();
   }
 
   function setLogin(data) {
-    //consoleWrite("login_get response: " + data);
+    consoleDebug("login_get response: " + data);
     //Called with result from ajax login query
     if (data && data.length > 0) {
-      //consoleWrite("Saved login, new Login received from server: " + data)
+      consoleDebug("Saved login, new Login received from server: " + data)
       localStorage['fractured.currentLogin'] = data;
     } else {
       //Failed, clear the login key?
       if (!confirm("Saved session not found or server unreachable, try again?"))
-        localStorage['fractured.currentLogin'] = '';
+        delete localStorage["fractured.currentLogin"];
       else
         window.location.reload(false);
     }
     //window.location.reload(false);
-    ajaxReadFile('session_menu.php', sessionLoaded);
+    sessionLoaded();
   }
 
-  //Insert result of login session load into page
-  function sessionLoaded(html) {
+  //Setup session, switch menu to user from login if user is logged in
+  function sessionLoaded() {
     var currentLogin;
     if (localStorage['fractured.currentLogin'])
       currentLogin = JSON.parse(localStorage['fractured.currentLogin']);
 
+    var usermenu = document.getElementById('session_user_menu');
+    var loginmenu = document.getElementById('session_login_menu');
+
     if (currentLogin && currentLogin.id && currentLogin.id.length == 64) {
       //Load sessions list from server
       ajaxReadFile('db/session_get.php', loadSessionList);
+      loginmenu.style.display = 'none';
+      usermenu.style.display = 'block';
+    } else {
+      loginmenu.style.display = 'block';
+      usermenu.style.display = 'none';
     }
-
-    var sesmenu = document.getElementById('session_menu');
-    sesmenu.innerHTML = html;
   }
 
   function restoreFractal() {
@@ -495,18 +513,20 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     form.submit();
   }
 
-  function uploadFractalFile() {
+  function uploadFractalFile(shared) {
     fractal.applyChanges();
     $("thumbnail").value = thumbnail("jpeg", 150).substring(23);
     $("source").value = fractal.toString(true);  //Save formulae when exporting
-    $("public").value = 1; //prompt('');
+    $("public").value = shared;
     var form = document.forms["inputs"];
     form.submit();
   }
 
-  function uploadFormulaFile() {
+  function uploadFormulaFile(shared) {
     if (currentFormulae > 0 && confirm('Save changes to this formula set on server?')) {
       //Update existing
+      alert("TODO: SAVE CHANGES, IF OWN FORMULA LIST (can't change public lists)");
+      return;
     } else {
       var name = prompt("Enter name for formula set");
       if (name == null) return;
@@ -515,7 +535,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
 
     $("formula-data").value = JSON.stringify(formula_list);
-    $("formula-public").value = 1; //prompt('');
+    $("formula-public").value = shared;
     var form = document.forms["formulae"];
     form.submit();
   }
@@ -569,24 +589,32 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       currentFormulae = parseInt(localStorage["fractured.currentFormulae"]);
 
       //Clear & repopulate list
-      var menu = document.getElementById('formulae-public');
-      removeChildren(menu);
+      var menu1 = document.getElementById('formulae-public');
+      var menu2 = document.getElementById('formulae-private');
+      removeChildren(menu1);
+      removeChildren(menu2);
       var list = JSON.parse(data);
       for (var i=0; i<list.length; i++) {
         var label = list[i].date + "\n" + list[i].name;
         var onclick = Function("loadFormulaSet(" + list[i].id + ")");
-        addMenuItem(menu, label, onclick, currentFormulae == list[i].id ? "selected_item" : null);
+        if (list[i]["public"] == "1")
+          addMenuItem(menu1, label, onclick, currentFormulae == list[i].id ? "selected_item" : null);
+        else
+          addMenuItem(menu2, label, onclick, currentFormulae == list[i].id ? "selected_item" : null);
       }
-      checkMenuHasItems(menu);
+      checkMenuHasItems(menu1);
+      checkMenuHasItems(menu2);
     } catch(e) {
-      alert('Error! ' + e);
+      alert('LoadFormulaeList: Error! ' + e);
     }
   }
 
   function loadFormulaSet(id) {
     if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
-    currentSession = id;
+    localStorage["fractured.currentFormulae"] = currentFormulae = id;
     ajaxReadFile('db/formula_get.php?id=' + id, importFormulae);
+    //Repopulate menu (so selected set)
+    ajaxReadFile('db/formula_get.php', loadFormulaeList);
   }
 
   function importFormulae(data) {
@@ -597,9 +625,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       formula_list = parsed; //localStorage["fractured.formula"]);
       //Create formula entries in drop-downs (and any saved load sources)
       updateFormulaLists();
-      //localStorage["fractured.currentFormulae"] = currentFormulae;
     } catch(e) {
-      alert('Error! ' + e);
+      alert('ImportFormulae: Error! ' + e);
     }
   }
 
@@ -624,9 +651,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         //Have a saved session #, get the data
         ajaxReadFile('setvariable.php?name=session_id?value=' + currentSession);
       }
-
     } catch(e) {
-      alert('Error! ' + e);
+      alert('LoadSessionList: Error! ' + e);
     }
   }
 
@@ -635,6 +661,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     if (!confirm('Loading new session. This will overwrite everything!')) return;
     currentSession = id;
     ajaxReadFile('db/session_get.php?id=' + id, importState);
+    popup("Please wait while session downloaded from server...");
   }
 
   function deleteSelectedState()
@@ -670,9 +697,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function importState(source) {
-    var parsed = JSON.parse(source);
-    if (!parsed) return;
     try {
+      var parsed = JSON.parse(source);
+      if (!parsed) return;
       localStorage.clear(); //clear the entire database
       for (key in parsed)
         localStorage[key] = parsed[key];
@@ -682,7 +709,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["fractured.currentFractal"] = currentFractal;
       window.location.reload(false);
     } catch(e) {
-      alert('Error! ' + e);
+      alert('ImportState: Error! ' + e);
     }
   }
 
@@ -830,6 +857,16 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       el.style.display = 'block';
   }
 
+  function popup(text) {
+    var el = $('popup');
+    if (el.style.display == 'block')
+      el.style.display = 'none';
+    else {
+      el.style.display = 'block';
+      $('popupmessage').innerHTML = text;
+    }
+  }
+
   function login(id) {
     if (id) {
       var id_field = document.getElementById("openid");
@@ -970,6 +1007,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     fractal.draw();
     //Save param changes
     //saveActive();
+    if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
     hasChanged = true;  //Flag changes to active fractal instead of automatically saving
   }
 

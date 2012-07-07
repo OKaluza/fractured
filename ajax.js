@@ -7,7 +7,7 @@ function ajaxReadFile(filename, callback, nocache)
   {
     if(http.readyState == 4) {
       if(http.status == 200) {
-        //consoleWrite("RECEIVED: " + filename);
+        consoleDebug("RECEIVED: " + filename);
         if (callback)
           callback(http.responseText, filename);
       } else {
@@ -39,7 +39,7 @@ function ajaxPost(url, params, callback)
   { 
     if(http.readyState == 4)
       if(http.status == 200) {
-        //consoleWrite("POST: " + url + "&" + params);
+        consoleDebug("POST: " + url + "&" + params);
         if (callback)
           callback(http.responseText);
       } else {
