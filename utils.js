@@ -43,6 +43,26 @@ function isEmpty(o) {
   return true;
 }
 
+if (!String.prototype.hashCode) {
+  String.prototype.hashCode = function(){
+    var hash = 0;
+    if (this.length == 0) return hash;
+    for (i = 0; i < this.length; i++) {
+      char = this.charCodeAt(i);
+      hash = ((hash<<5)-hash)+char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
+  }
+}
+
+if (!String.prototype.strip) {
+  String.prototype.strip = function () {
+    return this.replace(/(\r\n|\n|\r)/gm, "");
+  };
+}
+
+
 if (!String.prototype.toTitleCase) {
   String.prototype.toTitleCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});

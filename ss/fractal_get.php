@@ -1,6 +1,5 @@
 <?php
-  session_start();
-
+  include("session.php");
   include("connect.php");
 
   $locator =$_GET['id'];

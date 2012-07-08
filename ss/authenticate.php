@@ -1,5 +1,5 @@
 <?php
-session_start();
+include("session.php");
 require 'openid.php';
 
 function error_msg($msg) {
@@ -35,11 +35,13 @@ try
     {
       $attribs = $openid->getAttributes();
       //print_r($attribs);
-      $_SESSION['openid'] = $openid->identity;
+      $_SESSION['identity'] = $openid->identity;
       $_SESSION['email'] = $attribs['contact/email'];
       $_SESSION['name'] = $attribs['namePerson/friendly'];
-      session_regenerate_id();
-      header('Location: db/user.php');
+      //This was to avoid session fixation but causes chromium to lose session,
+      //fixation should not be a problem here anyway (never accepts session id from user)
+      //session_regenerate_id();
+      header('Location: user.php');
     }
     else
       error_msg("OpenID: User has not logged in!");

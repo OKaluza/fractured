@@ -1,5 +1,5 @@
 <?php
-  session_start();
+  include("session.php");
   include("connect.php");
 
   $user = $_SESSION["user_id"];
@@ -14,7 +14,6 @@
     exit();
   }
 
-  //Get submitted comment details
   //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
   if(get_magic_quotes_gpc()) {
     $desc = mysql_real_escape_string(stripslashes($desc));

@@ -1,6 +1,5 @@
 <?php
-  session_start();
-
+  include("session.php");
   include("connect.php");
 
   //A user has used an OpenID to log in,
@@ -8,7 +7,7 @@
   //then save details to session and create a new login record
   //finally redirect logged in user back to home page
 
-  $openid = $_SESSION["openid"];
+  $openid = $_SESSION["identity"];
   $email = $_SESSION["email"];
   $name = $_SESSION["name"];
   if (!isset($name))
@@ -16,7 +15,9 @@
 
   if (!isset($openid))
   { //Should not be possible if session set correctly
-    echo "<br>Error, no openid specified!<br>";
+    echo "<br>Error, no openid specified!<br>" . session_id();
+    foreach ($_SESSION as $key=>$val)
+      echo $key." ".$val;
     exit();
   }
 
@@ -46,9 +47,6 @@
     else
       $_SESSION['error'] = "Database error";
   }
-
-  //Create a new login entry
-  include("login_new.php");
 
   //Close to free resources
   mysql_close();

@@ -63,7 +63,7 @@ function ajaxPost(url, params, callback)
 function ajaxWriteFile(filename, data, callback) {
   var http = new XMLHttpRequest();
 
-  var url = "writefile.php";
+  var url = "ss/writefile.php";
   var encoded = encodeURIComponent(data);
   var params = "filename=" + filename + "&data=" + encoded;
   http.open("POST", url, true);
