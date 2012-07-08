@@ -11,7 +11,6 @@
 <link rel="stylesheet" type="text/css" href="reset.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
-<script type="text/javascript" src="sha256.js"></script>
 <script type="text/javascript" src="colourPicker.js"></script>
 <script type="text/javascript" src="formulae.js"></script>
 <script type="text/javascript" src="index.js"></script>
@@ -63,7 +62,7 @@
             <li><span onclick="exportStateFile();">Export</span></li>
             <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
             <div id="session_user_menu" style="display: none">
-              <form name="savesession" action="db/session_save.php" method="post" enctype=multipart/form-data>
+              <form name="savesession" action="ss/session_save.php" method="post" enctype=multipart/form-data>
                 <input type="hidden" id="desc" name="description"/>
                 <input type="hidden" id="sessid" name="session_id"/>
                 <input type="hidden" id="sessdata" name="data" value=""/>
@@ -112,6 +111,7 @@
             <li><span onclick="newFractal();">New</span></li>
             <li><span onclick="saveFractal();">Save</span></li>
             <li><span onclick="deleteFractal();">Delete</span></li>
+            <li><span onclick="uploadFractalFile();">Share</span></li>
             <li><hr></li>
             <li><span class="fly" tabindex="1">Saved Fractals</span>
               <ul id="fractals" class="selectlist">
@@ -119,7 +119,7 @@
             </li>
             <li><span class="fly" tabindex="1">Formula Sets</span>
               <ul>
-                <li><span class="fly" tabindex="1">Shared</span>
+                <li><span class="fly" tabindex="1">Public</span>
                   <ul id="formulae-public" class="selectlist">
                   </ul>
                 </li>
@@ -128,6 +128,8 @@
                   </ul>
                 </li>
                 <li><span onclick="deleteFormulae();">Delete from server</span></li>
+                <li><span onclick="uploadFormulaFile(1);">Publish Formula Set</span></li>
+                <li><span onclick="uploadFormulaFile(0);">Upload Formula Set</span></li>
               </ul>
             </li>
             <li><hr></li>
@@ -135,14 +137,6 @@
               <ul>
                 <li><span onclick="saveImageJPEG();">Save JPEG</span></li>
                 <li><span onclick="saveImagePNG();">Save PNG</span></li>
-              </ul>
-            </li>
-            <li><span class="fly" tabindex="1">Upload / Share</span>
-              <ul>
-                <li><span onclick="uploadFractalFile(1);">Share Fractal</span></li>
-                <li><span onclick="uploadFormulaFile(1);">Share Formula Set</span></li>
-                <li><span onclick="uploadFractalFile(0);">Upload Fractal</span></li>
-                <li><span onclick="uploadFormulaFile(0);">Upload Formula Set</span></li>
               </ul>
             </li>
             <li><span onclick="exportFractalFile();">Export to file</span></li>
@@ -204,7 +198,7 @@
 
       <div class="panel" id="panel1">
 
-        <form id="param_inputs" name="inputs" action="db/fractal_save.php" enctype=multipart/form-data" method="post" class="scroll" onmousedown="handleFormMouseDown(event)">
+        <form id="param_inputs" name="inputs" action="ss/fractal_save.php" enctype=multipart/form-data" method="post" class="scroll" onmousedown="handleFormMouseDown(event)">
           <!-- this is for uploading fractals to server -->
           <input type="hidden" id="source" name="source" value=""/>
           <input type="hidden" id="public" name="public"/>
@@ -385,11 +379,11 @@
     <canvas id="gradient" width="2048" height="1"></canvas>
     <canvas id="thumb" width="40" height=40"></canvas>
 
-    <form name="exporter" action="savefile.php" method="post">
+    <form name="exporter" action="ss/savefile.php" method="post">
       <input type="hidden" id="export-filename" name="filename"/>
       <input type="hidden" id="export-content" name="content"/>
     </form>
-    <form name="formulae" action="db/formula_save.php" method="post" enctype=multipart/form-data>
+    <form name="formulae" action="ss/formula_save.php" method="post" enctype=multipart/form-data>
       <input type="hidden" id="formula-name" name="name"/>
       <input type="hidden" id="formula-data" name="data" value=""/>
       <input type="hidden" id="formula-public" name="public"/>
@@ -401,7 +395,7 @@
   <div id="openid_form" class="popup" style="display: none">
     <div class="popclose" onclick="toggle('openid_form');">X</div>
     <img src="media/logos/logo_openid.png" alt="OpenID">
-    <form action="authenticate.php" method="post" name="login_form">
+    <form action="ss/authenticate.php" method="post" name="login_form">
       <input type="text" value="" name="openid_url" id="openid" style="width: 194px;"/>
       <input type="submit" class="right" value="Login" onclick="toggle('openid_form');">
     </form>

@@ -868,7 +868,7 @@
 
   Fractal.prototype.importFormula = function(source, key) {
     if (formula_list[key]) {
-      if (formula_list[key].source == source) return;
+      if (formula_list[key].source.strip() == source.strip()) return;
 
       if (confirm("Replace formula definition " + key + " with new definition from this file?")) {
         formula_list[key].source = source;
@@ -899,8 +899,8 @@
     this["post_transform"].reselect();
     this["outside_colour"].reselect();
     this["inside_colour"].reselect();
-    if (!hasChanged) consoleDebug("Formula delete detected, will prompt to save session");
-    hasChanged = true;  //Flag formula changes
+    //*//if (!hasChanged) consoleDebug("Formula delete detected, will prompt to save session");
+    //*//hasChanged = true;  //Flag formula changes
   }
 
   //Save fractal (write param/source file)
@@ -1059,15 +1059,15 @@
                 if (!formula_list[key]) {
                   consoleDebug("Imported new formula: " + key);
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
-                  if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
-                  hasChanged = true;  //Flag formula changes
-                } else if (formula_list[key].source.trim() != buffer.trim()) {
-                  //Existing entry, new definition, create as: formula_name#x
+                  //*//if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
+                  //*//hasChanged = true;  //Flag formula changes
+                } else if (formula_list[key].source.strip() != buffer.strip()) {
+                  //Existing entry, new definition, create as: formula_name(#)
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
                   name = f.name; //Get new name
                   consoleDebug("Imported new formula definition for existing formula: " + key + ", saved as " + name);
-                  if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
-                  hasChanged = true;  //Flag formula changes
+                  //*//if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
+                  //*//hasChanged = true;  //Flag formula changes
                 }
               }
             }
@@ -1507,10 +1507,10 @@
     //Update shader code & redraw
     this.writeShader();
     this.draw();
-    if (flagChange) {
-      if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
-      hasChanged = true;  //Flag changes to active fractal instead of automatically saving
-    }
+    //*//if (flagChange) {
+    //*//  if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
+    //*//  hasChanged = true;  //Flag changes to active fractal instead of automatically saving
+    //*//}
   }
 
   //Update form controls with fractal data

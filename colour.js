@@ -92,6 +92,9 @@
 
   //Palette draw to canvas
   Palette.prototype.draw = function(canvas, ui) {
+    // Figure out if a webkit browser is being used
+	  var webkit = /webkit/.test(navigator.userAgent.toLowerCase());
+
     if (this.colours.length == 0)
     {
       this.colours.push(new ColourPos("#ffffff", -1)); //Background
@@ -99,31 +102,48 @@
       this.colours.push(new ColourPos("#ffffff", 1));
     }
 
-    if (canvas.getContext){  
+    //Colours might be out of order (especially during editing)
+    //so save a (shallow) copy and sort it
+    list = this.colours.slice(0);
+    list.sort(function(a,b){return a.position - b.position});
+
+    if (canvas.getContext) {
+      //Draw the gradient(s)
       var width = canvas.width;
       var height = canvas.height;
       var context = canvas.getContext('2d');  
       context.clearRect(0, 0, width, height);
-      var slider = document.getElementById("slider");
-      var my_gradient = context.createLinearGradient(0, 0, width, 0);
-      for (var i = 1; i < this.colours.length; i++) {
-        if (this.colours[i].position > 1.0) alert(i + "POSITION ERROR! " + this.colours[i].position);
-        //consoleWrite(i + ": " + this.colours[i].position + ", " + this.colours[i].colour.html());
-        my_gradient.addColorStop(this.colours[i].position, this.colours[i].colour.html());
+
+      if (webkit) {
+        //Split up into sections or webkit draws a fucking awful gradient with banding
+        var x0 = 0;
+        for (var i = 2; i < list.length; i++) {
+          var x1 = Math.round(width * list[i].position);
+          context.fillStyle = context.createLinearGradient(x0, 0, x1, 0);
+          context.fillStyle.addColorStop(0.0, list[i-1].colour.html());
+          context.fillStyle.addColorStop(1.0, list[i].colour.html());
+          context.fillRect(x0, 0, x1-x0, height);
+          x0 = x1;
+        }
+      } else {
+        //Single gradient
+        context.fillStyle = context.createLinearGradient(0, 0, width, 0);
+        for (var i = 1; i < list.length; i++)
+          context.fillStyle.addColorStop(list[i].position, list[i].colour.html());
+        context.fillRect(0, 0, width, height);
       }
 
-      context.fillStyle = my_gradient;
-      context.fillRect(0, 0, width, height);
-
+      //Background colour
       var bg = document.getElementById('backgroundCUR');
-      bg.style.background = this.colours[0].colour.html();
+      bg.style.background = list[0].colour.html();
 
+      //User interface controls
       if (!ui) return;  //Skip drawing slider interface
-
-      for (var i = 2; i < this.colours.length-1; i++)
+      var slider = document.getElementById("slider");
+      for (var i = 2; i < list.length-1; i++)
       {
-        var x = Math.floor(width * this.colours[i].position) + 0.5;
-        var HSV = this.colours[i].colour.HSV();
+        var x = Math.floor(width * list[i].position) + 0.5;
+        var HSV = list[i].colour.HSV();
         if (HSV.V > 50)
           context.strokeStyle = "black";
         else
@@ -161,26 +181,31 @@
    */
   function Colour(colour) {
     //Construct... stores colour as r,g,b,a values
-    //Can pass in html colour string, HSV object or integer rgba
+    //Can pass in html colour string, HSV object, Colour object or integer rgba
     if (typeof colour == "undefined")
       this.set("#ffffff")
     else if (typeof(colour) == 'string')
       this.set(colour);
-    else if (typeof(colour) == 'object')
-    {
-      //Determine passed type, RGBA or HSV
+    else if (typeof(colour) == 'object') {
+      //Determine passed type, Colour, RGBA or HSV
       if (typeof colour.H != "undefined")
+        //HSV
         this.setHSV(colour);
-      else
-      {
+      else if (typeof colour.red != "undefined") {
+        //Another Colour object
+        this.red = colour.red;
+        this.green = colour.green;
+        this.blue = colour.blue;
+        this.alpha = colour.alpha;
+      } else {
+        //RGBA
         this.red = colour.R;
         this.green = colour.G;
         this.blue = colour.B;
         this.alpha = typeof colour.A == "undefined" ? 1.0 : colour.A;
       }
-    }
-    else
-    { //Convert from integer AABBGGRR
+    } else {
+      //Convert from integer AABBGGRR
       this.fromInt(colour);
     }
   }
@@ -331,5 +356,13 @@
     var hsva = this.HSV();
     hsva.A = this.alpha;
     return hsva;
+  }
+
+  Colour.prototype.interpolate = function(other, lambda) {
+    //Interpolate between this colour and another by lambda
+    this.red = Math.round(this.red + lambda * (other.red - this.red));
+    this.green = Math.round(this.green + lambda * (other.green - this.green));
+    this.blue = Math.round(this.blue + lambda * (other.blue - this.blue));
+    this.alpha = Math.round(this.alpha + lambda * (other.alpha - this.alpha));
   }
 

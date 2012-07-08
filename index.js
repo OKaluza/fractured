@@ -18,7 +18,7 @@ var defaultMouse;
 var colours;
 var autoSize = true;
 var showparams = true;
-var hasChanged = false;
+//*//var hasChanged = false;
 var currentSession = 0; //Selected session
 var currentFormulae = 0; //Selected formula set
 var currentFractal = -1; //Selected fractal id
@@ -124,12 +124,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     if (!offline) {
       //Load fractal from #ID
       var hash = decodeURI(window.location.href).split("#")[1]; //whole querystring after #
-      if (hash) ajaxReadFile('db/fractal_get.php?id=' + hash, fractalGet);
+      if (hash) ajaxReadFile('ss/fractal_get.php?id=' + hash, fractalGet);
 
-      //Session to json:
-      ajaxReadFile('session_json.php', sessionGet);
+      //Session restore:
+      ajaxReadFile('ss/session_get.php', sessionGet);
       //Load public formula list from server
-      ajaxReadFile('db/formula_get.php', loadFormulaeList);
+      ajaxReadFile('ss/formula_get.php', loadFormulaeList);
     }
 
     //Load the last program state
@@ -177,7 +177,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     //If not yet ready, defer load until later
   }
 
-  //Login session JSON received, load session_menu.php
+  //session JSON received
   function sessionGet(data) {
     if (!data || data.indexOf("Error") == 0) {
       //Offline mode?
@@ -187,70 +187,45 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
     offline = false;
 
-    //data is {id, user, [code]}
-    var currentLogin = JSON.parse(data);
-    var code = currentLogin.code; //Random once-off code
-    if (currentLogin.id && currentLogin.id.length == 64) {
-      //Have an active login, save and continue
-      consoleDebug("Login retrieved from session: " + data);
-      localStorage['fractured.currentLogin'] = data;
-    } else {
-      //First attempt to load a stored login session if available
-      if (localStorage["fractured.currentLogin"]) {
-        consoleDebug('Loading stored login : ' + localStorage["fractured.currentLogin"]);
-        try {
-          currentLogin = JSON.parse(localStorage["fractured.currentLogin"]);
-          if (currentLogin.id && currentLogin.id.length == 64) {
-            //Hash the once-off code with the login id
-            var hash = SHA256(currentLogin.id + code);
-            ajaxPost('db/login_get.php', 'user=' + currentLogin.user + '&hash=' + hash, setLogin);
-            return;
-          }
-        } catch (e) {
-          consoleWrite("Error parsing saved login");
-          delete localStorage["fractured.currentLogin"];
-        }
-      }
-    }
-
-    //Load and insert session details
-    sessionLoaded();
-  }
-
-  function setLogin(data) {
-    consoleDebug("login_get response: " + data);
-    //Called with result from ajax login query
-    if (data && data.length > 0) {
-      consoleDebug("Saved login, new Login received from server: " + data)
-      localStorage['fractured.currentLogin'] = data;
-    } else {
-      //Failed, clear the login key?
-      if (!confirm("Saved session not found or server unreachable, try again?"))
-        delete localStorage["fractured.currentLogin"];
-      else
-        window.location.reload(false);
-    }
-    //window.location.reload(false);
-    sessionLoaded();
-  }
-
-  //Setup session, switch menu to user from login if user is logged in
-  function sessionLoaded() {
-    var currentLogin;
-    if (localStorage['fractured.currentLogin'])
-      currentLogin = JSON.parse(localStorage['fractured.currentLogin']);
+    //First attempt to load a stored login session if available
+    consoleDebug("Session response: " + data + "<hr>");
 
     var usermenu = document.getElementById('session_user_menu');
     var loginmenu = document.getElementById('session_login_menu');
 
-    if (currentLogin && currentLogin.id && currentLogin.id.length == 64) {
-      //Load sessions list from server
-      ajaxReadFile('db/session_get.php', loadSessionList);
-      loginmenu.style.display = 'none';
-      usermenu.style.display = 'block';
-    } else {
+    //Parse session data
+    var session = JSON.parse(data);
+    if (session.empty) {
       loginmenu.style.display = 'block';
       usermenu.style.display = 'none';
+    } else {
+      //Have an active session user
+      consoleDebug("Active session user...");
+      loginmenu.style.display = 'none';
+      usermenu.style.display = 'block';
+      //Load list of saved states/sessions
+      try {
+        //Get selected id 
+        currentSession = parseInt(localStorage["fractured.currentSession"]);
+
+        //Clear & repopulate list
+        var menu = document.getElementById('sessions');
+        removeChildren(menu);
+        var list = JSON.parse(data);
+        for (var i=0; i<list.length; i++) {
+          var label = list[i].date + "\n" + list[i].description;
+          var onclick = Function("loadSession(" + list[i].id + ")");
+          addMenuItem(menu, label, onclick, currentSession == list[i].id ? "selected_item" : null, true);
+        }
+        checkMenuHasItems(menu);
+
+        if (currentSession) {
+          //Have a saved session #, get the data
+          ajaxReadFile('ss/setvariable.php?name=session_id?value=' + currentSession);
+        }
+      } catch(e) {
+        alert('LoadSessionList: Error! ' + e);
+      }
     }
   }
 
@@ -481,16 +456,15 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function resetState(noconfirm) {
     if (noconfirm || confirm('This will clear everything!')) {
-      hasChanged = false;
-      var login = localStorage["fractured.currentLogin"]; //Save login
+      //*//hasChanged = false;
       localStorage.clear(); //be careful as this will clear the entire database
-      if (login) localStorage["fractured.currentLogin"] = login; //Restore login
       if (!offline)
-        ajaxReadFile('setvariable.php?name=session_id?value=0', reloadWindow);
+        ajaxReadFile('ss/setvariable.php?name=session_id?value=0', reloadWindow);
       currentSession = 0;  //No sessions to select
       currentFormulae = 0;  //No sessions to select
       currentFractal = -1;  //No fractals to select
       //window.location.reload(false);
+      window.onbeforeunload = null;
     }
   }
 
@@ -513,11 +487,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     form.submit();
   }
 
-  function uploadFractalFile(shared) {
+  function uploadFractalFile() {
     fractal.applyChanges();
     $("thumbnail").value = thumbnail("jpeg", 150).substring(23);
     $("source").value = fractal.toString(true);  //Save formulae when exporting
-    $("public").value = shared;
+    $("public").value = confirm("Publish on website after uploading?");
     var form = document.forms["inputs"];
     form.submit();
   }
@@ -612,9 +586,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function loadFormulaSet(id) {
     if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
     localStorage["fractured.currentFormulae"] = currentFormulae = id;
-    ajaxReadFile('db/formula_get.php?id=' + id, importFormulae);
+    ajaxReadFile('ss/formula_get.php?id=' + id, importFormulae);
     //Repopulate menu (so selected set)
-    ajaxReadFile('db/formula_get.php', loadFormulaeList);
+    ajaxReadFile('ss/formula_get.php', loadFormulaeList);
   }
 
   function importFormulae(data) {
@@ -630,44 +604,18 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
   }
 
-  function loadSessionList(data) {
-    //Load list of saved states/sessions from server
-    try {
-      //Get selected id 
-      currentSession = parseInt(localStorage["fractured.currentSession"]);
-
-      //Clear & repopulate list
-      var menu = document.getElementById('sessions');
-      removeChildren(menu);
-      var list = JSON.parse(data);
-      for (var i=0; i<list.length; i++) {
-        var label = list[i].date + "\n" + list[i].description;
-        var onclick = Function("loadSession(" + list[i].id + ")");
-        addMenuItem(menu, label, onclick, currentSession == list[i].id ? "selected_item" : null, true);
-      }
-      checkMenuHasItems(menu);
-
-      if (currentSession) {
-        //Have a saved session #, get the data
-        ajaxReadFile('setvariable.php?name=session_id?value=' + currentSession);
-      }
-    } catch(e) {
-      alert('LoadSessionList: Error! ' + e);
-    }
-  }
-
   function loadSession(id)
   {
     if (!confirm('Loading new session. This will overwrite everything!')) return;
     currentSession = id;
-    ajaxReadFile('db/session_get.php?id=' + id, importState);
+    ajaxReadFile('ss/session_get.php?id=' + id, importState);
     popup("Please wait while session downloaded from server...");
   }
 
   function deleteSelectedState()
   {
     if (currentSession && confirm('Delete this session from the server?')) {
-      ajaxReadFile('db/session_delete.php?id=' + currentSession, reloadWindow);
+      ajaxReadFile('ss/session_delete.php?id=' + currentSession, reloadWindow);
       currentSession = localStorage["fractured.currentSession"] = 0;
     }
   }
@@ -680,16 +628,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function getState() {
     //Get current state in local storage minus session/login details
-    var login = localStorage["fractured.currentLogin"];
     var session = localStorage["fractured.currentSession"];
     var formulae = localStorage["fractured.currentFormulae"];
     var cf = localStorage["fractured.currentFractal"];
     delete localStorage["fractured.currentSession"];
-    delete localStorage["fractured.currentLogin"];
     delete localStorage["fractured.currentFormulae"];
     delete localStorage["fractured.currentFractal"];
     var source = JSON.stringify(localStorage);
-    localStorage["fractured.currentLogin"] = login;
     localStorage["fractured.currentSession"] = session;
     localStorage["fractured.currentFormulae"] = formulae;
     localStorage["fractured.currentFractal"] = cf;
@@ -877,13 +822,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function logout() {
-    delete localStorage['fractured.currentLogin'];
     delete localStorage['fractured.currentSession']
     delete localStorage['fractured.currentFormulae']
     delete localStorage['fractured.currentFractal']
     if (confirm("Clear current session after logout?"))
       resetState(true);
-    ajaxReadFile('db/logout.php', reloadWindow);
+    ajaxReadFile('ss/logout.php', reloadWindow);
   }
 
 /////////////////////////////////////////////////////////////////////////
@@ -914,12 +858,17 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function beforeUnload(event) {
+    //This event works in webkit but doesn't allow interaction, always save for now
     //if (hasChanged) return "There are un-saved changes"
+    //if (hasChanged && confirm("Save session changes?"))
+      saveState();
+    return null; //"beforeUnload";
   }
 
   function pageUnload(event) {
-    if (hasChanged && confirm("Save session changes?"))
-      saveState();
+    //This doesn't work in webkit due to page cache
+    //if (hasChanged && confirm("Save session changes?"))
+    //  saveState();
   }
 
 //Fractal canvas mouse event handling
@@ -1007,8 +956,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     fractal.draw();
     //Save param changes
     //saveActive();
-    if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
-    hasChanged = true;  //Flag changes to active fractal instead of automatically saving
+    //*//if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
+    //*//hasChanged = true;  //Flag changes to active fractal instead of automatically saving
   }
 
   function canvasMouseDown(event, mouse) {
@@ -1202,6 +1151,7 @@ function abortColour() {colours.cancel();}
  * @constructor
  */
 function ColourEditor(gl) {
+  this.changed = true;
   this.inserting = false;
   this.editing = -1;
   this.element = null;
@@ -1211,7 +1161,7 @@ function ColourEditor(gl) {
 
   //Create default palette object
   this.palette = new Palette();
-  this.palette.draw(this.editcanvas, true);
+    ////this.palette.draw(this.editcanvas, true);
   //Event handling for palette
   this.editcanvas.mouse = new Mouse(this.editcanvas, this);
   this.editcanvas.mouse.ignoreScroll = true;
@@ -1224,10 +1174,13 @@ ColourEditor.prototype.read = function(source) {
   //Read a new palette from source data
   this.palette = new Palette(source);
   this.reset();
-  this.palette.draw(this.editcanvas, true);
+  this.changed = true;
+  ////this.palette.draw(this.editcanvas, true);
 }
 
 ColourEditor.prototype.update = function() {
+  if (!this.changed) return;
+  this.changed = false;
   this.palette.draw(this.editcanvas, true);
   //Update gradient texture
   this.palette.draw(this.gradientcanvas, false);  //WebGL texture size (power of 2)
@@ -1257,6 +1210,7 @@ ColourEditor.prototype.insert = function(position, x, y) {
   this.palette.draw(this.editcanvas, true);
   //Edit new colour
   this.picker.pick(col, x, y);
+  this.changed = true;
 }
 
 ColourEditor.prototype.edit = function(val, x, y) {
@@ -1270,6 +1224,7 @@ ColourEditor.prototype.edit = function(val, x, y) {
     var col = new Colour(val.style.backgroundColor)
     this.picker.pick(col, val.offsetLeft, val.offsetTop);
   }
+  this.changed = true;
 }
 
 ColourEditor.prototype.save = function(val) {
@@ -1285,6 +1240,7 @@ ColourEditor.prototype.save = function(val) {
     this.element.style.backgroundColor = col.html();
   }
   this.reset();
+  this.changed = true;
 }
 
 ColourEditor.prototype.cancel = function() {
@@ -1295,6 +1251,7 @@ ColourEditor.prototype.cancel = function() {
     this.palette.draw(this.editcanvas, true);
   }
   this.reset();
+  this.changed = true;
 }
 
 ColourEditor.prototype.reset = function() {
@@ -1306,13 +1263,14 @@ ColourEditor.prototype.reset = function() {
 
 //Mouse event handling
 ColourEditor.prototype.click = function(event, mouse) {
-    if (event.ctrlKey) {
-      //Flip
-      for (var i = 1; i < this.palette.colours.length; i++)
-        this.palette.colours[i].position = 1.0 - this.palette.colours[i].position;
-      this.palette.draw(this.editcanvas, true);
-      return false;
-    }
+  this.changed = true;
+  if (event.ctrlKey) {
+    //Flip
+    for (var i = 1; i < this.palette.colours.length; i++)
+      this.palette.colours[i].position = 1.0 - this.palette.colours[i].position;
+    this.palette.draw(this.editcanvas, true);
+    return false;
+  }
 
   //Use non-scrolling position
   mouse.x = mouse.clientx;
@@ -1382,6 +1340,7 @@ ColourEditor.prototype.move = function(event, mouse) {
 
 ColourEditor.prototype.wheel = function(event, mouse) {
   //If shift held, redraw after change
+  this.changed = true;
   this.cycle(0.01 * event.spin, event.shiftKey);
 }
 

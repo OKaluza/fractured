@@ -1,5 +1,5 @@
 <?php
-  session_start();
+  include("session.php");
   include("connect.php");
 
   /* From: http://blog.kevburnsjr.com/php-unique-hash */
