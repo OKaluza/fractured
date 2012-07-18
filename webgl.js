@@ -49,7 +49,8 @@
 
     //Draw and blend multiple passes for anti-aliasing
     var blendinc = 0;
-    var data = new Int8Array(this.gl.viewportWidth * this.gl.viewportHeight * 4);
+    //var data = new Int8Array(this.gl.viewportWidth * this.gl.viewportHeight * 4);
+    consoleDebug('Drawing: ' + antialias);
     for (var j=0; j<antialias; j++) {
       for (var k=0; k<antialias; k++) {
           var blendval = 1.0 - blendinc;

@@ -63,12 +63,6 @@
             <li><span onclick="exportStateFile();">Export</span></li>
             <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
             <div id="session_user_menu" style="display: none">
-              <form name="savesession" action="ss/session_save.php" method="post" enctype=multipart/form-data>
-                <input type="hidden" id="desc" name="description"/>
-                <input type="hidden" id="sessid" name="session_id"/>
-                <input type="hidden" id="sessdata" name="data" value=""/>
-              </form>
-
               <li><hr></li>
               <li><span class="fly" tabindex="1">Saved Sessions</span>
                 <ul id="sessions" class="selectlist">
