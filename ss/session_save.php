@@ -50,9 +50,12 @@
 
   mysql_close();
   //header("Location: {$goto}");
+  /*
   echo "<script language='javascript'>";
   echo "localStorage['fractured.currentSession'] = " . $sessid . ";";
   echo "window.location = '/'";
   echo "</script>";
+  */
+  echo $sessid;
   exit();
 ?>

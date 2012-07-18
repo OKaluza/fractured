@@ -53,7 +53,7 @@
   Palette.prototype.newColour = function(position, colour) {
     var col = new ColourPos(colour, position);
     this.colours.push(col);
-    this.colours.sort(function(a,b){return a.position - b.position})
+    this.colours.sort(function(a,b){return a.position - b.position});
     for (var i = 2; i < this.colours.length-1; i++)
       if (this.colours[i].position == position) return i;
     return -1;
