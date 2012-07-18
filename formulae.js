@@ -135,7 +135,12 @@ function nameToLabel(name) {
 function filenameToName(filename) {
   var start = filename.lastIndexOf('/')+1;
   var end = filename.indexOf('.');
+   var eend = filename.lastIndexOf('.');
   if (start < 0) start = 0;
   if (end < 0) end = filename.length;
-  return filename.substr(start, end);
+  //Get extension
+  var ext = "";
+  if (eend > end)
+    ext = filename.substr(end+1, eend-end-1);
+  return [filename.substr(start, end), ext];
 }

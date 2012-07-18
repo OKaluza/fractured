@@ -866,7 +866,11 @@
     this.editFormula(select);
   }
 
-  Fractal.prototype.importFormula = function(source, key) {
+  Fractal.prototype.importFormula = function(source, filename) {
+    var arr = filenameToName(filename);
+    var name = arr[0];
+    var type = arr[1];
+    var key = type + "/" + name;
     if (formula_list[key]) {
       if (formula_list[key].source.strip() == source.strip()) return;
 
@@ -878,10 +882,7 @@
     }
 
     //New formula
-    var type = "fractal";
-    if (key.indexOf("colour") > -1) type = "colour";
-    if (key.indexOf("transform") > -1) type = "transform";
-    var f = new FormulaEntry(type, nameToLabel(keyToName(key)), source);
+    var f = new FormulaEntry(type, nameToLabel(name), source);
   }
 
   Fractal.prototype.deleteFormula = function(select) {

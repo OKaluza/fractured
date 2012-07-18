@@ -11,8 +11,8 @@ function error_msg($msg) {
 try 
 {
   # Change 'localhost' to your domain name.
-  //$openid = new LightOpenID('fractured.ozone.id.au');
-  $openid = new LightOpenID('fractured.dev');
+  $openid = new LightOpenID('fractured.ozone.id.au');
+  //$openid = new LightOpenID('fractured.dev');
   if(!$openid->mode) 
   {
     # The following two lines request email, full name, and a nickname

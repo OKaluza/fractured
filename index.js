@@ -124,7 +124,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     if (!offline) {
       //Load fractal from #ID
       var hash = decodeURI(window.location.href).split("#")[1]; //whole querystring after #
-      if (hash) ajaxReadFile('ss/fractal_get.php?id=' + hash, fractalGet);
+      if (hash) {
+        if (hash.length > 20) {
+          restored = window.atob(hash);
+          if (fractal) restoreFractal();
+        } else 
+          ajaxReadFile('ss/fractal_get.php?id=' + hash, fractalGet);
+      }
 
       //Session restore:
       ajaxReadFile('ss/session_get.php', sessionGet);
@@ -494,6 +500,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     $("public").value = confirm("Publish on website after uploading?");
     var form = document.forms["inputs"];
     form.submit();
+  }
+
+  function packFractal() {
+    fractal.applyChanges();
+    var data = window.btoa($('nameInput').value + "\n" + fractal.toString(true));
+    window.location = "/#" + data
+    window.location.reload(false);
   }
 
   function uploadFormulaFile(shared) {
