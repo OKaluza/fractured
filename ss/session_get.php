@@ -6,6 +6,12 @@
   $user = $_SESSION["user_id"];
   $session = $_GET['id'];
 
+  //Check the user agent, when changes the session is invalidated
+  //(Helps protect against session hijack)
+  if ($_SESSION['useragent'] != $_SERVER['HTTP_USER_AGENT'])
+  {
+    $user = $_SESSION["user_id"] = 0;
+  }
 
   if ($user > 0)
   {

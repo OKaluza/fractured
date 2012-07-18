@@ -44,14 +44,15 @@
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
               <ul class="dd">
+                <li><span onclick="packFractal();">URL pack fractal</span></li>
                 <li><span onclick="window.location.reload();">Reload All</span></li>
                 <li><hr></li>
                 <li><span onclick="openEditor('generated.shader');">Generated Source</span></li>
-                <li><span onclick="openEditor('shaders/glsl-header.frag');">GLSL Header</span></li>
-                <li><span onclick="openEditor('shaders/opencl-header.cl');">OpenCL Header</span></li>
-                <li><span onclick="openEditor('shaders/fractal-shader.frag');">Body Template</span></li>
-                <li><span onclick="openEditor('shaders/complex-math.frag');">Complex Library</span></li>
-                <li><span onclick="openEditor('shaders/shader2d.vert');">Vertex Shader</span></li>
+                <li><span onclick="openEditor('include/glsl-header.frag');">GLSL Header</span></li>
+                <li><span onclick="openEditor('include/opencl-header.cl');">OpenCL Header</span></li>
+                <li><span onclick="openEditor('include/fractal-shader.frag');">Body Template</span></li>
+                <li><span onclick="openEditor('include/complex-math.frag');">Complex Library</span></li>
+                <li><span onclick="openEditor('include/shader2d.vert');">Vertex Shader</span></li>
                 <li><hr></li>
                 <li><span onclick="window.location = '/index.html?debug';">WebGL Mode</span></li>
                 <li><span onclick="window.location = '/index.html?webcl-debug';">WebCL Mode</span></li>

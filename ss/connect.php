@@ -2,8 +2,6 @@
 	$host = 'localhost';
 	$username = 'ozone_user';
 	$password = 'resu';
-    $username = 'root';
-    $password = 'slsl4577';
 	$db = 'ozone_main';
 	
 	//Make a connection to the database server

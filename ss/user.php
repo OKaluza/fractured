@@ -16,8 +16,6 @@
   if (!isset($openid))
   { //Should not be possible if session set correctly
     echo "<br>Error, no openid specified!<br>" . session_id();
-    foreach ($_SESSION as $key=>$val)
-      echo $key." ".$val;
     exit();
   }
 
@@ -47,6 +45,10 @@
     else
       $_SESSION['error'] = "Database error";
   }
+
+  //Save the user agent, when changes the session is invalidated
+  //(Helps protect against session hijack)
+  $_SESSION['useragent'] = $_SERVER['HTTP_USER_AGENT'];
 
   //Close to free resources
   mysql_close();
