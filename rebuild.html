@@ -12,7 +12,8 @@ var sources = {};
 var offline = false;
 
 //Standard formulae library
-var formulae = {"base":["Default"], "fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
+//var formulae = {"base":["Default"], "fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
+var formulae = {"base":["Default"], "fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Cactus","Phoenix"],"transform":["Inverse","Functions"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
 
 function rebuild() {
   //Get shader source files on server
@@ -24,17 +25,9 @@ function rebuild() {
   sources["include/shader2d.vert"] = "";
   sources["include/script.js"] = "";
 
-  //Base parameters for all formulae defined in here
-  //sources["formulae/default.base.formula"] = "";
-
-  //Script
-  sources["include/script.js"] = "";
-
-  for (type in formulae) {
-    for (i in formulae[type]) {
+  for (type in formulae)
+    for (i in formulae[type])
       sources[formulaFilename(type, formulae[type][i])] = "";
-    }
-  }
 
   //Load a from list of remaining source files
   for (filename in sources) {
@@ -73,12 +66,19 @@ function saveLocal() {
   }*/
 
   //localStorage["formulae"] = JSON.stringify(formula_list);
-  $('output').value = "var sources = " + JSON.stringify(sources)
-                    + ";\nformula_list = " + JSON.stringify(formula_list) + ";\n";
+  var data = "var sources = " + JSON.stringify(sources)
+           + ";\nformula_list = " + JSON.stringify(formula_list) + ";\n";
+  $('output').value = data;
   consoleWrite("Rebuild complete");
+  
+  ajaxWriteFile("bootstrap.js", data, alert);
 }
 
 //Console functions
+function consoleDebug(str) {
+  //consoleWrite(str);
+}
+
 function consoleWrite(str) {
   var console = document.getElementById('console');
   console.innerHTML += "<div class='message'>" + str + "</div>";
@@ -133,8 +133,9 @@ function saveSource(data, filename) {
 function checkSources() {
   //Check if all loaded yet
   var remain = false;
-  for (filename in sources)
+  for (filename in sources) {
     if (!sources[filename] || sources[filename].length == 0) {remain=true; break;}
+  }
 
   if (!remain) saveLocal();  //All data loaded, call init
 }

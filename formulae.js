@@ -89,6 +89,7 @@ function addSelectEntry(entry) {
 
 function addToSelect(type, name, label) {
   select = $(type + "_formula");
+  if (!select) return null;
   select.options[select.length] = new Option(label, name);
   return select.options[select.length];
 }
