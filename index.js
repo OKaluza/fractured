@@ -136,7 +136,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       }
 
       //Session restore:
-      ajaxReadFile('ss/session_get.php', sessionGet);
+      refreshSessions();
       //Load public formula list from server
       ajaxReadFile('ss/formula_get.php', loadFormulaeList);
     }
@@ -473,13 +473,20 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       //*//hasChanged = false;
       localStorage.clear(); //be careful as this will clear the entire database
       if (!offline)
-        ajaxReadFile('ss/setvariable.php?name=session_id?value=0', reloadWindow);
+        ajaxReadFile('ss/setvariable.php?name=session_id?value=0', refreshSessions);
+      loadState();
+        colours.read(); //Palette reset
+      newFractal();
       currentSession = 0;  //No sessions to select
       currentFormulae = 0;  //No sessions to select
       currentFractal = -1;  //No fractals to select
       //window.location.reload(false);
       window.onbeforeunload = null;
     }
+  }
+
+  function refreshSessions() {
+    ajaxReadFile('ss/session_get.php', sessionGet); //Get updated list...
   }
 
   //Import/export all local storage to server
@@ -500,7 +507,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function sessionSaved(data) {
     localStorage['fractured.currentSession'] = data;
     alert("Session data saved successfully");
-    ajaxReadFile('ss/session_get.php', sessionGet); //Get updated list...
+    refreshSessions();
   }
 
   function uploadFractalFile() {
@@ -638,8 +645,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function deleteSelectedState()
   {
     if (currentSession && confirm('Delete this session from the server?')) {
-      ajaxReadFile('ss/session_delete.php?id=' + currentSession, 
-        function() {ajaxReadFile('ss/session_get.php', sessionGet);});
+      ajaxReadFile('ss/session_delete.php?id=' + currentSession, refreshSessions);
       currentSession = localStorage["fractured.currentSession"] = 0;
     }
   }
@@ -654,14 +660,14 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     //Get current state in local storage minus session/login details
     var session = localStorage["fractured.currentSession"];
     var formulae = localStorage["fractured.currentFormulae"];
-    var cf = localStorage["fractured.currentFractal"];
     delete localStorage["fractured.currentSession"];
     delete localStorage["fractured.currentFormulae"];
-    delete localStorage["fractured.currentFractal"];
+      //Save current fractal (as default)
+      localStorage["fractured.active"] = fractal;
+      localStorage["fractured.name"] = fractal.name;
     var source = JSON.stringify(localStorage);
     localStorage["fractured.currentSession"] = session;
     localStorage["fractured.currentFormulae"] = formulae;
-    localStorage["fractured.currentFractal"] = cf;
     return source;
   }
 
@@ -675,8 +681,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       //Replace session id, not saved in state data
       localStorage["fractured.currentSession"] = currentSession;
       localStorage["fractured.currentFormulae"] = currentFormulae;
-      localStorage["fractured.currentFractal"] = currentFractal;
-        ajaxReadFile('ss/session_get.php', sessionGet); //Get updated list...
+      refreshSessions();
       loadState();
       loadLastFractal();
       popup();
@@ -751,16 +756,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["include/script.js"] = sources["include/script.js"];
       //Save some global settings
       localStorage["fractured.autoSize"] = autoSize;
-      //Save current fractal (as default)
-      saveActive();
-    } catch(e) {
-      //data wasn’t successfully saved due to quota exceed so throw an error
-      alert('Quota exceeded! ' + e);
-    }
-  }
-
-  function saveActive() {
-    try {
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
@@ -982,8 +977,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     select.style.display = 'none';
     fractal.copyToForm();
     fractal.draw();
-    //Save param changes
-    //saveActive();
     //*//if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
     //*//hasChanged = true;  //Flag changes to active fractal instead of automatically saving
   }
@@ -1203,7 +1196,7 @@ ColourEditor.prototype.read = function(source) {
   this.palette = new Palette(source);
   this.reset();
   this.changed = true;
-  ////this.palette.draw(this.editcanvas, true);
+  this.palette.draw(this.editcanvas, true);
 }
 
 ColourEditor.prototype.update = function() {
