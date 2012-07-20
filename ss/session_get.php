@@ -23,11 +23,12 @@
       if( mysql_num_rows( $result ))
       {
         $row = mysql_fetch_assoc($result);
+        $data = $row["data"];
         //Return the first row result JSON (should only be one)
-        if ($row["data"][0] == '{')
-          echo $row["data"];
-        else
-          echo gzinflate($row["data"]);
+        if ($data[0] != '{')
+          $data = gzinflate($data);
+        header("Content-Length: ".strlen($data)); //set header length
+        echo $data;
         //Update current session id
         $_SESSION['session_id'] = $session;
       }

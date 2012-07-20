@@ -82,6 +82,6 @@
 
   mysql_close();
   $loc =  $goto . "#" . $locator;
-  header("Location: {$loc}");
+  echo $loc;
   exit();
 ?>

@@ -3,11 +3,11 @@
   include("connect.php");
 
   $user = $_SESSION["user_id"];
-  $session = $_GET['id'];
+  $fid = $_GET['id'];
 
-  if (isset($session))
+  if (isset($fid))
   {
-    $query = sprintf("DELETE FROM session WHERE id = '$session' AND user_id = '$user';");
+    $query = sprintf("DELETE FROM formula WHERE id = '$fid' AND user_id = '$user';");
     //echo $query;
     $result = mysql_query($query);
     if (!$result) die('Invalid query: ' . mysql_error());

@@ -286,11 +286,14 @@ nav {float: left;}
 }
 
 #controls {
-  z-index: 2;
+  z-index: 1;
   margin: 0px 0px 2px 0px; padding:0px;
   height: 28px;
   color: #888;
-  float: right;
+  /*float: right;*/
+/* Fix so palette doesn't wrap when window resized too small */
+position: absolute; right: 2px; 
+overflow: hidden;
 }
 
 #left {
