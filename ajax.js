@@ -1,12 +1,14 @@
 //Reads a file from server, responds when done with file data + passed name to callback function
-function ajaxReadFile(filename, callback, nocache)
+function ajaxReadFile(filename, callback, nocache, progress)
 { 
   var http = new XMLHttpRequest();
+  if (progress != undefined) http.onprogress = progress;
 
   http.onreadystatechange = function()
   {
     if(http.readyState == 4) {
       if(http.status == 200) {
+        setProgress(100);
         consoleDebug("RECEIVED: " + filename);
         if (callback)
           callback(http.responseText, filename);
@@ -30,16 +32,33 @@ function ajaxReadFile(filename, callback, nocache)
   http.send(null); 
 }
 
+function updateProgress(evt) 
+{
+  //evt.loaded: bytes browser received/sent
+  //evt.total: total bytes set in header by server (for download) or from client (upload)
+  if (evt.lengthComputable) 
+    setProgress(evt.loaded / evt.total)*100;  
+} 
+
+function setProgress(percentage)
+{
+  var val = Math.round(percentage);
+  $S('progressbar').width = (3 * val) + "px";
+  $('progressstatus').innerHTML = val + "%";
+} 
+
 //Posts request to server, responds when done with response data to callback function
-function ajaxPost(url, params, callback)
+function ajaxPost(url, params, callback, progress)
 { 
   var http = new XMLHttpRequest();
+  if (progress != undefined) http.upload.onprogress = progress;
 
   http.onreadystatechange = function()
   { 
     if(http.readyState == 4)
       if(http.status == 200) {
-        consoleDebug("POST: " + url + "&" + params);
+        setProgress(100);
+        consoleDebug("POST: " + url);
         if (callback)
           callback(http.responseText);
       } else {

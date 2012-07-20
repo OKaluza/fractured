@@ -122,9 +122,9 @@
                   <ul id="formulae-private" class="selectlist">
                   </ul>
                 </li>
-                <li><span onclick="deleteFormulae();">Delete from server</span></li>
+                <li><span onclick="deleteSelectedFormulae();">Delete selected</span></li>
                 <li><span onclick="uploadFormulaFile(1);">Publish Formula Set</span></li>
-                <li><span onclick="uploadFormulaFile(0);">Upload Formula Set</span></li>
+                <li><span onclick="uploadFormulaFile(0);">Save Formula Set</span></li>
               </ul>
             </li>
             <li><hr></li>
@@ -193,12 +193,7 @@
 
       <div class="panel" id="panel1">
 
-        <form id="param_inputs" name="inputs" action="ss/fractal_save.php" enctype=multipart/form-data" method="post" class="scroll" onmousedown="handleFormMouseDown(event)">
-          <!-- this is for uploading fractals to server -->
-          <input type="hidden" id="source" name="source" value=""/>
-          <input type="hidden" id="public" name="public"/>
-          <input type="hidden" id="thumbnail" name="thumbnail"/>
-
+        <form id="param_inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
           <div class="row">
             <span class="label">Name</span>
             <span class="field"><input type="text" id="nameInput" name="description" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
@@ -378,12 +373,6 @@
       <input type="hidden" id="export-filename" name="filename"/>
       <input type="hidden" id="export-content" name="content"/>
     </form>
-    <form name="formulae" action="ss/formula_save.php" method="post" enctype=multipart/form-data>
-      <input type="hidden" id="formula-name" name="name"/>
-      <input type="hidden" id="formula-data" name="data" value=""/>
-      <input type="hidden" id="formula-public" name="public"/>
-    </form>
-
   </div>
   <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
 
@@ -400,6 +389,12 @@
     <div class="popclose" onclick="toggle('popup');">X</div>
     <div id="popupmessage">
     </div>
+  </div>
+
+  <div id="progress" class="popup" style="width: 310px; height: 32px;">
+    <div class="popclose" onclick="toggle('progress');">X</div>
+    <span id="progressmessage"></span><span id="progressstatus"></span>
+    <div id="progressbar" style="width: 300px; height: 10px; background: #58f;"></div>
   </div>
 
 

@@ -3,7 +3,6 @@
   include("connect.php");
 
   $user = $_SESSION["user_id"];
-  //$sessid = $_SESSION["session_id"];
   $sessid = $_POST["session_id"];
   $goto = $_SERVER['HTTP_REFERER'];
   $desc = $_POST["description"];
@@ -35,27 +34,20 @@
     $query = "INSERT INTO session (user_id, date, description, data) values('$user', '$mysqldate', '$desc', '$data');";
     $result = mysql_query($query);
 
-    if ($result == 1)
-      //New session inserted, save id
-      $_SESSION['session_id'] = $sessid = mysql_insert_id();
-    else
-      $_SESSION['error'] = "Database error";
+    if (!$result) die('Invalid query: ' . mysql_error());
+
+    //New session inserted, save id
+    $sessid = mysql_insert_id();
   }
   else
   {
-    $query = "UPDATE session SET data = '$data' WHERE id = '$sessid';";
-    mysql_query($query);
+    $query = "UPDATE session SET data = '$data' WHERE id = '$sessid' AND user_id = '$user';";
+    $result = mysql_query($query);
+    if (!$result) die('Invalid query: ' . mysql_error());
   }
 //echo $query;
 
   mysql_close();
-  //header("Location: {$goto}");
-  /*
-  echo "<script language='javascript'>";
-  echo "localStorage['fractured.currentSession'] = " . $sessid . ";";
-  echo "window.location = '/'";
-  echo "</script>";
-  */
   echo $sessid;
   exit();
 ?>

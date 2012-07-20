@@ -767,6 +767,7 @@
     }
 
     this.antialias = 1;
+    this.autoSize = false;
 
     this.offsets = [];
 
@@ -900,8 +901,6 @@
     this["post_transform"].reselect();
     this["outside_colour"].reselect();
     this["inside_colour"].reselect();
-    //*//if (!hasChanged) consoleDebug("Formula delete detected, will prompt to save session");
-    //*//hasChanged = true;  //Flag formula changes
   }
 
   //Save fractal (write param/source file)
@@ -1060,15 +1059,11 @@
                 if (!formula_list[key]) {
                   consoleDebug("Imported new formula: " + key);
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
-                  //*//if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
-                  //*//hasChanged = true;  //Flag formula changes
                 } else if (formula_list[key].source.strip() != buffer.strip()) {
                   //Existing entry, new definition, create as: formula_name(#)
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
                   name = f.name; //Get new name
                   consoleDebug("Imported new formula definition for existing formula: " + key + ", saved as " + name);
-                  //*//if (!hasChanged) consoleDebug("Formula insert detected, will prompt to save session");
-                  //*//hasChanged = true;  //Flag formula changes
                 }
               }
             }
@@ -1476,12 +1471,21 @@
   }
 
   //Apply any changes to parameters or formula selections and redraw
-  Fractal.prototype.applyChanges = function(flagChange) {
+  Fractal.prototype.applyChanges = function() {
     //Update palette
     colours.update();
     //Resize canvas if size settings changed
-    this.width = parseInt($("widthInput").value);
-    this.height = parseInt($("heightInput").value);
+    if (this.autoSize) {
+      //Get size from window
+      this.width = window.innerWidth - (showparams ? 388 : 2);
+      this.height = window.innerHeight - 32;
+      $("widthInput").value = this.width;
+      $("heightInput").value = this.height;
+    } else {
+      //Use size from form
+      this.width = parseInt($("widthInput").value);
+      this.height = parseInt($("heightInput").value);
+    }
 
     this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
     this.perturb = document["inputs"].elements["perturb"].checked ? 1 : 0;
@@ -1508,10 +1512,6 @@
     //Update shader code & redraw
     this.writeShader();
     this.draw();
-    //*//if (flagChange) {
-    //*//  if (!hasChanged) consoleDebug("Fractal change detected, will prompt to save session");
-    //*//  hasChanged = true;  //Flag changes to active fractal instead of automatically saving
-    //*//}
   }
 
   //Update form controls with fractal data
@@ -1642,6 +1642,8 @@
     //Only recompile if data has changed!
     if (sources["generated.shader"] != source)
       this.updateShader(source);
+    else
+      consoleDebug("Shader build skipped, no changes");
   }
 
   Fractal.prototype.updateShader = function(source) {
@@ -1752,6 +1754,7 @@
     else if (this.canvas.height > this.canvas.width)
       this.webgl.modelView.scale([1.0, this.canvas.height / this.canvas.width, 1.0]);  //Scale height
 
+    consoleDebug('>> Drawing fractal (aa=' + this.antialias + ")");
     this.webgl.draw(this.antialias);
     if (window.recording)
       window.outputFrame(); 
