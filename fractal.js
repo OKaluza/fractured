@@ -767,7 +767,6 @@
     }
 
     this.antialias = 1;
-    this.autoSize = false;
 
     this.offsets = [];
 
@@ -819,8 +818,8 @@
     //consoleDebug("resetDefaults<hr>");
     //Default aspect & parameters
     this.name = "unnamed"
-    this.width = window.innerWidth - (showparams ? 390 : 4);
-    this.height = window.innerHeight - 34;
+    this.width = 0;
+    this.height = 0;
     this.origin = new Aspect(0, 0, 0, 0.5); 
     this.savePos = new Aspect(0, 0, 0, 0.5);
     this.selected = new Complex(0, 0);
@@ -896,6 +895,10 @@
     saveSelections(); //Update formula selections into selected variable
     updateFormulaLists();
     //Finally, reselect
+    this.reselectAll();
+  }
+
+  Fractal.prototype.reselectAll = function() {
     this["fractal"].reselect();
     this["pre_transform"].reselect();
     this["post_transform"].reselect();
@@ -905,19 +908,22 @@
 
   //Save fractal (write param/source file)
   Fractal.prototype.toString = function(saveformulae) {
-    var code = "[fractal]\n" +
-               "width=" + this.canvas.width + "\n" +
-               "height=" + this.canvas.height + "\n" +
-               this.origin +
-               "selected=" + this.selected + "\n" +
-               "julia=" + this.julia + "\n" +
-               "perturb=" + this.perturb + "\n" +
-               "fractal=" + this["fractal"].selected + "\n" +
-               "pre_transform=" + this["pre_transform"].selected + "\n" +
-               "post_transform=" + this["post_transform"].selected + "\n" +
-               "outside_colour=" + this["outside_colour"].selected + "\n" +
-               "inside_colour=" + this["inside_colour"].selected + "\n" +
-               "\n[params.base]\n" + this["base"].currentParams;
+    var code = "[fractal]\n";
+    if (!document["inputs"].elements["autosize"].checked) {
+      //Only write width & height if autosize disabled
+      code += "width=" + this.canvas.width + "\n" +
+              "height=" + this.canvas.height + "\n";
+    }
+    code += this.origin +
+            "selected=" + this.selected + "\n" +
+            "julia=" + this.julia + "\n" +
+            "perturb=" + this.perturb + "\n" +
+            "fractal=" + this["fractal"].selected + "\n" +
+            "pre_transform=" + this["pre_transform"].selected + "\n" +
+            "post_transform=" + this["post_transform"].selected + "\n" +
+            "outside_colour=" + this["outside_colour"].selected + "\n" +
+            "inside_colour=" + this["inside_colour"].selected + "\n" +
+            "\n[params.base]\n" + this["base"].currentParams;
 
     var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
     for (t in categories) {
@@ -1475,12 +1481,10 @@
     //Update palette
     colours.update();
     //Resize canvas if size settings changed
-    if (this.autoSize) {
-      //Get size from window
-      this.width = window.innerWidth - (showparams ? 388 : 2);
-      this.height = window.innerHeight - 32;
-      $("widthInput").value = this.width;
-      $("heightInput").value = this.height;
+    if (document["inputs"].elements["autosize"].checked) {
+      //Clear so draw() gets size from window
+      this.width = 0;
+      this.height = 0;
     } else {
       //Use size from form
       this.width = parseInt($("widthInput").value);
@@ -1533,6 +1537,11 @@
     $('post_transform_formula').value = this["post_transform"].selected;
     $('outside_colour_formula').value = this["outside_colour"].selected;
     $('inside_colour_formula').value = this["inside_colour"].selected;
+    //No width or height? Set autosize, otherwise disable
+    if (this.width == 0 || this.height == 0)
+      document["inputs"].elements["autosize"].checked = true;
+    else
+      document["inputs"].elements["autosize"].checked = false;
   }
 
   //Create shader from source components
@@ -1709,6 +1718,15 @@
   Fractal.prototype.draw = function(antialias) {
     if (antialias != undefined) this.antialias = antialias;
     if (this.width != this.canvas.width || this.height != this.canvas.height) {
+
+      if (this.width == 0 || this.height == 0) {
+        //Get size from window
+        this.width = window.innerWidth - (showparams ? 388 : 2);
+        this.height = window.innerHeight - 32;
+        $("widthInput").value = this.width;
+        $("heightInput").value = this.height;
+      }
+
       this.canvas.width = this.width;
       this.canvas.height = this.height;
       this.canvas.setAttribute("width", this.width);

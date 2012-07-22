@@ -66,12 +66,12 @@ function saveLocal() {
   }*/
 
   //localStorage["formulae"] = JSON.stringify(formula_list);
-  var data = "var sources = " + JSON.stringify(sources)
-           + ";\nformula_list = " + JSON.stringify(formula_list) + ";\n";
+  var data = "var default_sources = " + JSON.stringify(sources)
+           + ";\nvar default_formula_list = " + JSON.stringify(formula_list) + ";\n";
   $('output').value = data;
   consoleWrite("Rebuild complete");
   
-  ajaxWriteFile("bootstrap.js", data, alert);
+  ajaxWriteFile("../bootstrap.js", data, alert);
 }
 
 //Console functions
@@ -155,5 +155,12 @@ Rebuilding source files...
 
 <textarea id="output" cols="100" rows="20" spellcheck="false">
 </textarea>
+
+
+  <div id="progress" class="popup" style="display:none; width: 310px; height: 32px;">
+    <div class="popclose" onclick="toggle('progress');">X</div>
+    <span id="progressmessage"></span><span id="progressstatus"></span>
+    <div id="progressbar" style="width: 300px; height: 10px; background: #58f;"></div>
+  </div>
 
 </body></html>
