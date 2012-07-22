@@ -29,11 +29,7 @@ calc:
 result:
   :sum /= real(count);
   :sum2 /= real(count-1);
-    //Fractured version!
-    complex x1 = loge(C(log(cabs(z))));
-    real f = :il * (:lp - x1.x);
-  //Correct version:
-  //real f = :il * (:lp - log(log(cabs(z))));
+  real f = :il * (:lp - log(log(cabs(z))));
   real idx = :sum2 + (:sum - :sum2) * (f+1.0);
   colour = gradient(:repeat * idx);
 
