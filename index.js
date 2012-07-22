@@ -88,8 +88,20 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     consoleDebug("Request sent");
   }
 
-  function runScript(filename) {
-    eval(sources["include/script.js"]);
+  function runScript() {
+    var script = "function ParamVals(paramset) { \
+        for (key in paramset)   \
+          this[key] = paramset[key].value;  \
+      } \
+      var baseFractal = new ParamVals(fractal.fractal.currentParams); \
+      var preTransform = new ParamVals(fractal.pre_transform.currentParams);  \
+      var postTransform = new ParamVals(fractal.pre_transform.currentParams); \
+      var insideColour = new ParamVals(fractal.inside_colour.currentParams);  \
+      var outsideColour = new ParamVals(fractal.outside_colour.currentParams); \
+      ";
+
+    script += sources["include/script.js"];
+    eval(script);
   }
 
   function appInit() {

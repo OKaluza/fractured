@@ -1,6 +1,6 @@
 window.count = 0;
-window.save_re = fractal.fractal.currentParams.A.value.re;
-window.save_im = fractal.fractal.currentParams.A.value.im;
+window.save_re = baseFractal["A"].re;
+window.save_im = baseFractal["A"].im;
 window.steps = 36;
 
 window.step = function()
@@ -11,10 +11,10 @@ window.step = function()
   var x = Math.sin(angle);
   var y = Math.cos(angle)-1.0;
 
-  fractal.fractal.currentParams.A.value.re = window.save_re + x*0.01;
-  fractal.fractal.currentParams.A.value.im = window.save_im + y*0.01;
-  //fractal.fractal.currentParams.A.value.re += 0.001;
-  //fractal.fractal.currentParams.A.value.im += 0.001;
+  baseFractal["A"].re = window.save_re + x*0.01;
+  baseFractal["A"].im = window.save_im + y*0.01;
+  //baseFractal["A"].value.re += 0.001;
+  //baseFractal["A"].value.im += 0.001;
   fractal.origin.rotate = angle*180.0/Math.PI;
   fractal.loadParams();
   
