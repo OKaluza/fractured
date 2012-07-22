@@ -5,22 +5,16 @@
 @:diverge = bool(true);
 //Convergent
 @:converge = bool(false);
-//z(n-1) - z(n)
-@:use_z_old = bool(false);
 
 real :sum = 0.0;
 real :csum = 0.0;
 
 calc:
-  complex :zval = z;
-  if (:use_z_old)
-    :zval = z_1 - z;
-  
   if (:diverge)
-    :sum += exp(-cabs(:zval));
+    :sum += exp(-cabs(z));
 
   if (:converge)
-    :csum += exp(-1.0/cabs(:zval));  
+    :csum += exp(-1.0/cabs(z_1 - z));  
 
 result:
   real mu = :sum;
