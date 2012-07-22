@@ -7,7 +7,7 @@
 //Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (palette repeat)
 
 //Globals
-var sources = default_sources;
+var sources = {};
 var reloadsources = false;
 var mode = "WebGL";
 var fractal;
@@ -472,11 +472,11 @@ consoleDebug("draw: thumb2");
   function resetState(noconfirm) {
     if (noconfirm || confirm('This will clear everything!')) {
       localStorage.clear(); //be careful as this will clear the entire database
-      sources = default_sources;  //Reset sources
       if (!offline)
         ajaxReadFile('ss/setvariable.php?name=session_id?value=0', refreshSessions);
       loadState();
-        colours.read(); //Palette reset
+
+      colours.read(); //Palette reset
       newFractal();
       currentSession = 0;  //No sessions to select
       currentFormulae = 0;  //No sessions to select
@@ -733,6 +733,11 @@ consoleDebug("draw: thumb2");
   }
 
   function loadState() {
+    //Reset sources...
+    sources = {};
+    for (key in default_sources)
+      sources[key] = default_sources[key];
+
     //Load formulae from local storage (or defaults if not found)
     var f_source = localStorage["fractured.formulae"];
     if (f_source && f_source.length < 400) f_source = null; //Old formula list
@@ -1397,12 +1402,12 @@ ColourEditor.prototype.move = function(event, mouse) {
 
 ColourEditor.prototype.wheel = function(event, mouse) {
   //If shift held, redraw after change
-  this.changed = true;
   this.cycle(0.01 * event.spin, event.shiftKey);
 }
 
 ColourEditor.prototype.cycle = function(inc, update) {
   //Shift all colours cyclically
+  this.changed = true;
   for (var i = 2; i < this.palette.colours.length-1; i++)
   {
     var x = this.palette.colours[i].position;
