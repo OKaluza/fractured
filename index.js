@@ -3,16 +3,11 @@
 //Allow disabling of thumbnails (set size?)
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
-//What happens when fractal file loaded with formula not in lists, should insert new formula
 //Define a new formula, then use ?reload - fail
 //Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (palette repeat)
-//Public/private for fractals & formulae
-
-//NEW 7/12: Multiple drawing calls on load
-//When loading fractal form link url (or in general?), disable auto width/height
-////When loading formula set, if changes in list formula selection is lost
 
 //Globals
+var sources = default_sources;
 var reloadsources = false;
 var mode = "WebGL";
 var fractal;
@@ -155,7 +150,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Create a fractal object
     fractal = new Fractal(canvas, mode);
-    fractal.autoSize = document["inputs"].elements["autosize"].checked = /true/i.test(localStorage["fractured.autoSize"]);
     fractal.antialias = localStorage["fractured.antialias"] ? parseInt(localStorage["fractured.antialias"]) : 2;
     setAntiAliasMenu();
 
@@ -466,6 +460,7 @@ consoleDebug("draw: thumb2");
   function resetState(noconfirm) {
     if (noconfirm || confirm('This will clear everything!')) {
       localStorage.clear(); //be careful as this will clear the entire database
+      sources = default_sources;  //Reset sources
       if (!offline)
         ajaxReadFile('ss/setvariable.php?name=session_id?value=0', refreshSessions);
       loadState();
@@ -648,6 +643,8 @@ consoleDebug("draw: thumb2");
       formula_list = parsed; //localStorage["fractured.formula"]);
       //Create formula entries in drop-downs (and any saved load sources)
       updateFormulaLists();
+      fractal.copyToForm();  //Update selections
+      fractal.reselectAll();
     } catch(e) {
       alert('ImportFormulae: Error! ' + e);
     }
@@ -731,7 +728,8 @@ consoleDebug("draw: thumb2");
          //HACK!! TODO: remove
          f_source = f_source.replace(/primes/g, "integers");
       formula_list = JSON.parse(f_source); //localStorage["fractured.formula"]);
-    }
+    } else
+      formula_list = default_formula_list;  //From bootstrap.js
 
     //Custom mouse actions
     a_source = localStorage["fractured.mouseActions"];
@@ -784,8 +782,6 @@ consoleDebug("draw: thumb2");
       localStorage["fractured.formulae"] = JSON.stringify(formula_list);
       //Save script
       localStorage["include/script.js"] = sources["include/script.js"];
-      //Save some global settings
-      localStorage["fractured.autoSize"] = fractal.autoSize;   //Necessary? Stored in active anyway...
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
@@ -843,7 +839,7 @@ consoleDebug("draw: thumb2");
       $('toolsbtn').innerHTML = "Show Tools &darr;"
     }
     showparams = (sidebar.style.display == 'block');
-    autoResize(fractal.autoSize);
+    autoResize(document["inputs"].elements["autosize"].checked);
   }
 
   //Show/hide on click
@@ -904,18 +900,17 @@ consoleDebug("draw: thumb2");
     var timer = false;
     //If value passed, setting autoSize, otherwise responding to resize event
     if (typeof(newval) == 'boolean')
-      localStorage["fractured.autoSize"] = fractal.autoSize = newval;
+      consoleDebug("Autosize " + newval);
     else
       timer = true;
 
-    if (fractal.autoSize == true) {
-
-      if (timer) {
-        document.body.style.cursor = "wait";
-        rztimeout = setTimeout('fractal.applyChanges(); document.body.style.cursor = "default";', 150);
-      } else
-        fractal.applyChanges();
+    if (timer && document["inputs"].elements["autosize"].checked == true) {
+      document.body.style.cursor = "wait";
+      rztimeout = setTimeout('fractal.applyChanges(); document.body.style.cursor = "default";', 150);
+      return;
     }
+    //Update width/height immediately
+    fractal.applyChanges();
   }
 
   function beforeUnload(event) {

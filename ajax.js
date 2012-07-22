@@ -37,7 +37,7 @@ function updateProgress(evt)
   //evt.loaded: bytes browser received/sent
   //evt.total: total bytes set in header by server (for download) or from client (upload)
   if (evt.lengthComputable) 
-    setProgress(evt.loaded / evt.total)*100;  
+    setProgress(evt.loaded / evt.total * 100);
 } 
 
 function setProgress(percentage)
