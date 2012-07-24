@@ -450,11 +450,8 @@
 
       //Get label (if none provided, use field name)
       var fieldlabel = this[key].label ? this[key].label : key;
-      var label = document.createElement("span");
-      label.className = "label";
-      //Label text, skip for checkbox, has own label element
-      if (this[key].typeid >= 0)
-        label.appendChild(label.ownerDocument.createTextNode(fieldlabel));
+      var label = document.createElement("label");
+      label.appendChild(label.ownerDocument.createTextNode(fieldlabel));
 
       var spanin = document.createElement("span");
       spanin.className = "field";
@@ -476,11 +473,8 @@
           input.type = "checkbox";
           input.checked = this[key].value;
           spanin.appendChild(input);
-          //Checkbox label
-          var lab = document.createElement("label");
-          lab.setAttribute("for", category + '_' + key);
-          lab.appendChild(lab.ownerDocument.createTextNode(fieldlabel));
-          spanin.appendChild(lab);
+          //Checkbox label associate
+          label.setAttribute("for", category + '_' + key);
           break;
         case 0: //Integer
         case 1: //real
@@ -1758,7 +1752,7 @@
     //Gradient texture
     this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.webgl.gradientTexture);
-    this.gl.uniform1i(this.webgl.program.paletteUniform, 0);
+    this.gl.uniform1i(this.webgl.program.uniforms["palette"], 0);
 
     //Apply translation to origin, any rotation and scaling (inverse of zoom factor)
     this.webgl.modelView.identity()

@@ -2,17 +2,16 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<!-- This is supposed to tell IE to use Chrome Frame if available-->
-<meta http-equiv="X-UA-Compatible" content="chrome=1">
 
 <title>Fractured - Fractal Art Studio</title>
 
-<!--link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'-->
+<link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
 <link rel="stylesheet" type="text/css" href="reset.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
 <script type="text/javascript" src="bootstrap.js"></script>
 <script type="text/javascript" src="colourPicker.js"></script>
+<script type="text/javascript" src="gradient.js"></script>
 <script type="text/javascript" src="formulae.js"></script>
 <script type="text/javascript" src="index.js"></script>
 <script type="text/javascript" src="utils.js"></script>
@@ -195,40 +194,41 @@
 
         <form id="param_inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
           <div class="row">
-            <span class="label">Name</span>
+            <label>Name</label>
             <span class="field"><input type="text" id="nameInput" name="description" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
             </span>
           </div>
           <div class="row">
-            <span class="label">Size (<label for="autosize">Auto:</label><input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);">)
-</span><span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
+            <label for="autosize">Fit to window</label>
+            <span class="field"><input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);"></span>
+          </div>
+          <div class="row">
+            <label>Size</label>
+            <span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
           </div>
 
           <div class="row">
-            <span class="label">Zoom</span>
+            <label>Zoom</label>
             <span class="field"><input type="number" id="zoomLevel" value="0.5" step="0.01" min="0.00000000001"></span>
-            <div class="left"><input type="button" value="Reset" onclick="fractal.resetZoom()"></div>
+            <input type="button" value="Reset" onclick="fractal.resetZoom()">
           </div>
           <div class="row">
-            <span class="label">Rotate&#176;</span>
+            <label>Rotate&#176;</label>
             <span class="field"><input type="number" id="rotate" value="0.0" min="0" max="360"></span>
           </div>
           <div class="row">
-            <span class="label">Origin</span><span class="field"><input type="number" id="xPosInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="yPosInput" value="0.0" step="0.1"></span>
+            <label>Origin</label><span class="field"><input type="number" id="xPosInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="yPosInput" value="0.0" step="0.1"></span>
           </div>
           <div class="row">
-            <span class="label">Selected coord</span><span class="field"><input type="number" id="xSelInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="ySelInput" value="0.0" step="0.1"></span>
+            <label>Selected coord</label><span class="field"><input type="number" id="xSelInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="ySelInput" value="0.0" step="0.1"></span>
           </div>
           <div class="row">
-            <span class="label"></span>
-            <span class="field">
-              <input type="checkbox" id="julia" checked="unchecked">
-              <label for="julia">Julia</label>
-            </span>
-            <span class="field">
-              &nbsp; <input type="checkbox" id="perturb" checked="unchecked">
-              <label for="perturb">Perturb</label>
-            </span>
+            <label for="julia">Julia</label>
+            <span class="field"><input type="checkbox" id="julia" checked="unchecked"></span>
+          <div class="row">
+          </div>
+            <label for="perturb">Perturb</label>
+            <span class="field"><input type="checkbox" id="perturb" checked="unchecked"></span>
           </div>
 
           <div class="clear"></div>
@@ -251,7 +251,7 @@
         <div class="field">
           <select id="fractal_formula" onchange="fractal['fractal'].select(this.value)">
           </select>
-          <div class="right">
+          <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('fractal');">
             <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('fractal');">
             <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('fractal');">
@@ -263,7 +263,7 @@
           <select id="pre_transform_formula" onchange="fractal['pre_transform'].select(this.value)">
             <option value="none"></option>
           </select>
-          <div class="right">
+          <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('pre_transform');">
             <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('pre_transform');">
             <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('pre_transform');">
@@ -275,7 +275,7 @@
           <select id="post_transform_formula" onchange="fractal['post_transform'].select(this.value)">
             <option value="none"></option>
           </select>
-          <div class="right">
+          <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('post_transform');">
             <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('post_transform');">
             <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('post_transform');">
@@ -296,7 +296,7 @@
         <div class="field">
           <select id="outside_colour_formula" onchange="fractal['outside_colour'].select(this.value)">
           </select>
-          <div class="right">
+          <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
             <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('outside_colour');">
             <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('outside_colour');">
@@ -306,7 +306,7 @@
         <div class="field">
           <select id="inside_colour_formula" onchange="fractal['inside_colour'].select(this.value)">
           </select>
-          <div class="right">
+          <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
             <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('inside_colour');">
             <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('inside_colour');">
