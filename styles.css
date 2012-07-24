@@ -1,6 +1,5 @@
 body {
   font-family: 'Droid Sans',helvetica,arial,serif;
-  /*font-family: sans-serif;*/
   font-size: 10pt;
   background: white;
 }
@@ -121,7 +120,7 @@ canvas#palette {
   border-color: #663; 
   border-style: solid; 
   padding: 5px; overflow: hidden;
-  background: #faf5dd;
+  background: #fefdee;
   border-radius: 0px 5px 5px 5px;
 
   position: absolute; top: 24px; left: 2px; bottom: 24px; width: 318px;
@@ -130,9 +129,9 @@ canvas#palette {
 /* Scrolling areas */
 .scroll {overflow-y: auto; overflow-x: hidden}
 
-#statusbar {position: absolute; bottom: 1px; width: 328px; height: 20px; margin-left: 1px; margin-top: 2px; padding: 0; background-color: #cb9; border-radius: 4px; }
+#statusbar {position: absolute; bottom: 1px; width: 327px; height: 18px; margin: 2px 0px 0px 1px; padding: 0; border-radius: 4px; border: 1px solid #663; background-color: #ddc}
 
-#coords {float: left; padding: 0px 5px; margin: 3px;}
+#coords {float: left; padding: 0px 5px; margin: 1px;}
 
 #indicatorbg {width: 100%; background-color: #666; margin: 1px; border-radius: 4px;}
 #indicator {width: 0px; height: 5px; background-color: #0b2; margin: 0px; border-radius: 4px;}
@@ -270,7 +269,7 @@ nav {float: left;}
 #tabs li {
   border-color: black; 
   color: #211; 
-  background: #faf5dd;
+  background: #fefdee;
   padding: 2px 0.5em 0px 0.5em; 
   margin-right: 1px;
   text-decoration: none;
@@ -282,23 +281,25 @@ nav {float: left;}
   border-color: #663; 
   border-style: solid; 
 }
-#tabs li:hover { 
+
+#tabs .unselected:hover { 
   color: #0088AA; 
   border-color: black; 
-  background: white; 
+  background: #fce2a5; 
   height: 22px;
   cursor: pointer
 }
 
 #tabs .selected {
-  background: #faf5dd;
+  background: #fefdee;
   padding-top: 2px;
 }
 #tabs .unselected {
   padding-top: 1px;
-  /* Alpha+black gradient */
+  background: #ddc;
+  /* Alpha+black gradient /
   background-image: -moz-linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.0));
-  background-image: -webkit-linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.0));
+  background-image: -webkit-linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.0));*/
 }
 
 #controls {
