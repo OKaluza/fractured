@@ -814,8 +814,8 @@
     this.name = "unnamed"
     this.width = 0;
     this.height = 0;
-    this.origin = new Aspect(0, 0, 0, 0.5); 
-    this.savePos = new Aspect(0, 0, 0, 0.5);
+    this.origin = new Aspect(-0.5, 0, 0, 0.8); 
+    this.savePos = new Aspect(-0.5, 0, 0, 0.8);
     this.selected = new Complex(0, 0);
     this.julia = false;
     this.perturb = false;
@@ -1715,8 +1715,8 @@
 
       if (this.width == 0 || this.height == 0) {
         //Get size from window
-        this.width = window.innerWidth - (showparams ? 388 : 2);
-        this.height = window.innerHeight - 32;
+        this.width = window.innerWidth - (showparams ? 334 : 2);
+        this.height = window.innerHeight - 31;
         $("widthInput").value = this.width;
         $("heightInput").value = this.height;
       }
