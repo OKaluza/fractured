@@ -9,10 +9,11 @@
       //Default
       this.colours.push(new ColourPos("rgba(255,255,255,0)", -1));
       this.colours.push(new ColourPos("rgba(0,0,0,1)", 0));
-      this.colours.push(new ColourPos("rgba(253,132,48,1)", 0.2));
-      this.colours.push(new ColourPos("rgba(255,244,218,1)", 0.4));
-      this.colours.push(new ColourPos("rgba(59,51,30,1)", 0.6));
-      this.colours.push(new ColourPos("rgba(31,194,188,1)", 0.8));
+      this.colours.push(new ColourPos("rgba(59,45,30,1)", 0.05));
+      this.colours.push(new ColourPos("rgba(31,194,188,1)", 0.15));
+      this.colours.push(new ColourPos("rgba(255,244,218,1)", 0.25));
+      this.colours.push(new ColourPos("rgba(246,222,148,1)", 0.35));
+      this.colours.push(new ColourPos("rgba(253,132,48,1)", 0.45));
       this.colours.push(new ColourPos("rgba(0,0,0,1)", 1.0));
       return;
     }

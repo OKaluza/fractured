@@ -166,7 +166,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     setAntiAliasMenu();
 
     //Colour editing and palette management
-    colours = new GradientEditor(this);
+    colours = new GradientEditor(fractal);
 
     //Draw & update
     if (restored.length > 0)
