@@ -9,11 +9,10 @@ html, body {
 }
 
 /* Data entry form layout */
-form.scroll  {position: absolute; top: 3px; bottom: 3px; width: 99%;}
-div.row      {clear: both;}
-div.row label   {display: inline; float: left; width: 84px; text-align: right; margin: 6px 3px 0px 0px; ; height: 20px; line-height:80%}
+form.scroll   {position: absolute; top: 3px; bottom: 3px; width: 99%;}
+div.row       {clear: both;}
+div.row label {display: inline; float: left; width: 84px; text-align: right; margin: 6px 3px 0px 0px; ; height: 20px; line-height:80%}
 div.row span.field   {display: inline; float: left; text-align: left; margin: 0px;} 
-.formbox textarea    {width: 100%}
 input, select, textarea{ margin: 2px; padding: 0px; font-size: 10pt; height: 20px;}
 input[type=file] {height:0; width:0;}  /* Hidden uploads, triggered by buttons */
 
@@ -22,6 +21,7 @@ input[type="text"] {border: 1px solid #998; border-radius: 3px;}
 input[type="number"] {border: 1px solid #998; border-radius: 3px;}
 input[type="range"] {border: 1px solid #998; border-radius: 3px;}
 input[type="button"] {height: 23px; font-size: 8pt; padding: 3px; min-width: 30px; border: 1px solid #998; border-radius: 3px; background: #eed;}
+input[type="checkbox"] {margin: 4px;}
 select {min-width: 150px; max-width: 190px; border: 1px solid #998; border-radius: 3px; background: #fff;}
 textarea {border: 1px solid #998; border-radius: 3px; min-height: 20px;}
 
@@ -35,7 +35,8 @@ div.row input:focus {border-color: blue;}
 div.row select:focus {border-color: blue;}
 div.row textarea:focus {border-color: blue;}
 
-#console {
+/* Console & help areas */
+div.info {
   border:1px solid #888;
   margin: 2px; padding: 2px;  
   background: #ffe;
@@ -54,7 +55,7 @@ div.gap {height: 5px; }
 .clear      {clear: both;}
 
 .divider{
-  clear: both; margin: 1px 0px 3px; padding: 3px 0px 0px; 
+  clear: both; margin: 1px 5px 3px 0px; padding: 5px 0px 0px; 
   border-top: dotted 1px #aaa;
   font-size: 8pt;
 }
@@ -116,7 +117,8 @@ canvas#palette {
 
 /* Tab panels */
 .panel { 
-  border-width: 0px 1px 1px 1px; 
+  z-index: 1;
+  border-width: 1px 1px 1px 1px; 
   border-color: #663; 
   border-style: solid; 
   padding: 5px; overflow: hidden;
@@ -149,10 +151,6 @@ header {
   background: #222;
   color: #ccc;
      position: fixed;
-  /* gradient /
-  background-image: -moz-linear-gradient(90deg, rgba(50,50,40,0.0), rgba(50,50,40,1.0) 20%, rgba(50,50,40,0.9));
-  background-image: -webkit-linear-gradient(90deg, rgba(50,50,40,0.0), rgba(50,50,40,1.0) 20%, rgba(50,50,40,0.9));
-  */
 }
 
 header h2 {
@@ -164,7 +162,7 @@ header h2 {
 }
 
 /* Nav-menu */
-nav {float: left;}
+nav#menu {float: left;}
 
 #nav,#nav ul {
     list-style:none;
@@ -249,6 +247,7 @@ nav {float: left;}
 #nav ul.dd li ul:hover 
   { left:129px; top:-3px; display: block }
 
+/* Menu lists */
 .selected_item {border: 1px solid #777;}
 .selectlist {overflow-y:auto; overflow-x: hidden; max-height: 300px;}
 .selectlist li {width: 200px;}
@@ -257,8 +256,9 @@ nav {float: left;}
 .thumb {margin: 0px; padding-right: 3px; display: inline-block; float: left;}
 
 /* Tab navigation */
+#tabs {z-index: 2; position: relative;}
 #tabs ul {
-  height: 24px;
+  height: 22px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -274,7 +274,7 @@ nav {float: left;}
   margin-right: 1px;
   text-decoration: none;
   float: left;        
-  height: 22px;
+  height: 20px;
   border-radius: 5px 5px 0px 0px;
 
   border-width: 1px 1px 0px 1px; 
@@ -286,7 +286,7 @@ nav {float: left;}
   color: #0088AA; 
   border-color: black; 
   background: #fce2a5; 
-  height: 22px;
+  height: 20px;
   cursor: pointer
 }
 
@@ -297,9 +297,6 @@ nav {float: left;}
 #tabs .unselected {
   padding-top: 1px;
   background: #ddc;
-  /* Alpha+black gradient /
-  background-image: -moz-linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.0));
-  background-image: -webkit-linear-gradient(90deg, rgba(0,0,0,0.5), rgba(0,0,0,0.0));*/
 }
 
 #controls {
@@ -330,8 +327,6 @@ aside {
   float: left;
   width: 324px;
 }
-
-
 
 #main {
   z-index: 0;

@@ -3,12 +3,10 @@
 //Allow disabling of thumbnails (set size?)
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
-//Define a new formula, then use ?reload - fail
-//Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (palette repeat)
+//Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (important for palette repeat!)
 
 //Globals
 var sources = {};
-var reloadsources = false;
 var mode = "WebGL";
 var fractal;
 var defaultMouse;
@@ -20,7 +18,7 @@ var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
 var offline = null;
 var recording = false;
-var debug = true;//false; //Always enabled for testing
+var debug = false; //enable for testing
 var restored = "";
 //Timers
 var rztimeout = undefined;
@@ -56,11 +54,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   function consoleClear() {
     var console = document.getElementById('console');
     console.innerHTML = '';
-  }
-
-  function consoleHelp() {
-    var console = document.getElementById('console');
-    console.innerHTML = 'HELP TEXT GOES HERE';
   }
 
   function record(state) {
@@ -111,34 +104,36 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     showPanel($('tab4'), 'panel4');
     //If debug mode enabled, show extra menus
-    var query = decodeURI(window.location.href).split("?")[1]; //whole querystring after ?
+    var urlq = decodeURI(window.location.href);
+    var query = urlq.split("?")[1]; //whole querystring after ?
+    if (!query) query = urlq.substr(urlq.lastIndexOf("/")+1);  //URL rewriting?
     if (query) {
-      if (query.indexOf('debug') >= 0) {
-        debug = true;
-        $S('debugmenu').display = 'block';
-        $S('recordmenu').display = 'block';
-      }
-      if (query.indexOf('webcl') >= 0) {
-        mode = "WebCL";
-        if (query.indexOf('double') >= 0)
-          mode = "WebCL-double";
-      }
-      if (query.indexOf('reload') >= 0) {
-        reloadsources = true;
+      var list = query.split("&");
+      for (var i=0; i<list.length; i++) {
+        if (list[i].indexOf('debug') >= 0) {
+          debug = true;
+          $S('debugmenu').display = 'block';
+          $S('recordmenu').display = 'block';
+        } else if (list[i].indexOf('webcl') >= 0) {
+          mode = "WebCL";
+          if (list.indexOf('double') >= 0)
+            mode = "WebCL-double";
+        } else {
+          if (!offline) {
+            //Load fractal from hash ID
+            if (list[i].length > 20) {
+              //Packed base64
+              restored = window.atob(hash);
+              if (fractal) restoreFractal();
+            } else 
+              ajaxReadFile('ss/fractal_get.php?id=' + list[i], fractalGet);
+          }
+        }
+        consoleDebug(list[i]);
       }
     }
 
     if (!offline) {
-      //Load fractal from #ID
-      var hash = decodeURI(window.location.href).split("#")[1]; //whole querystring after #
-      if (hash) {
-        if (hash.length > 20) {
-          restored = window.atob(hash);
-          if (fractal) restoreFractal();
-        } else 
-          ajaxReadFile('ss/fractal_get.php?id=' + hash, fractalGet);
-      }
-
       //Session restore:
       refreshSessions();
       //Load formula lists from server
@@ -810,7 +805,7 @@ consoleDebug("draw: thumb2");
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = ['panel1', 'panel2', 'panel3', 'panel4'];
+  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
   var selectedTab = null;
   function showPanel(tab, name)
   {
@@ -848,7 +843,7 @@ consoleDebug("draw: thumb2");
     var main = document.getElementById("main");
     if (sidebar.style.display == 'none') {
       sidebar.style.display = 'block';
-      main.style.left = '386px';
+      main.style.left = '334px';
       $('toolsbtn').innerHTML = "Hide Tools &uarr;"
     } else {
       sidebar.style.display = 'none';
@@ -916,9 +911,10 @@ consoleDebug("draw: thumb2");
     if (rztimeout) clearTimeout(rztimeout);
     var timer = false;
     //If value passed, setting autoSize, otherwise responding to resize event
-    if (typeof(newval) == 'boolean')
+    if (typeof(newval) == 'boolean') {
       consoleDebug("Autosize " + newval);
-    else
+      if (!newval) return; //No change necessary
+    } else
       timer = true;
 
     if (timer && document["inputs"].elements["autosize"].checked == true) {

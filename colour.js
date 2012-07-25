@@ -7,7 +7,7 @@
 
     if (!source) {
       //Default
-      this.colours.push(new ColourPos("rgba(255,255,255,0)", -1));
+      this.colours.push(new ColourPos("rgba(0,0,0,0)", -1));
       this.colours.push(new ColourPos("rgba(0,0,0,1)", 0));
       this.colours.push(new ColourPos("rgba(59,45,30,1)", 0.05));
       this.colours.push(new ColourPos("rgba(31,194,188,1)", 0.15));
