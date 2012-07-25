@@ -120,9 +120,9 @@ function formulaFilename(category, label) {
   return "formulae/" + labelToName(label) + "." + categoryToType(category) + ".formula";
 }
 
-function formulaKey(category, label) {
+function formulaKey(category, label, check) {
   var key = categoryToType(category) + "/" + labelToName(label);
-  if (!formula_list[key]) {
+  if (check && !formula_list[key]) {
     //consoleWrite("No formula entry found for: " + category + " / " + label);
     return null;
   }

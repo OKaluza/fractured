@@ -39,29 +39,26 @@ body {
   background: #ffe;
   font-family: 'Droid Sans Mono',monospace;
 }
-html, body { 
-  padding: 0; margin: 0; 
-}
+html, body { padding: 0; margin: 0; }
 
 #buttons{ 
   margin: 1px; padding:0px;
-  background: #888;
+  background: #fefdee;
   border-radius: 4px;
   height: 28px;
 }
 #buttons input,select{ 
   float: left;
   height: 24px;
-  margin: 2px; padding: 0px 4px 2px 4px;
+  margin: 2px; padding: 0px 4px 2px;   /*Top L/R Bottom */
   font-size: 10pt;
 }
+input[type="button"]:hover {background:#dac083;}
+input[type="button"] {border: 1px solid #998; border-radius: 3px; background: #eed;}
+select {border: 1px solid #998; border-radius: 3px; background: #eed; padding: 1px;}
 
-#code{
-  position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;
-}
-#editor{
-  width: 100%; height: 100%;
-}
+#code {position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;}
+#editor {width: 100%; height: 100%;}
 
 </style>
 

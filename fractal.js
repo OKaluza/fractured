@@ -12,7 +12,7 @@
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
-  savevars = {};
+  var savevars = {};
 
   /**
    * @constructor
@@ -619,6 +619,7 @@
   }
 
   Formula.prototype.getSource = function() {
+    if (this.selected == "none") return "";
     //if (this.selected == "none" || this.selected == "same")
     //  return "";
     var key = this.getkey();
@@ -1034,7 +1035,7 @@
           //Formula name, create entry if none
           var name = pair[1];
           var category = pair[0];
-          var key = formulaKey(category, name);
+          var key = formulaKey(category, name, false);   //3rd param, check flag: Don't check exists because might not yet!
           if (key) {
             //Read ahead to get formula definition!
             var formula_section = "";
@@ -1711,23 +1712,24 @@
 
   Fractal.prototype.draw = function(antialias) {
     if (antialias != undefined) this.antialias = antialias;
-    if (this.width != this.canvas.width || this.height != this.canvas.height) {
+    var width = this.width;
+    var height = this.height;
+    if (width == 0 || height == 0) {
+      //Get size from window
+      width = window.innerWidth - (showparams ? 334 : 2);
+      height = window.innerHeight - 31;
+      $("widthInput").value = width;
+      $("heightInput").value = height;
+    }
 
-      if (this.width == 0 || this.height == 0) {
-        //Get size from window
-        this.width = window.innerWidth - (showparams ? 334 : 2);
-        this.height = window.innerHeight - 31;
-        $("widthInput").value = this.width;
-        $("heightInput").value = this.height;
-      }
-
-      this.canvas.width = this.width;
-      this.canvas.height = this.height;
-      this.canvas.setAttribute("width", this.width);
-      this.canvas.setAttribute("height", this.height);
+    if (width != this.canvas.width || height != this.canvas.height) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+      this.canvas.setAttribute("width", width);
+      this.canvas.setAttribute("height", height);
       if (this.gl) {
-        this.gl.viewportWidth = this.width;
-        this.gl.viewportHeight = this.height;
+        this.gl.viewportWidth = width;
+        this.gl.viewportHeight = height;
       }
     }
 
