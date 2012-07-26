@@ -118,16 +118,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
           mode = "WebCL";
           if (list.indexOf('double') >= 0)
             mode = "WebCL-double";
-        } else {
-          if (!offline) {
-            //Load fractal from hash ID
-            if (list[i].length > 20) {
-              //Packed base64
-              restored = window.atob(hash);
-              if (fractal) restoreFractal();
-            } else 
-              ajaxReadFile('ss/fractal_get.php?id=' + list[i], fractalGet);
-          }
+        } else if (list[i].length > 20) {
+          //Load fractal from base64 packed url
+          restored = window.atob(list[i]);
+          if (fractal) restoreFractal();
+        } else if (!offline && list[i].length > 4) {
+          //Load fractal from hash ID
+          ajaxReadFile('ss/fractal_get.php?id=' + list[i], fractalGet);
         }
         consoleDebug(list[i]);
       }
@@ -532,8 +529,11 @@ consoleDebug("draw: thumb2");
   function packFractal() {
     fractal.applyChanges();
     var data = window.btoa($('nameInput').value + "\n" + fractal.toString(true));
-    window.location = "/#" + data
-    window.location.reload(false);
+    var loc = window.location + "";
+    if (loc.indexOf("?") > 0)
+      window.location = loc + "&" + data;
+    else
+      window.location = loc + "?" + data;
   }
 
   function uploadFormulaFile(shared) {

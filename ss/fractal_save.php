@@ -81,7 +81,7 @@
   }
 
   mysql_close();
-  $loc =  $goto . "#" . $locator;
+  $loc =  $goto . "&" . $locator;
   echo $loc;
   exit();
 ?>
