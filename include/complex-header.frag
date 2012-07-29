@@ -1,14 +1,13 @@
 //Maths library prototypes
-#define R(x) real(x)
-#define C(x) complex(real(x),0.0)
-#define CI(x) complex(0.0,real(x))
-#define I complex(0.0,1.0)
+#define _C(x) complex(real(x),0.0)
+#define _CI(x) complex(0.0,real(x))
+#define _I complex(0.0,1.0)
 #define ident(args) args
 #define zero(args) 0
 #define czero(args) complex(0.0,0.0)
 
-#define PI  R(3.141592654)
-#define E   R(2.718281828)
+#define PI  real(3.141592654)
+#define E   real(2.718281828)
 real __OVERLOADABLE__ inv(in real r);
 real __OVERLOADABLE__ neg(in real x);
 real __OVERLOADABLE__ sqr(in real x);
