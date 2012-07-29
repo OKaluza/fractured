@@ -107,7 +107,7 @@
   WebGL.prototype.initProgram = function(vs, fs) {
     //Pass in vertex shader, fragment shaders...
 
-    if (this.gl.isProgram(this.program))
+    if (this.program && this.gl.isProgram(this.program))
     {
       //Clean up previous shader set
       if (this.gl.isShader(this.program.vshader))
