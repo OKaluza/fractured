@@ -11,7 +11,7 @@ function varDefault(variable, def) {
 //JQuery style lookup by id and style
 function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
 function $S(o) { o=$(o); if(o) return(o.style); }
-function toggle(v) { $S(v).display=($S(v).display=='none'?'block':'none'); }
+function toggle(v) { var d = $S(v).display; if (d == 'none' || !d) $S(v).display='block'; else $S(v).display='none'; }
 
 function typeOf(value) {
   var s = typeof value;
@@ -48,8 +48,8 @@ if (!String.prototype.hashCode) {
     var hash = 0;
     if (this.length == 0) return hash;
     for (i = 0; i < this.length; i++) {
-      char = this.charCodeAt(i);
-      hash = ((hash<<5)-hash)+char;
+      chr = this.charCodeAt(i);
+      hash = ((hash<<5)-hash)+chr;
       hash = hash & hash; // Convert to 32bit integer
     }
     return hash;

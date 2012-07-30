@@ -4,12 +4,13 @@
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
 //Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (important for palette repeat!)
+//Save session, doesn't seem to update formula definition changes
+//Special parameter type: for uniform parameters
 
 //Globals
 var sources = {};
 var mode = "WebGL";
 var fractal;
-var defaultMouse;
 var colours;
 var showparams = true;
 var currentSession = 0; //Selected session

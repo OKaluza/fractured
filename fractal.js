@@ -753,6 +753,7 @@
       //Init WebGL
       this.webgl = new WebGL(canvas);
       this.gl = this.webgl.gl;
+      this.webgl.init2dBuffers();
     } else if (renderer == "WebCL") {
       //Init WebCL testing
       this.webcl = new WebCL_(canvas);
@@ -1665,8 +1666,9 @@
     var errors;
     if (this.webgl) {
       errors = this.webgl.initProgram(sources["include/shader2d.vert"], source);
-      //Setup uniforms for fractal program (all these are always set now, do this once at start?)
-      this.webgl.setupProgram(["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"]);
+      //Restore uniforms/attributes for fractal program
+      this.uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
+      this.webgl.setupProgram(["aVertexPosition"], this.uniforms);
     } else {
       errors = this.webcl.initProgram(source, this.width, this.height);
     }
@@ -1768,8 +1770,19 @@
     else if (this.canvas.height > this.canvas.width)
       this.webgl.modelView.scale([1.0, this.canvas.height / this.canvas.width, 1.0]);  //Scale height
 
+    //var bg = colours[0].colour.rgbaGL();
+    //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
+    this.gl.clearColor(0, 0, 0, 0);
+    this.gl.enable(this.gl.BLEND);
+    this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
+
+    //if (fractal.julia)
+    //  this.gl.viewportWidth = this.gl.viewportHeight = 50;
+    //else
+    //  this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+
     consoleDebug('>> Drawing fractal (aa=' + this.antialias + ")");
-    this.webgl.draw(this.antialias);
+    this.webgl.draw2d(this.antialias);
     if (window.recording)
       window.outputFrame(); 
   }
