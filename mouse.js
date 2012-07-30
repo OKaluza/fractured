@@ -1,6 +1,7 @@
 window['mouseWheelTimeout'] = mouseWheelTimeout;
 
   var enableContext = false;
+  var defaultMouse;
 
   //Handler class from passed functions
   /**

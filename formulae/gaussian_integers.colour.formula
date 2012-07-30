@@ -19,12 +19,12 @@ real :total = 0.0;
 real :itermin = 0.0;
 real :itermax = 0.0;
 
-complex :zmin = C(0.0);
-complex :zmax = C(0.0);
+complex :zmin = _C(0.0);
+complex :zmax = _C(0.0);
 complex :normfac;
 
 if (:normalise == 0)
-  :normfac = C(1.0);       //no normalisation
+  :normfac = _C(1.0);       //no normalisation
 if (:normalise == 1)
   :normfac = point;        //point normalisation
 if (:normalise == 2)

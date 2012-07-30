@@ -1,5 +1,8 @@
-/* DHTML Color Picker */
-/* Originally based on : http://www.colorjack.com/software/dhtml+color+picker.html */
+/* Originally based on : */
+/* DHTML Color Picker, Programming by Ulyses, ColorJack.com (Creative Commons License) */
+/* http://www.dynamicdrive.com/dynamicindex11/colorjack/index.htm */
+/* (Stripped down, clean class based interface no IE6 support for HTML5 browsers only) */
+
 function scale(val, range, min, max) {return clamp(max * val / range, min, max);}
 function clamp(val, min, max) {return Math.max(min, Math.min(max, val));}
 
