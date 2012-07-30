@@ -1,40 +1,38 @@
 ===================================
-Fractured Studio v0.4 Documentation
+Fractured Studio v0.5 Documentation
 ===================================
 
 Introduction
-------------
-Fractured Studio is a fast fractal renderer written totally in javascript and WebGL (or experimentally: WebCL).
+============
+Fractured Studio is a fast GPU fractal renderer written totally in javascript and WebGL/WebCL.
 
-It was originally a hobby project to allow me to get my old fractal software running cross-platform and to render fractals much faster by using the GPU. The emergence of WebGL and, more recently, WebCL, allow the power of graphics processors to be accessed from web applications.
+Originally it was a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU. There's lots of great fractal software out there, but from my deranged perspective, if I used that I'd miss out a large part of the fun, which is in writing the code and getting everything working from scratch.
 
-There's lots of great fractal software out there, but if I used it I'd miss out a large part of the fun, which is in writing the code and getting everything working from scratch.
-The original code for this project was started in 2009 using Java and OpenGL (JOGL), then I started to hear about WebGL I got motivated again and ported my work to javascript/html/webgl.
-The formula editor and renderer where finished in late 2010. Probably should have stopped there but then I got carried away with making it a studio workspace where I could store my work on a server and access it anywhere.
+The original code for this project was started in 2009 using Java and OpenGL (JOGL), then I started to hear about WebGL, got motivated again, and ported my work to javascript/html/webgl, learning javascript along the way.
+I finished the formula editor and renderer in late 2010 and probably should have stopped there but then I got carried away with making it a studio workspace where I could store my work on a server and access it anywhere.
 
-Now many lost weekends and evenings later it seems to finally have turned into a fairly full-featured app so I though I should finally put it up somewhere and see if anyone else finds it useful.
+Now many lost weekends and evenings later it seems to finally have turned into a fairly full-featured app, so here it is maybe someone will find it useful.
 
 Requirements
 ------------
 - A modern browser supporting WebGL and HTML5 local storage (Only confirmed working with Firefox, Chrome & Safari at this stage, Opera's WebGL is still causing me some problems) 
 - A graphics card with up to date drivers that support OpenGL (or Direct3D via ANGLE on Windows)
-- Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://http://webcl.nokiaresearch.com/
+- Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ to try it, append /webcl to the url arguments (eg: http://fractured.ozone.id.au/webcl)
 
 Workspace
 =========
-Upon first load the [Info] tab will show the status while the initial program data is downloaded from the server.
-Once this is complete you will be presented with a workspace showing a rendering of the Mandelbrot set and the following user interface elements:
+On first loading the app you should be presented with a workspace showing a basic rendering of the Mandelbrot set and the following user interface elements:
 
 - *Top Menu* containing the [Session] and [Fractal] menus and the [Draw] button
 - *Palette* an editable gradient colour palette and background colour selection
-- *Tools* a set of tabs on the left containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] and [Info]
+- *Tools* a set of tabs and panels on the left containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] and [Info]
 - *Fractal Display* occupies the rest of the available browser window, showing the rendered fractal image.
 - *Coordinates* at the bottom left, shows the current complex coordinate under the mouse pointer as you move it over the fractal display.
 
 Fractal Display
-===============
+---------------
 This is the output of the fractal formula and parameters, showing a rendering of the selected fractal formula coloured using the selected colouring algorithms using the palette gradient.
-This area of the screen is responsive to various mouse actions, many of which can be customised (see later section --link to editing mouse commands).
+This area of the screen is responsive to various mouse actions, many of which can be customised (see later section on editing mouse commands).
 
 The default mouse actions are:
 
@@ -47,11 +45,11 @@ The default mouse actions are:
 *Alt + scroll* Rotate in 1 degree increments
 
 Coordinates
-===========
-As you move the mouse over the fractal display the coordinates in the complex plane you are hovering over will be displayed in the coordinates box at the bottom left of the window. These coordinates are used for many of the available mouse actions.
+-----------
+As you move the mouse over the fractal display the coordinates in the complex plane are displayed in the box at the bottom left of the window. These coordinates are used for many of the available mouse actions, switching between the Mandebrot and Julia sets for instance.
 
 Palette
-=======
+-------
 The palette editor allows selection of a number of colours forming a gradient which is used to colour the fractal display.
 Each of the colours in the gradient is represented by a line and a slider tool, except for the start and end colours.
 The slider tools (image) can be dragged, adjusting the position of the colour in the gradient.
@@ -61,19 +59,19 @@ The start and end colours can also be edited by clicking at the start/end of the
 Right-clicking on a colour position marker deletes the colour from the gradient.
 
 Colour Selector
----------------
+~~~~~~~~~~~~~~~
 A standard colour picker box which allows selection of the Saturation and Brightness of the colour using the large square box to the left and the Hue and Opacity using the columns to the right.
 The box can be moved around by clicking and dragging on its edges.
 To accept changes to the colour, press the [OK] button and the box will close.
 To cancel the changes press the [X] button.
 
 Tools
-=====
-The bulk of the controls used to render fractals appear in the set of tabs on the left, which we will call the "Tools" area.
+-----
+The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the "Tools" area.
 
 Parameters
-----------
-The first is the Parameters tab. This shows basic details of the fractal display which are common to all fractal renderings. All of these fields can be edited and most will effect the way the fractal is rendered. To redraw the fractal after changing a value, press the [Draw] button on the Top Menu. 
+~~~~~~~~~~
+The first is the Parameters tab. This shows basic details of the fractal display, common to all fractal renderings regardless of chosen formula. All of these fields can be edited and changing most of them will modify the way the fractal is rendered. To redraw the fractal after changing a value, press the [Draw] button on the Top Menu. 
 The fields are:
 
 - *Name* a name for the fractal, used when saving
@@ -89,7 +87,7 @@ The fields are:
 - *Iterations* maximum number of iterations to apply the selected formula
 
 Formula
--------
+~~~~~~~
 This is where we start to really gain control of the fractal space to render.
 The first three options here allow selection of different *Formulae* used to generate the fractal.
 
@@ -107,31 +105,32 @@ Each formula will have different options which are best understood by playing wi
 - *Escape* is the value which controls the *Bailout* condition, if this condition is met the fractal calculation is finished.
 - *Bailout Test* is the test to apply to *z* to see if it meets the bailout value *Escape*. By default here it is *norm* so the coordinate will be considered outside the set if this condition is ever true: norm(z) > *escape* which is equivalent to norm(z) > 4.
 
-*Details of each fractal formula*
+The default *Fractal* formula list contains *Mandelbrot, Burning Ship, Magnet 1,2 & 3, Nova, Cactus & Phoenix* fractal formulae.
+The default *Transform* formula list contains two simple transforms: *Inverse* (which only works as a pre-transform) and *Functions* which simply applies a mathematical function to the result of the selected formula at every iteration. 
 
 Colour
-------
+~~~~~~
 Additional formulae can be selected controlling how the values calculated by iterating the fractal formula above are used to colour the resulting image.
 These formulae usually derive a colour from the gradient palette, but may calculate a colour value directly, ignoring the gradient.
 
 *Details of each colour formula*
 
 Info
-----
+~~~~
 This tab shows a log of status information and sometimes error messages from the fractal renderer.
 The [Clear Log] button clears all messages from the display.
 There is also a *Local storage usage* indicator showing how much of the available local storage allocation is available, this is filled by saving fractals and when exceeded no more will be able to be saved. Currently it is based on an assumption of 5MB local storage space.
 
 Top Menu
-========
+--------
 Now we get to the menu bar which has various options controlling fractal rendering and allowing saving and loading fractals and other data to local storage and to the web server.
 
 Draw
-----
+~~~~
 This button redraws the current fractal, changes to fractal parameters in the *tools* area are not usually applied instantly and you must press this button to redraw the fractal display.
 
 Fractal
--------
+~~~~~~~
 This menu contains features relating to the current fractal display:
 
 - *New* Create a new fractal and reset all fractal settings to defaults.
@@ -149,7 +148,7 @@ This menu contains features relating to the current fractal display:
 - *Hide/Show Tools* hides or shows the *tools* area from the window, allowing more room for the fractal display.
 
 Session
--------
+~~~~~~~
 This menu gives you options over the current *session* data, a *session* represents all the currently saved fractals and formula stored in local storage. This data can be stored on the server and then retrieved from another browser on another computer. It also allows more fractal files to be saved that would otherwise fit in the allocated local storage space, if you run low on space you can just save your session to the server and start a new session.
 
 In order to use the server features you must log in, you can use any OpenID provider account to log in, Google, Yahoo, myOpenID, AOL and StackExchange account options are provided on the menu, others are supported by selecting the top *OpenID* option.
@@ -163,7 +162,130 @@ In order to use the server features you must log in, you can use any OpenID prov
 - *Delete* (when logged in only) if the current session was loaded from a previously saved entry in the sessions list, this will delete that entry.
 - *Logout* (when logged in only) log out from the server. An option to clear the session data will be given, if taken the session will be replaed by a new session.
 
+Formula Sets
+------------
+The Formula Sets menu under the Fractal menu has a set of features allowing you to save and restore sets of formula for later use or sharing.
+The first two menu options *Public* and *Uploaded* contain formula sets on the server which you can choose to load.
+Selecting one of the names formula sets from either of these sub-menus will prompt you to download and use this formula set.
+*Warning* loading a formula set will replace all your active formula definitions.
+Once you have loaded a formula set from the server it will be highlighted in the menu with a grey border.
 
-TODO:
-Editing formulae, maths library functions etc
-Custom mouse actions, scripting
+- The *Public* list is all formula sets that yourself or others have published on the server.
+- The *Uploaded* list contains only your own formula sets that you have uploaded.
+- *Delete selected* allows you to delete the highlighted formula set from the server.
+- The *Publish* option will upload your current formula set and make it available for all users.
+- The *Upload* option will save your current formula set on the server but only you will be able to access it later.
+
+Editing Formulae
+================
+There are limitless possibilities here to define your own fractal, transform and colour formulae. 
+Each formula selection has three buttons to the right:
+
+- The [Edit] button opens an editor allowing you to modify the formula code.
+- The [ + ] button allows you to add a new formula definition, after you enter a name the editor will open with the currently selected formula code as a starting point.
+- The [ - ] button deletes a formula from the list.
+
+A formula definition consists of a set of parameter definitions and (optionally) data declarations and a set of formula code sections. 
+
+Parameter definitions
+---------------------
+A parameter definition is a description of a formula variable or option which you want to allow to be controlled by the user interface.
+These definitions specify the controls that appear when you select this formula.
+
+The format of a definition is:
+
+::
+
+  //Description
+  @variable_name = type(default);
+
+- *Description* Enter the information you want to appear in the control label in this comment area on the line before the actual definition.
+- *variable_name* Enter a variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number) this is the name by which you will use this parameters value in the formula code.
+- *type* the type of value: bool, int, uint, real, float, complex, rgba, list, real_function, complex_function, bailout_function or expression
+- *default* the default value that is inserted for the parameter if it has not been edited.
+
+**Parameter types explained**
+
+- *bool* a true/false value, appears a check box
+- *int* an integer value, appears as a number entry
+- *uint* an unsigned integer value ( > 0), appears as a number entry
+- *real* a real number, appears as a number entry
+- *float* as above, but single precision only regardless of precision setting
+- *complex* a complex number value, represented as a real and imaginary value seperated by a comma in code, appears as two number entries.
+- *rgba* a colour value, appears as a colour box which can be clicked on to bring up a colour picker
+- *list* a list of labels, the variable will be assigned a numeric value based on user selection from 0 to n-1 (where n is number of list items), appears as a drop down list.
+- *real_function* a drop down list of functions returning real number values
+- *complex_function* a drop down list of functions returning complex number values
+- *bailout_function* a drop down list of bailout functions
+- *expression* a mathematical expression that will be parsed and converted into formula code
+
+Data declarations
+-----------------
+Following the parameter definitions a list of data variables that will be used in the formula calculation can be defined, in the form:
+
+::
+
+  type variable_name = default;
+
+- *type* can be one of bool, int, uint, real, float, complex or rgba.
+- *variable_name* a standard variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number)
+- *default* initial value of variable, complex numbers can be specificed simply using parentheses, eg: (0.3,0.3)
+
+Formula code sections
+---------------------
+These are sections of code that will be processed in various points during the fractal calculation, different sections are available depending on the type of formula being edited. 
+
+They are defined in the form:
+
+::
+
+  section:
+    code statements...
+    ...
+
+*section* is the name of the section, on the following line you enter the formula code, it doesn't have to be indented but doing so will make it easier to read. Any statements from the preceding section heading until the next section heading or the end of the file will be interpreted as the section contents.
+
+Common sections
+~~~~~~~~~~~~~~~
+
+- *init:* inserted after data declarations, before all processing.
+- *reset:* inserted after setting up the initial conditions of the formula, selected starting coordinates etc.
+
+Fractal Formulae sections
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- *znext:* the calculation of the next z value, z(n+1), the core of the fractal formula processing. To define a fractal formula that does anything this section must be defined, but it may be defined as a *parameter* of type *expression* named znext, which will simply execute the code resulting from the entered mathematical expression in this code section. Otherwise you must define the znext section, you can define znext as a parameter or a code section but not both.
+- *escaped:* define an escape bailout test, if **break** is called here the fractal iteration halts and the escape condition will be set. This section can also be replaced by a parameter named "escape" containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).
+- *converged:* define a convergent bailout test, as escape except when triggered the converge condition will be set. This section can also be replaced by a parameter named "converge" containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).
+
+Transform Formulae sections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- *transform:* code entered here will be inserted at the fractal z(n+1) calculation stage, before processing znext if it is a pre-transform, or after if it is a post-transform. 
+
+Colour Formulae sections
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- *calc:* code entered here will be inserted after the fractal z(n+1) calculation stage, use for any additional values that must be calculated during the fractal iteration to be used in the final colour calculation. 
+- *result:* this is where the final colour is calculated, set the built in variable **colour** to the value desired. This must be an rgba value, the colours of the editable gradient can be accessed using the function **gradient(value)** where value is a number between 0 and 1 representing the position on the gradient to sample, this function returns an rgba colour value.
+
+Formula language
+----------------
+Apart from the special format of the parameter definitions and section headers, the formula code is entered in a C-style syntax as a form of augmented GLSL ES 2.0 (http://www.khronos.org/opengles/2_X) with an additional function library for complex numbers and some definitions and pre-processing for ease of use writing fractal formulae. 
+
+Complex numbers are represented as two-dimensional vector types, and created using the type *complex*, complex constants can be defined in code in the form (re, im), eg: complex Z = (-1,0.5). You can then access the real component (-1.0) as Z.x and the imaginary component (0.5) as Z.y.
+
+This is a bit of a hack and you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations for which the complex number definition is the same (addition and subtraction) but not for multiplication and division. As operators can't be overloaded in GLSL, for mathematically correct results you should never use the * and / operators to multiply and divide complex types. Use the build in *mul()* and *div()* functions instead which are designed to do correct complex number multiplication and division.
+
+::
+
+  eg: if x is a complex number:
+  x = x*(1.5,-1); -- incorrect!
+  x = mul(x,(1.5,-1)); -- correct!
+
+For mathematical expressions it is much better using the **expression** parameter type, expressions entered in these parameters will multiply complex numbers correctly using the * and / operators and result in much more readable mathematical language, with the bonus that the expression can be easily edited on in the tools panel without having to open the formula editor.
+The expression parser will automatically translate any multiplication, division and power operations to the correct form.
+
+**TODO: Further document maths library functions, custom mouse actions, scripting**
+
+
