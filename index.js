@@ -125,7 +125,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
           if (fractal) restoreFractal();
         } else if (!offline && list[i].length > 4) {
           //Load fractal from hash ID
-          ajaxReadFile('ss/fractal_get.php?id=' + list[i], fractalGet);
+          fractalGet(readURL('ss/fractal_get.php?id=' + list[i]));
         }
         consoleDebug(list[i]);
       }
@@ -133,9 +133,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     if (!offline) {
       //Session restore:
-      refreshSessions();
+      sessionGet(readURL('ss/session_get.php')); //Get updated list...
       //Load formula lists from server
-      ajaxReadFile('ss/formula_get.php', loadFormulaeList);
+      loadFormulaeList(readURL('ss/formula_get.php'));
     }
 
     //Load the last program state
@@ -220,10 +220,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         }
         checkMenuHasItems(menu);
 
-        if (currentSession) {
-          //Have a saved session #, get the data
-          ajaxReadFile('ss/setvariable.php?name=session_id?value=' + currentSession);
-        }
       } catch(e) {
         alert('LoadSessionList: Error! ' + e);
       }
@@ -478,7 +474,7 @@ consoleDebug("draw: thumb2");
       localStorage.clear(); //be careful as this will clear the entire database
       loadState();
       if (!offline)
-        ajaxReadFile('ss/setvariable.php?name=session_id?value=0', refreshSessions);
+        sessionGet(readURL('ss/session_get.php')); //Get updated list...
       colours.read(); //Palette reset
       newFractal();
       currentSession = 0;  //No sessions to select
@@ -487,10 +483,6 @@ consoleDebug("draw: thumb2");
       //window.location.reload(false);
       window.onbeforeunload = null;
     }
-  }
-
-  function refreshSessions() {
-    ajaxReadFile('ss/session_get.php', sessionGet); //Get updated list...
   }
 
   //Import/export all local storage to server
@@ -511,7 +503,7 @@ consoleDebug("draw: thumb2");
 
   function sessionSaved(data) {
     localStorage['fractured.currentSession'] = data;
-    refreshSessions();
+    sessionGet(readURL('ss/session_get.php')); //Get updated list...
     progress();
   }
 
@@ -572,7 +564,7 @@ consoleDebug("draw: thumb2");
       alert("Formula save error: " + response);
 
     //Refresh list
-    ajaxReadFile('ss/formula_get.php', loadFormulaeList);
+    loadFormulaeList(readURL('ss/formula_get.php'));
     progress();
   }
 
@@ -649,9 +641,9 @@ consoleDebug("draw: thumb2");
   function loadFormulaSet(id) {
     if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
     localStorage["fractured.currentFormulae"] = currentFormulae = id;
-    ajaxReadFile('ss/formula_get.php?id=' + id, importFormulae);
+    importFormulae(readURL('ss/formula_get.php?id=' + id));
     //Repopulate menu (so selected set)
-    ajaxReadFile('ss/formula_get.php', loadFormulaeList);
+    loadFormulaeList(readURL('ss/formula_get.php'));
   }
 
   function importFormulae(data) {
@@ -672,14 +664,10 @@ consoleDebug("draw: thumb2");
   function deleteSelectedFormulae()
   {
     if (currentFormulae && confirm('Delete this formula set from the server?')) {
-      ajaxReadFile('ss/formula_delete.php?id=' + currentFormulae, refreshFormulae);
+      readURL('ss/formula_delete.php?id=' + currentFormulae);
+      loadFormulaeList(readURL('ss/formula_get.php'));
       currentFormulae = localStorage["fractured.currentFormulae"] = 0;
     }
-  }
-
-  function refreshFormulae() {
-    //Load formula lists from server
-    ajaxReadFile('ss/formula_get.php', loadFormulaeList);
   }
 
   function loadSession(id)
@@ -693,15 +681,10 @@ consoleDebug("draw: thumb2");
   function deleteSelectedState()
   {
     if (currentSession && confirm('Delete this session from the server?')) {
-      ajaxReadFile('ss/session_delete.php?id=' + currentSession, refreshSessions);
+      readURL('ss/session_delete.php?id=' + currentSession);
+      sessionGet(readURL('ss/session_get.php')); //Get updated list...
       currentSession = localStorage["fractured.currentSession"] = 0;
     }
-  }
-
-  function reloadWindow(temp)
-  {
-    //alert("AJAX RESULT: " + temp);
-    window.location.reload(false);
   }
 
   function getState() {
@@ -729,7 +712,7 @@ consoleDebug("draw: thumb2");
       //Replace session id, not saved in state data
       localStorage["fractured.currentSession"] = currentSession;
       localStorage["fractured.currentFormulae"] = currentFormulae;
-      refreshSessions();
+      sessionGet(readURL('ss/session_get.php')); //Get updated list...
       loadState();
       loadLastFractal();
       progress();
@@ -915,7 +898,8 @@ consoleDebug("draw: thumb2");
     delete localStorage['fractured.currentFractal']
     if (confirm("Clear current session after logout?"))
       resetState(true);
-    ajaxReadFile('ss/logout.php', reloadWindow);
+    readURL('ss/logout.php');
+    window.location.reload(false);
   }
 
 /////////////////////////////////////////////////////////////////////////
