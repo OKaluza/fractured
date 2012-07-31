@@ -12,6 +12,7 @@
 //Norm function
 @:normfunc = complex_function(ident);
 
+real :r;
 real :rmin = 1.0e12;
 real :rmax = 0.0;
 real :rave = 0.0;
@@ -33,31 +34,27 @@ if (:normalise == 3)
   :normfac = :normfunc(z); //f(z) normalisation
 
 calc:
-  complex temp, remain;
-
   //Mode = round/truncate/floor/ceiling
   if (:mode == 0)
-     temp = round(div(z,:normfac));
+    :r = cabs(z - mul(round(div(z,:normfac)), :normfac));
   if (:mode == 1)
-     temp = trunc(div(z,:normfac));
+    :r = cabs(z - mul(trunc(div(z,:normfac)), :normfac));
   if (:mode == 2)
-     temp = floor(div(z,:normfac));
+    :r = cabs(z - mul(floor(div(z,:normfac)), :normfac));
   if (:mode == 3)
-     temp = ceil(div(z,:normfac));
+    :r = cabs(z - mul(ceil(div(z,:normfac)), :normfac));
 
-  remain = z - mul(temp, :normfac);
-  real r = cabs(remain);
-  :total = :total + r;
+  :total = :total + :r;
   :rave = :total / real(count);
-  if (r < :rmin)
+  if (:r < :rmin)
   {
-     :rmin = r;
+     :rmin = :r;
      :zmin = z;
      :itermin = real(count+1);
   }
-  if (r > :rmax)
+  if (:r > :rmax)
   {
-     :rmax = r;
+     :rmax = :r;
      :zmax = z;
      :itermax = real(count+1);
   }

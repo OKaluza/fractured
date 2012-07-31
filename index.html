@@ -59,6 +59,7 @@
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
+            <li><span onclick="uploadState();">Save</span></li>
             <li><span onclick="exportStateFile();">Export</span></li>
             <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
             <div id="session_user_menu" style="display: none">
@@ -67,10 +68,6 @@
                 <ul id="sessions" class="selectlist">
                 </ul>
               </li>
-              <li><hr></li>
-              <li><span onclick="uploadState();">Save</span></li>
-              <li><span onclick="deleteSelectedState();">Delete</span></li>
-
               <li><hr></li>
               <li><span onclick="logout();">Logout</span></li>
             </div>
@@ -104,7 +101,6 @@
           <ul class="dd">
             <li><span onclick="newFractal();">New</span></li>
             <li><span onclick="saveFractal();">Save</span></li>
-            <li><span onclick="deleteFractal();">Delete</span></li>
             <li><span onclick="uploadFractalFile();">Share</span></li>
             <li><hr></li>
             <li><span class="fly" tabindex="1">Saved Fractals</span>
@@ -121,9 +117,8 @@
                   <ul id="formulae-private" class="selectlist">
                   </ul>
                 </li>
-                <li><span onclick="deleteSelectedFormulae();">Delete selected</span></li>
-                <li><span onclick="uploadFormulaFile(1);">Publish Formula Set</span></li>
-                <li><span onclick="uploadFormulaFile(0);">Save Formula Set</span></li>
+                <li><span onclick="uploadFormulaFile(1);">Publish</span></li>
+                <li><span onclick="uploadFormulaFile(0);">Save</span></li>
               </ul>
             </li>
             <li><hr></li>
@@ -351,6 +346,7 @@
 
       <div class="panel scroll" id="panel5" style="display: none">
         <div id="helparea">
+            <br>
         </div>
       </div>
 
