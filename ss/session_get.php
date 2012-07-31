@@ -29,8 +29,6 @@
           $data = gzinflate($data);
         header("Content-Length: ".strlen($data)); //set header length
         echo $data;
-        //Update current session id
-        $_SESSION['session_id'] = $session;
       }
     } else {
       $query = "SELECT * FROM session WHERE user_id = '$user';";
