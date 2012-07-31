@@ -208,17 +208,15 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       usermenu.style.display = 'block';
       //Load list of saved states/sessions
       try {
-        //Get selected id 
-        currentSession = parseInt(localStorage["fractured.currentSession"]);
-
         //Clear & repopulate list
         var menu = document.getElementById('sessions');
         removeChildren(menu);
         var list = JSON.parse(data);
         for (var i=0; i<list.length; i++) {
           var label = list[i].date + "\n" + list[i].description;
-          var onclick = Function("loadSession(" + list[i].id + ")");
-          addMenuItem(menu, label, onclick, currentSession == list[i].id ? "selected_item" : null, true);
+          var onclick = "loadSession(" + list[i].id + ")";
+          var ondelete = "deleteSelectedState();";
+          addMenuItem(menu, label, onclick, ondelete, currentSession == list[i].id, true);
         }
         checkMenuHasItems(menu);
 
@@ -273,9 +271,9 @@ consoleDebug("draw: antialias");
     }
   }
 
-  function deleteFractal() {
-    if (currentFractal >= 0) {
-      var idx = currentFractal;
+  function deleteFractal(idx) {
+    //if (currentFractal >= 0) {
+      //var idx = currentFractal;
       var name = localStorage["fractured.names." + idx];
       if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
       try {
@@ -287,7 +285,7 @@ consoleDebug("draw: antialias");
       } catch(e) {
         alert('Storage delete error! ' + e);
       }
-    }
+    //}
   }
 
   //Menu management functions...
@@ -298,20 +296,32 @@ consoleDebug("draw: antialias");
     }
   }
 
-  function addMenuItem(menu, label, onclick, classname, atstart) {
+  function addMenuItem(menu, label, onclick, ondelete, selected, atstart) {
     var entry = document.createElement("li");
     var span = document.createElement("span");
-    if (classname)
-      entry.className = classname;
-    span.onclick = onclick;
+    //span.onclick = onclick;
+    span.setAttribute("onclick", onclick);
     span.appendChild(span.ownerDocument.createTextNode(label));
     entry.appendChild(span);
     if (atstart)
       menu.insertBefore(entry, menu.firstChild);
     else
       menu.appendChild(entry);
+    if (selected) {
+      entry.className = "selected_item";
+      addMenuDelete(span, ondelete);
+    }
     //Return span so any additional controls can be added
     return span;
+  }
+
+  function addMenuDelete(span, onclick) {
+    var btn = document.createElement("input");
+    btn.type = "button";
+    btn.value = " X ";
+    btn.className = "right";
+    btn.setAttribute("onclick", onclick + " event.stopPropagation();");
+    span.appendChild(btn);
   }
 
   function checkMenuHasItems(menu) {
@@ -333,8 +343,9 @@ consoleDebug("draw: antialias");
         var namestr = localStorage["fractured.names." + i];
         if (!namestr) continue; //namestr = "unnamed";
         var source = localStorage["fractured.fractal." + i];
-        var onclick = Function("selectedFractal(" + i + ")");
-        var span = addMenuItem(menu, namestr, onclick, currentFractal == i ? "selected_item" : null, true);
+        var onclick = "selectedFractal(" + i + ")";
+        var ondelete = "deleteFractal(" + i + ");";
+        var span = addMenuItem(menu, namestr, onclick, ondelete, currentFractal == i, true);
         if (localStorage["fractured.thumbnail." + i]) {
           //localStorage.removeItem("fractured.thumbnail." + i);
           var img = new Image;
@@ -465,10 +476,9 @@ consoleDebug("draw: thumb2");
   function resetState(noconfirm) {
     if (noconfirm || confirm('This will clear everything!')) {
       localStorage.clear(); //be careful as this will clear the entire database
+      loadState();
       if (!offline)
         ajaxReadFile('ss/setvariable.php?name=session_id?value=0', refreshSessions);
-      loadState();
-
       colours.read(); //Palette reset
       newFractal();
       currentSession = 0;  //No sessions to select
@@ -622,11 +632,12 @@ consoleDebug("draw: thumb2");
       var list = JSON.parse(data);
       for (var i=0; i<list.length; i++) {
         var label = list[i].date + "\n" + list[i].name;
-        var onclick = Function("loadFormulaSet(" + list[i].id + ")");
+        var onclick = "loadFormulaSet(" + list[i].id + ")";
+        var ondelete = "deleteSelectedFormulae();";
         if (list[i]["public"] == "1")
-          addMenuItem(menu1, label, onclick, currentFormulae == list[i].id ? "selected_item" : null);
+          addMenuItem(menu1, label, onclick, ondelete, currentFormulae == list[i].id);
         else
-          addMenuItem(menu2, label, onclick, currentFormulae == list[i].id ? "selected_item" : null);
+          addMenuItem(menu2, label, onclick, ondelete, currentFormulae == list[i].id);
       }
       checkMenuHasItems(menu1);
       checkMenuHasItems(menu2);
@@ -760,8 +771,10 @@ consoleDebug("draw: thumb2");
     //Get list of saved fractals
     if (!supports_html5_storage()) return;
 
-    //Get selected id 
+    //Get selected id's
+    currentSession = parseInt(localStorage["fractured.currentSession"]);
     currentFractal = parseInt(localStorage["fractured.currentFractal"]);
+    currentFormulae = parseInt(localStorage["fractured.currentFormulae"]);
 
     populateFractals();
 

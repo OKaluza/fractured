@@ -32,6 +32,16 @@ function ajaxReadFile(filename, callback, nocache, progress)
   http.send(null); 
 }
 
+function readURL(url) {
+  //Read url (synchronous)
+  var http = new XMLHttpRequest();
+  http.open('GET', url, false);
+  http.overrideMimeType('text/plain; charset=x-user-defined');
+  http.send(null);
+  if (http.status != 200) return '';
+  return http.responseText;
+}
+
 function updateProgress(evt) 
 {
   //evt.loaded: bytes browser received/sent

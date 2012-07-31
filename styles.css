@@ -35,6 +35,8 @@ div.row input:focus {border-color: blue;}
 div.row select:focus {border-color: blue;}
 div.row textarea:focus {border-color: blue;}
 
+li.selected_item span input {height: 18px; font-size: 8pt; padding: 0px; margin: 0px 10px 0px 0px; border: 1px solid #998; border-radius: 3px; background: #665;}
+
 /* Console & help areas */
 div.info {
   border:1px solid #888;
