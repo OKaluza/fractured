@@ -6,7 +6,7 @@
 <title>Fractured - Fractal Art Studio</title>
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
-<link rel="stylesheet" type="text/css" href="reset.css">
+<!--link rel="stylesheet" type="text/css" href="reset.css"-->
 <link rel="stylesheet" type="text/css" href="styles.css">
 
 <script type="text/javascript" src="bootstrap.js"></script>
@@ -43,7 +43,6 @@
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
               <ul class="dd">
-                <li><span onclick="packFractal();">URL pack fractal</span></li>
                 <li><span onclick="window.location.reload();">Reload All</span></li>
                 <li><hr></li>
                 <li><span onclick="openEditor('generated.shader');">Generated Source</span></li>
@@ -59,10 +58,10 @@
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
-            <li><span onclick="uploadState();">Save</span></li>
-            <li><span onclick="exportStateFile();">Export</span></li>
-            <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
             <div id="session_user_menu" style="display: none">
+              <li><span onclick="uploadState();">Save</span></li>
+              <li><span onclick="exportStateFile();">Export</span></li>
+              <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
               <li><hr></li>
               <li><span class="fly" tabindex="1">Saved Sessions</span>
                 <ul id="sessions" class="selectlist">
@@ -72,6 +71,8 @@
               <li><span onclick="logout();">Logout</span></li>
             </div>
             <div id="session_login_menu">
+              <li><span onclick="exportStateFile();">Export</span></li>
+              <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
               <li><span class="fly" tabindex="1">Login with</span>
                 <ul class="login">
                   <li><span onclick="toggle('openid_form'); $('openid').focus();">
@@ -118,17 +119,18 @@
                   </ul>
                 </li>
                 <li><span onclick="uploadFormulaFile(1);">Publish</span></li>
-                <li><span onclick="uploadFormulaFile(0);">Save</span></li>
+                <li><span onclick="uploadFormulaFile(0);">Upload</span></li>
               </ul>
             </li>
             <li><hr></li>
-            <li><span class="fly" tabindex="1">Save as image file</span>
+            <li><span class="fly" tabindex="1">Save As</span>
               <ul>
-                <li><span onclick="saveImageJPEG();">Save JPEG</span></li>
-                <li><span onclick="saveImagePNG();">Save PNG</span></li>
+                <li><span onclick="saveImageJPEG();">JPEG Image</span></li>
+                <li><span onclick="saveImagePNG();">PNG Image</span></li>
+                <li><span onclick="exportFractalFile();">Fractal File</span></li>
+                <li><span onclick="packFractal();">Fractal URL</span></li>
               </ul>
             </li>
-            <li><span onclick="exportFractalFile();">Export to file</span></li>
             <li><span class="fly" tabindex="1">Import</span>
               <ul>
                 <li><span onclick="filetype='fractal'; $('fileupload').click();">Fractal</span></li>
@@ -323,30 +325,28 @@
         <input type="button" value="Clear log" onClick="consoleClear()">
         <div id="consolearea">
           <div id="console" class="info">
-            <p>Fractured Studio v0.5 - Owen Kaluza, 2012</p>
-            <p></p>
+            <h1>Fractured Studio</h1>
+            <p><b>Version 0.5 (c) Owen Kaluza, 2012</b></p>
             <br>
-            <p><i><b>With thanks to:</b></i></p>
-            <p><a href="http://codemirror.net/">CodeMirror</a> used for formula / shader code editing component.</p>
-            <p>Expression parser built using <a href="http://zaach.github.com/jison/">Jison</a></p>
-            <p><a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a> for the design the colour picker is based on.</p>
-            <p>Vector and Matrix Math: <a href="http://sylvester.jcoglan.com/">sylvester.js</a></p>
-            <p><a href="http://learningwebgl.com/">Learning WebGL</a></p>
-            <p>References used when adding WebCL support:</p>
-            <p><a href="http://webcl.nokiaresearch.com/">Nokia Research WebCL</a></p>
-            <p><a href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">WebCL Examples</a></p>
-            <p>Some fractal formulae from <a href="http://gnofract4d.sourceforge.net/">Gnofract</a></p>
-            <br>
+            <p><i>With thanks to:</i></p>
+            <ul>
+            <li><a href="http://codemirror.net/">CodeMirror</a> used for formula / shader code editing component.</li>
+            <li>Expression parser built using <a href="http://zaach.github.com/jison/">Jison</a></li>
+            <li><a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a> for the design the colour picker is based on.</li>
+            <li>Vector and Matrix Math: <a href="http://sylvester.jcoglan.com/">sylvester.js</a></li>
+            <li><a href="http://learningwebgl.com/">Learning WebGL</a></li>
+            <li>References used when adding WebCL support: <a href="http://webcl.nokiaresearch.com/">Nokia Research WebCL</a> <a href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">WebCL Examples</a></li>
+            <li>Some fractal formulae from <a href="http://gnofract4d.sourceforge.net/">Gnofract</a></li>
+            </ul>
             <p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p>
-            <br>
+            <hr>
           </div>
         </div>
 
       </div>
 
       <div class="panel scroll" id="panel5" style="display: none">
-        <div id="helparea">
-            <br>
+        <div id="help">
         </div>
       </div>
 

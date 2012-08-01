@@ -39,7 +39,7 @@
 %left '+' '-'
 %left '*' '/'
 %left '^'
-%left ABS
+%left NORM
 %left UMINUS
 
 %start expressions
@@ -123,8 +123,8 @@ e
         {$$ = "!" + $2;}
     | '(' e ')'
         {$$ = $2;}
-    | '|' e '|' %prec ABS
-        {$$ = "cabs(" + $2 + ")";}
+    | '|' e '|' %prec NORM
+        {$$ = "norm(" + $2 + ")";}
     | NUMBER
         {
           if (yytext.indexOf(".") < 0) 

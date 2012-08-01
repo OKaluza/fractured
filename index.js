@@ -1,5 +1,4 @@
 //TODO:
-//Write help screen
 //Allow disabling of thumbnails (set size?)
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
@@ -20,7 +19,6 @@ var filetype = 'fractal';
 var offline = null;
 var recording = false;
 var debug = false; //enable for testing
-var restored = "";
 //Timers
 var rztimeout = undefined;
 
@@ -44,6 +42,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function consoleDebug(str) {
     if (debug) consoleWrite(str);
+    //alert(" called by: " + arguments.callee.caller);
   }
 
   function consoleWrite(str) {
@@ -108,6 +107,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     var urlq = decodeURI(window.location.href);
     var query = urlq.split("?")[1]; //whole querystring after ?
     if (!query) query = urlq.substr(urlq.lastIndexOf("/")+1);  //URL rewriting?
+    var restored = "";
+    var baseurl = "";
     if (query) {
       var list = query.split("&");
       for (var i=0; i<list.length; i++) {
@@ -122,14 +123,22 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         } else if (list[i].length > 20) {
           //Load fractal from base64 packed url
           restored = window.atob(list[i]);
-          if (fractal) restoreFractal();
+          window.history.pushState("", "", "/" + baseurl);
         } else if (!offline && list[i].length > 4) {
           //Load fractal from hash ID
-          fractalGet(readURL('ss/fractal_get.php?id=' + list[i]));
+          restored = fractalGet(readURL('ss/fractal_get.php?id=' + list[i]));
+          if (!data || data.indexOf("Error:") == 0) {
+            alert("Fractal load failed!");
+            restored = "";
+          }
         }
+        baseurl += list[i];
         consoleDebug(list[i]);
       }
     }
+
+    //Load the last program state
+    loadState();
 
     if (!offline) {
       //Session restore:
@@ -137,9 +146,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       //Load formula lists from server
       loadFormulaeList(readURL('ss/formula_get.php'));
     }
-
-    //Load the last program state
-    loadState();
 
     //Initialise app
     showPanel($('tab1'), 'panel1');
@@ -163,22 +169,20 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Draw & update
     if (restored.length > 0)
-      restoreFractal();
+      restoreFractal(restored);   //Restore from URL
     else
       loadLastFractal();  //Restore last if any
+
+     ajaxReadFile('docs.html', insertHelp);
   }
 
-  //Fractal load from hash
-  function fractalGet(data) {
-    if (!data || data.indexOf("Error:") == 0) {
-      alert("Fractal load failed!");
-      return;
-    }
-
-    restored = data;
-    if (fractal)
-      restoreFractal();
-    //If not yet ready, defer load until later
+  function insertHelp(data) {
+    // This would be after the Ajax request:
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = data;
+    // tempDiv now has a DOM structure:
+    var divs = tempDiv.getElementsByTagName('div')
+    $('help').innerHTML = divs[0].innerHTML;
   }
 
   //session JSON received
@@ -226,16 +230,13 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
   }
 
-  function restoreFractal() {
-    if (restored.length > 0) {
-      var lines = restored.split("\n"); // split on newlines
-      var name = lines[0];
-      lines.splice(0,1);
-      fractal.load(lines.join('\n'));
-      restored = "";
-      fractal.name = name;
-      $('nameInput').value = fractal.name;
-    }
+  function restoreFractal(restored) {
+    var lines = restored.split("\n"); // split on newlines
+    var name = lines[0];
+    lines.splice(0,1);
+    fractal.load(lines.join('\n'));
+    fractal.name = name;
+    $('nameInput').value = fractal.name;
   }
 
   function setAntiAlias(val) {
@@ -534,19 +535,24 @@ consoleDebug("draw: thumb2");
     var data = window.btoa($('nameInput').value + "\n" + fractal.toString(true));
     var loc = window.location + "";
     if (loc.indexOf("?") > 0)
-      window.location = loc + "&" + data;
+      loc += "&" + data;
     else
-      window.location = loc + "?" + data;
+      loc += "?" + data;
+    var link = document.createElement("a");
+    link.setAttribute("href", loc);
+    var linkText = document.createTextNode("here it is");
+    link.appendChild(linkText);
+    popup("Copy this link:<br><br>");
+    $("popupmessage").appendChild(link);
   }
 
   function uploadFormulaFile(shared) {
     var data = "public=" + shared;
-    if (shared == 0 && currentFormulae > 0) {
-      //Update existing (selected)
-      if (!confirm('Save changes to this formula set on server?')) return;
+    //If selected, give option to update existing
+    if (shared == 0 && currentFormulae > 0 && confirm('Save changes to this formula set on server?'))
       data += "&formulae=" + currentFormulae;
-    } else {
-      var name = prompt("Enter name for formula set");
+    else {
+      var name = prompt("Enter name for new formula set");
       if (name == null) return;
       data += "&name=" + encodeURIComponent(name);
     }
@@ -611,6 +617,7 @@ consoleDebug("draw: thumb2");
   }
 
   function loadFormulaeList(data) {
+    if (offline) return;
     //Load list of saved formula sets from server
     try {
       //Get selected id 
@@ -764,9 +771,7 @@ consoleDebug("draw: thumb2");
     //Show an indicator, assumes 5mb of local storage
     var size = JSON.stringify(localStorage).length;
     var indic = size / 5000000;
-        //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     $S('indicator').width = (350 * indic) + 'px';
-        //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
   }
 
   function loadLastFractal() {

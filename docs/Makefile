@@ -3,6 +3,7 @@ RSTFLAGS = --stylesheet-path=docstyle.css
 
 %.html: %.rst
 	rst2html	$(RSTFLAGS)	$<	$@
+	mv $@ ..
 
 .PHONY: all
 .DEFAULT: all

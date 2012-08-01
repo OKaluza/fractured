@@ -148,7 +148,7 @@ section, header, aside, nav, article {display: block;}
 header { 
   z-index: 100;
   margin: 0 auto;
-  height: 27px;
+  height: 26px;
   width:100%;
   background: #222;
   color: #ccc;
@@ -171,7 +171,7 @@ nav#menu {float: left;}
     margin:0; padding:0;
 }
 #nav {
-    height:27px;
+    height:26px;
     padding-left:2px;
     padding-top:2px;
     position:relative;
@@ -304,7 +304,7 @@ nav#menu {float: left;}
 #controls {
   z-index: 1;
   margin: 0px 0px 2px 0px; padding:0px;
-  height: 28px;
+  height: 26px;
   color: #888;
   /*float: right;*/
 /* Fix so palette doesn't wrap when window resized too small */
@@ -357,3 +357,15 @@ aside {
 .sliderBG div { background: #000; height: 1px; width: 19px; margin: 0; padding: 0; }
 
 #O {border: 1px solid #888; left: 9px; background-image: url("media/bg.png"); }
+
+#help p, h1, h2, h3 {margin-top: .5em; margin-bottom: .5em;}
+
+/* Help docs styles */
+#help { font-size: 9pt }
+
+#help h1 { font-size: 130% }
+#help h2 { font-size: 115% }
+#help h3 { font-size: 100% }
+
+/* bold-faced definition list terms */
+#help li em { font-weight: bold }
