@@ -671,19 +671,26 @@
 
       var converged_defined = true;
       if (sections["converged"].length == 0) {
-        if (!this.currentParams["converged"]) {
+        if (!this.currentParams["converge"]) {
           //No converged test defined
           converged_defined = false;
-        }
+        } else if (this.currentParams["converge"].type == 'expression')
+          //Expression converge param, insert the break test
+          sections["converged"] = "\n  if (converge) break;\n";
+        else
+          //Numeric converge param, insert default test
+          sections["converged"] = "\n  if (bailtest(z) < converge) break;\n";
       }
 
       if (sections["escaped"].length == 0) {
         //No escaped test defined
-        if (!this.currentParams["escaped"]) {
+        if (this.currentParams["escape"].type != 'expression') {
           //If no converged test either create a default bailout
           if (!converged_defined || this.currentParams["escape"])
             sections["escaped"] = "\n  if (bailtest(z) > escape) break;\n";
-        }
+        } else
+          //Expression escape param, insert break test
+          sections["escaped"] = "\n  if (escape) break;\n";
       }
 
       if (!this.currentParams["escape"]) sections["data"] += "\n#define escape 4.0\n";
@@ -1663,12 +1670,13 @@
     if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
 
     //Compile the shader using WebGL or WebCL
-    var errors;
+    var errors = "";
     if (this.webgl) {
-      errors = this.webgl.initProgram(sources["include/shader2d.vert"], source);
+      this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
       //Restore uniforms/attributes for fractal program
       this.uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
-      this.webgl.setupProgram(["aVertexPosition"], this.uniforms);
+      this.program.setup(["aVertexPosition"], this.uniforms);
+      errors = this.program.errors;
     } else {
       errors = this.webcl.initProgram(source, this.width, this.height);
     }
@@ -1741,8 +1749,8 @@
       return;
     }
 
-    if (!this.webgl.program) return;
-    this.gl.useProgram(this.webgl.program);
+    if (!this.program) return;
+    this.webgl.use(this.program);
 
     //Uniform variables
     this.gl.uniform1i(this.webgl.program.uniforms["julia"], this.julia);

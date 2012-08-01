@@ -1,7 +1,8 @@
   /**
    * WebGL interface object
    * standard utilities for WebGL 
-   * functions for 2d rendering / image processing
+   * Shader & matrix utilities for 3d & 2d
+   * functions for 2d rendering / image processing, fbo render to texture
    * (c) Owen Kaluza 2012
    *
    * @constructor
@@ -13,14 +14,10 @@
 
     try {
       this.gl = canvas.getContext("experimental-webgl", { antialias: true } );
-
       this.gl.viewportWidth = canvas.width;
       this.gl.viewportHeight = canvas.height;
-
-      //Create an off-screen render buffer
-      //initTextureFramebuffer(canvas.width, canvas.height);
-
     } catch(e) {
+      alert(e);
     }
 
     if (!this.gl) {
@@ -104,78 +101,9 @@
 */
   }
 
-  WebGL.prototype.compileShader = function(source, type) {
-    //alert("Compiling " + type + " Source == " + source);
-    var shader = this.gl.createShader(type);
-    this.gl.shaderSource(shader, source);
-    this.gl.compileShader(shader);
-    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      //alert("Compile failed: " + this.gl.getShaderInfoLog(shader));
-      return this.gl.getShaderInfoLog(shader);
-    }
-    return shader;
-  }
-
-  WebGL.prototype.initProgram = function(vs, fs) {
-    //Pass in vertex shader, fragment shaders...
-
-    if (this.program && this.gl.isProgram(this.program))
-    {
-      //Clean up previous shader set
-      if (this.gl.isShader(this.program.vshader))
-      {
-        this.gl.detachShader(this.program, this.program.vshader);
-        this.gl.deleteShader(this.program.vshader);
-      }
-      if (this.gl.isShader(this.program.fshader))
-      {
-        this.gl.detachShader(this.program, this.program.fshader);
-        this.gl.deleteShader(this.program.fshader);
-      }
-      this.gl.deleteProgram(this.program);  //Required for chrome, doesn't like re-using program object
-    }
-
-    if (!this.program) this.program = this.gl.createProgram();
-
-    var errors = null;
-    this.program.vshader = this.compileShader(vs, this.gl.VERTEX_SHADER);
-    if (typeof(this.program.vshader) == 'string') errors = this.program.vshader;
-    this.program.fshader = this.compileShader(fs, this.gl.FRAGMENT_SHADER);
-    if (typeof(this.program.fshader) == 'string') errors = this.program.fshader;
-
-    if (typeof(this.program.vshader) == 'object' && typeof(this.program.fshader) == 'object') {
-      this.gl.attachShader(this.program, this.program.vshader);
-      this.gl.attachShader(this.program, this.program.fshader);
-
-      this.gl.linkProgram(this.program);
-   
-      if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
-        alert("Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program));
-      }
-    } else {
-      this.program = null;
-    }
-      
-    return errors;
-  }
-
-  //Setup and load uniforms
-  WebGL.prototype.setupProgram = function(attributes, uniforms) {
-    if (!this.program) return;
-    this.program.attributes = {};
-    if (attributes == undefined) attributes = ["aVertexPosition", "aTextureCoord"];
-    var i;
-    for (i in attributes)
-      this.program.attributes[attributes[i]] = this.gl.getAttribLocation(this.program, attributes[i]);
-
-    this.program.uniforms = {};
-    for (i in uniforms)
-      this.program.uniforms[uniforms[i]] = this.gl.getUniformLocation(this.program, uniforms[i]);
-    this.program.mvMatrixUniform = this.gl.getUniformLocation(this.program, "uMVMatrix");
-    this.program.pMatrixUniform = this.gl.getUniformLocation(this.program, "uPMatrix");
-  }
 
   WebGL.prototype.updateTexture = function(texture, image) {
+    //(Ability to set texture unit?)
     this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
@@ -183,30 +111,37 @@
   }
 
   WebGL.prototype.initTextureFramebuffer = function(width, height) {
+    //Create the framebuffer object
     this.rttFramebuffer = this.gl.createFramebuffer();
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.rttFramebuffer);
     this.rttFramebuffer.width = width;
     this.rttFramebuffer.height = height;
 
+    //The texture to render to
     this.rttTexture = this.gl.createTexture();
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.rttTexture);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-    //this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_NEAREST);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-    //this.gl.generateMipmap(this.gl.TEXTURE_2D);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
 
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.rttFramebuffer.width, this.rttFramebuffer.height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
-
-    //var renderbuffer = this.gl.createRenderbuffer();
-    //this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, renderbuffer);
-    //this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, this.rttFramebuffer.width, this.rttFramebuffer.height);
-
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 
+                       this.rttFramebuffer.width, this.rttFramebuffer.height, 
+                       0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
     this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.rttTexture, 0);
-    //this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, renderbuffer);
 
+    //Depth buffer? (not required for 2d only renders)
+    this.rttDepthbuffer = this.gl.createRenderbuffer();
+    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.rttDepthbuffer);
+    this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, width, height);
+    this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, this.rttDepthbuffer);
+
+    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-    //this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+
+    var fbo_status = this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER)
+    if (fbo_status != this.gl.FRAMEBUFFER_COMPLETE) alert("Framebuffer error: " + fbo_status);
   }
 
   WebGL.prototype.init2dBuffers = function() {
@@ -235,19 +170,102 @@
     this.textureCoordBuffer.numItems = 4;
   }
 
-  WebGL.prototype.loadTexture = function(image) {
+  WebGL.prototype.loadTexture = function(image, filter) {
+    if (filter == undefined) filter = this.gl.NEAREST;
     this.texture = this.gl.createTexture();
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
     //this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
+    //(Ability to set texture type?)
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, this.gl.LUMINANCE, this.gl.UNSIGNED_BYTE, image);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+    //this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, filter);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, filter);
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
   }
 
-  WebGL.prototype.getShaderSource = function(id) {
+  WebGL.prototype.setPerspective = function(fovy, aspect, znear, zfar) {
+    this.perspective.matrix = makePerspective(fovy, aspect, znear, zfar);
+  }
+
+  WebGL.prototype.use = function(program) {
+    this.program = program;
+    if (this.program.program)
+      this.gl.useProgram(this.program.program);
+  }
+
+  //Program object
+  function WebGLProgram(gl, vs, fs) {
+    //Pass in vertex shader, fragment shaders...
+    this.gl = gl;
+    if (this.program && this.gl.isProgram(this.program))
+    {
+      //Clean up previous shader set
+      if (this.gl.isShader(this.vshader))
+      {
+        this.gl.detachShader(this.program, this.vshader);
+        this.gl.deleteShader(this.vshader);
+      }
+      if (this.gl.isShader(this.fshader))
+      {
+        this.gl.detachShader(this.program, this.fshader);
+        this.gl.deleteShader(this.fshader);
+      }
+      this.gl.deleteProgram(this.program);  //Required for chrome, doesn't like re-using this.program object
+    }
+
+    this.program = this.gl.createProgram();
+
+    this.vshader = this.compileShader(vs, this.gl.VERTEX_SHADER);
+    if (typeof(this.vshader) == 'string') this.errors = this.vshader;
+    this.fshader = this.compileShader(fs, this.gl.FRAGMENT_SHADER);
+    if (typeof(this.fshader) == 'string') this.errors = this.fshader;
+
+    if (typeof(this.vshader) == 'object' && typeof(this.fshader) == 'object') {
+      this.gl.attachShader(this.program, this.vshader);
+      this.gl.attachShader(this.program, this.fshader);
+
+      this.gl.linkProgram(this.program);
+   
+      if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+        alert("Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program));
+      }
+    } else {
+      this.program = null;
+    }
+  }
+
+  WebGLProgram.prototype.compileShader = function(source, type) {
+    //alert("Compiling " + type + " Source == " + source);
+    var shader = this.gl.createShader(type);
+    this.gl.shaderSource(shader, source);
+    this.gl.compileShader(shader);
+    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+      return this.gl.getShaderInfoLog(shader);
+    }
+    return shader;
+  }
+
+  //Setup and load uniforms
+  WebGLProgram.prototype.setup = function(attributes, uniforms) {
+    if (!this.program) return;
+    if (attributes == undefined) attributes = ["aVertexPosition", "aTextureCoord"];
+    this.attributes = {};
+    var i;
+    for (i in attributes) {
+      this.attributes[attributes[i]] = this.gl.getAttribLocation(this.program, attributes[i]);
+      this.gl.enableVertexAttribArray(this.attributes[attributes[i]]);
+    }
+
+    this.uniforms = {};
+    for (i in uniforms)
+      this.uniforms[uniforms[i]] = this.gl.getUniformLocation(this.program, uniforms[i]);
+    this.mvMatrixUniform = this.gl.getUniformLocation(this.program, "uMVMatrix");
+    this.pMatrixUniform = this.gl.getUniformLocation(this.program, "uPMatrix");
+  }
+
+  WebGLProgram.prototype.getShaderSource = function(id) {
     var shaderScript = document.getElementById(id);
     if (!shaderScript) return null;
     var str = "";
@@ -259,11 +277,6 @@
     }
     return str;
   }
-
-  WebGL.prototype.setPerspective = function(fovy, aspect, znear, zfar) {
-    this.perspective.matrix = makePerspective(fovy, aspect, znear, zfar);
-  }
-
 
 
   /**
@@ -288,15 +301,15 @@
       this.stack.push(m.dup());
       this.matrix = m.dup();
     } else {
-      stack.push(this.matrix.dup());
+      this.stack.push(this.matrix.dup());
     }
   }
 
   ViewMatrix.prototype.pop = function() {
-    if (stack.length == 0) {
+    if (this.stack.length == 0) {
       throw "Matrix stack underflow";
     }
-    this.matrix = stack.pop();
+    this.matrix = this.stack.pop();
     return this.matrix;
   }
 
@@ -446,9 +459,6 @@ function mht(m) {
     return s;
 }
 
-//
-// gluLookAt
-//
 function makeLookAt(ex, ey, ez,
                     cx, cy, cz,
                     ux, uy, uz)
@@ -475,9 +485,6 @@ function makeLookAt(ex, ey, ez,
     return m.x(t);
 }
 
-//
-// gluPerspective
-//
 function makePerspective(fovy, aspect, znear, zfar)
 {
     var ymax = znear * Math.tan(fovy * Math.PI / 360.0);
@@ -488,9 +495,6 @@ function makePerspective(fovy, aspect, znear, zfar)
     return makeFrustum(xmin, xmax, ymin, ymax, znear, zfar);
 }
 
-//
-// glFrustum
-//
 function makeFrustum(left, right,
                      bottom, top,
                      znear, zfar)
@@ -508,9 +512,6 @@ function makeFrustum(left, right,
                [0, 0, -1, 0]]);
 }
 
-//
-// glOrtho
-//
 function makeOrtho(left, right, bottom, top, znear, zfar)
 {
     var tx = - (right + left) / (right - left);
