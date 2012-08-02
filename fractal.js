@@ -1661,7 +1661,6 @@
   Fractal.prototype.updateShader = function(source) {
     //Save for debugging
     sources["generated.shader"] = source;
-    //ajaxWriteFile("generated.shader", source, consoleDebug);
     consoleWrite("Rebuilding fractal shader using:");
     consoleWrite("formula: " + this["fractal"].selected);
     if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);

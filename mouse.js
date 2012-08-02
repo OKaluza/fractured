@@ -9,10 +9,15 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
    */
   function MouseEventHandler(click, down, move, wheel) {
     //All these functions should take (event, mouse)
+    this.fallback = Function('return false;');
     this.down = down;
     this.click = click;
     this.move = move;
     this.wheel = wheel;
+    if (!this.down) this.down = this.fallback;
+    if (!this.click) this.click = this.fallback;
+    if (!this.move) this.move = this.fallback;
+    if (!this.wheel) this.wheel = this.fallback;
   }
 
   /**
@@ -24,6 +29,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     //requires members: click(event, mouse), move(event, mouse) and wheel(event, mouse)
     this.handler = handler;
 
+    this.disabled = false;
     this.isdown = false;
     this.button = null;
     this.dragged = false;
@@ -110,7 +116,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   function handleMouseDown(event) {
     //Event delegation details
     var mouse = getMouse(event);
-    if (!mouse) return true;
+    if (!mouse || mouse.disabled) return true;
     var e = event || window.event;
     mouse.elementId = e.target.id;
     mouse.elementClass = e.target.className;
@@ -139,6 +145,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   //Default handlers for up & down, call specific handlers on element
   function handleMouseUp(event) {
     var mouse = document.mouse;
+    if (!mouse || mouse.disabled) return true;
     var action = true;
     if (mouse.isdown) 
     {
@@ -158,6 +165,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
 
   function handleMouseMove(event) {
     var mouse = document.mouse;
+    if (!mouse || mouse.disabled) return true;
     mouse.update(event);
     mouse.deltaX = mouse.absoluteX - mouse.lastX;
     mouse.deltaY = mouse.absoluteY - mouse.lastY;
@@ -180,7 +188,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
  
   function handleMouseWheel(event) {
     var mouse = getMouse(event);
-    if (!mouse) return true;
+    if (!mouse || mouse.disabled) return true;
     var nDelta = 0;
     var action = false;
     if (!event) event = window.event; // For IE, access the global (window) event object

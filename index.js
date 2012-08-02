@@ -187,27 +187,24 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   //session JSON received
   function sessionGet(data) {
-    if (!data || data.indexOf("Error") == 0) {
-      //Offline mode?
-      consoleWrite('Offline!');
-      offline = true;
-      return;
-    }
     offline = false;
-
-    //First attempt to load a stored login session if available
-    consoleDebug("Session response: " + data + "<hr>");
-
     var usermenu = document.getElementById('session_user_menu');
     var loginmenu = document.getElementById('session_login_menu');
-
-    //Parse session data
-    var session = JSON.parse(data);
-    if (session.empty) {
-      loginmenu.style.display = 'block';
-      usermenu.style.display = 'none';
+    //Check for invalid or empty response
+    if (!data || data.charAt(0) != "[") {
+      if (data.charAt(0) == "!") {
+        //No active login session
+        loginmenu.style.display = 'block';
+        usermenu.style.display = 'none';
+      } else {
+        //Offline mode
+        consoleWrite('Offline!');
+        offline = true;
+        return;
+      }
     } else {
-      //Have an active session user
+      //Parse session data, if we get this far we have an active logged in user
+      var session = JSON.parse(data);
       loginmenu.style.display = 'none';
       usermenu.style.display = 'block';
       //Load list of saved states/sessions

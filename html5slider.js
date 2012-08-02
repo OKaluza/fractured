@@ -154,7 +154,6 @@ function transform(slider) {
 
   slider.addEventListener('mousedown', onDragStart, true);
   slider.addEventListener('keydown', onKeyDown, true);
-  slider.addEventListener('focus', onFocus, true);
   slider.addEventListener('blur', onBlur, true);
 
   function onDragStart(e) {
@@ -204,11 +203,6 @@ function transform(slider) {
     }
   }
 
-  function onFocus() {
-    if (!isClick)
-      this.style.boxShadow = !isMac ? '0 0 0 2px #fb0' :
-        '0 0 2px 1px -moz-mac-focusring, inset 0 0 1px -moz-mac-focusring';
-  }
 
   function onBlur() {
     this.style.boxShadow = '';

@@ -52,7 +52,7 @@
   else
   {
     /* No session */
-    echo '{"empty" : true}';
+    echo '!No session';
     exit();
   }
 
