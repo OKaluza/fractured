@@ -3,7 +3,6 @@
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
 //Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (important for palette repeat!)
-//Save session, doesn't seem to update formula definition changes
 //Special parameter type: for uniform parameters
 
 //Globals
@@ -283,13 +282,6 @@ consoleDebug("draw: antialias");
   }
 
   //Menu management functions...
-  function removeChildren(element) {
-    if (element.hasChildNodes()) {
-      while (element.childNodes.length > 0 )
-      element.removeChild(element.firstChild);
-    }
-  }
-
   function addMenuItem(menu, label, onclick, ondelete, selected, atstart) {
     var entry = document.createElement("li");
     var span = document.createElement("span");
@@ -485,6 +477,7 @@ consoleDebug("draw: thumb2");
 
   //Import/export all local storage to server
   function uploadState() {
+    saveState();  //Update saved data first
     var data = "session_id=" + (currentSession ? currentSession : 0);
     if (currentSession > 0 && confirm('Save changes to this session on server?')) {
       //Update existing
@@ -573,6 +566,7 @@ consoleDebug("draw: thumb2");
 
   //Import/export all local storage to a text file
   function exportStateFile() {
+    saveState();  //Update saved data first
     //data url version, always use for now for session state as quicker than server round trip
     location.href = 'data:text/fractal-workspace;base64,' + window.btoa(getState());
     return;

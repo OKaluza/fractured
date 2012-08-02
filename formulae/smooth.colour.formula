@@ -7,7 +7,7 @@
 @:bailout = expression(escape);
 
 //Inverse log of (power)
-complex :il = 1.0/loge(C(:power));
+complex :il = 1.0/loge(_C(:power));
 real :lp = log(log(@:bailout));
 
 result:
