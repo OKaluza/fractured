@@ -11,6 +11,7 @@
     this.program = null;
     this.modelView = new ViewMatrix();
     this.perspective = new ViewMatrix();
+    this.textures = [];
 
     try {
       this.gl = canvas.getContext("experimental-webgl", { antialias: true } );
@@ -101,7 +102,6 @@
 */
   }
 
-
   WebGL.prototype.updateTexture = function(texture, image) {
     //(Ability to set texture unit?)
     this.gl.activeTexture(this.gl.TEXTURE0);
@@ -172,17 +172,19 @@
 
   WebGL.prototype.loadTexture = function(image, filter) {
     if (filter == undefined) filter = this.gl.NEAREST;
-    this.texture = this.gl.createTexture();
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+    this.texid = this.textures.length;
+    this.textures.push(this.gl.createTexture());
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures[this.texid]);
     //this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
     //(Ability to set texture type?)
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.LUMINANCE, this.gl.LUMINANCE, this.gl.UNSIGNED_BYTE, image);
     //this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, filter);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, filter);
-      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+    return this.textures[this.texid];
   }
 
   WebGL.prototype.setPerspective = function(fovy, aspect, znear, zfar) {
@@ -197,6 +199,9 @@
 
   //Program object
   function WebGLProgram(gl, vs, fs) {
+    //Can be passed source directly or script tag
+    if (vs.indexOf("main") < 0) vs = this.getShaderSource(vs);
+    if (fs.indexOf("main") < 0) fs = this.getShaderSource(fs);
     //Pass in vertex shader, fragment shaders...
     this.gl = gl;
     if (this.program && this.gl.isProgram(this.program))

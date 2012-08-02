@@ -75,7 +75,7 @@ GradientEditor.prototype.save = function(val) {
     this.palette.colours[this.editing].colour.setHSV(val);
     this.palette.draw(this.editcanvas, true);
   }
-  else if (this.element) {
+  if (this.element) {
     var col = new Colour(0);
     col.setHSV(val);
     this.element.style.backgroundColor = col.html();
