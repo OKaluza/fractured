@@ -16,4 +16,4 @@ converged:
 //Reset, called immediately before iterating
 reset:
   //Nova init
-  if (!julia && !perturb) z = C(1);
+  if (!julia && !perturb) z = _C(1);

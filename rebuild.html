@@ -71,7 +71,7 @@ function saveLocal() {
   $('output').value = data;
   consoleWrite("Rebuild complete");
   
-  var params = "filename=../bootstrap.js" + filename + "&data=" + encodeURIComponent(data);
+  var params = "filename=../bootstrap.js&data=" + encodeURIComponent(data);
   ajaxPost("ss/writefile.php", params, alert);
 }
 

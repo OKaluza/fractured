@@ -8,6 +8,13 @@ function varDefault(variable, def) {
   return def;
 }
 
+function removeChildren(element) {
+  if (element.hasChildNodes()) {
+    while (element.childNodes.length > 0 )
+    element.removeChild(element.firstChild);
+  }
+}
+
 //JQuery style lookup by id and style
 function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
 function $S(o) { o=$(o); if(o) return(o.style); }

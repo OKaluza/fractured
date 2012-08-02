@@ -579,10 +579,7 @@
     //Delete any existing dynamic form fields
     var element = document.getElementById(this.category + "_params");
     if (!element) alert("Element is null! " + this.category + " - " + name);
-    if (element.hasChildNodes()) {
-      while (element.childNodes.length > 0 )
-        element.removeChild(element.firstChild );       
-    }
+    removeChildren(element);
 
     //Save existing param set
     var oldparams = this.params[name];
@@ -1673,8 +1670,8 @@
     if (this.webgl) {
       this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
       //Restore uniforms/attributes for fractal program
-      this.uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
-      this.program.setup(["aVertexPosition"], this.uniforms);
+      var uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
+      this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
     } else {
       errors = this.webcl.initProgram(source, this.width, this.height);
@@ -1752,18 +1749,18 @@
     this.webgl.use(this.program);
 
     //Uniform variables
-    this.gl.uniform1i(this.webgl.program.uniforms["julia"], this.julia);
-    this.gl.uniform1i(this.webgl.program.uniforms["perturb"], this.perturb);
-    this.gl.uniform4fv(this.webgl.program.uniforms["background"], colours.palette.colours[0].colour.rgbaGL());
-    this.gl.uniform2f(this.webgl.program.uniforms["origin"], this.origin.re, this.origin.im);
-    this.gl.uniform2f(this.webgl.program.uniforms["selected"], this.selected.re, this.selected.im);
-    this.gl.uniform2f(this.webgl.program.uniforms["dims"], this.canvas.width, this.canvas.height);
-    this.gl.uniform1f(this.webgl.program.uniforms["pixelsize"], this.origin.pixelSize(this.canvas));
+    this.gl.uniform1i(this.program.uniforms["julia"], this.julia);
+    this.gl.uniform1i(this.program.uniforms["perturb"], this.perturb);
+    this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.colours[0].colour.rgbaGL());
+    this.gl.uniform2f(this.program.uniforms["origin"], this.origin.re, this.origin.im);
+    this.gl.uniform2f(this.program.uniforms["selected"], this.selected.re, this.selected.im);
+    this.gl.uniform2f(this.program.uniforms["dims"], this.canvas.width, this.canvas.height);
+    this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.canvas));
 
     //Gradient texture
     this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.webgl.gradientTexture);
-    this.gl.uniform1i(this.webgl.program.uniforms["palette"], 0);
+    this.gl.uniform1i(this.program.uniforms["palette"], 0);
 
     //Apply translation to origin, any rotation and scaling (inverse of zoom factor)
     this.webgl.modelView.identity()
