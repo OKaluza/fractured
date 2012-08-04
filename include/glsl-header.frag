@@ -1,7 +1,10 @@
 //GLSL specific header
 precision highp float;
 #define GLSL
-#define main_function() void main()
+
+#define WEBGL_MAIN void main() {
+#define WEBCL_MAIN 
+
 #define set_result(c) gl_FragColor = c;
 #define __OVERLOADABLE__ 
 #define real float

@@ -111,12 +111,15 @@
   /**
    * @constructor
    */
-  function Param(value, type, label) {
+  function Param(value, type, label, uniform) {
     //A parameter object
     this.type = type;
     this.label = label;
     this.touched = false;
     this.parse(value);
+    this.uniform = (uniform == true);
+    //Uniforms disabled in WebCL mode
+    if (mode == "WebCL") this.uniform = false;
   }
 
   Param.prototype.parse = function(value) {
@@ -257,13 +260,15 @@
   }
 
   Param.prototype.declare = function(key) {
-    //Return GLSL const declaration for this parameter
+    //Return GLSL const/uniform declaration for this parameter
     var comment = this.label ? "//" + this.label + "\n" : "";
     type = this.type;
     if (this.type == 'list') type = 'int';
     if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
     if (this.type == 'expression') return comment + "#define " + key + " " + this.toGLSL() + "\n";
     if (this.type.indexOf('function') > 0) return comment + "#define " + key + "(args) " + this.value + "(args)\n";
+    if (this.uniform)
+      return comment + "uniform " + type + " " + key + ";\n";
     return comment + "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
   }
 
@@ -376,8 +381,9 @@
       var name = match[3];
       var type = match[4];
       var value = match[5];
+      var uniform = name.charAt(0) == "_" ? true : false;
 
-      this[name] = new Param(value, type, label);
+      this[name] = new Param(value, type, label, uniform);
     };
   }
 
@@ -541,6 +547,33 @@
       this[key].input = input;
     }
   }
+
+  //Set field values as uniforms
+  ParameterSet.prototype.setUniforms = function(gl, program) {
+    for (key in this)
+    {
+      if (typeof(this[key]) != 'object') continue;
+      if (!this[key].uniform) continue;
+
+      var uniform = gl.getUniformLocation(program, key);
+
+      switch (this[key].typeid)
+      {
+        case 0: //Integer
+          gl.uniform1i(uniform, this[key].value);
+          break;
+        case 1: //real
+          gl.uniform1f(uniform, this[key].value);
+          break;
+        case 2: //complex (2xreal)
+          gl.uniform2f(uniform, this[key].value.re, this[key].value.im);
+          break;
+        default:
+          alert("Error: can't create uniform parameter except for int/real/complex types");
+      }
+    }
+  }
+
 
   //Contains a formula selection and its parameter set
   /**
@@ -1595,7 +1628,7 @@
     //Save the line offset where inserted
     var pos = regex.exec(shader).index;
     var offset = shader.slice(0, pos).split("\n").length;
-    //  consoleDebug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
+    //consoleDebug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
 
     //Get sources
     for (s in sourcelist) {
@@ -1756,6 +1789,14 @@
     this.gl.uniform2f(this.program.uniforms["selected"], this.selected.re, this.selected.im);
     this.gl.uniform2f(this.program.uniforms["dims"], this.canvas.width, this.canvas.height);
     this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.canvas));
+
+    //Parameter uniforms...
+    this["base"].currentParams.setUniforms(this.gl, this.program.program), 
+    this["fractal"].currentParams.setUniforms(this.gl, this.program.program),
+    this["pre_transform"].currentParams.setUniforms(this.gl, this.program.program),
+    this["post_transform"].currentParams.setUniforms(this.gl, this.program.program),
+    this["outside_colour"].currentParams.setUniforms(this.gl, this.program.program),
+    this["inside_colour"].currentParams.setUniforms(this.gl, this.program.program);
 
     //Gradient texture
     this.gl.activeTexture(this.gl.TEXTURE0);
