@@ -30,7 +30,8 @@ rgba read_palette(image2d_t palette, float mu)
   return (rgba)(p.x/255.0, p.y/255.0, p.z/255.0, p.w/255.0); 
 }
 
-#define main_function() rgba calcpixel(complex coord, complex offset, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
+#define WEBGL_MAIN 
+#define WEBCL_MAIN rgba calcpixel(complex coord, complex offset, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background) {
 
 #define set_result(c) return c;
 main_function();  //Prototype

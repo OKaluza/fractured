@@ -1,5 +1,9 @@
-main_function()
-{
+WEBCL_MAIN
+
+---DATA---
+
+WEBGL_MAIN
+
   //Globals
   complex z, c;
   complex point;            //Current point coord
@@ -7,8 +11,6 @@ main_function()
   complex z_2;              //Value of z(n-2)
   int count = 0;            //Step counter
   bool escaped, converged;  //Bailout flags
-
-  ---DATA---
 
   int limit = iterations;   //Max iterations
   rgba colour = rgba(0.0,0.0,0.0,0.0);
