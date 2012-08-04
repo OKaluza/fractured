@@ -1,28 +1,23 @@
-window.steps = 10;
-window.timer = 150;
-
-window.step = function(count)
-{
-  var angle_inc = 2*Math.PI / (window.steps-1);
-  var angle = angle_inc * count;
-  if (angle >= 2*Math.PI) angle -= 2*Math.PI;
-  var x = Math.sin(angle);
-  var y = Math.cos(angle)-1.0;
-
-  fractal.origin.rotate = angle*180.0/Math.PI;
-  fractal.loadParams();
-  
-  colours.cycle(1.0 / window.steps, true);
-  
-  fractal.writeShader();
-  fractal.draw();
-  
-  if (count < window.steps)
-    setTimeout("window.step("+(count+1)+")", window.timer);
+if (this.count == 1) {
+  //Initialisation on the first step
+  this.steps = 10;
+  this.inc = 2*Math.PI / this.steps;
 }
 
+consoleWrite("Animating: step " + this.count + "/" + this.steps);
 
-window.step(1);
+var angle = this.inc * this.count;
+if (angle >= 2*Math.PI) angle -= 2*Math.PI;
+var x = Math.sin(angle);
+var y = Math.cos(angle)-1.0;
 
-
-
+//Rotate
+fractal.origin.rotate = angle*180.0/Math.PI;
+//Update parameter changes to form
+fractal.loadParams();
+//Cycle the palette
+colours.cycle(1.0 / this.steps, true);
+//Rewrite shader
+fractal.writeShader();
+//Redraw
+fractal.draw();

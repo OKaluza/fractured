@@ -63,7 +63,7 @@ function updateProgress(evt)
     total = evt.total;
   if (total) {
     setProgress(evt.loaded / evt.total * 100);
-    consoleWrite(total + " / " + evt.loaded);
+    //consoleWrite(evt.loaded + " / " + total);
   }
 } 
 
