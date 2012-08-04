@@ -15,6 +15,16 @@ function removeChildren(element) {
   }
 }
 
+//Browser specific animation helper function
+if ( !window.requestAnimationFrame ) {
+  window.requestAnimationFrame = ( function() {
+    return window.webkitRequestAnimationFrame ||
+           window.mozRequestAnimationFrame ||
+           window.oRequestAnimationFrame ||
+           window.msRequestAnimationFrame;
+  } )();
+}
+
 //JQuery style lookup by id and style
 function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
 function $S(o) { o=$(o); if(o) return(o.style); }

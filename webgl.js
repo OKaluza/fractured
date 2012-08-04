@@ -70,8 +70,11 @@
           this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
         }
       }
-    } else //Draw, single pass
+    } else {
+      //Draw, single pass
+      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
+    }
 
     return; //Below is to display rendered texture
 /*
@@ -528,3 +531,4 @@ function makeOrtho(left, right, bottom, top, znear, zfar)
            [0, 0, -2 / (zfar - znear), tz],
            [0, 0, 0, 1]]);
 }
+

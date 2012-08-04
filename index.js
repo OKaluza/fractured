@@ -2,7 +2,6 @@
 //Allow disabling of thumbnails (set size?)
 //Clear-actions doesn't work!
 //Check: that error reporting works in WebCL mode
-//Select formula, change param, select another formula with same param, value overwritten! (restorevalues) (important for palette repeat!)
 //Special parameter type: for uniform parameters
 
 //Globals
@@ -80,20 +79,39 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     consoleDebug("Request sent");
   }
 
-  function runScript() {
-    var script = "function ParamVals(paramset) { \
-        for (key in paramset)   \
-          this[key] = paramset[key].value;  \
-      } \
-      var baseFractal = new ParamVals(fractal.fractal.currentParams); \
-      var preTransform = new ParamVals(fractal.pre_transform.currentParams);  \
-      var postTransform = new ParamVals(fractal.pre_transform.currentParams); \
-      var insideColour = new ParamVals(fractal.inside_colour.currentParams);  \
-      var outsideColour = new ParamVals(fractal.outside_colour.currentParams); \
-      ";
+//Save values of all selected parameters for use in scripting
+function ParamVals(paramset) {
+    for (key in paramset) {
+      if (typeof(paramset[key]) == "object" && paramset[key].type != undefined)
+        this[key] = paramset[key].value; 
+    }
+  }
 
-    script += sources["include/script.js"];
-    eval(script);
+//Script object, passed source code inserted at the step() function
+function Script(source) {
+  this.count = 1;
+  this.step = 1;
+  this.step = Function(source);
+  this.fractal = new ParamVals(fractal.fractal.currentParams);
+  this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
+  this.postTransform = new ParamVals(fractal.post_transform.currentParams);
+  this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
+  this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
+}
+
+  function runScript() {
+    //Run an animation script
+    var script = new Script(sources["include/script.js"])
+
+    function next() {
+      script.step();
+      if (script.count < script.steps) {
+        script.count++;
+        window.requestAnimationFrame(next);
+      }
+    }
+
+    next();
   }
 
   function appInit() {
@@ -730,8 +748,6 @@ consoleDebug("draw: thumb2");
     var f_source = localStorage["fractured.formulae"];
     if (f_source && f_source.length < 400) f_source = null; //Old formula list
     if (f_source) {
-         //HACK!! TODO: remove
-         f_source = f_source.replace(/primes/g, "integers");
       formula_list = JSON.parse(f_source); //localStorage["fractured.formula"]);
     } else
       formula_list = default_formula_list;  //From bootstrap.js
