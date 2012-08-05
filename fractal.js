@@ -1755,17 +1755,18 @@
     var height = this.height;
     if (width == 0 || height == 0) {
       //Get size from window
-      width = window.innerWidth - (showparams ? 334 : 2);
-      height = window.innerHeight - 31;
+      width = window.innerWidth - (fullscreen ? 0 : showparams ? 334 : 2);
+      height = window.innerHeight - (fullscreen ? 0 : 27);
       $("widthInput").value = width;
       $("heightInput").value = height;
-    }
+      //Disable scrollbars when using autosize
+      document.documentElement.style.overflow = "hidden";
+    } else  //Enable scrollbars
+      document.documentElement.style.overflow = "auto";
 
     if (width != this.canvas.width || height != this.canvas.height) {
       this.canvas.width = width;
       this.canvas.height = height;
-      this.canvas.setAttribute("width", width);
-      this.canvas.setAttribute("height", height);
       if (this.gl) {
         this.gl.viewportWidth = width;
         this.gl.viewportHeight = height;

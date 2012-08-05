@@ -157,6 +157,7 @@ header {
 
 header h2 {float: left;  margin: 0px;  height: 12px;  padding: 4px;  font-size: 11pt; }
 header h2 span {color: #eec;}
+header h2 #bar {color: #887;}
 header h3 {float: left;  margin: 0px;  height: 12px;  padding: 8px 2px;  font-size: 8pt;}
 
 /* Nav-menu */
@@ -167,7 +168,7 @@ nav#menu {float: left;}
     margin:0; padding:0;
 }
 #nav {
-    height:26px;
+    height:24px;
     padding-left:2px;
     padding-top:2px;
     position:relative;
@@ -328,6 +329,8 @@ aside {
 
 #main {
   z-index: 0;
+  margin: 0px;
+  padding: 0px;
   position:absolute;   
   left: 334px;
   top: 27px;  /* Space for header */

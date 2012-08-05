@@ -10,6 +10,7 @@ var mode = "WebGL";
 var fractal;
 var colours;
 var showparams = true;
+var fullscreen = false;
 var currentSession = 0; //Selected session
 var currentFormulae = 0; //Selected formula set
 var currentFractal = -1; //Selected fractal id
@@ -171,6 +172,7 @@ function Script(source) {
     canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
     canvas.mouse.wheelTimer = true;
     defaultMouse = document.mouse = canvas.mouse;
+    document.onkeypress = handleKey;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
     window.onresize = autoResize;
@@ -191,6 +193,10 @@ function Script(source) {
       loadLastFractal();  //Restore last if any
 
      ajaxReadFile('docs.html', insertHelp);
+  }
+
+  function handleKey(event) {
+    if (fullscreen && event.keyCode == 27) toggleFullscreen();
   }
 
   function insertHelp(data) {
@@ -860,6 +866,26 @@ consoleDebug("draw: thumb2");
       $('toolsbtn').innerHTML = "Show Tools &darr;"
     }
     showparams = (sidebar.style.display == 'block');
+    autoResize(document["inputs"].elements["autosize"].checked);
+  }
+
+  function toggleFullscreen() {
+    var header = document.getElementById("header");
+    var sidebar = document.getElementById("left");
+    var main = document.getElementById("main");
+    if (header.style.display == 'none') {
+      header.style.display = 'block';
+      sidebar.style.display = 'block';
+      main.style.top = '27px';
+      main.style.left = showparams ? '334px' : '1px';
+    } else {
+      header.style.display = 'none';
+      sidebar.style.display = 'none';
+      main.style.top = '0px';
+      main.style.left = '0px';
+      popup("Press ESC to leave full screen mode");
+    }
+    fullscreen = (header.style.display == 'none');
     autoResize(document["inputs"].elements["autosize"].checked);
   }
 
