@@ -35,7 +35,7 @@
 
   <header id="header">
 
-    <h2><span>Fractured</span>|studio</h2><h3>0.5</h3>
+    <h2><span id="heading1">Fractured</span><span id="bar">|</span>studio</h2><h3>0.5</h3>
 
     <nav id="menu">
       <ul id="nav">
@@ -157,6 +157,7 @@
             <li><span onclick="openEditor('include/script.js')">Script Editor</span></li>
             <li><span onclick="defaultMouseActions();">Clear actions</span></li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
+            <li><span id="toolsbtn" onclick="toggleFullscreen();">Full Screen</span></li>
           </ul>
         </li>
         <li><span onclick="fractal.applyChanges(true);">Draw</span></li>
