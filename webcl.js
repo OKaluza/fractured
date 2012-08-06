@@ -37,13 +37,12 @@
     try {
       this.program.buildProgram ([this.devices[0]], "");
     } catch(e) {
-      alert ("Failed to build WebCL program. Error "
+      return "Failed to build WebCL program. Error "
              + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_STATUS)
              + ":  " 
-             + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_LOG));
-      throw e;
+             + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_LOG);
     }
-    this.kernel = this.program.createKernel ("fractured");
+    this.kernel = this.program.createKernel("fractured");
     this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3 + 2*4);
     this.format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
@@ -54,7 +53,7 @@
     //Create output buffer in specified size
     this.sizeChanged(width, height);
 
-    //this.queue = this.ctx.createCommandQueue(this.devices[0], 0);
+    this.queue = this.ctx.createCommandQueue(this.devices[0], 0);
   }
 
   //Calculates global work size given problem size and thread count
@@ -76,11 +75,11 @@
 
     this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, this.format, this.width, this.height, 0);
     this.kernel.setKernelArg (2, this.output);
-    this.queue = this.ctx.createCommandQueue(this.devices[0], 0);
   }
 
   WebCL_.prototype.draw = function(fractal) {
-     try {
+    if (!this.queue) return;
+    try {
       ctx_g = this.gradientcanvas.getContext("2d");
       var gradient = ctx_g.getImageData(0, 0, this.gradientcanvas.width, 1);
 

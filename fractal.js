@@ -119,7 +119,7 @@
     this.parse(value);
     this.uniform = (uniform == true);
     //Uniforms disabled in WebCL mode
-    if (mode == "WebCL") this.uniform = false;
+    if (fractal && !fractal.webgl) this.uniform = false;
   }
 
   Param.prototype.parse = function(value) {
@@ -1703,22 +1703,23 @@
       var uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
       this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
+      this.parseErrors(errors, /0:(\d+)/);
     } else {
       errors = this.webcl.initProgram(source, this.canvas.width, this.canvas.height);
+      this.parseErrors(errors, /:(\d+):/);
     }
 
-    this.parseErrors(errors);
   }
 
-  Fractal.prototype.parseErrors = function(errors) {
+  Fractal.prototype.parseErrors = function(errors, regex) {
     if (errors) {
       var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
                           "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
-      var reg = /0:(\d+)/;
-      var match = reg.exec(errors);
+      var match = regex.exec(errors);
       var found = false;
       if (match) {
         var lineno = parseInt(match[1]);
+        if (this.webcl) lineno--; //WebCL seems to be reporting errors on next line
         //alert(match[1]);
         var last = null
         for (i in this.offsets) {
