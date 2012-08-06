@@ -1,8 +1,8 @@
-WEBCL_MAIN
+OPENCL_MAIN
 
 ---DATA---
 
-WEBGL_MAIN
+GLSL_MAIN
 
   //Globals
   complex z, c;

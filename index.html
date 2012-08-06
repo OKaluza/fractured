@@ -51,10 +51,10 @@
                 <li><span onclick="openEditor('include/fractal-shader.frag');">Body Template</span></li>
                 <li><span onclick="openEditor('include/complex-math.frag');">Complex Library</span></li>
                 <li><span onclick="openEditor('include/shader2d.vert');">Vertex Shader</span></li>
-                <li><hr></li>
-                <li><span onclick="window.location = '/index.html?debug';">WebGL Mode</span></li>
-                <li><span onclick="window.location = '/index.html?webcl-debug';">WebCL Mode</span></li>
-                <li><span onclick="window.location = '/index.html?webcl-double-debug';">WebCL Double</span></li>
+                <!--li><hr></li>
+                <li><span onclick="switchMode('WebGL');">WebGL Mode</span></li>
+                <li><span onclick="switchMode('WebCL');">WebCL Mode</span></li>
+                <li><span onclick="switchMode('WebCL-double');">WebCL Double</span></li-->
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
@@ -324,6 +324,9 @@
         <div id="indicatorbg"><div id="indicator"></div></div>
 
         <input type="button" value="Clear log" onClick="consoleClear()">
+        <input type="button" value="WebGL" onClick="switchMode('WebGL');">
+        <input type="button" value="WebCL" onClick="switchMode('WebCL');">
+        <input type="button" value="WebCL Double" onClick="switchMode('WebCL-double');">
         <div id="consolearea">
           <div id="console" class="info">
             <h1>Fractured Studio</h1>

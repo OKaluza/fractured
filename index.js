@@ -1,8 +1,6 @@
 //TODO:
 //Allow disabling of thumbnails (set size?)
 //Clear-actions doesn't work!
-//Check: that error reporting works in WebCL mode
-//Special parameter type: for uniform parameters
 
 //Globals
 var sources = {};
@@ -126,7 +124,7 @@ function Script(source) {
     if (elapsed < 50) 
       window.requestAnimationFrame(logTime); //Not enough time, assume triggered too early, try again
     else
-      consoleDebug("Draw took: " + (elapsed / 1000) + " seconds");
+      consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
   }
       
 
@@ -208,6 +206,37 @@ function Script(source) {
       loadLastFractal();  //Restore last if any
 
      ajaxReadFile('docs.html', insertHelp);
+  }
+
+  function switchMode(mode) {
+    if (mode.indexOf("GL") > 0 && fractal.webgl) return;
+    consoleWrite("Switching mode to " + mode);
+    if (mode.indexOf("CL") > 0 && fractal.webcl) {
+      fractal.webcl.fp64 = mode.indexOf("double") > 0;
+      sources["generated.shader"] = ""; //Force rebuild
+      fractal.applyChanges();
+      return;
+    }
+
+    //Recreate canvas & fractal
+    source = fractal + "";
+    var aa = fractal.antialias;
+    var canvas = document.getElementById("fractal-canvas");
+    var cparent = canvas.parentNode;
+    cparent.removeChild(canvas);
+    canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 600;
+    canvas.id = "fractal-canvas"
+    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
+    canvas.mouse.wheelTimer = true;
+    defaultMouse = document.mouse = canvas.mouse;
+    cparent.appendChild(canvas);
+
+    fractal = new Fractal(canvas, mode);
+    fractal.antialias = aa;
+      colours.owner = fractal;
+    fractal.load(source);
+    fractal.name = localStorage["fractured.name"];
   }
 
   function handleKey(event) {

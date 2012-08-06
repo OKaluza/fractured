@@ -2,8 +2,8 @@
 precision highp float;
 #define GLSL
 
-#define WEBGL_MAIN void main() {
-#define WEBCL_MAIN 
+#define GLSL_MAIN void main() {
+#define OPENCL_MAIN 
 
 #define set_result(c) gl_FragColor = c;
 #define __OVERLOADABLE__ 

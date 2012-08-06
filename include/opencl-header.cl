@@ -31,8 +31,8 @@ rgba read_palette(image2d_t palette, float mu)
 }
 
 #define CALCPIXEL rgba calcpixel(complex coord, complex offset, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
-#define WEBGL_MAIN 
-#define WEBCL_MAIN CALCPIXEL {
+#define GLSL_MAIN 
+#define OPENCL_MAIN CALCPIXEL {
 
 #define set_result(c) return c;
 CALCPIXEL;  //Prototype
