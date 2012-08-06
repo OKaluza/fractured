@@ -1677,9 +1677,6 @@
       source = source.replace(/int\(/g, "(int)(");
       source = source.replace(/rgba\(/g, "(rgba)(");
 
-      //Force rebuild on size change
-      if (this.webcl.width != this.width || this.webcl.height != this.height)
-        sources["generated.shader"] = "";
     }
     //Only recompile if data has changed!
     if (sources["generated.shader"] != source)
@@ -1707,7 +1704,7 @@
       this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
     } else {
-      errors = this.webcl.initProgram(source, this.width, this.height);
+      errors = this.webcl.initProgram(source, this.canvas.width, this.canvas.height);
     }
 
     this.parseErrors(errors);
@@ -1750,6 +1747,7 @@
   }
 
   Fractal.prototype.draw = function(antialias) {
+    timeDraw();
     if (antialias != undefined) this.antialias = antialias;
     var width = this.width;
     var height = this.height;
@@ -1770,6 +1768,12 @@
       if (this.gl) {
         this.gl.viewportWidth = width;
         this.gl.viewportHeight = height;
+      }
+
+      //Update WebCL buffer on size change
+      if (this.webcl && (this.webcl.width != this.canvas.width || this.webcl.height != this.canvas.height)) {
+        consoleDebug("Size changed, WebCL resize");
+        this.webcl.sizeChanged(width, height);
       }
     }
 
