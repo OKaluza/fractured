@@ -14,9 +14,12 @@
     this.textures = [];
 
     try {
-      this.gl = canvas.getContext("experimental-webgl", { antialias: true } );
-      this.gl.viewportWidth = canvas.width;
-      this.gl.viewportHeight = canvas.height;
+      this.gl = canvas.getContext("experimental-webgl", { antialias: true, premultipliedAlpha: false} );
+      this.viewport = {};
+      this.viewport.x = 0;
+      this.viewport.y = 0;
+      this.viewport.hidth = canvas.width;
+      this.viewport.height = canvas.height;
     } catch(e) {
       alert(e);
     }
@@ -38,8 +41,7 @@
       //Enable this to render frame to texture 
       //this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, rttFramebuffer);
 
-    this.gl.viewport(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
-    this.gl.scissor(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
+    this.gl.viewport(this.viewport.x, this.viewport.y, this.viewport.width, this.viewport.height);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
     this.gl.enableVertexAttribArray(this.program.attributes["aVertexPosition"]);
@@ -57,7 +59,7 @@
     if (antialias > 1) {
       //Draw and blend multiple passes for anti-aliasing
       var blendinc = 0;
-      //var data = new Int8Array(this.gl.viewportWidth * this.gl.viewportHeight * 4);
+      //var data = new Int8Array(this.viewport.width * this.viewport.height * 4);
       for (var j=0; j<antialias; j++) {
         for (var k=0; k<antialias; k++) {
           var blendval = 1.0 - blendinc;
@@ -89,7 +91,7 @@
     gl.enableVertexAttribArray(defaultProgram.textureCoordAttribute);
 
     //Re-apply rotation & translation matrix
-    gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+    gl.viewport(0, 0, viewport.width, viewport.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     loadIdentity();
     //setMatrixUniforms(defaultProgram);

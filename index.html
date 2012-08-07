@@ -6,7 +6,7 @@
 <title>Fractured - Fractal Art Studio</title>
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
-<!--link rel="stylesheet" type="text/css" href="reset.css"-->
+<link rel="stylesheet" type="text/css" href="reset.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
 <script type="text/javascript" src="bootstrap.js"></script>
@@ -43,8 +43,6 @@
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
               <ul class="dd">
-                <li><span onclick="window.location.reload();">Reload All</span></li>
-                <li><hr></li>
                 <li><span onclick="openEditor('generated.shader');">Generated Source</span></li>
                 <li><span onclick="openEditor('include/glsl-header.frag');">GLSL Header</span></li>
                 <li><span onclick="openEditor('include/opencl-header.cl');">OpenCL Header</span></li>
@@ -52,9 +50,9 @@
                 <li><span onclick="openEditor('include/complex-math.frag');">Complex Library</span></li>
                 <li><span onclick="openEditor('include/shader2d.vert');">Vertex Shader</span></li>
                 <!--li><hr></li>
-                <li><span onclick="switchMode('WebGL');">WebGL Mode</span></li>
-                <li><span onclick="switchMode('WebCL');">WebCL Mode</span></li>
-                <li><span onclick="switchMode('WebCL-double');">WebCL Double</span></li-->
+                <li><span onclick="switchMode(WEBGL);">WebGL Mode</span></li>
+                <li><span onclick="switchMode(WEBCL);">WebCL Mode</span></li>
+                <li><span onclick="switchMode(WEBCL64);">WebCL Double</span></li-->
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
@@ -324,9 +322,11 @@
         <div id="indicatorbg"><div id="indicator"></div></div>
 
         <input type="button" value="Clear log" onClick="consoleClear()">
-        <input type="button" value="WebGL" onClick="switchMode('WebGL');">
-        <input type="button" value="WebCL" onClick="switchMode('WebCL');">
-        <input type="button" value="WebCL Double" onClick="switchMode('WebCL-double');">
+        <div id="webcl">
+          <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
+          <input type="button" value="WebCL" onClick="switchMode(WEBCL);">
+          <input type="button" value="WebCL Double" onClick="switchMode(WEBCL64);">
+        </div>
         <div id="consolearea">
           <div id="console" class="info">
             <h1>Fractured Studio</h1>
@@ -364,6 +364,7 @@
 
   <section id="main">
     <canvas id="fractal-canvas" width="600" height="600"></canvas>
+    <img id="background" src="" style="z-index: -1; position: absolute; top: 0; left: 0; background-image: url('media/bg.png')">
   </section>
 
   <!-- Hidden -->

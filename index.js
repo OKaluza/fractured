@@ -4,7 +4,6 @@
 
 //Globals
 var sources = {};
-var mode = "WebGL";
 var fractal;
 var colours;
 var showparams = true;
@@ -134,39 +133,60 @@ function Script(source) {
     if (window.location.href.indexOf("file://") == 0) offline = true;
 
     showPanel($('tab4'), 'panel4');
-    //If debug mode enabled, show extra menus
     var urlq = decodeURI(window.location.href);
-    var query = urlq.split("?")[1]; //whole querystring after ?
-    if (!query) query = urlq.substr(urlq.lastIndexOf("/")+1);  //URL rewriting?
-    var restored = "";
+    var query;
     var baseurl = "";
+    if (urlq.indexOf("?") > 0) {
+      var parts = urlq.split("?"); //whole querystring before and after ?
+      query = parts[1]; 
+      //Strip stupid trailing /
+      if (query.charAt(query.length-1) == "/") query = query.substr(0, query.length-1);
+      baseurl = parts[0];
+    } else {
+      if (urlq.indexOf("file:///") == 0)
+         baseurl = urlq;
+      else {
+        //URL rewriting
+        var pos = urlq.lastIndexOf("/");
+        query = urlq.substr(pos+1);
+        baseurl = urlq.substr(0, pos);
+      }
+    }
+    var restored = "";
+    var mode;
     if (query) {
       var list = query.split("&");
       for (var i=0; i<list.length; i++) {
         if (list[i].indexOf('debug') >= 0) {
+          //debug mode enabled, show extra menus
           debug = true;
           $S('debugmenu').display = 'block';
           $S('recordmenu').display = 'block';
+        } else if (list[i].indexOf('webgl') >= 0) {
+          mode = WEBGL;
         } else if (list[i].indexOf('webcl') >= 0) {
-          mode = "WebCL";
+          mode = WEBCL;
         } else if (list[i].indexOf('double') == 0) {
-          mode += "-double"
+          mode = WEBCL64;
         } else if (list[i].length > 20) {
           //Load fractal from base64 packed url
           restored = window.atob(list[i]);
-          window.history.pushState("", "", "/" + baseurl);
         } else if (!offline && list[i].length > 4) {
           //Load fractal from hash ID
           restored = fractalGet(readURL('ss/fractal_get.php?id=' + list[i]));
+          baseurl += list[i]; //Save hash in baseurl
           if (!data || data.indexOf("Error:") == 0) {
             alert("Fractal load failed!");
             restored = "";
           }
         }
-        baseurl += list[i];
-        consoleDebug(list[i]);
       }
     }
+    consoleDebug("Base URL: " + baseurl);
+    consoleDebug("Query options: " + query);
+
+    //Strip commands from url (except hash if provided)
+    window.history.pushState("", "", baseurl);
 
     //Load the last program state
     loadState();
@@ -209,10 +229,10 @@ function Script(source) {
   }
 
   function switchMode(mode) {
-    if (mode.indexOf("GL") > 0 && fractal.webgl) return;
-    consoleWrite("Switching mode to " + mode);
-    if (mode.indexOf("CL") > 0 && fractal.webcl) {
-      fractal.webcl.fp64 = mode.indexOf("double") > 0;
+    if (mode == 0 && fractal.webgl) return;
+    consoleWrite("Switching to " + (mode==0 ? "WebGL" : "WebCL"));
+    if (mode > 0 && fractal.webcl) {
+      fractal.webcl.fp64 = mode > 1;   //Switch precision
       sources["generated.shader"] = ""; //Force rebuild
       fractal.applyChanges();
       return;
@@ -249,7 +269,10 @@ function Script(source) {
     tempDiv.innerHTML = data;
     // tempDiv now has a DOM structure:
     var divs = tempDiv.getElementsByTagName('div')
-    $('help').innerHTML = divs[0].innerHTML;
+    if (divs)
+      $('help').innerHTML = divs[0].innerHTML;
+    else
+      $('help').innerHTML = "Help file couldn't be loaded";
   }
 
   //session JSON received
@@ -535,7 +558,6 @@ function Script(source) {
       currentSession = 0;  //No sessions to select
       currentFormulae = 0;  //No sessions to select
       currentFractal = -1;  //No fractals to select
-      //window.location.reload(false);
       window.onbeforeunload = null;
     }
   }
@@ -779,7 +801,6 @@ function Script(source) {
       loadState();
       loadLastFractal();
       progress();
-      //window.location.reload(false);
     } catch(e) {
       alert('ImportState: Error! ' + e);
     }
@@ -1038,6 +1059,7 @@ function Script(source) {
   }
 
   function canvasMouseClick(event, mouse) {
+    if (julia) clearPreviewJulia(mouse);
     var select = document.getElementById("select");
 
     //Convert mouse coords into fractal coords
@@ -1098,6 +1120,23 @@ function Script(source) {
     return false;
   }
 
+var julia;
+
+  function drawPreviewJulia() {
+    fractal.selectPoint(julia.point);
+    fractal.renderPIP(julia.x, julia.y, julia.w, julia.h);
+    fractal.selectPoint();
+  }
+
+  function clearPreviewJulia(mouse) {
+    clearTimeout(julia.timeout);
+    mouse.moveUpdate = false;
+      $S("fractal-canvas").backgroundImage = "url('media/bg.png')";
+      $S("background").display = "none";
+    julia = null;
+    fractal.draw();
+  }
+
   function canvasMouseMove(event, mouse) {
     //Mouseover processing
     if (!fractal) return true;
@@ -1105,10 +1144,35 @@ function Script(source) {
     {
       //Convert mouse coords into fractal coords
       var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
-      point.re += fractal.origin.re;
-      point.im += fractal.origin.im;
-      document.getElementById("coords").innerHTML = "&nbsp;re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8);
+      var coord = new Aspect(point.re + fractal.origin.re, point.im + fractal.origin.im, 0, 0);
+      document.getElementById("coords").innerHTML = "&nbsp;re: " + coord.re.toFixed(8) + " im: " + coord.im.toFixed(8);
+
+      //Constantly updated mini julia set rendering
+      if (event.shiftKey && (julia || !fractal.julia)) {
+        if (!julia) {
+          julia = {};
+          //WebGL implicitly clears the canvas, unless preserveDrawingBuffer requested 
+          //(which apparently is a performance problem on some platforms) so copy fractal
+          //image into background while rendering julia set previews
+          $("background").src = fractal.imagedata;
+          $S("background").display = "block";
+          $S("fractal-canvas").backgroundImage = "none";
+          mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
+        }
+        julia.point = point;
+        julia.x = mouse.x;
+        julia.y = mouse.element.height - mouse.y;
+        julia.w = 250;
+        julia.h = 250 * mouse.element.height / mouse.element.width;
+        if (mouse.x > mouse.element.width - julia.w) julia.x -= julia.w;
+        if (mouse.y < mouse.element.height - julia.h) julia.y -= julia.h; 
+        drawPreviewJulia();
+        return;
+      }
     }
+
+    if (julia) clearPreviewJulia(mouse);
+
     if (!mouse.isdown) return true;
 
     //Right & middle buttons: drag to scroll
@@ -1149,15 +1213,24 @@ function Script(source) {
   function canvasMouseWheel(event, mouse) {
     var action = getCustomAction(event, "wheel");
     //alert(action.id);
-    if (!(event.shiftKey || event.altKey || event.ctrlKey)) {
+    if (julia || !(event.shiftKey || event.altKey || event.ctrlKey)) {
       // Zoom
       action = new WheelAction(null, 0);
+      var zoom;
       if (event.spin < 0)
-         fractal.applyZoom(1/(-event.spin * 1.1));
+         zoom = 1/(-event.spin * 1.1);
       else
-         fractal.applyZoom(event.spin * 1.1);
-      //Update form fields
-      fractal.copyToForm();
+         zoom = event.spin * 1.1;
+
+      if (julia) {
+         fractal.savePos.zoom *= zoom;
+         drawPreviewJulia();
+         return;
+      } else {
+        fractal.applyZoom(zoom);
+        //Update form fields
+        fractal.copyToForm();
+      }
     }
 
     if (!action) return true; //Default browser action

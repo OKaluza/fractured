@@ -45,7 +45,7 @@ div.info {
   border-radius: 5px;
 overflow:auto;
 }
-.message {font-family: monospace; font-size: 9pt;}
+.message {font-family: monospace; font-size: 8pt;}
 
 p {margin: 0px 2px; }
 
@@ -70,6 +70,7 @@ div.gap {height: 5px; }
 
 canvas {
   z-index: 0; margin: 0px; padding:0px;
+  background: transparent;
   background-image: url("media/bg.png");
   border: none; 
 }
@@ -155,7 +156,7 @@ header {
      position: fixed;
 }
 
-header h2 {float: left;  margin: 0px;  height: 12px;  padding: 4px;  font-size: 11pt; }
+header h2 {float: left;  margin: 0px;  height: 12px;  padding: 4px;  font-size: 12pt; }
 header h2 span {color: #eec;}
 header h2 #bar {color: #887;}
 header h3 {float: left;  margin: 0px;  height: 12px;  padding: 8px 2px;  font-size: 8pt;}
