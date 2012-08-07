@@ -1,3 +1,8 @@
+  //Constants
+  var WEBGL = 0;
+  var WEBCL = 1;
+  var WEBCL64 = 2;
+  var renderer = WEBGL;
   //Regular expressions
   var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
   var boolreg = /(true|false)/i;
@@ -119,7 +124,7 @@
     this.parse(value);
     this.uniform = (uniform == true);
     //Uniforms disabled in WebCL mode
-    if (fractal && !fractal.webgl) this.uniform = false;
+    if (renderer > WEBGL) this.uniform = false;
   }
 
   Param.prototype.parse = function(value) {
@@ -783,20 +788,26 @@
   /**
    * @constructor
    */
-  function Fractal(canvas, renderer) {
+  function Fractal(canvas, mode) {
     //Construct a new default fractal object
     this.canvas = canvas;
-    if (renderer == "WebGL") {
+
+    //Render mode, If not set, use WebCL if available
+    renderer = mode;
+    if (renderer == undefined) renderer = WEBCL;
+    if (window.WebCL == undefined) {
+      renderer = WEBGL;
+      $S("webcl").display = "none";
+    }
+
+    if (renderer == WEBGL) {
       //Init WebGL
       this.webgl = new WebGL(canvas);
       this.gl = this.webgl.gl;
       this.webgl.init2dBuffers();
-    } else if (renderer == "WebCL") {
-      //Init WebCL testing
-      this.webcl = new WebCL_(canvas);
-    } else if (renderer == "WebCL-double") {
-      //Init WebCL testing (double precision)
-      this.webcl = new WebCL_(canvas, true);
+    } else {
+      //Init WebCL
+      this.webcl = new WebCL_(canvas, mode > 1);
     }
 
     this.antialias = 1;
@@ -823,15 +834,14 @@
 
   Fractal.prototype.selectPoint = function(point) {
     //Julia set switch
-    if (!this.julia) {
+    if (point && !this.julia) {
       this.julia = true;
       this.selected.re = this.origin.re + point.re;
       this.selected.im = this.origin.im + point.im;
-      var select0 = document.getElementById("xSelInput");
-      select0.value = this.origin.re + point.re;
-      var select1 = document.getElementById("ySelInput");
-      select1.value = this.origin.im + point.im;
-      consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
+      document.getElementById("xSelInput").value = this.origin.re + point.re;
+      document.getElementById("ySelInput").value = this.origin.im + point.im;
+      //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
+      consoleWrite("Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
     } else {
       this.julia = false;
     }
@@ -1504,7 +1514,7 @@
   }
 
   Fractal.prototype.resetZoom = function() {
-    this.origin = new Aspect(0, 0, 0, 0.5); 
+    this.origin = new Aspect(-0.5, 0, 0, 0.8); 
     this.copyToForm();
     this.draw();
   }
@@ -1766,9 +1776,9 @@
     if (width != this.canvas.width || height != this.canvas.height) {
       this.canvas.width = width;
       this.canvas.height = height;
-      if (this.gl) {
-        this.gl.viewportWidth = width;
-        this.gl.viewportHeight = height;
+      if (this.webgl) {
+        this.webgl.viewport.width = width;
+        this.webgl.viewport.height = height;
       }
 
       //Update WebCL buffer on size change
@@ -1778,12 +1788,36 @@
       }
     }
 
-    //WebCL testing
-    if (!this.webgl) {
+    //WebCL mode
+    if (this.webcl) {
       this.webcl.draw(this);
-      return;
-    }
+    } else
+      this.renderWebGL();
 
+    //Save frame image (used for julia preview background)
+    this.imagedata = this.canvas.toDataURL("image/png");
+  }
+
+  Fractal.prototype.renderPIP = function(x, y, w, h) {
+    this.webgl.viewport.x = x;
+    this.webgl.viewport.y = y;
+      var oldw = this.width;
+      var oldh = this.height;
+    this.webgl.viewport.width = this.width = w;
+    this.webgl.viewport.height = this.height = h;
+    this.gl.enable(this.gl.SCISSOR_TEST);
+    this.gl.scissor(x, y, w, h);
+    this.renderWebGL();
+      //this.draw();
+    this.webgl.viewport.x = this.webgl.viewport.y = 0;
+    this.webgl.viewport.width = this.canvas.width;
+    this.webgl.viewport.height = this.canvas.height;
+    this.gl.disable(this.gl.SCISSOR_TEST);
+      this.width = oldw;
+      this.height = oldh;
+  }
+
+  Fractal.prototype.renderWebGL = function() {
     if (!this.program) return;
     this.webgl.use(this.program);
 
@@ -1793,8 +1827,8 @@
     this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.colours[0].colour.rgbaGL());
     this.gl.uniform2f(this.program.uniforms["origin"], this.origin.re, this.origin.im);
     this.gl.uniform2f(this.program.uniforms["selected"], this.selected.re, this.selected.im);
-    this.gl.uniform2f(this.program.uniforms["dims"], this.canvas.width, this.canvas.height);
-    this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.canvas));
+    this.gl.uniform2f(this.program.uniforms["dims"], this.webgl.viewport.width, this.webgl.viewport.height);
+    this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.webgl.viewport));
 
     //Parameter uniforms...
     this["base"].currentParams.setUniforms(this.gl, this.program.program), 
@@ -1816,10 +1850,10 @@
     //Apply zoom and flip Y to match old coord system
     this.webgl.modelView.scale([1.0/this.origin.zoom, -1.0/this.origin.zoom, 1.0]);
     //Scaling to preserve fractal aspect ratio
-    if (this.canvas.width > this.canvas.height)
-      this.webgl.modelView.scale([this.canvas.width / this.canvas.height, 1.0, 1.0]);  //Scale width
-    else if (this.canvas.height > this.canvas.width)
-      this.webgl.modelView.scale([1.0, this.canvas.height / this.canvas.width, 1.0]);  //Scale height
+    if (this.webgl.viewport.width > this.webgl.viewport.height)
+      this.webgl.modelView.scale([this.webgl.viewport.width / this.webgl.viewport.height, 1.0, 1.0]);  //Scale width
+    else if (this.webgl.viewport.height > this.webgl.viewport.width)
+      this.webgl.modelView.scale([1.0, this.webgl.viewport.height / this.webgl.viewport.width, 1.0]);  //Scale height
 
     //var bg = colours[0].colour.rgbaGL();
     //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
@@ -1827,12 +1861,7 @@
     this.gl.enable(this.gl.BLEND);
     this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
 
-    //if (fractal.julia)
-    //  this.gl.viewportWidth = this.gl.viewportHeight = 50;
-    //else
-    //  this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-
-    consoleDebug('>> Drawing fractal (aa=' + this.antialias + ")");
+    //consoleDebug('>> Drawing fractal (aa=' + this.antialias + ")");
     this.webgl.draw2d(this.antialias);
     if (window.recording)
       window.outputFrame(); 

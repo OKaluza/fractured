@@ -23,7 +23,7 @@
        throw e;
      }
      this.threads = 64;
-     this.fp64 = (fp64 != undefined);
+     this.fp64 = (fp64 == true);
   }
 
 

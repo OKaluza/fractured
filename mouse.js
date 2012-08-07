@@ -205,8 +205,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
       document.mouse.event = event; //Save event
       //document.body.style.cursor = "wait";
       //setTimeout('mouseWheelTimout(document.mouse);', 125);
-      //setTimeout('mouseWheelTimout(document.mouse);', 50);
-      setTimeout('mouseWheelTimeout(document.mouse);', 100);
+      setTimeout('mouseWheelTimeout(document.mouse);', 50);
     }
     mouse.spin += event.spin;
 
