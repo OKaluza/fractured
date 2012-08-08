@@ -1,6 +1,7 @@
 //TODO:
 //Allow disabling of thumbnails (set size?)
-//Clear-actions doesn't work!
+//Clear-actions doesn't always work!?
+//Change palette and reload page, palette change not restored unless fractal also changed
 
 //Globals
 var sources = {};
@@ -264,15 +265,13 @@ function Script(source) {
   }
 
   function insertHelp(data) {
-    // This would be after the Ajax request:
     var tempDiv = document.createElement('div');
     tempDiv.innerHTML = data;
-    // tempDiv now has a DOM structure:
     var divs = tempDiv.getElementsByTagName('div')
-    if (divs)
+    if (divs.innerHTML)
       $('help').innerHTML = divs[0].innerHTML;
     else
-      $('help').innerHTML = "Help file couldn't be loaded";
+      $('help').innerHTML = "Help file could not be loaded";
   }
 
   //session JSON received
@@ -833,9 +832,6 @@ function Script(source) {
     //Default script
     if (localStorage["include/script.js"]) sources["include/script.js"] = localStorage["include/script.js"];
 
-    //Get list of saved fractals
-    if (!supports_html5_storage()) return;
-
     //Get selected id's
     currentSession = parseInt(localStorage["fractured.currentSession"]);
     currentFractal = parseInt(localStorage["fractured.currentFractal"]);
@@ -864,6 +860,7 @@ function Script(source) {
 
   function saveState() {
     //Read the lists
+    if (!fractal) return;
     try {
       //Save custom mouse actions
       localStorage["fractured.mouseActions"] = JSON.stringify(mouseActions);
@@ -1105,6 +1102,8 @@ function Script(source) {
           }
           //Switch to julia set at selected point
           fractal.selectPoint(point);
+          //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
+          if (fractal.julia) consoleWrite("Julia set @ (" + fractal.selected.re.toFixed(8) + ", " + fractal.selected.im.toFixed(8) + ")");
         } else {
           return true;
         }
@@ -1124,7 +1123,7 @@ var julia;
 
   function drawPreviewJulia() {
     fractal.selectPoint(julia.point);
-    fractal.renderPIP(julia.x, julia.y, julia.w, julia.h);
+    fractal.renderViewport(julia.x, julia.y, julia.w, julia.h);
     fractal.selectPoint();
   }
 
@@ -1134,6 +1133,7 @@ var julia;
       $S("fractal-canvas").backgroundImage = "url('media/bg.png')";
       $S("background").display = "none";
     julia = null;
+    if (fractal.webcl) fractal.webcl.setViewport(0, 0, mouse.element.width, mouse.element.height);
     fractal.draw();
   }
 
@@ -1161,11 +1161,12 @@ var julia;
         }
         julia.point = point;
         julia.x = mouse.x;
-        julia.y = mouse.element.height - mouse.y;
+        julia.y = fractal.webgl ? mouse.element.height - mouse.y : mouse.y;
         julia.w = 250;
         julia.h = 250 * mouse.element.height / mouse.element.width;
         if (mouse.x > mouse.element.width - julia.w) julia.x -= julia.w;
-        if (mouse.y < mouse.element.height - julia.h) julia.y -= julia.h; 
+        if (fractal.webgl && mouse.y < mouse.element.height - julia.h) julia.y -= julia.h; 
+        if (fractal.webcl && mouse.y > mouse.element.height - julia.h) julia.y -= julia.h; 
         drawPreviewJulia();
         return;
       }
