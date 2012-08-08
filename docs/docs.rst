@@ -48,6 +48,7 @@ The default mouse actions are:
 - *Right-click and drag* scroll fractal (if larger than display window)
 - *Shift + scroll* Rotate in 10 degree increments
 - *Alt + scroll* Rotate in 1 degree increments
+- *Shift + mouse move* Display a julia set preview as you move the mouse around a Mandelbrot set
 
 Coordinates
 -----------

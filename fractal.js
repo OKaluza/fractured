@@ -840,8 +840,6 @@
       this.selected.im = this.origin.im + point.im;
       document.getElementById("xSelInput").value = this.origin.re + point.re;
       document.getElementById("ySelInput").value = this.origin.im + point.im;
-      //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
-      consoleWrite("Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
     } else {
       this.julia = false;
     }
@@ -863,8 +861,8 @@
     this.name = "unnamed"
     this.width = 0;
     this.height = 0;
-    this.origin = new Aspect(-0.5, 0, 0, 0.8); 
-    this.savePos = new Aspect(-0.5, 0, 0, 0.8);
+    this.origin = new Aspect(0.0, 0, 0, 0.5); 
+    this.savePos = new Aspect(0.0, 0, 0, 0.5);
     this.selected = new Complex(0, 0);
     this.julia = false;
     this.perturb = false;
@@ -1514,7 +1512,7 @@
   }
 
   Fractal.prototype.resetZoom = function() {
-    this.origin = new Aspect(-0.5, 0, 0, 0.8); 
+    this.origin = new Aspect(0.0, 0, 0, 0.5);
     this.copyToForm();
     this.draw();
   }
@@ -1715,7 +1713,7 @@
       errors = this.program.errors;
       this.parseErrors(errors, /0:(\d+)/);
     } else {
-      errors = this.webcl.initProgram(source, this.canvas.width, this.canvas.height);
+      errors = this.webcl.buildProgram(source);
       this.parseErrors(errors, /:(\d+):/);
     }
 
@@ -1744,7 +1742,7 @@
               if (key) {
                 alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + 
                       sectionnames[this.offsets[last].category] + " formula: " + 
-                      formula_list[key].label + "\n--------------\n" + errors);
+                      (key ? formula_list[key].label : "?") + "\n--------------\n" + errors);
                 found = true;
               }
               break;
@@ -1782,9 +1780,9 @@
       }
 
       //Update WebCL buffer on size change
-      if (this.webcl && (this.webcl.width != this.canvas.width || this.webcl.height != this.canvas.height)) {
+      if (this.webcl && (this.webcl.viewport.width != this.canvas.width || this.webcl.viewport.height != this.canvas.height)) {
         consoleDebug("Size changed, WebCL resize");
-        this.webcl.sizeChanged(width, height);
+        this.webcl.setViewport(0, 0, width, height);
       }
     }
 
@@ -1798,23 +1796,22 @@
     this.imagedata = this.canvas.toDataURL("image/png");
   }
 
-  Fractal.prototype.renderPIP = function(x, y, w, h) {
-    this.webgl.viewport.x = x;
-    this.webgl.viewport.y = y;
-      var oldw = this.width;
-      var oldh = this.height;
-    this.webgl.viewport.width = this.width = w;
-    this.webgl.viewport.height = this.height = h;
-    this.gl.enable(this.gl.SCISSOR_TEST);
-    this.gl.scissor(x, y, w, h);
-    this.renderWebGL();
-      //this.draw();
-    this.webgl.viewport.x = this.webgl.viewport.y = 0;
-    this.webgl.viewport.width = this.canvas.width;
-    this.webgl.viewport.height = this.canvas.height;
-    this.gl.disable(this.gl.SCISSOR_TEST);
-      this.width = oldw;
-      this.height = oldh;
+  Fractal.prototype.renderViewport = function(x, y, w, h) {
+    var alpha = colours.palette.colours[0].colour.alpha; //Save bg alpha
+    colours.palette.colours[0].colour.alpha = 1.0;
+    if (this.webcl) {
+      this.webcl.setViewport(x, y, w, h);
+      this.webcl.draw(this);
+      //this.webcl.setViewport(0, 0, this.canvas.width, this.canvas.height);
+    } else {
+      this.webgl.viewport = new Viewport(x, y, w, h);
+      this.gl.enable(this.gl.SCISSOR_TEST);
+      this.gl.scissor(x, y, w, h);
+      this.renderWebGL();
+      this.webgl.viewport = new Viewport(0, 0, this.canvas.width, this.canvas.height);
+      this.gl.disable(this.gl.SCISSOR_TEST);
+    }
+    colours.palette.colours[0].colour.alpha = alpha;  //Restore alpha
   }
 
   Fractal.prototype.renderWebGL = function() {
@@ -1855,7 +1852,7 @@
     else if (this.webgl.viewport.height > this.webgl.viewport.width)
       this.webgl.modelView.scale([1.0, this.webgl.viewport.height / this.webgl.viewport.width, 1.0]);  //Scale height
 
-    //var bg = colours[0].colour.rgbaGL();
+    //var bg = colours.palette.colours[0].colour.rgbaGL();
     //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
     this.gl.clearColor(0, 0, 0, 0);
     this.gl.enable(this.gl.BLEND);

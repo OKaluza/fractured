@@ -4,7 +4,19 @@
    * Shader & matrix utilities for 3d & 2d
    * functions for 2d rendering / image processing, fbo render to texture
    * (c) Owen Kaluza 2012
-   *
+   */
+
+  /**
+   * @constructor
+   */
+  function Viewport(x, y, width, height) {
+    this.x = x; 
+    this.y = y; 
+    this.width = width; 
+    this.height = height; 
+  }
+
+  /**
    * @constructor
    */
   function WebGL(canvas) {
@@ -15,11 +27,7 @@
 
     try {
       this.gl = canvas.getContext("experimental-webgl", { antialias: true, premultipliedAlpha: false} );
-      this.viewport = {};
-      this.viewport.x = 0;
-      this.viewport.y = 0;
-      this.viewport.hidth = canvas.width;
-      this.viewport.height = canvas.height;
+      this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     } catch(e) {
       alert(e);
     }

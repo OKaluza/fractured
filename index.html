@@ -52,7 +52,7 @@
                 <!--li><hr></li>
                 <li><span onclick="switchMode(WEBGL);">WebGL Mode</span></li>
                 <li><span onclick="switchMode(WEBCL);">WebCL Mode</span></li>
-                <li><span onclick="switchMode(WEBCL64);">WebCL Double</span></li-->
+                <li><span onclick="switchMode(WEBCL64);">WebCL fp64</span></li-->
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
@@ -322,11 +322,11 @@
         <div id="indicatorbg"><div id="indicator"></div></div>
 
         <input type="button" value="Clear log" onClick="consoleClear()">
-        <div id="webcl">
+        <span id="webcl">
           <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
           <input type="button" value="WebCL" onClick="switchMode(WEBCL);">
-          <input type="button" value="WebCL Double" onClick="switchMode(WEBCL64);">
-        </div>
+          <input type="button" value="WebCL fp64" onClick="switchMode(WEBCL64);">
+        </span>
         <div id="consolearea">
           <div id="console" class="info">
             <h1>Fractured Studio</h1>

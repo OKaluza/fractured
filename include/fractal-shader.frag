@@ -82,6 +82,8 @@ GLSL_MAIN
     ---INSIDE_COLOUR---
   }
 
+  //Combine with global alpha from background colour
+  colour.w = colour.w + background.w;
   set_result(colour);
 }
 
