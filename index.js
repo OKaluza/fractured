@@ -174,12 +174,12 @@ function Script(source) {
           restored = window.atob(list[i]);
         } else if (!offline && list[i].length > 4) {
           //Load fractal from hash ID
-          restored = fractalGet(readURL('ss/fractal_get.php?id=' + list[i]));
-          baseurl += list[i]; //Save hash in baseurl
-          if (!data || data.indexOf("Error:") == 0) {
+          restored = readURL('ss/fractal_get.php?id=' + list[i]);
+          if (!restored || restored.indexOf("Error:") == 0) {
             alert("Fractal load failed!");
             restored = "";
-          }
+          } else 
+            baseurl += "/" + list[i]; //Save hash in baseurl
         }
       }
     }
@@ -231,10 +231,10 @@ function Script(source) {
 
   function switchMode(mode) {
     if (mode == 0 && fractal.webgl) return;
-    consoleWrite("Switching to " + (mode==0 ? "WebGL" : "WebCL"));
+    consoleWrite("Switching to " + (mode==0 ? "WebGL" : mode == 1 ? "WebCL" : "WebCL fp64"));
     if (mode > 0 && fractal.webcl) {
-      fractal.webcl.fp64 = mode > 1;   //Switch precision
-      sources["generated.shader"] = ""; //Force rebuild
+      fractal.webcl.setPrecision(mode > 1); //Switch precision
+      sources["generated.shader"] = "";     //Force rebuild
       fractal.applyChanges();
       return;
     }
@@ -268,10 +268,17 @@ function Script(source) {
     var tempDiv = document.createElement('div');
     tempDiv.innerHTML = data;
     var divs = tempDiv.getElementsByTagName('div')
-    if (divs.innerHTML)
+    if (divs.length > 0)
       $('help').innerHTML = divs[0].innerHTML;
     else
       $('help').innerHTML = "Help file could not be loaded";
+  }
+
+  //Utility, set display style of all elements of classname
+  function setAll(display, classname) {
+    var elements = document.getElementsByClassName(classname)
+    for (var i=0; i<elements.length; i++)
+      elements[i].style.display = display;
   }
 
   //session JSON received
@@ -283,8 +290,8 @@ function Script(source) {
     if (!data || data.charAt(0) != "[") {
       if (data.charAt(0) == "!") {
         //No active login session
-        loginmenu.style.display = 'block';
-        usermenu.style.display = 'none';
+        //loginmenu.style.display = 'block';
+        //setAll('none', 'loggedin');  //Hide logged in menu options
       } else {
         //Offline mode
         consoleWrite('Offline!');
@@ -295,7 +302,7 @@ function Script(source) {
       //Parse session data, if we get this far we have an active logged in user
       var session = JSON.parse(data);
       loginmenu.style.display = 'none';
-      usermenu.style.display = 'block';
+      setAll('block', 'loggedin');  //Unhide logged in menu options
       //Load list of saved states/sessions
       try {
         //Clear & repopulate list
@@ -395,6 +402,7 @@ function Script(source) {
     btn.type = "button";
     btn.value = " X ";
     btn.className = "right";
+    //btn.className = "right loggedin";
     btn.setAttribute("onclick", onclick + " event.stopPropagation();");
     span.appendChild(btn);
   }

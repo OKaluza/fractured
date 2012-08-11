@@ -51,6 +51,9 @@ p {margin: 0px 2px; }
 
 div.gap {height: 5px; }
 
+/* Visible only when logged in */
+.loggedin {display: none;}
+
 /* Floating divs */
 .left       {float: left}
 .right      {float: right}

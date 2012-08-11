@@ -25,13 +25,16 @@
     }
     this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     this.threads = 64;
-    this.fp64 = (fp64 == true);
-
-    this.inBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
-    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3 + 2*4);
+    this.setPrecision(fp64);
     this.format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
     this.queue = this.ctx.createCommandQueue(this.devices[0], 0);
+  }
+
+  WebCL_.prototype.setPrecision = function(fp64) {
+    this.fp64 = (fp64 == true);
+    this.inBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
+    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3 + 2*4);
   }
 
   WebCL_.prototype.buildProgram = function(kernelSrc) {
