@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta charset=ISO-8859-1">
 
 <title>Fractured - Fractal Art Studio</title>
 
@@ -49,14 +49,10 @@
                 <li><span onclick="openEditor('include/fractal-shader.frag');">Body Template</span></li>
                 <li><span onclick="openEditor('include/complex-math.frag');">Complex Library</span></li>
                 <li><span onclick="openEditor('include/shader2d.vert');">Vertex Shader</span></li>
-                <!--li><hr></li>
-                <li><span onclick="switchMode(WEBGL);">WebGL Mode</span></li>
-                <li><span onclick="switchMode(WEBCL);">WebCL Mode</span></li>
-                <li><span onclick="switchMode(WEBCL64);">WebCL fp64</span></li-->
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
-            <div id="session_user_menu" style="display: none">
+            <div id="session_user_menu" class="loggedin">
               <li><span onclick="uploadState();">Save</span></li>
               <li><span onclick="exportStateFile();">Export</span></li>
               <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
@@ -100,7 +96,7 @@
           <ul class="dd">
             <li><span onclick="newFractal();">New</span></li>
             <li><span onclick="saveFractal();">Save</span></li>
-            <li><span onclick="uploadFractalFile();">Share</span></li>
+            <li class="loggedin"><span onclick="uploadFractalFile();">Share</span></li>
             <li><hr></li>
             <li><span class="fly" tabindex="1">Saved Fractals</span>
               <ul id="fractals" class="selectlist">
@@ -112,12 +108,12 @@
                   <ul id="formulae-public" class="selectlist">
                   </ul>
                 </li>
-                <li><span class="fly" tabindex="1">Uploaded</span>
+                <li class="loggedin"><span class="fly" tabindex="1">Uploaded</span>
                   <ul id="formulae-private" class="selectlist">
                   </ul>
                 </li>
-                <li><span onclick="uploadFormulaFile(1);">Publish</span></li>
-                <li><span onclick="uploadFormulaFile(0);">Upload</span></li>
+                <li class="loggedin"><span onclick="uploadFormulaFile(1);">Publish</span></li>
+                <li class="loggedin"><span onclick="uploadFormulaFile(0);">Upload</span></li>
               </ul>
             </li>
             <li><hr></li>
@@ -150,6 +146,14 @@
                 <li><span id="recordOn" onclick="record(true);">On</span></li>
                 <li><span id="recordOff" class="selected_item" onclick="record(false);">Off</span></li>
                 <li><span onclick="ajaxReadFile('http://localhost:8080/end', frameDone);">End</span></li>
+              </ul>
+            </li>
+            <li style="display: none" id="modemenu"><span class="fly" tabindex="1">Render Mode</span>
+              <ul>
+                <li><hr></li>
+                <li><span onclick="switchMode(WEBGL);">WebGL Mode</span></li>
+                <li><span onclick="switchMode(WEBCL);">WebCL Mode</span></li>
+                <li><span onclick="switchMode(WEBCL64);">WebCL fp64</span></li>
               </ul>
             </li>
             <li><span onclick="openEditor('include/script.js')">Script Editor</span></li>
@@ -385,7 +389,7 @@
   <div id="openid_form" class="popup" style="display: none">
     <div class="popclose" onclick="toggle('openid_form');">X</div>
     <img src="media/logos/logo_openid.png" alt="OpenID">
-    <form action="ss/authenticate.php" method="post" name="login_form">
+    <form action="ss/authenticate.php" method="post" name="login_form" accept-charset="utf-8">
       <input type="text" value="" name="openid_url" id="openid" style="width: 194px;"/>
       <input type="submit" class="right" value="Login" onclick="toggle('openid_form');">
     </form>

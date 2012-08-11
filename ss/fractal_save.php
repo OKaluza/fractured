@@ -44,6 +44,8 @@
   $public = $_POST["public"];
   if (!$desc) $desc = '';
 
+  if ($user <= 0) exit();
+
   //Get submitted details
   //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
   if(get_magic_quotes_gpc()) {
@@ -81,7 +83,7 @@
   }
 
   mysql_close();
-  $loc =  $goto . "&" . $locator;
+  $loc =  $goto . $locator;
   echo $loc;
   exit();
 ?>

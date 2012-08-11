@@ -975,8 +975,8 @@
       //Formula code (###)
       if (saveformulae && this[category].selected != "none") {
         //Don't save formula source twice if same used
-        if (t==3 && this["post_transform"].selected == this["pre_transform"].selected) continue;
-        if (t==4 && this["outside_colour"].selected == this["inside_colour"].selected) break;
+        if (category=="post_transform" && this["post_transform"].selected == this["pre_transform"].selected) continue;
+        if (category=="inside_colour" && this["outside_colour"].selected == this["inside_colour"].selected) break;
         code += "\n[formula." + category + "]\n" + this[category].getSource();
       }
     }

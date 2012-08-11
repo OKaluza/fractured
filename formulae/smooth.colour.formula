@@ -11,6 +11,6 @@ real :il = 1.0/log(:power);
 real :lp = log(log(@:bailout));
 
 result:
-  real mu = real(count) + real(mul(:lp - log(log(cabs(z))), :il));
+  real mu = real(count) + (:lp - log(log(cabs(z)))) * :il;
   colour = gradient(:repeat * mu / real(limit));
 
