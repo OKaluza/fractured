@@ -1,7 +1,6 @@
 //TODO:
 //Allow disabling of thumbnails (set size?)
 //Clear-actions doesn't always work!?
-//Change palette and reload page, palette change not restored unless fractal also changed
 
 //Globals
 var sources = {};
@@ -9,17 +8,26 @@ var fractal;
 var colours;
 var showparams = true;
 var fullscreen = false;
-var currentSession = 0; //Selected session
-var currentFormulae = 0; //Selected formula set
-var currentFractal = -1; //Selected fractal id
 var filetype = 'fractal';
-var offline = null;
 var recording = false;
 var debug = false; //enable for testing
 //Timers
 var rztimeout = undefined;
 
+var current = new Status();
 var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
+
+  //Status - logged in, selected values
+  /**
+   * @constructor
+   */
+  function Status() {
+    this.loggedin = false;
+    this.offline = null;
+    this.session = 0;
+    this.formulae = 0;
+    this.fractal = -1;
+  }
 
   //WheelAction - field id and value
   /**
@@ -78,25 +86,25 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     consoleDebug("Request sent");
   }
 
-//Save values of all selected parameters for use in scripting
-function ParamVals(paramset) {
-    for (key in paramset) {
-      if (typeof(paramset[key]) == "object" && paramset[key].type != undefined)
-        this[key] = paramset[key].value; 
+  //Save values of all selected parameters for use in scripting
+  function ParamVals(paramset) {
+      for (key in paramset) {
+        if (typeof(paramset[key]) == "object" && paramset[key].type != undefined)
+          this[key] = paramset[key].value; 
+      }
     }
-  }
 
-//Script object, passed source code inserted at the step() function
-function Script(source) {
-  this.count = 1;
-  this.step = 1;
-  this.step = Function(source);
-  this.fractal = new ParamVals(fractal.fractal.currentParams);
-  this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
-  this.postTransform = new ParamVals(fractal.post_transform.currentParams);
-  this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
-  this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
-}
+  //Script object, passed source code inserted at the step() function
+  function Script(source) {
+    this.count = 1;
+    this.step = 1;
+    this.step = Function(source);
+    this.fractal = new ParamVals(fractal.fractal.currentParams);
+    this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
+    this.postTransform = new ParamVals(fractal.post_transform.currentParams);
+    this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
+    this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
+  }
 
   function runScript() {
     //Run an animation script
@@ -131,7 +139,7 @@ function Script(source) {
   function appInit() {
     if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
     //Force offline mode when loaded locally
-    if (window.location.href.indexOf("file://") == 0) offline = true;
+    if (window.location.href.indexOf("file://") == 0) current.offline = true;
 
     showPanel($('tab4'), 'panel4');
     var urlq = decodeURI(window.location.href);
@@ -172,7 +180,7 @@ function Script(source) {
         } else if (list[i].length > 20) {
           //Load fractal from base64 packed url
           restored = window.atob(list[i]);
-        } else if (!offline && list[i].length > 4) {
+        } else if (!current.offline && list[i].length > 4) {
           //Load fractal from hash ID
           restored = readURL('ss/fractal_get.php?id=' + list[i]);
           if (!restored || restored.indexOf("Error:") == 0) {
@@ -192,7 +200,7 @@ function Script(source) {
     //Load the last program state
     loadState();
 
-    if (!offline) {
+    if (!current.offline) {
       //Session restore:
       sessionGet(readURL('ss/session_get.php')); //Get updated list...
       //Load formula lists from server
@@ -283,26 +291,25 @@ function Script(source) {
 
   //session JSON received
   function sessionGet(data) {
-    offline = false;
+    current.offline = false;
     var usermenu = document.getElementById('session_user_menu');
     var loginmenu = document.getElementById('session_login_menu');
     //Check for invalid or empty response
     if (!data || data.charAt(0) != "[") {
-      if (data.charAt(0) == "!") {
-        //No active login session
-        //loginmenu.style.display = 'block';
-        //setAll('none', 'loggedin');  //Hide logged in menu options
-      } else {
+      //Responds with "!" if no session, so check for as valid response
+      if (data.charAt(0) != "!") {
         //Offline mode
         consoleWrite('Offline!');
-        offline = true;
+        current.offline = true;
         return;
       }
     } else {
       //Parse session data, if we get this far we have an active logged in user
+      current.loggedin = true;
       var session = JSON.parse(data);
       loginmenu.style.display = 'none';
       setAll('block', 'loggedin');  //Unhide logged in menu options
+      setAll('none', 'loggedout');  //Hide logged out menu options
       //Load list of saved states/sessions
       try {
         //Clear & repopulate list
@@ -313,7 +320,7 @@ function Script(source) {
           var label = list[i].date + "\n" + list[i].description;
           var onclick = "loadSession(" + list[i].id + ")";
           var ondelete = "deleteSelectedState();";
-          addMenuItem(menu, label, onclick, ondelete, currentSession == list[i].id, true);
+          addMenuItem(menu, label, onclick, ondelete, current.session == list[i].id, true);
         }
         checkMenuHasItems(menu);
 
@@ -327,9 +334,16 @@ function Script(source) {
     var lines = restored.split("\n"); // split on newlines
     var name = lines[0];
     lines.splice(0,1);
-    fractal.load(lines.join('\n'));
-    fractal.name = name;
-    $('nameInput').value = fractal.name;
+    var data = lines.join('\n');
+    if (name == "[Palette]") {
+      loadLastFractal();  //Restore last if any
+      colours.read(data);
+      fractal.applyChanges();
+    } else {
+      fractal.load(data);
+      fractal.name = name;
+      $('nameInput').value = fractal.name;
+    }
   }
 
   function setAntiAlias(val) {
@@ -361,15 +375,15 @@ function Script(source) {
   }
 
   function deleteFractal(idx) {
-    //if (currentFractal >= 0) {
-      //var idx = currentFractal;
+    //if (current.fractal >= 0) {
+      //var idx = current.fractal;
       var name = localStorage["fractured.names." + idx];
       if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
       try {
         localStorage.removeItem("fractured.names." + idx);
         localStorage.removeItem("fractured.fractal." + idx);
         localStorage.removeItem("fractured.thumbnail." + idx);
-        currentFractal = localStorage["fractured.currentFractal"] = -1;
+        current.fractal = localStorage["fractured.current.fractal"] = -1;
         populateFractals();
       } catch(e) {
         alert('Storage delete error! ' + e);
@@ -391,7 +405,7 @@ function Script(source) {
       menu.appendChild(entry);
     if (selected) {
       entry.className = "selected_item";
-      addMenuDelete(span, ondelete);
+      if (ondelete) addMenuDelete(span, ondelete);
     }
     //Return span so any additional controls can be added
     return span;
@@ -428,7 +442,7 @@ function Script(source) {
         var source = localStorage["fractured.fractal." + i];
         var onclick = "selectedFractal(" + i + ")";
         var ondelete = "deleteFractal(" + i + ");";
-        var span = addMenuItem(menu, namestr, onclick, ondelete, currentFractal == i, true);
+        var span = addMenuItem(menu, namestr, onclick, ondelete, current.fractal == i, true);
         if (localStorage["fractured.thumbnail." + i]) {
           //localStorage.removeItem("fractured.thumbnail." + i);
           var img = new Image;
@@ -442,7 +456,7 @@ function Script(source) {
   }
 
   function selectedFractal(idx) {
-    localStorage["fractured.currentFractal"] = currentFractal = idx;
+    localStorage["fractured.current.fractal"] = current.fractal = idx;
     fractal.load(localStorage["fractured.fractal." + idx]);
     fractal.name = localStorage["fractured.names." + idx];
     $('nameInput').value = fractal.name;
@@ -457,7 +471,7 @@ function Script(source) {
     fractal.formulaDefaults();
     fractal.copyToForm();
     //De-select
-    currentFractal = -1;
+    current.fractal = -1;
     populateFractals();
     fractal.applyChanges();
   }
@@ -466,13 +480,12 @@ function Script(source) {
     fractal.applyChanges();
     source = fractal + "";
     //Save current fractal to list
-    if (!supports_html5_storage()) return;
-    if (currentFractal >= 0) {
+    if (current.fractal >= 0) {
       //Save existing
-      var name = localStorage["fractured.names." + currentFractal];
+      var name = localStorage["fractured.names." + current.fractal];
       if (name == fractal.name) {
         if (confirm('Overwrite "' + name + '"?')) {
-          var idx = currentFractal;
+          var idx = current.fractal;
           try {
             localStorage["fractured.names." + idx] = fractal.name; //namestr;
             localStorage["fractured.fractal." + idx] = source;
@@ -496,15 +509,15 @@ function Script(source) {
     var checkstr = namestr;
     var i;
     do {
-       for (i=0; i<=idx; i++) {
-          if (checkstr == localStorage["fractured.names." + i]) {
-             checkstr = namestr + (++add);
-             break;
-          }
-       }
+      for (i=0; i<=idx; i++) {
+        if (checkstr == localStorage["fractured.names." + i]) {
+          checkstr = namestr + (++add);
+          break;
+        }
+      }
     } while (i <= idx);
     if (namestr != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
-    if (namestr == checkstr && !confirm('Save new fractal as "' + namestr + '"?')) return;
+    //if (namestr == checkstr && !confirm('Save new fractal as "' + namestr + '"?')) return;
     namestr = checkstr;
     idx++;  //Increment index
     try {
@@ -512,7 +525,7 @@ function Script(source) {
       localStorage["fractured.fractal." + idx] = source;
       localStorage["fractured.thumbnail." + idx] = thumbnail();
       localStorage["fractured.fractals"] = idx;
-      localStorage["fractured.currentFractal"] = currentFractal = idx;
+      localStorage["fractured.current.fractal"] = current.fractal = idx;
       $('nameInput').value = namestr;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
@@ -520,6 +533,77 @@ function Script(source) {
       //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
     populateFractals();
+  }
+
+  function savePalette() {
+    source = colours.palette + "";
+    //Save current palette to list
+    var idx_str = localStorage["fractured.palettes"];
+    var idx = (idx_str ? parseInt(idx_str) : 0);
+    idx++;  //Increment index
+    try {
+      localStorage["fractured.palette." + idx] = source;
+      localStorage["fractured.palette_img." + idx] = paletteThumbnail();
+      localStorage["fractured.palettes"] = idx;
+    } catch(e) {
+      //data wasn’t successfully saved due to quota exceed so throw an error
+      alert('Storage error! ' + e);
+      //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
+    }
+    populatePalettes();
+  }
+
+  function populatePalettes() {
+    //Clear & repopulate list
+    var menu = document.getElementById('palettes');
+    removeChildren(menu);
+    addMenuItem(menu, "Save Palette", "savePalette();", null, false, false);
+    addMenuItem(menu, "Export Palette", "exportPaletteFile();", null, false, false);
+    addMenuItem(menu, "Palette to URL", "packPalette();", null, false, false);
+    var idx_str = localStorage["fractured.palettes"];
+    var inc = 1;
+    if (idx_str) {
+      var idx = parseInt(idx_str);
+      for (var i=1; i<=idx; i++) {
+        var source = localStorage["fractured.palette." + i];
+        if (!source) continue; //namestr = "unnamed";
+        var onclick = "colours.read(localStorage['fractured.palette." + i + "']); fractal.applyChanges()";
+        var ondelete = "deletePalette(" + i + ");";
+        var span = addMenuItem(menu, "", onclick, ondelete, true, false);
+        inc++;
+        if (localStorage["fractured.palette_img." + i]) {
+          var palimg = span; //document.createElement("span");
+          palimg.style.backgroundImage = "url('" + localStorage["fractured.palette_img." + i] + "')";
+          palimg.style.backgroundRepeat = "repeat-y";
+          palimg.style.height = "14px";
+          palimg.style.width = "150px";
+          palimg.style.margin = "1px 0px";
+          palimg.style.padding = "3px 0px";
+          //span.appendChild(palimg);
+        }
+      }
+    }
+    checkMenuHasItems(menu);
+  }
+
+  function deletePalette(idx) {
+    try {
+      localStorage.removeItem("fractured.palette." + idx);
+      localStorage.removeItem("fractured.palette_img." + idx);
+      populatePalettes();
+    } catch(e) {
+      alert('Storage delete error! ' + e);
+    }
+  }
+
+  function exportPaletteFile() {
+    source = colours.palette + "";
+    exportFile(fractal.name + ".palette", "text/palette", source);
+  }
+
+  function packPalette() {
+    var data = window.btoa("[Palette]" + "\n" + colours.palette.toString());
+    packURL(data);
   }
 
   function thumbnail(type, size) {
@@ -554,17 +638,31 @@ function Script(source) {
    return result;
   }
 
+  function paletteThumbnail() {
+   //Thumbnail image gen
+   var canvas = document.getElementById("gradient");
+   var thumb = document.getElementById("thumb");
+   thumb.width = 150;
+   thumb.height = 1;
+   thumb.style.visibility='visible';
+   var context = thumb.getContext('2d');  
+   context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
+   var result = thumb.toDataURL("image/png")
+   thumb.style.visibility='hidden';
+   return result;
+  }
+
   function resetState(noconfirm) {
     if (noconfirm || confirm('This will clear everything!')) {
       localStorage.clear(); //be careful as this will clear the entire database
       loadState();
-      if (!offline)
+      if (!current.offline)
         sessionGet(readURL('ss/session_get.php')); //Get updated list...
       colours.read(); //Palette reset
       newFractal();
-      currentSession = 0;  //No sessions to select
-      currentFormulae = 0;  //No sessions to select
-      currentFractal = -1;  //No fractals to select
+      current.session = 0;  //No sessions to select
+      current.formulae = 0;  //No sessions to select
+      current.fractal = -1;  //No fractals to select
       window.onbeforeunload = null;
     }
   }
@@ -572,8 +670,8 @@ function Script(source) {
   //Import/export all local storage to server
   function uploadState() {
     saveState();  //Update saved data first
-    var data = "session_id=" + (currentSession ? currentSession : 0);
-    if (currentSession > 0 && confirm('Save changes to this session on server?')) {
+    var data = "session_id=" + (current.session ? current.session : 0);
+    if (current.session > 0 && confirm('Save changes to this session on server?')) {
       //Update existing
     } else {
       var desc = prompt("Enter description for new session");
@@ -587,7 +685,7 @@ function Script(source) {
   }
 
   function sessionSaved(data) {
-    localStorage['fractured.currentSession'] = data;
+    localStorage['fractured.current.session'] = data;
     sessionGet(readURL('ss/session_get.php')); //Get updated list...
     progress();
   }
@@ -617,11 +715,11 @@ function Script(source) {
   function packFractal() {
     fractal.applyChanges();
     var data = window.btoa($('nameInput').value + "\n" + fractal.toString(true));
-    var loc = window.location + "";
-    if (loc.indexOf("?") > 0)
-      loc += "&" + data;
-    else
-      loc += "?" + data;
+    packURL(data);
+  }
+
+  function packURL(data) {
+    var loc = window.location + data;
     var link = document.createElement("a");
     link.setAttribute("href", loc);
     var linkText = document.createTextNode("here it is");
@@ -633,8 +731,8 @@ function Script(source) {
   function uploadFormulaFile(shared) {
     var data = "public=" + shared;
     //If selected, give option to update existing
-    if (shared == 0 && currentFormulae > 0 && confirm('Save changes to this formula set on server?'))
-      data += "&formulae=" + currentFormulae;
+    if (shared == 0 && current.formulae > 0 && confirm('Save changes to this formula set on server?'))
+      data += "&formulae=" + current.formulae;
     else {
       var name = prompt("Enter name for new formula set");
       if (name == null) return;
@@ -649,7 +747,7 @@ function Script(source) {
   function formulaeSaved(response) {
     var id = parseInt(response);
     if (id > 0)
-      currentFormulae = localStorage["fractured.currentFormulae"] = id;
+      current.formulae = localStorage["fractured.current.formulae"] = id;
     else
       alert("Formula save error: " + response);
 
@@ -677,7 +775,7 @@ function Script(source) {
   }
 
   function exportFile(filename, content, data) {
-    if (offline) {
+    if (current.offline) {
       //Export using data URL
       location.href = 'data:' + content + ';base64,' + window.btoa(data);
       return;
@@ -702,26 +800,31 @@ function Script(source) {
   }
 
   function loadFormulaeList(data) {
-    if (offline) return;
+    if (current.offline) return;
     //Load list of saved formula sets from server
     try {
       //Get selected id 
-      currentFormulae = parseInt(localStorage["fractured.currentFormulae"]);
+      current.formulae = parseInt(localStorage["fractured.current.formulae"]);
 
       //Clear & repopulate list
       var menu1 = document.getElementById('formulae-public');
       var menu2 = document.getElementById('formulae-private');
+      var ondelete = "deleteSelectedFormulae();";
+      //If not logged in, menu only contains public formula list
+      if (current.loggedin == false) {
+        menu1 = document.getElementById('formulae-list');
+        ondelete = null;
+      }
       removeChildren(menu1);
       removeChildren(menu2);
       var list = JSON.parse(data);
       for (var i=0; i<list.length; i++) {
         var label = list[i].date + "\n" + list[i].name;
         var onclick = "loadFormulaSet(" + list[i].id + ")";
-        var ondelete = "deleteSelectedFormulae();";
         if (list[i]["public"] == "1")
-          addMenuItem(menu1, label, onclick, ondelete, currentFormulae == list[i].id);
+          addMenuItem(menu1, label, onclick, ondelete, current.formulae == list[i].id);
         else
-          addMenuItem(menu2, label, onclick, ondelete, currentFormulae == list[i].id);
+          addMenuItem(menu2, label, onclick, ondelete, current.formulae == list[i].id);
       }
       checkMenuHasItems(menu1);
       checkMenuHasItems(menu2);
@@ -732,7 +835,7 @@ function Script(source) {
 
   function loadFormulaSet(id) {
     if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
-    localStorage["fractured.currentFormulae"] = currentFormulae = id;
+    localStorage["fractured.current.formulae"] = current.formulae = id;
     importFormulae(readURL('ss/formula_get.php?id=' + id));
     //Repopulate menu (so selected set)
     loadFormulaeList(readURL('ss/formula_get.php'));
@@ -755,42 +858,42 @@ function Script(source) {
 
   function deleteSelectedFormulae()
   {
-    if (currentFormulae && confirm('Delete this formula set from the server?')) {
-      readURL('ss/formula_delete.php?id=' + currentFormulae);
+    if (current.formulae && confirm('Delete this formula set from the server?')) {
+      readURL('ss/formula_delete.php?id=' + current.formulae);
       loadFormulaeList(readURL('ss/formula_get.php'));
-      currentFormulae = localStorage["fractured.currentFormulae"] = 0;
+      current.formulae = localStorage["fractured.current.formulae"] = 0;
     }
   }
 
   function loadSession(id)
   {
     if (!confirm('Loading new session. This will overwrite everything!')) return;
-    currentSession = id;
+    current.session = id;
     ajaxReadFile('ss/session_get.php?id=' + id, importState, false, updateProgress);
     progress("Downloading session from server...");
   }
 
   function deleteSelectedState()
   {
-    if (currentSession && confirm('Delete this session from the server?')) {
-      readURL('ss/session_delete.php?id=' + currentSession);
+    if (current.session && confirm('Delete this session from the server?')) {
+      readURL('ss/session_delete.php?id=' + current.session);
       sessionGet(readURL('ss/session_get.php')); //Get updated list...
-      currentSession = localStorage["fractured.currentSession"] = 0;
+      current.session = localStorage["fractured.current.session"] = 0;
     }
   }
 
   function getState() {
     //Get current state in local storage minus session/login details
-    var session = localStorage["fractured.currentSession"];
-    var formulae = localStorage["fractured.currentFormulae"];
-    delete localStorage["fractured.currentSession"];
-    delete localStorage["fractured.currentFormulae"];
+    var session = localStorage["fractured.current.session"];
+    var formulae = localStorage["fractured.current.formulae"];
+    delete localStorage["fractured.current.session"];
+    delete localStorage["fractured.current.formulae"];
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
     var source = JSON.stringify(localStorage);
-    localStorage["fractured.currentSession"] = session;
-    localStorage["fractured.currentFormulae"] = formulae;
+    localStorage["fractured.current.session"] = session;
+    localStorage["fractured.current.formulae"] = formulae;
     return source;
   }
 
@@ -802,8 +905,8 @@ function Script(source) {
       for (key in parsed)
         localStorage[key] = parsed[key];
       //Replace session id, not saved in state data
-      localStorage["fractured.currentSession"] = currentSession;
-      localStorage["fractured.currentFormulae"] = currentFormulae;
+      localStorage["fractured.current.session"] = current.session;
+      localStorage["fractured.current.formulae"] = current.formulae;
       sessionGet(readURL('ss/session_get.php')); //Get updated list...
       loadState();
       loadLastFractal();
@@ -841,11 +944,12 @@ function Script(source) {
     if (localStorage["include/script.js"]) sources["include/script.js"] = localStorage["include/script.js"];
 
     //Get selected id's
-    currentSession = parseInt(localStorage["fractured.currentSession"]);
-    currentFractal = parseInt(localStorage["fractured.currentFractal"]);
-    currentFormulae = parseInt(localStorage["fractured.currentFormulae"]);
+    current.session = parseInt(localStorage["fractured.current.session"]);
+    current.fractal = parseInt(localStorage["fractured.current.fractal"]);
+    current.formulae = parseInt(localStorage["fractured.current.formulae"]);
 
     populateFractals();
+    populatePalettes();
 
     //Show an indicator, assumes 5mb of local storage
     var size = JSON.stringify(localStorage).length;
@@ -998,9 +1102,9 @@ function Script(source) {
   }
 
   function logout() {
-    delete localStorage['fractured.currentSession']
-    delete localStorage['fractured.currentFormulae']
-    delete localStorage['fractured.currentFractal']
+    delete localStorage['fractured.current.session']
+    delete localStorage['fractured.current.formulae']
+    delete localStorage['fractured.current.fractal']
     if (confirm("Clear current session after logout?"))
       resetState(true);
     readURL('ss/logout.php');

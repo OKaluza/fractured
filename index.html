@@ -1,12 +1,11 @@
 <!doctype html>
 <html>
 <head>
-<meta charset=ISO-8859-1">
+<meta charset="ISO-8859-1">
 
 <title>Fractured - Fractal Art Studio</title>
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
-<link rel="stylesheet" type="text/css" href="reset.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
 <script type="text/javascript" src="bootstrap.js"></script>
@@ -35,7 +34,7 @@
 
   <header id="header">
 
-    <h2><span id="heading1">Fractured</span><span id="bar">|</span>studio</h2><h3>0.5</h3>
+    <h1><span id="heading1">Fractured</span><span id="bar">|</span>studio</h1><h3>0.5</h3>
 
     <nav id="menu">
       <ul id="nav">
@@ -64,7 +63,7 @@
               <li><hr></li>
               <li><span onclick="logout();">Logout</span></li>
             </div>
-            <div id="session_login_menu">
+            <div id="session_login_menu" class="loggedout">
               <li><span onclick="exportStateFile();">Export</span></li>
               <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
               <li><span class="fly" tabindex="1">Login with</span>
@@ -102,18 +101,26 @@
               <ul id="fractals" class="selectlist">
               </ul>
             </li>
-            <li><span class="fly" tabindex="1">Formula Sets</span>
+            <li><span class="fly" tabindex="1">Palettes</span>
+              <ul id="palettes" class="selectlist">
+              </ul>
+            </li>
+            <li class="loggedout"><span class="fly" tabindex="1">Formula Sets</span>
+              <ul id="formulae-list" class="selectlist">
+              </ul>
+            </li>
+            <li class="loggedin"><span class="fly" tabindex="1">Formula Sets</span>
               <ul>
                 <li><span class="fly" tabindex="1">Public</span>
                   <ul id="formulae-public" class="selectlist">
                   </ul>
                 </li>
-                <li class="loggedin"><span class="fly" tabindex="1">Uploaded</span>
+                <li><span class="fly" tabindex="1">Uploaded</span>
                   <ul id="formulae-private" class="selectlist">
                   </ul>
                 </li>
-                <li class="loggedin"><span onclick="uploadFormulaFile(1);">Publish</span></li>
-                <li class="loggedin"><span onclick="uploadFormulaFile(0);">Upload</span></li>
+                <li><span onclick="uploadFormulaFile(1);">Publish</span></li>
+                <li><span onclick="uploadFormulaFile(0);">Upload</span></li>
               </ul>
             </li>
             <li><hr></li>
@@ -162,7 +169,7 @@
             <li><span id="toolsbtn" onclick="toggleFullscreen();">Full Screen</span></li>
           </ul>
         </li>
-        <li><span onclick="fractal.applyChanges(true);">Draw</span></li>
+        <li><span onclick="fractal.applyChanges();">Draw</span></li>
       </ul>
 
     </nav>
@@ -333,7 +340,7 @@
         </span>
         <div id="consolearea">
           <div id="console" class="info">
-            <h1>Fractured Studio</h1>
+            <h2>Fractured Studio</h2>
             <p><b>Version 0.5 (c) Owen Kaluza, 2012</b></p>
             <br>
             <p><i>With thanks to:</i></p>

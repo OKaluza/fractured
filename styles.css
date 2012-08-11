@@ -1,3 +1,4 @@
+/* Main Stylesheet */
 body {
   font-family: 'Droid Sans',helvetica,arial,serif;
   font-size: 10pt;
@@ -7,6 +8,8 @@ html, body {
   padding: 0; margin: 0;
   border: none; 
 }
+
+h2 {font-weight: bold; font-size: 120%;}
 
 /* Data entry form layout */
 form.scroll   {position: absolute; top: 3px; bottom: 3px; width: 99%;}
@@ -49,10 +52,12 @@ overflow:auto;
 
 p {margin: 0px 2px; }
 
+
 div.gap {height: 5px; }
 
 /* Visible only when logged in */
 .loggedin {display: none;}
+.loggedout {display: block;}
 
 /* Floating divs */
 .left       {float: left}
@@ -137,7 +142,7 @@ canvas#palette {
 /* Scrolling areas */
 .scroll {overflow-y: auto; overflow-x: hidden}
 
-#statusbar {position: absolute; bottom: 1px; width: 327px; height: 18px; margin: 2px 0px 0px 1px; padding: 0; border-radius: 4px; border: 1px solid #663; background-color: #ddc}
+#statusbar {position: absolute; bottom: 1px; width: 328px; height: 18px; margin: 2px 0px 0px; padding: 0; border-radius: 4px; border: 1px solid #663; background-color: #ddc}
 
 #coords {float: left; padding: 0px 5px; margin: 1px;}
 
@@ -159,10 +164,10 @@ header {
      position: fixed;
 }
 
-header h2 {float: left;  margin: 0px;  height: 12px;  padding: 4px;  font-size: 12pt; }
-header h2 span {color: #eec;}
-header h2 #bar {color: #887;}
-header h3 {float: left;  margin: 0px;  height: 12px;  padding: 8px 2px;  font-size: 8pt;}
+header h1 {float: left;  margin: 0px;  height: 12px;  padding: 4px;  font-size: 12pt; font-weight:normal;}
+header h1 span {color: #eec;}
+header h1 #bar {color: #887;}
+header h3 {float: left;  margin: 0px;  height: 12px;  padding: 8px 2px;  font-size: 8pt; font-weight:normal;}
 
 /* Nav-menu */
 nav#menu {float: left;}
@@ -255,6 +260,7 @@ nav#menu {float: left;}
 .selectlist {overflow-y:auto; overflow-x: hidden; max-height: 300px;}
 .selectlist li {width: 200px;}
 .selectlist span {min-width: 194px; display: inline-block; float: left;}
+#palettes li {border: none;}
 
 .thumb {margin: 0px; padding-right: 3px; display: inline-block; float: left;}
 
@@ -328,7 +334,7 @@ aside {
   height: 99%;
   margin: 2px;
   float: left;
-  width: 324px;
+  width: 330px;
 }
 
 #main {
