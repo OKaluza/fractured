@@ -218,6 +218,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
     window.onresize = autoResize;
+    window.onmozfullscreenchange = toggleFullscreen
+    $('main').onwebkitfullscreenchange = toggleFullscreen;
     window.onbeforeunload = beforeUnload;
 
     //Create a fractal object
@@ -1040,10 +1042,28 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     autoResize(document["inputs"].elements["autosize"].checked);
   }
 
-  function toggleFullscreen() {
+  function toggleFullscreen(newval) {
+    var main = document.getElementById("main");
+    if (window.requestFullScreen) {
+      //Use new html5 full screen API
+      if (typeof(newval) == 'boolean' && newval == true) {
+        document["inputs"].elements["autosize"].checked = true;
+        requestFullScreen("fractal-canvas");
+        main.style.top = '0px';
+        main.style.left = '0px';
+      } else {
+        //Response to fullscreenchange event
+        if (fullscreen) {
+          main.style.top = '27px';
+          main.style.left = showparams ? '334px' : '1px';
+        }
+        fullscreen = !fullscreen;
+      }
+      return;
+    }
+    //Old method, full browser screen, user can then manually fullscreen the browser
     var header = document.getElementById("header");
     var sidebar = document.getElementById("left");
-    var main = document.getElementById("main");
     if (header.style.display == 'none') {
       header.style.display = 'block';
       sidebar.style.display = 'block';
@@ -1190,10 +1210,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         //Ignore if too small a region selected
         if (select.w > 5 && select.h > 5) {
           //Get element offset in document
-          var offset = findElementPos(mouse.element);
+          //var offset = findElementPos(mouse.element);
           //Convert coords to position relative to element
-          select.x -= offset[0];
-          select.y -= offset[1];
+          //select.x -= offset[0];
+          //select.y -= offset[1];
           //Get centre of selection in fractal coords
           var centre = fractal.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
           //Adjust centre position to match mouse left click
@@ -1297,6 +1317,7 @@ var julia;
 
     //Drag processing
     var select = document.getElementById("select");
+    var main = document.getElementById("main");
     select.style.display = 'block';
 
     //Constrain selection size to canvas aspect ratio
@@ -1305,15 +1326,18 @@ var julia;
     select.h = mouse.element.height / ratio;
 
     if (mouse.deltaX < 0)
-      select.x = mouse.absoluteX;
+      select.x = mouse.x;
     else
-      select.x = mouse.absoluteX - select.w;
+      select.x = mouse.x - select.w;
 
+    var offset = findElementPos(main);
     if (mouse.deltaY < 0)
-      select.y = mouse.lastY - select.h;
+      select.y = mouse.lastY - select.h - offset[1];
     else
-      select.y = mouse.lastY;
+      select.y = mouse.lastY - offset[1];
 
+    consoleWrite("Mouse: " + mouse.x + "," + mouse.y);
+    consoleWrite("Absolute: " + mouse.absoluteX + "," + mouse.absoluteY);
     //Copy to style to set positions
     select.style.left = select.x + "px";
     select.style.top = select.y + "px";

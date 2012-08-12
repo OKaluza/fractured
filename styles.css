@@ -98,12 +98,16 @@ canvas#palette {
 
 /* Image area selection */
 #select {
+  display: none;
   z-index: 20;
   position:absolute;
   border:1px solid #596380;
   background: #EECC11;
   opacity: 0.3;
 }
+
+/* Background image */
+#background {z-index: -1; position: absolute; top: 0; left: 0; background-image: url('media/bg.png');}
 
 /* Popup div */
 .popup {
@@ -122,6 +126,9 @@ canvas#palette {
   width:300px; height:200px;
   margin:-100px 0 0 -150px;
 }
+/* Progress popup */
+#progress {width: 302px; height: 32px;}
+#progressbar {width: 300px; height: 10px; background: #58f;}
 
 /* Formula editing */
 .formula_buttons {float: right; padding-right: 5px;}

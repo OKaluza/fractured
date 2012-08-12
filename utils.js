@@ -15,7 +15,7 @@ function removeChildren(element) {
   }
 }
 
-//Browser specific animation helper function
+//Browser specific animation frame request
 if ( !window.requestAnimationFrame ) {
   window.requestAnimationFrame = ( function() {
     return window.webkitRequestAnimationFrame ||
@@ -23,6 +23,17 @@ if ( !window.requestAnimationFrame ) {
            window.oRequestAnimationFrame ||
            window.msRequestAnimationFrame;
   } )();
+}
+
+//Browser specific full screen request
+function requestFullScreen(id) {
+  var element = document.getElementById(id);
+  if (element.requestFullscreen)
+      element.requestFullscreen();
+  else if (element.mozRequestFullScreen)
+      element.mozRequestFullScreen();
+  else if (element.webkitRequestFullScreen)
+      element.webkitRequestFullScreen();
 }
 
 //JQuery style lookup by id and style
