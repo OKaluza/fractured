@@ -20,9 +20,9 @@ function ColourPicker(savefn, abortfn) {
   this.colour = new Colour();
 
   //Mouse processing:
-  this.mouse = new Mouse($("plugin"), this);
+  this.mouse = new Mouse($("picker"), this);
   this.mouse.moveUpdate = true;
-  $("plugin").mouse = this.mouse;
+  $("picker").mouse = this.mouse;
 
   //Load hue strip
   var i, html='', bgcol, opac;
@@ -44,31 +44,31 @@ function ColourPicker(savefn, abortfn) {
 ColourPicker.prototype.pick = function(colour, x, y) {
   //Show the picker, with selected colour
   this.update(colour.HSVA());
-  if ($S('plugin').display == 'block') return;
+  if ($S('picker').display == 'block') return;
 
   if (x<0) x=0;
   if (y<0) y=0;
-  $S('plugin').left=x+'px';
-  $S('plugin').top=y+'px';
-  $S('plugin').display='block';
+  $S('picker').left=x+'px';
+  $S('picker').top=y+'px';
+  $S('picker').display='block';
 
   //Correct if outside window width/height
-  var w = $('plugin').offsetWidth,
-      h = $('plugin').offsetHeight;
+  var w = $('picker').offsetWidth,
+      h = $('picker').offsetHeight;
   if (x + w > window.innerWidth - 20)
-    $S('plugin').left=(window.innerWidth - w - 20) + 'px';
+    $S('picker').left=(window.innerWidth - w - 20) + 'px';
   if (y + h > window.innerHeight - 20)
-    $S('plugin').top=(window.innerHeight - h - 20) + 'px';
+    $S('picker').top=(window.innerHeight - h - 20) + 'px';
 }
 
 //Mouse event handling
 ColourPicker.prototype.click = function(e, mouse) {
-  if (mouse.elementId == "plugCLOSE") {
+  if (mouse.elementId == "pickCLOSE") {
     this.abortfn();
-    toggle('plugin'); 
-  } else if (mouse.elementId == "plugOK") {
+    toggle('picker'); 
+  } else if (mouse.elementId == "pickOK") {
     this.savefn(this.picked);
-    toggle('plugin'); 
+    toggle('picker'); 
   } else if (mouse.elementId=='SV') 
     this.setSV(mouse);
   else if (mouse.elementId == 'Hslide' || mouse.elementClass=='hue')
@@ -85,9 +85,9 @@ ColourPicker.prototype.move = function(e, mouse) {
   if (!mouse.isdown) return;
   if (mouse.button > 0) return; //Process left drag only
 
-  if (mouse.elementId == 'plugin' || mouse.elementId == 'plugCUR' || mouse.elementId == 'plugRGB') {
+  if (mouse.elementId == 'picker' || mouse.elementId == 'pickCUR' || mouse.elementId == 'pickRGB') {
     //Drag position
-    var ds=$S('plugin');
+    var ds=$S('picker');
     ds.left = parseInt(ds.left) + mouse.deltaX + 'px';
     ds.top = parseInt(ds.top) + mouse.deltaY + 'px';
     return;
@@ -149,9 +149,9 @@ ColourPicker.prototype.update = function(HSV) {
       rgbaStr = this.colour.html(),
       bgcol = new Colour({H:HSV.H, S:100, V:100, A:255});
 
-  $('plugRGB').innerHTML=this.colour.printString();
-  $S('plugCUR').background=rgbaStr;
-  $S('plugCUR').backgroundColour=rgbaStr;
+  $('pickRGB').innerHTML=this.colour.printString();
+  $S('pickCUR').background=rgbaStr;
+  $S('pickCUR').backgroundColour=rgbaStr;
   $S('SV').backgroundColor=bgcol.htmlHex();
 
   //Hue adjust
