@@ -1,21 +1,20 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 
-<title>Fractal WebGL - editor</title>
+<title>Fractured | editor</title>
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
 
-<script src="utils.js"></script>
-<script src="formulae.js"></script>
-
 <!-- CodeMirror-->
-<script src="codemirror/lib/codemirror.js"></script>
-<script src="codemirror/lib/searchcursor.js"></script>
-<script src="codemirror/lib/search.js"></script>
-<script src="codemirror/lib/dialog.js"></script>
+<script src="codemirror-compressed.js"></script>
+<!--script src="codemirror/lib/codemirror.js"></script>
+<script src="codemirror/lib/util/searchcursor.js"></script>
+<script src="codemirror/lib/util/search.js"></script>
+<script src="codemirror/lib/util/dialog.js"></script>
 <script src="codemirror/mode/clike/clike.js"></script>
-<script src="codemirror/mode/javascript/javascript.js"></script>
+<script src="codemirror/mode/javascript/javascript.js"></script-->
+
 <link rel="stylesheet" href="codemirror/lib/codemirror.css">
-<link rel="stylesheet" href="codemirror/lib/dialog.css">
+<link rel="stylesheet" href="codemirror/lib/util/dialog.css">
 
 <link rel="stylesheet" href="codemirror/theme/fractured.css">
 <link rel="stylesheet" href="codemirror/theme/cobalt.css">
@@ -70,10 +69,6 @@ var filename;
 var type;
 var formula;
 
-  exportFile = function() {
-    window.opener.exportFile(filenameToName(filename)[0] + "." + categoryToType(type) + ".formula", "text/fractal-formula", code.value);
-  }
-
   saveEditor = function() {
     editor.save();  //Updates textarea content
     if (type)
@@ -98,7 +93,7 @@ var formula;
 
   loadEditor = function() {
     var editmode = "text/x-glsl";
-    var edittheme = localStorageDefault("fractured.editorTheme", "fracturedlight");
+    var edittheme = window.opener.localStorageDefault("fractured.editorTheme", "fracturedlight");
 
     //Copy for fallback to code
     code = document.getElementById('editor');
@@ -121,7 +116,7 @@ var formula;
 
     if (filename.indexOf(".js") >= 0) {
       editmode = "text/javascript";
-      edittheme = localStorageDefault("fractured.scriptTheme", "monokai");
+      edittheme = window.opener.localStorageDefault("fractured.scriptTheme", "monokai");
       var btn = document.getElementById('savebtn');
       btn.value = "Run";
       sel.options[sel.length] = new Option("cobalt");
@@ -178,7 +173,7 @@ function replace() {
 
 <div id="buttons">
   <input type="button" id="savebtn" value="Save" onclick="saveEditor()">
-  <input type="button" value="Export" onclick="exportFile()">
+  <input type="button" value="Export" onclick="window.opener.exportFormulaFile(filename, window.type, code.value)">
   <input type="button" value="Find" onclick="search()">
   <input type="button" value="Replace" onclick="replace()">
   <input type="button" value=" < " onclick="CodeMirror.commands['findPrevious'](editor);">

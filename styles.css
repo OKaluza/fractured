@@ -119,7 +119,7 @@ canvas#palette {
   padding: 5px; overflow: hidden;
   background: #ffe;
   border-radius: 5px 5px 5px 5px;
-  box-shadow: 3px 3px 2px #333;
+  box-shadow: 3px 3px 2px #222;
 }
 .popclose {float: right; cursor: pointer; color: #333; margin: 0px 3px; font-weight: bold}
 #loginpop {
@@ -193,6 +193,7 @@ nav#menu {float: left;}
 /* Drop menus */
 #nav ul {
   display: none; /* Initially hidden */
+  box-shadow: 3px 3px 2px #222;
     position:absolute;
     top:24px;
     width:auto;
@@ -353,16 +354,24 @@ aside {
   top: 27px;  /* Space for header */
 }
 
-/* colourPicker.js plugin */
-#plugin { display:none; top: 58px; z-index: 20; background: #0d0d0d; color: #aaa; cursor: move; font-family: arial; font-size: 11px; padding: 7px 10px 11px 10px; position: fixed; width: 229px; border-radius: 5px; border: 1px solid #444; }
+/* colourPicker.js picker */
+#picker { 
+  display:none; top: 58px; z-index: 20; 
+  background: #0d0d0d; color: #aaa; cursor: move; 
+  font-family: arial; font-size: 11px; 
+  padding: 7px 10px 11px 10px; 
+  position: fixed; width: 229px; 
+  border-radius: 5px; border: 1px solid #444;
+  box-shadow: 3px 3px 2px #222;
+}
 
-#plugRGB { float: left; position: relative; top: -1px; }
-#plugOK { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; }
-#plugCLOSE { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; }
-#plugRGB:hover,#plugCLOSE:hover,#plugOK:hover { color: #FFD000;  }
+#pickRGB { float: left; position: relative; top: -1px; }
+#pickOK { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; }
+#pickCLOSE { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; }
+#pickRGB:hover,#pickCLOSE:hover,#pickOK:hover { color: #FFD000;  }
 
-#plugCURBG { float: left; width: 12px; height: 12px; margin-right: 3px; background-image: url("media/bg.png"); }
-#plugCUR { float: left; width: 12px; height: 12px; background: #fff; margin-right: 3px;}
+#pickCURBG { float: left; width: 12px; height: 12px; margin-right: 3px; background-image: url("media/bg.png"); }
+#pickCUR { float: left; width: 12px; height: 12px; background: #fff; margin-right: 3px;}
 
 #SV { background: #ff0000 url('media/SatVal.png'); position: relative; cursor: crosshair; float: left; height: 170px; width: 170px; margin-right: 10px; }
 #SVslide {background: url('media/slide.png'); height: 9px; width: 9px; position: absolute; cursor: crosshair; }

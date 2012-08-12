@@ -598,11 +598,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
   }
 
-  function exportPaletteFile() {
-    source = colours.palette + "";
-    exportFile(fractal.name + ".palette", "text/palette", source);
-  }
-
   function packPalette() {
     var data = window.btoa("[Palette]" + "\n" + colours.palette.toString());
     packURL(data);
@@ -774,6 +769,15 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     fractal.applyChanges();
     source = fractal.toString(true);  //Save formulae when exporting
     exportFile(fractal.name + ".fractal", "text/fractal-source", source);
+  }
+
+  function exportFormulaFile(filename, type, source) {
+    exportFile(filenameToName(filename)[0] + "." + categoryToType(type) + ".formula", "text/fractal-formula", source);
+  }
+
+  function exportPaletteFile() {
+    source = colours.palette + "";
+    exportFile(fractal.name + ".palette", "text/palette", source);
   }
 
   function exportFile(filename, content, data) {
