@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////
 //Formula list management - merge with Formula class in Fractal?
-var formula_list = {};
+var formula_list = null;
 var selected = {};
 
 //FormulaEntry - container

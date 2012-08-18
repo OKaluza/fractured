@@ -3,6 +3,20 @@ function localStorageDefault(key, def) {
   return varDefault(localStorage[key], def);
 }
 
+//Get some data stored in a script element
+getSourceFromElement = function(id) {
+  var script = document.getElementById(id);
+  if (!script) return null;
+  var str = "";
+  var k = script.firstChild;
+  while (k) {
+    if (k.nodeType == 3)
+      str += k.textContent;
+    k = k.nextSibling;
+  }
+  return str;
+}
+
 function varDefault(variable, def) {
   if (variable) return variable;
   return def;

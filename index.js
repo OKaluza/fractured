@@ -1,9 +1,9 @@
 //TODO:
-//Allow disabling of thumbnails (set size?)
+//Allow disabling of thumbnails when saving session to server (user privilege?) (set size?)
 //Clear-actions doesn't always work!?
 
 //Globals
-var sources = {};
+var sources = null;
 var fractal;
 var colours;
 var showparams = true;
@@ -228,7 +228,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     setAntiAliasMenu();
 
     //Colour editing and palette management
-    colours = new GradientEditor(fractal);
+    colours = new GradientEditor($('palette'));
 
     //Draw & update
     if (restored.length > 0)
@@ -431,6 +431,53 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
   }
 
+function performTask(number, numToProcess, processItem) {
+    var pos = 0;
+    progress("Generating thumbnails...");
+    var savedaa = fractal.antialias;
+    // This is run once for every numToProcess items.
+    function iteration() {
+        // Calculate last position.
+        var j = Math.min(pos + numToProcess, number);
+        // Start at current position and loop to last position.
+        for (var i = pos; i < j; i++) {
+            processItem(i);
+        }
+        // Increment current position.
+        pos += numToProcess;
+        setProgress(pos / number * 100.0);
+        // Only continue if there are more items to process.
+        if (pos < number)
+            setTimeout(iteration, 10); // Wait 10 ms to let the UI update.
+        else {
+          populateFractals();
+          progress();
+          fractal.antialias = savedaa;
+          loadLastFractal();
+        }
+    }
+    iteration();
+}
+
+  function regenerateThumbs() {
+    //Recreate all thumbnail images
+    var idx = parseInt(localStorage["fractured.fractals"]);
+    performTask(idx, Math.round(idx/10), 
+        function (index) {
+          var i = index + 1;
+          if (localStorage["fractured.fractal." + i]) {
+            fractal.load(localStorage["fractured.fractal." + i], true);
+            $("widthInput").value = $("heightInput").value = 32;
+            document["inputs"].elements["autosize"].checked = false;
+            fractal.antialias = 6;
+            fractal.applyChanges();
+            var result = $('fractal-canvas').toDataURL("image/jpeg")
+            localStorage["fractured.thumbnail." + i] = result;
+          }
+        });
+
+  }
+
   function populateFractals() {
     //Clear & repopulate list
     var menu = document.getElementById('fractals');
@@ -605,8 +652,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function thumbnail(type, size) {
    //Thumbnail image gen
-   if (type == undefined) type = "png";
-   if (size == undefined) size = 40;
+   //if (type == undefined) type = "png";
+   if (type == undefined) type = "jpeg";
+   if (size == undefined) size = 32; //40;
    var canvas = document.getElementById("fractal-canvas");
 
    //*
@@ -716,7 +764,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function packURL(data) {
-    var loc = window.location + data;
+    var loc = window.location + "?" + data;
     var link = document.createElement("a");
     link.setAttribute("href", loc);
     var linkText = document.createTextNode("here it is");
@@ -922,19 +970,24 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
   }
 
-  function loadState() {
-    //Reset sources...
-    sources = {};
-    for (key in default_sources)
-      sources[key] = default_sources[key];
+  function loadScript(filename) {
+    var head = document.getElementsByTagName('head')[0];
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = filename;
+    head.appendChild(script);
+  }
 
-    //Load formulae from local storage (or defaults if not found)
+  function loadState() {
+    //Load includes...
+    var i_source = localStorage["fractured.include"];
+    if (i_source) sources = JSON.parse(i_source);
+    if (!sources) sources = JSON.parse(readURL('/includes.json'));
+
+    //Load formulae
     var f_source = localStorage["fractured.formulae"];
-    if (f_source && f_source.length < 400) f_source = null; //Old formula list
-    if (f_source) {
-      formula_list = JSON.parse(f_source); //localStorage["fractured.formula"]);
-    } else
-      formula_list = default_formula_list;  //From bootstrap.js
+    if (f_source) formula_list = JSON.parse(f_source);
+    if (!formula_list) formula_list = JSON.parse(readURL('defaultformulae.json'));
 
     //Custom mouse actions
     a_source = localStorage["fractured.mouseActions"];
@@ -945,9 +998,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     //Create formula entries in drop-downs (and any saved load sources)
     updateFormulaLists();
-
-    //Default script
-    if (localStorage["include/script.js"]) sources["include/script.js"] = localStorage["include/script.js"];
 
     //Get selected id's
     current.session = parseInt(localStorage["fractured.current.session"]);
@@ -984,6 +1034,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       localStorage["fractured.mouseActions"] = JSON.stringify(mouseActions);
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formula_list);
+      //Save include sources
+      sources["generated.shader"] = "";
+      localStorage["fractured.include"] = JSON.stringify(sources);
       //Save script
       localStorage["include/script.js"] = sources["include/script.js"];
       //Save current fractal (as default)
@@ -1052,7 +1105,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       //Use new html5 full screen API
       if (typeof(newval) == 'boolean' && newval == true) {
         document["inputs"].elements["autosize"].checked = true;
-        requestFullScreen("fractal-canvas");
+        requestFullScreen("main");
         main.style.top = '0px';
         main.style.left = '0px';
       } else {
@@ -1105,10 +1158,10 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
   function progress(text) {
     var el = $('progress');
-    if (el.style.display == 'block')
-      //rel.style.display = 'none';
-      setTimeout("$('progress').style.display = 'none';", 150);
-    else {
+    if (text == undefined || el.style.display == 'block') {
+      el.style.display = 'none';
+      //setTimeout("$('progress').style.display = 'none';", 150);
+    } else {
       $('progressmessage').innerHTML = text;
       $('progressstatus').innerHTML = "0%";
       $S('progressbar').width = 0;
@@ -1340,8 +1393,6 @@ var julia;
     else
       select.y = mouse.lastY - offset[1];
 
-    consoleWrite("Mouse: " + mouse.x + "," + mouse.y);
-    consoleWrite("Absolute: " + mouse.absoluteX + "," + mouse.absoluteY);
     //Copy to style to set positions
     select.style.left = select.x + "px";
     select.style.top = select.y + "px";
@@ -1382,11 +1433,6 @@ var julia;
 
     fractal.applyChanges();
   }
-
-  function bgColourMouseClick() {
-    colours.edit(0, $("backgroundBG").offsetLeft, 30);
-  }
-
 
 /////////////////////////////////////////////////////////////////////////
 //Editor windows, data passing, saving & loading
