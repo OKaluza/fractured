@@ -1,28 +1,27 @@
 /**
  * @constructor
  */
-function GradientEditor(owner) {
-  this.owner = owner; //Must have updateTexture() and draw()
+function GradientEditor(canvas, callback) {
+  this.canvas = canvas;
+  this.callback = callback;
   this.changed = true;
   this.inserting = false;
-  this.editing = -1;
+  this.editing = null;
   this.element = null;
   var self = this;
   function saveColour(val) {self.save(val);}
   function abortColour() {self.cancel();}
   this.picker = new ColourPicker(saveColour, abortColour);
 
-  this.editcanvas = document.getElementById('palette')
-  this.gradientcanvas = document.getElementById('gradient')
-
   //Create default palette object
   this.palette = new Palette();
-    ////this.palette.draw(this.editcanvas, true);
   //Event handling for palette
-  this.editcanvas.mouse = new Mouse(this.editcanvas, this);
-  this.editcanvas.mouse.ignoreScroll = true;
-  this.editcanvas.oncontextmenu="return false;";
-  this.editcanvas.oncontextmenu = function() { return false; }      
+  this.canvas.mouse = new Mouse(this.canvas, this);
+  this.canvas.mouse.ignoreScroll = true;
+  this.canvas.oncontextmenu="return false;";
+  this.canvas.oncontextmenu = function() { return false; }      
+
+  this.update();
 }
 
 //Palette management
@@ -30,17 +29,25 @@ GradientEditor.prototype.read = function(source) {
   //Read a new palette from source data
   this.palette = new Palette(source);
   this.reset();
-  this.changed = true;
-  this.palette.draw(this.editcanvas, true);
+  this.update();
 }
 
-GradientEditor.prototype.update = function() {
-  if (!this.changed) return;
+GradientEditor.prototype.update = function(source) {
+  //Redraw and flag change
+  this.changed = true;
+  this.palette.draw(this.canvas, true);
+  //Trigger callback if any
+  if (this.callback) this.callback();
+}
+
+//Draw gradient to passed canvas if data has changed
+//If no changes, return false
+GradientEditor.prototype.get = function(canvas) {
+  if (!this.changed) return false;
   this.changed = false;
-  this.palette.draw(this.editcanvas, true);
-  //Update gradient texture
-  this.palette.draw(this.gradientcanvas, false);  //WebGL texture size (power of 2)
-  this.owner.updateTexture();
+  //Update passed canvas
+  this.palette.draw(canvas, false);
+  return true;
 }
 
 GradientEditor.prototype.insert = function(position, x, y) {
@@ -48,10 +55,16 @@ GradientEditor.prototype.insert = function(position, x, y) {
   this.inserting = true;
   var col = new Colour();
   this.editing = this.palette.newColour(position, col)
-  this.palette.draw(this.editcanvas, true);
+  this.update();
   //Edit new colour
   this.picker.pick(col, x, y);
-  this.changed = true;
+}
+
+GradientEditor.prototype.editBackground = function(element) {
+  this.editing = -1;
+  var offset = findElementPos(element); //From mouse.js
+  this.element = element;
+  this.picker.pick(this.palette.background, offset[0]+32, offset[1]+32);
 }
 
 GradientEditor.prototype.edit = function(val, x, y) {
@@ -63,17 +76,20 @@ GradientEditor.prototype.edit = function(val, x, y) {
     this.cancel();  //Abort any current edit first
     this.element = val;
     var col = new Colour(val.style.backgroundColor)
-    this.picker.pick(col, val.offsetLeft, val.offsetTop);
+    var offset = findElementPos(val); //From mouse.js
+    this.picker.pick(col, offset[0]+32, offset[1]+32);
   }
-  this.changed = true;
+  this.update();
 }
 
 GradientEditor.prototype.save = function(val) {
-  if (this.editing >= 0)
-  {
-    //Update colour with selected
-    this.palette.colours[this.editing].colour.setHSV(val);
-    this.palette.draw(this.editcanvas, true);
+  if (this.editing != null) {
+    if (this.editing >= 0)
+      //Update colour with selected
+      this.palette.colours[this.editing].colour.setHSV(val);
+    else
+      //Update background colour with selected
+      this.palette.background.setHSV(val);
   }
   if (this.element) {
     var col = new Colour(0);
@@ -81,35 +97,32 @@ GradientEditor.prototype.save = function(val) {
     this.element.style.backgroundColor = col.html();
   }
   this.reset();
-  this.changed = true;
+  this.update();
 }
 
 GradientEditor.prototype.cancel = function() {
   //If aborting a new colour add, delete it
   if (this.editing >= 0 && this.inserting)
-  {
     this.palette.remove(this.editing);
-    this.palette.draw(this.editcanvas, true);
-  }
   this.reset();
-  this.changed = true;
+  this.update();
 }
 
 GradientEditor.prototype.reset = function() {
   //Reset editing data
   this.inserting = false;
-  this.editing = -1;
+  this.editing = null;
   this.element = null;
 }
 
 //Mouse event handling
 GradientEditor.prototype.click = function(event, mouse) {
-  this.changed = true;
+  //this.changed = true;
   if (event.ctrlKey) {
     //Flip
-    for (var i = 1; i < this.palette.colours.length; i++)
+    for (var i = 0; i < this.palette.colours.length; i++)
       this.palette.colours[i].position = 1.0 - this.palette.colours[i].position;
-    this.palette.draw(this.editcanvas, true);
+    this.update();
     return false;
   }
 
@@ -121,7 +134,7 @@ GradientEditor.prototype.click = function(event, mouse) {
   {
     //Slider moved, update texture
     mouse.slider = null;
-    this.palette.draw(this.editcanvas, true);
+    this.update();
     return false;
   }
   var pal = document.getElementById('palette');
@@ -132,14 +145,14 @@ GradientEditor.prototype.click = function(event, mouse) {
 
     //Get selected colour
     var i = this.palette.inRange(mouse.x, slider.width, pal.width);
-    if (i > 0) {
+    if (i >= 0) {
       if (event.button == 0) {
         //Edit colour on left click
         this.edit(i, event.clientX-128, 30);
       } else if (event.button == 2) {
         //Delete on right click
         this.palette.remove(i);
-        this.palette.draw(this.editcanvas, true);
+        this.update();
       }
     } else {
       //Clicked elsewhere, add new colour
@@ -164,30 +177,28 @@ GradientEditor.prototype.move = function(event, mouse) {
 
   if (mouse.slider == null) {
     //Colour slider dragged on?
-    var i = this.palette.inDragRange(mouse.x, slider.width, this.editcanvas.width);
-    if (i>1) mouse.slider = i;
+    var i = this.palette.inDragRange(mouse.x, slider.width, this.canvas.width);
+    if (i>0) mouse.slider = i;
   }
 
   if (mouse.slider == null)
     mouse.isdown = false; //Abort action if not on slider
   else {
     if (mouse.x < 1) mouse.x = 1;
-    if (mouse.x > this.editcanvas.width-1) mouse.x = this.editcanvas.width-1;
+    if (mouse.x > this.canvas.width-1) mouse.x = this.canvas.width-1;
     //Move to adjusted position and redraw
-    this.palette.colours[mouse.slider].position = mouse.x / this.editcanvas.width;
-    this.palette.draw(this.editcanvas, true);
+    this.palette.colours[mouse.slider].position = mouse.x / this.canvas.width;
+    this.update();
   }
 }
 
 GradientEditor.prototype.wheel = function(event, mouse) {
-  //If shift held, redraw after change
-  this.cycle(0.01 * event.spin, event.shiftKey);
+  this.cycle(0.01 * event.spin);
 }
 
-GradientEditor.prototype.cycle = function(inc, update) {
+GradientEditor.prototype.cycle = function(inc) {
   //Shift all colours cyclically
-  this.changed = true;
-  for (var i = 2; i < this.palette.colours.length-1; i++)
+  for (var i = 1; i < this.palette.colours.length-1; i++)
   {
     var x = this.palette.colours[i].position;
     x += inc;
@@ -195,11 +206,7 @@ GradientEditor.prototype.cycle = function(inc, update) {
     if (x >= 1.0) x -= 1.0;
     this.palette.colours[i].position = x;
   }
-  this.palette.draw(this.editcanvas, true);
-  if (update) {
-    this.update();
-    this.owner.draw();
-  }
+  this.update();
 }
 
 

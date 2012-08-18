@@ -66,6 +66,8 @@
 
     if (antialias > 1) {
       //Draw and blend multiple passes for anti-aliasing
+      this.gl.enable(this.gl.BLEND);
+      this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
       var blendinc = 0;
       //var data = new Int8Array(this.viewport.width * this.viewport.height * 4);
       for (var j=0; j<antialias; j++) {
@@ -115,9 +117,10 @@
 */
   }
 
-  WebGL.prototype.updateTexture = function(texture, image) {
-    //(Ability to set texture unit?)
-    this.gl.activeTexture(this.gl.TEXTURE0);
+  WebGL.prototype.updateTexture = function(texture, image, unit) {
+    //Set default texture unit if not provided
+    if (unit == undefined) unit = this.gl.TEXTURE0;
+    this.gl.activeTexture(unit);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
@@ -157,7 +160,9 @@
     if (fbo_status != this.gl.FRAMEBUFFER_COMPLETE) alert("Framebuffer error: " + fbo_status);
   }
 
-  WebGL.prototype.init2dBuffers = function() {
+  WebGL.prototype.init2dBuffers = function(unit) {
+    //Set default texture unit if not provided
+    if (unit == undefined) unit = this.gl.TEXTURE0;
     //All output drawn onto a single 2x2 quad
     this.vertexPositionBuffer = this.gl.createBuffer();
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexPositionBuffer);
@@ -167,7 +172,7 @@
     this.vertexPositionBuffer.numItems = 4;
 
     //Gradient texture
-    this.gl.activeTexture(this.gl.TEXTURE0);
+    this.gl.activeTexture(unit);
     this.gradientTexture = this.gl.createTexture();
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.gradientTexture);
 
@@ -213,8 +218,8 @@
   //Program object
   function WebGLProgram(gl, vs, fs) {
     //Can be passed source directly or script tag
-    if (vs.indexOf("main") < 0) vs = this.getShaderSource(vs);
-    if (fs.indexOf("main") < 0) fs = this.getShaderSource(fs);
+    if (vs.indexOf("main") < 0) vs = getSourceFromElement(vs);
+    if (fs.indexOf("main") < 0) fs = getSourceFromElement(fs);
     //Pass in vertex shader, fragment shaders...
     this.gl = gl;
     if (this.program && this.gl.isProgram(this.program))
@@ -282,20 +287,6 @@
     this.mvMatrixUniform = this.gl.getUniformLocation(this.program, "uMVMatrix");
     this.pMatrixUniform = this.gl.getUniformLocation(this.program, "uPMatrix");
   }
-
-  WebGLProgram.prototype.getShaderSource = function(id) {
-    var shaderScript = document.getElementById(id);
-    if (!shaderScript) return null;
-    var str = "";
-    var k = shaderScript.firstChild;
-    while (k) {
-      if (k.nodeType == 3)
-        str += k.textContent;
-      k = k.nextSibling;
-    }
-    return str;
-  }
-
 
   /**
    * @constructor

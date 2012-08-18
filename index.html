@@ -8,8 +8,6 @@
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
 <link rel="stylesheet" type="text/css" href="styles.css">
 
-<script type="text/javascript" src="bootstrap.js"></script>
-
 <script type="text/javascript" src="colourPicker.js"></script>
 <script type="text/javascript" src="gradient.js"></script>
 <script type="text/javascript" src="formulae.js"></script>
@@ -177,7 +175,7 @@
 
     <section id="controls">
       <div id="backgroundBG" class="colourbg">
-        <div id="backgroundCUR" class="colour" onmousedown="bgColourMouseClick();"></div>
+        <div id="backgroundCUR" class="colour" onmousedown="colours.editBackground(this);"></div>
       </div>
       <canvas id="palette" width="572" height="24"></canvas>
     </section>
@@ -385,7 +383,7 @@
     <img src="media/slider.png" id="slider">
     <img src="media/SatVal.png">
     <canvas id="gradient" width="2048" height="1"></canvas>
-    <canvas id="thumb" width="40" height=40"></canvas>
+    <canvas id="thumb" width="32" height=32"></canvas>
 
     <form name="exporter" action="ss/savefile.php" method="post">
       <input type="hidden" id="export-filename" name="filename"/>

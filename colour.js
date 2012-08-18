@@ -2,12 +2,13 @@
    * @constructor
    */
   function Palette(source) {
+    //Default transparent black background
+    this.background = new Colour("rgba(0,0,0,0)");
     //Colour palette array
     this.colours = [];
 
     if (!source) {
       //Default
-      this.colours.push(new ColourPos("rgba(0,0,0,0)", -1));
       this.colours.push(new ColourPos("rgba(0,0,0,1)", 0));
       this.colours.push(new ColourPos("rgba(59,45,30,1)", 0.05));
       this.colours.push(new ColourPos("rgba(31,194,188,1)", 0.15));
@@ -28,7 +29,7 @@
       //Palette: parse into attrib=value pairs
       var pair = line.split("=");
       if (pair[0] == "Background")
-        this.colours.push(new ColourPos(pair[1], -1));
+        this.background = new Colour(pair[1]);
       else if (pair[0][0] == "P") //PositionX=
         position = parseFloat(pair[1]);
       else if (pair[0][0] == "C") { //ColourX=
@@ -55,23 +56,23 @@
     var col = new ColourPos(colour, position);
     this.colours.push(col);
     this.colours.sort(function(a,b){return a.position - b.position});
-    for (var i = 2; i < this.colours.length-1; i++)
+    for (var i = 1; i < this.colours.length-1; i++)
       if (this.colours[i].position == position) return i;
     return -1;
   }
 
   Palette.prototype.inRange = function(pos, range, length) {
-    for (var i = 1; i < this.colours.length; i++)
+    for (var i = 0; i < this.colours.length; i++)
     {
       var x = this.colours[i].position * length;
       if (pos == x || (range > 1 && pos >= x - range / 2 && pos <= x + range / 2))
         return i;
     }
-    return 0;
+    return -1;
   }
 
   Palette.prototype.inDragRange = function(pos, range, length) {
-    for (var i = 2; i < this.colours.length-1; i++)
+    for (var i = 1; i < this.colours.length-1; i++)
     {
       var x = this.colours[i].position * length;
       if (pos == x || (range > 1 && pos >= x - range / 2 && pos <= x + range / 2))
@@ -85,8 +86,8 @@
   }
 
   Palette.prototype.toString = function() {
-    var paletteData = 'Background=' + this.colours[0].colour.html();
-    for (var i = 1; i < this.colours.length; i++)
+    var paletteData = 'Background=' + this.background.html();
+    for (var i = 0; i < this.colours.length; i++)
       paletteData += '\n' + this.colours[i].position.toFixed(6) + '=' + this.colours[i].colour.html();
     return paletteData;
   }
@@ -96,9 +97,8 @@
     // Figure out if a webkit browser is being used
 	  var webkit = /webkit/.test(navigator.userAgent.toLowerCase());
 
-    if (this.colours.length == 0)
-    {
-      this.colours.push(new ColourPos("#ffffff", -1)); //Background
+    if (this.colours.length == 0) {
+      this.background = new Colour("#ffffff");
       this.colours.push(new ColourPos("#000000", 0));
       this.colours.push(new ColourPos("#ffffff", 1));
     }
@@ -118,7 +118,7 @@
       if (webkit) {
         //Split up into sections or webkit draws a fucking awful gradient with banding
         var x0 = 0;
-        for (var i = 2; i < list.length; i++) {
+        for (var i = 1; i < list.length; i++) {
           var x1 = Math.round(width * list[i].position);
           context.fillStyle = context.createLinearGradient(x0, 0, x1, 0);
           context.fillStyle.addColorStop(0.0, list[i-1].colour.html());
@@ -129,19 +129,19 @@
       } else {
         //Single gradient
         context.fillStyle = context.createLinearGradient(0, 0, width, 0);
-        for (var i = 1; i < list.length; i++)
+        for (var i = 0; i < list.length; i++)
           context.fillStyle.addColorStop(list[i].position, list[i].colour.html());
         context.fillRect(0, 0, width, height);
       }
 
       //Background colour
       var bg = document.getElementById('backgroundCUR');
-      bg.style.background = list[0].colour.html();
+      bg.style.background = this.background.html();
 
       //User interface controls
       if (!ui) return;  //Skip drawing slider interface
       var slider = document.getElementById("slider");
-      for (var i = 2; i < list.length-1; i++)
+      for (var i = 1; i < list.length-1; i++)
       {
         var x = Math.floor(width * list[i].position) + 0.5;
         var HSV = list[i].colour.HSV();
@@ -212,7 +212,7 @@
   }
 
   Colour.prototype.set = function(val) {
-    if (!val) alert("No Value provided!");
+    if (!val) val = "#ffffff"; //alert("No Value provided!");
     var re = /^rgba?\((\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,?\s*(\d\.?\d*)?\)$/;
     var bits = re.exec(val);
     if (bits)

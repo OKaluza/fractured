@@ -719,10 +719,11 @@
 
       if (sections["escaped"].length == 0) {
         //No escaped test defined
-        if (this.currentParams["escape"].type != 'expression') {
+        if (!this.currentParams["escape"] || this.currentParams["escape"].type != 'expression') {
           //If no converged test either create a default bailout
-          if (!converged_defined || this.currentParams["escape"])
+          if (!converged_defined || this.currentParams["escape"]) {
             sections["escaped"] = "\n  if (bailtest(z) > escape) break;\n";
+          }
         } else
           //Expression escape param, insert break test
           sections["escaped"] = "\n  if (escape) break;\n";
@@ -823,13 +824,13 @@
     //Adjust centre position
     this.origin.re += point.re;
     this.origin.im += point.im;
-    consoleWrite("Origin set to: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
+    consoleWrite("Origin: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
   }
 
   Fractal.prototype.applyZoom = function(factor) {
     //Adjust zoom
     this.origin.zoom *= factor;
-    consoleWrite("Zoom set to: " + this.origin.zoom.toFixed(8));
+    consoleWrite("Zoom: " + this.origin.zoom.toFixed(8));
   }
 
   Fractal.prototype.selectPoint = function(point) {
@@ -848,11 +849,6 @@
     var tempPos = this.origin.clone();
     this.origin = this.savePos.clone();
     this.savePos = tempPos;
-  }
-
-  Fractal.prototype.updateTexture = function() {
-    if (this.webgl)
-      this.webgl.updateTexture(this.webgl.gradientTexture, colours.gradientcanvas);
   }
 
   Fractal.prototype.resetDefaults = function() {
@@ -1000,7 +996,7 @@
   }
 
   //Load fractal from file
-  Fractal.prototype.load = function(source) {
+  Fractal.prototype.load = function(source, noapply) {
     //consoleDebug("load<hr>");
     //Reset everything...
     this.resetDefaults();
@@ -1180,7 +1176,7 @@
       reup  = true;
     }
     if (reup) this.loadParams();
-    this.applyChanges();
+    if (noapply == undefined) this.applyChanges();
   }
 
   //Conversion from my old fractal ini files
@@ -1520,7 +1516,10 @@
   //Apply any changes to parameters or formula selections and redraw
   Fractal.prototype.applyChanges = function() {
     //Update palette
-    colours.update();
+    var canvas = $('gradient');
+    if (this.webgl && colours.get(canvas))
+      this.webgl.updateTexture(this.webgl.gradientTexture, canvas);
+
     //Resize canvas if size settings changed
     if (document["inputs"].elements["autosize"].checked) {
       //Clear so draw() gets size from window
@@ -1797,8 +1796,8 @@
   }
 
   Fractal.prototype.renderViewport = function(x, y, w, h) {
-    var alpha = colours.palette.colours[0].colour.alpha; //Save bg alpha
-    colours.palette.colours[0].colour.alpha = 1.0;
+    var alpha = colours.palette.background.alpha; //Save bg alpha
+    colours.palette.background.alpha = 1.0;
     if (this.webcl) {
       this.webcl.setViewport(x, y, w, h);
       this.webcl.draw(this);
@@ -1811,7 +1810,7 @@
       this.webgl.viewport = new Viewport(0, 0, this.canvas.width, this.canvas.height);
       this.gl.disable(this.gl.SCISSOR_TEST);
     }
-    colours.palette.colours[0].colour.alpha = alpha;  //Restore alpha
+    colours.palette.background.alpha = alpha;  //Restore alpha
   }
 
   Fractal.prototype.renderWebGL = function() {
@@ -1821,7 +1820,7 @@
     //Uniform variables
     this.gl.uniform1i(this.program.uniforms["julia"], this.julia);
     this.gl.uniform1i(this.program.uniforms["perturb"], this.perturb);
-    this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.colours[0].colour.rgbaGL());
+    this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.background.rgbaGL());
     this.gl.uniform2f(this.program.uniforms["origin"], this.origin.re, this.origin.im);
     this.gl.uniform2f(this.program.uniforms["selected"], this.selected.re, this.selected.im);
     this.gl.uniform2f(this.program.uniforms["dims"], this.webgl.viewport.width, this.webgl.viewport.height);
@@ -1852,11 +1851,9 @@
     else if (this.webgl.viewport.height > this.webgl.viewport.width)
       this.webgl.modelView.scale([1.0, this.webgl.viewport.height / this.webgl.viewport.width, 1.0]);  //Scale height
 
-    //var bg = colours.palette.colours[0].colour.rgbaGL();
+    //var bg = colours.palette.background.rgbaGL();
     //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
     this.gl.clearColor(0, 0, 0, 0);
-    this.gl.enable(this.gl.BLEND);
-    this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
 
     //consoleDebug('>> Drawing fractal (aa=' + this.antialias + ")");
     this.webgl.draw2d(this.antialias);
