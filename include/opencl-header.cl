@@ -3,6 +3,7 @@
 #ifdef FP64
 //Double precision
 #pragma OPENCL EXTENSION cl_khr_fp64: enable
+#pragma OPENCL EXTENSION cl_amd_fp64: enable
 #define real double
 #define complex double2
 #else

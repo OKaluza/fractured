@@ -332,11 +332,9 @@
         <div id="indicatorbg"><div id="indicator"></div></div>
 
         <input type="button" value="Clear log" onClick="consoleClear()">
-        <span id="webcl">
-          <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
-          <input type="button" value="WebCL" onClick="switchMode(WEBCL);">
-          <input type="button" value="WebCL fp64" onClick="switchMode(WEBCL64);">
-        </span>
+        <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
+        <input type="button" id="webcl" value="WebCL" onClick="switchMode(WEBCL);">
+        <input type="button" id="fp64" value="WebCL fp64" onClick="switchMode(WEBCL64);">
         <div id="consolearea">
           <div id="console" class="info">
             <h2>Fractured Studio</h2>
@@ -346,13 +344,13 @@
             <ul>
             <li><a href="http://codemirror.net/">CodeMirror</a> used for formula / shader code editing component.</li>
             <li>Expression parser built using <a href="http://zaach.github.com/jison/">Jison</a></li>
-            <li><a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a> for the design the colour picker is based on.</li>
             <li>Vector and Matrix Math: <a href="http://sylvester.jcoglan.com/">sylvester.js</a></li>
-            <li><a href="http://learningwebgl.com/">Learning WebGL</a></li>
-            <li>References used when adding WebCL support: <a href="http://webcl.nokiaresearch.com/">Nokia Research WebCL</a> <a href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">WebCL Examples</a></li>
-            <li>Some fractal formulae from <a href="http://gnofract4d.sourceforge.net/">Gnofract</a></li>
+            <li><a href="http://learningwebgl.com/">Learning WebGL</a> for WebGL tutorials</li>
+            <li>WebCL tutorials <a href="http://webcl.nokiaresearch.com/">Nokia Research WebCL</a> and <a href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">WebCL Examples</a></li>
+            <li>Some fractal formulae based on those in <a href="http://gnofract4d.sourceforge.net/">Gnofract</a> and <a href="http://www.ultrafractal.com/">UltraFractal</a></li>
+            <li><a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a> for the design the colour picker is based on.</li>
             </ul>
-            <p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p>
+            <!--p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p-->
             <hr>
           </div>
         </div>

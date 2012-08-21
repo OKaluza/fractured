@@ -171,12 +171,12 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
           debug = true;
           $S('debugmenu').display = 'block';
           $S('recordmenu').display = 'block';
-        } else if (list[i].indexOf('webgl') >= 0) {
-          mode = WEBGL;
+        } else if (list[i].indexOf('fp64') == 0 || list[i].indexOf('double') == 0) {
+          mode = WEBCL64;
         } else if (list[i].indexOf('webcl') >= 0) {
           mode = WEBCL;
-        } else if (list[i].indexOf('double') == 0) {
-          mode = WEBCL64;
+        } else if (list[i].indexOf('webgl') >= 0) {
+          mode = WEBGL;
         } else if (list[i].length > 20) {
           //Load fractal from base64 packed url
           restored = window.atob(list[i]);
@@ -265,7 +265,6 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
 
     fractal = new Fractal(canvas, mode);
     fractal.antialias = aa;
-      colours.owner = fractal;
     fractal.load(source);
     fractal.name = localStorage["fractured.name"];
   }
