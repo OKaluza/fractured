@@ -1,10 +1,8 @@
   /**
    * @constructor
    */
-  function WebCL_(canvas, fp64) {
-    this.canvas = canvas;
-    this.ctx2d = canvas.getContext("2d");
-    this.gradientcanvas = document.getElementById('gradient');
+  function WebCL_() {
+    this.fp64 = false;
     try {
       if (window.WebCL == undefined) {
         alert("Unfortunately your system does not support WebCL");
@@ -17,12 +15,23 @@
                                               WebCL.CL_DEVICE_TYPE_DEFAULT);
       this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
 
-      consoleDebug("WebCL ready, " + (fp64 ? "double" : "single") + " precision");
+      //Check for double precision support
+      var extensions = this.platforms[0].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
+      extensions += " " + this.devices[0].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
+      if (!(/cl_khr_fp64|cl_amd_fp64/i).test(extensions))
+        this.fp64 = true; //Initial state of flag shows availability of fp64 support
+      consoleDebug("WebCL ready, extensions: " + extensions);
 
     } catch(e) {
       alert(e.message);
       throw e;
     }
+  }
+
+  WebCL_.prototype.init = function(canvas, fp64) {
+    this.canvas = canvas;
+    this.ctx2d = canvas.getContext("2d");
+    this.gradientcanvas = document.getElementById('gradient');
     this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     this.threads = 64;
     this.setPrecision(fp64);
@@ -90,7 +99,7 @@
 
       //Pass additional args
       //this.kernel.setKernelArg (2, value, WebCL.types.FLOAT);
-      var background = colours.palette.colours[0].colour;
+      var background = colours.palette.background;
       this.inBuffer[0] = fractal.origin.zoom;
       this.inBuffer[1] = fractal.origin.rotate;
       this.inBuffer[2] = fractal.origin.pixelSize(this.canvas);

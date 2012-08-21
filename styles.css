@@ -34,6 +34,7 @@ div.row input[type="text"] {width: 100px;}
 div.row select {min-width: 100px;}
 
 input[type="button"]:hover {background:#dac083;}
+input[type="button"]:disabled {background:#eee;}
 div.row input:focus {border-color: blue;}
 div.row select:focus {border-color: blue;}
 div.row textarea:focus {border-color: blue;}

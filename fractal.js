@@ -627,9 +627,8 @@
     //Save a reference to active parameters
     this.currentParams = this.params[name];
 
-    if (this.selected != "none" && this.selected != "same") {
-      var code = this.getSource();
-
+    var code = this.getSource();
+    if (code.length > 0) {
       //Copy the default params if not yet set
       if (!this.defaultparams[name]) {
         this.defaultparams[name] = new ParameterSet();
@@ -654,9 +653,8 @@
   }
 
   Formula.prototype.getSource = function() {
-    if (this.selected == "none") return "";
-    //if (this.selected == "none" || this.selected == "same")
-    //  return "";
+    //if (this.selected == "none") return "";
+    if (this.selected == "none" || this.selected == "same") return "";
     var key = this.getkey();
     if (!key) return "";
     if (formula_list[key])
@@ -797,8 +795,10 @@
     renderer = mode;
     if (renderer == undefined) renderer = WEBCL;
     if (window.WebCL == undefined) {
+      if (mode > WEBGL) popup("Sorry, Nokia WebCL plugin not found, try <a href='http://webcl.nokiaresearch.com/'>webcl.nokiaresearch.com</a> for more information");
       renderer = WEBGL;
-      $S("webcl").display = "none";
+      $("webcl").disabled = true;
+      $("fp64").disabled = true;
     }
 
     if (renderer == WEBGL) {
@@ -808,7 +808,13 @@
       this.webgl.init2dBuffers();
     } else {
       //Init WebCL
-      this.webcl = new WebCL_(canvas, mode > 1);
+      this.webcl = new WebCL_();
+      if (mode > WEBCL && !this.webcl.fp64) {
+        popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
+        renderer = WEBCL;
+        $("fp64").disabled = true;
+      }
+      this.webcl.init(canvas, renderer > WEBCL);
     }
 
     this.antialias = 1;
@@ -1517,8 +1523,8 @@
   Fractal.prototype.applyChanges = function() {
     //Update palette
     var canvas = $('gradient');
-    if (this.webgl && colours.get(canvas))
-      this.webgl.updateTexture(this.webgl.gradientTexture, canvas);
+    colours.get(canvas);
+    if (this.webgl) this.webgl.updateTexture(this.webgl.gradientTexture, canvas);
 
     //Resize canvas if size settings changed
     if (document["inputs"].elements["autosize"].checked) {

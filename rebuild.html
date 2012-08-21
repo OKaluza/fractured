@@ -25,6 +25,8 @@ function rebuild() {
   sources["include/shader2d.vert"] = "";
   sources["include/script.js"] = "";
 
+  formula_list = {};
+
   for (type in formulae)
     for (i in formulae[type])
       sources[formulaFilename(type, formulae[type][i])] = "";
@@ -66,12 +68,18 @@ function saveLocal() {
   }*/
 
   //localStorage["formulae"] = JSON.stringify(formula_list);
-  var data = "var default_sources = " + JSON.stringify(sources)
-           + ";\nvar default_formula_list = " + JSON.stringify(formula_list) + ";\n";
-  $('output').value = data;
+  var idata = JSON.stringify(sources)
+  var fdata = JSON.stringify(formula_list)
+  $('formula_output').value = fdata;
+  $('include_output').value = idata;
   consoleWrite("Rebuild complete");
   
-  var params = "filename=../bootstrap.js&data=" + encodeURIComponent(data);
+  $('link1').href = 'data:text/plain;base64,' + window.btoa(fdata);
+  $('link2').href = 'data:text/plain;base64,' + window.btoa(idata);
+
+  var params = "filename=../defaultformulae.json&data=" + encodeURIComponent(fdata);
+  ajaxPost("ss/writefile.php", params, alert);
+  var params = "filename=../includes.json&data=" + encodeURIComponent(idata);
   ajaxPost("ss/writefile.php", params, alert);
 }
 
@@ -154,7 +162,12 @@ Rebuilding source files...
 <div id="console">
 </div>
 
-<textarea id="output" cols="100" rows="20" spellcheck="false">
+  <a id="link1" href="data:text/plain;base64," download="defaultformulae.json">defaultformulae.json</a>
+  <a id="link2" href="data:text/plain;base64," download="includes.json">includes.json</a>
+  <hr>
+<textarea id="formula_output" cols="100" rows="10" spellcheck="false">
+</textarea>
+<textarea id="include_output" cols="100" rows="10" spellcheck="false">
 </textarea>
 
 
