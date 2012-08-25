@@ -24,17 +24,16 @@
     this.modelView = new ViewMatrix();
     this.perspective = new ViewMatrix();
     this.textures = [];
+    this.errors = false;
 
     try {
       this.gl = canvas.getContext("experimental-webgl", { antialias: true, premultipliedAlpha: false} );
       this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     } catch(e) {
-      alert(e);
+      this.errors = e;
     }
 
-    if (!this.gl) {
-      alert("Could not initialise WebGL");
-    }
+    if (!this.gl) this.errors = "Failed to get context";
   }
 
   WebGL.prototype.setMatrices = function() {

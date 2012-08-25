@@ -790,6 +790,8 @@
   function Fractal(canvas, mode) {
     //Construct a new default fractal object
     this.canvas = canvas;
+    //Set canvas size
+    this.sizeCanvas();
 
     //Render mode, If not set, use WebCL if available
     renderer = mode;
@@ -803,17 +805,25 @@
 
     if (renderer == WEBGL) {
       //Init WebGL
-      this.webgl = new WebGL(canvas);
-      this.gl = this.webgl.gl;
-      this.webgl.init2dBuffers();
+      if (!window.WebGLRenderingContext) {
+        popup("Sorry, WebGL support not detected, try <a href='http://get.webgl.org'>http://get.webgl.org</a> for more information");
+      } else {
+        this.webgl = new WebGL(canvas);
+        if (this.webgl.errors) {
+          popup("Error initialising WebGL (" + this.webgl.errors + "), try <a href='http://get.webgl.org/troubleshooting'>http://get.webgl.org/troubleshooting</a> for more information");
+        } else {
+          this.gl = this.webgl.gl;
+          this.webgl.init2dBuffers();
+        }
+      }
     } else {
       //Init WebCL
       this.webcl = new WebCL_();
       if (mode > WEBCL && !this.webcl.fp64) {
         popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
         renderer = WEBCL;
-        $("fp64").disabled = true;
       }
+      if (!this.webcl.fp64) $("fp64").disabled = true;
       this.webcl.init(canvas, renderer > WEBCL);
     }
 
@@ -1519,6 +1529,36 @@
     this.draw();
   }
 
+  Fractal.prototype.sizeCanvas = function() {
+    var width = this.width;
+    var height = this.height;
+    if (width == 0 || height == 0) {
+      //Get size from window
+      width = window.innerWidth - (fullscreen ? 0 : showparams ? 334 : 2);
+      height = window.innerHeight - (fullscreen ? 0 : 27);
+      $("widthInput").value = width;
+      $("heightInput").value = height;
+      //Disable scrollbars when using autosize
+      document.documentElement.style.overflow = "hidden";
+    } else  //Enable scrollbars
+      document.documentElement.style.overflow = "auto";
+
+    if (width != this.canvas.width || height != this.canvas.height) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+      if (this.webgl) {
+        this.webgl.viewport.width = width;
+        this.webgl.viewport.height = height;
+      }
+
+      //Update WebCL buffer on size change
+      if (this.webcl && (this.webcl.viewport.width != this.canvas.width || this.webcl.viewport.height != this.canvas.height)) {
+        consoleDebug("Size changed, WebCL resize");
+        this.webcl.setViewport(0, 0, width, height);
+      }
+    }
+  }
+
   //Apply any changes to parameters or formula selections and redraw
   Fractal.prototype.applyChanges = function() {
     //Update palette
@@ -1717,7 +1757,7 @@
       this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
       this.parseErrors(errors, /0:(\d+)/);
-    } else {
+    } else if (this.webcl) {
       errors = this.webcl.buildProgram(source);
       this.parseErrors(errors, /:(\d+):/);
     }
@@ -1763,33 +1803,9 @@
   Fractal.prototype.draw = function(antialias) {
     timeDraw();
     if (antialias != undefined) this.antialias = antialias;
-    var width = this.width;
-    var height = this.height;
-    if (width == 0 || height == 0) {
-      //Get size from window
-      width = window.innerWidth - (fullscreen ? 0 : showparams ? 334 : 2);
-      height = window.innerHeight - (fullscreen ? 0 : 27);
-      $("widthInput").value = width;
-      $("heightInput").value = height;
-      //Disable scrollbars when using autosize
-      document.documentElement.style.overflow = "hidden";
-    } else  //Enable scrollbars
-      document.documentElement.style.overflow = "auto";
 
-    if (width != this.canvas.width || height != this.canvas.height) {
-      this.canvas.width = width;
-      this.canvas.height = height;
-      if (this.webgl) {
-        this.webgl.viewport.width = width;
-        this.webgl.viewport.height = height;
-      }
-
-      //Update WebCL buffer on size change
-      if (this.webcl && (this.webcl.viewport.width != this.canvas.width || this.webcl.viewport.height != this.canvas.height)) {
-        consoleDebug("Size changed, WebCL resize");
-        this.webcl.setViewport(0, 0, width, height);
-      }
-    }
+    //Set canvas size
+    this.sizeCanvas();
 
     //WebCL mode
     if (this.webcl) {

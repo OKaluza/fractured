@@ -4,10 +4,7 @@
   function WebCL_() {
     this.fp64 = false;
     try {
-      if (window.WebCL == undefined) {
-        alert("Unfortunately your system does not support WebCL");
-        return false;
-      }
+      if (window.WebCL == undefined) return false;
 
       this.platforms = WebCL.getPlatformIDs();
       this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
@@ -18,7 +15,7 @@
       //Check for double precision support
       var extensions = this.platforms[0].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
       extensions += " " + this.devices[0].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
-      if (!(/cl_khr_fp64|cl_amd_fp64/i).test(extensions))
+      if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
         this.fp64 = true; //Initial state of flag shows availability of fp64 support
       consoleDebug("WebCL ready, extensions: " + extensions);
 

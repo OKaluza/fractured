@@ -240,9 +240,9 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   function switchMode(mode) {
-    if (mode == 0 && fractal.webgl) return;
-    consoleWrite("Switching to " + (mode==0 ? "WebGL" : mode == 1 ? "WebCL" : "WebCL fp64"));
-    if (mode > 0 && fractal.webcl) {
+    if (mode == WEBGL && fractal.webgl) return;
+    consoleWrite("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
+    if (mode > WEBGL && fractal.webcl) {
       fractal.webcl.setPrecision(mode > 1); //Switch precision
       sources["generated.shader"] = "";     //Force rebuild
       fractal.applyChanges();
