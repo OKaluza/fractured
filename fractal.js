@@ -945,6 +945,8 @@
     var label = formula_list[key].label;
     if (!label || !confirm('Really delete the "' + label + '" formula?')) return;
     delete formula_list[key];
+    //Select previous
+    sel.selectedIndex--;
     saveSelections(); //Update formula selections into selected variable
     updateFormulaLists();
     //Finally, reselect
@@ -1119,10 +1121,22 @@
                   consoleDebug("Imported new formula: " + key);
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
                 } else if (formula_list[key].source.strip() != buffer.strip()) {
+                  //First search other formulae in this category for duplicate entries!
+                  var found = false;
+                  for (k in formula_list) {
+                    if (formula_list[k].source.strip() == buffer.strip()) {
+                      consoleDebug("Found duplicate formula definition, using name: " + formula_list[k].name + " (was: " + name + ")");
+                      name = formula_list[k].name;
+                      found = true;
+                      break;
+                    }
+                  }
                   //Existing entry, new definition, create as: formula_name(#)
-                  var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
-                  name = f.name; //Get new name
-                  consoleDebug("Imported new formula definition for existing formula: " + key + ", saved as " + name);
+                  if (!found) {
+                    var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
+                    name = f.name; //Get new name
+                    consoleDebug("Imported new formula definition for existing formula: " + key + ", saved as " + name);
+                  }
                 }
               }
             }
@@ -1532,18 +1546,26 @@
   Fractal.prototype.sizeCanvas = function() {
     var width = this.width;
     var height = this.height;
-    if (width == 0 || height == 0) {
-      //Get size from window
-      width = window.innerWidth - (fullscreen ? 0 : showparams ? 334 : 2);
-      height = window.innerHeight - (fullscreen ? 0 : 27);
+    if (!width|| !height) {
+      //Get size from element
+      //width = $('main').clientWidth; //window.innerWidth - (fullscreen ? 0 : showparams ? 334 : 2);
+      //height = $('main').clientHeight; //window.innerHeight - (fullscreen ? 0 : 27);
+      this.canvas.style.width = "100%";
+      this.canvas.style.height = "100%";
+      width = this.canvas.clientWidth;
+      height = this.canvas.clientHeight;
       $("widthInput").value = width;
       $("heightInput").value = height;
       //Disable scrollbars when using autosize
       document.documentElement.style.overflow = "hidden";
-    } else  //Enable scrollbars
+    } else { //Enable scrollbars
       document.documentElement.style.overflow = "auto";
+      this.canvas.style.width = width + "px";
+      this.canvas.style.height = height + "px";
+    }
 
     if (width != this.canvas.width || height != this.canvas.height) {
+      consoleDebug("Resize " + width + "x" + height);
       this.canvas.width = width;
       this.canvas.height = height;
       if (this.webgl) {

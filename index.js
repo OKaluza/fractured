@@ -1,11 +1,12 @@
 //TODO:
-//Allow disabling of thumbnails when saving session to server (user privilege?) (set size?)
+//Save(share) fractal after loading one, double up url
 //Clear-actions doesn't always work!?
 
 //Globals
 var sources = null;
 var fractal;
 var colours;
+var showgallery = true;
 var showparams = true;
 var fullscreen = false;
 var filetype = 'fractal';
@@ -16,6 +17,7 @@ var rztimeout = undefined;
 
 var current = new Status();
 var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
+var thumbnails = [];
 
   //Status - logged in, selected values
   /**
@@ -134,7 +136,26 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     else
       consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
   }
-      
+
+  function loadGallery(offset) {
+    if (offset == undefined) offset = this.lastoffset || 0;
+    var w = $('gallery').clientWidth; //window.innerWidth - 334;
+    var h = $('gallery').clientHeight; //window.innerHeight - 27;
+    //$S('gallery').width = w + "px";
+    //$S('gallery').height = h + "px";
+    $('gallery').innerHTML = readURL('ss/images.php?offset=' + offset + '&width=' + w + "&height=" + h);
+    this.lastoffset = offset;
+    showgallery = true;
+    $S('gallery').display = "block";
+    $S('fractal-canvas').display = "none";
+  }
+
+  function hideGallery() {
+    //Hide gallery, show fractal
+    $S('gallery').display = "none";
+    $S('fractal-canvas').display = "block";
+    showgallery = false;
+  }
 
   function appInit() {
     if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
@@ -231,10 +252,15 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     colours = new GradientEditor($('palette'));
 
     //Draw & update
-    if (restored.length > 0)
+    doResize();
+    if (restored.length > 0) {
       restoreFractal(restored);   //Restore from URL
-    else
-      loadLastFractal();  //Restore last if any
+      hideGallery();
+    } else {
+    //  loadLastFractal();  //Restore last if any
+    //    loadGallery(0);
+        showgallery = true;
+    }
 
      ajaxReadFile('docs.html', insertHelp);
   }
@@ -383,7 +409,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       try {
         localStorage.removeItem("fractured.names." + idx);
         localStorage.removeItem("fractured.fractal." + idx);
-        localStorage.removeItem("fractured.thumbnail." + idx);
+        //localStorage.removeItem("fractured.thumbnail." + idx);
         current.fractal = localStorage["fractured.current.fractal"] = -1;
         populateFractals();
       } catch(e) {
@@ -430,7 +456,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     }
   }
 
-function performTask(number, numToProcess, processItem) {
+  function performTask(number, numToProcess, processItem) {
     var pos = 0;
     progress("Generating thumbnails...");
     var savedaa = fractal.antialias;
@@ -449,32 +475,35 @@ function performTask(number, numToProcess, processItem) {
         if (pos < number)
             setTimeout(iteration, 10); // Wait 10 ms to let the UI update.
         else {
-          populateFractals();
+          //Finished
+          //populateFractals();
           progress();
           fractal.antialias = savedaa;
+          localStorage["fractured.thumbnails"] = JSON.stringify(thumbnails);
+          loadState();
           loadLastFractal();
         }
     }
     iteration();
-}
+  }
 
   function regenerateThumbs() {
     //Recreate all thumbnail images
     var idx = parseInt(localStorage["fractured.fractals"]);
     performTask(idx, Math.round(idx/10), 
-        function (index) {
-          var i = index + 1;
-          if (localStorage["fractured.fractal." + i]) {
-            fractal.load(localStorage["fractured.fractal." + i], true);
-            $("widthInput").value = $("heightInput").value = 32;
-            document["inputs"].elements["autosize"].checked = false;
-            fractal.antialias = 6;
-            fractal.applyChanges();
-            var result = $('fractal-canvas').toDataURL("image/jpeg")
-            localStorage["fractured.thumbnail." + i] = result;
-          }
-        });
-
+      function (index) {
+        var i = index + 1;
+        if (localStorage["fractured.fractal." + i]) {
+          fractal.load(localStorage["fractured.fractal." + i], true);
+          $("widthInput").value = $("heightInput").value = 32;
+          document["inputs"].elements["autosize"].checked = false;
+          fractal.antialias = 6;
+          fractal.applyChanges();
+          var result = $('fractal-canvas').toDataURL("image/jpeg")
+          //localStorage["fractured.thumbnail." + i] = result;
+          thumbnails[i] = result;
+        }
+      });
   }
 
   function populateFractals() {
@@ -491,10 +520,12 @@ function performTask(number, numToProcess, processItem) {
         var onclick = "selectedFractal(" + i + ")";
         var ondelete = "deleteFractal(" + i + ");";
         var span = addMenuItem(menu, namestr, onclick, ondelete, current.fractal == i, true);
-        if (localStorage["fractured.thumbnail." + i]) {
+        //if (localStorage["fractured.thumbnail." + i]) {
+        if (thumbnails[i]) {
           //localStorage.removeItem("fractured.thumbnail." + i);
           var img = new Image;
-          img.src = localStorage["fractured.thumbnail." + i];
+          //img.src = localStorage["fractured.thumbnail." + i];
+          img.src = thumbnails[i];
           img.className = "thumb";
           span.appendChild(img);
         }
@@ -504,17 +535,21 @@ function performTask(number, numToProcess, processItem) {
   }
 
   function selectedFractal(idx) {
+      hideGallery();
     localStorage["fractured.current.fractal"] = current.fractal = idx;
     fractal.load(localStorage["fractured.fractal." + idx]);
     fractal.name = localStorage["fractured.names." + idx];
     $('nameInput').value = fractal.name;
         //Generate thumbnails on select!
-        if (!localStorage["fractured.thumbnail." + idx])
-            localStorage["fractured.thumbnail." + idx] = thumbnail();
+        if (!thumbnails[idx])
+          thumbnails[idx] = thumbnail();
+        //if (!localStorage["fractured.thumbnail." + idx])
+        //    localStorage["fractured.thumbnail." + idx] = thumbnail();
     populateFractals();
   }
 
   function newFractal() {
+      hideGallery();
     fractal.resetDefaults();
     fractal.formulaDefaults();
     fractal.copyToForm();
@@ -537,7 +572,8 @@ function performTask(number, numToProcess, processItem) {
           try {
             localStorage["fractured.names." + idx] = fractal.name; //namestr;
             localStorage["fractured.fractal." + idx] = source;
-            localStorage["fractured.thumbnail." + idx] = thumbnail();
+            //localStorage["fractured.thumbnail." + idx] = thumbnail();
+            thumbnails[idx] = thumbnail();
             populateFractals();
           } catch(e) {
             alert('Storage error! ' + e);
@@ -571,7 +607,8 @@ function performTask(number, numToProcess, processItem) {
     try {
       localStorage["fractured.names." + idx] = namestr;
       localStorage["fractured.fractal." + idx] = source;
-      localStorage["fractured.thumbnail." + idx] = thumbnail();
+      //localStorage["fractured.thumbnail." + idx] = thumbnail();
+      thumbnails[idx] = thumbnail();
       localStorage["fractured.fractals"] = idx;
       localStorage["fractured.current.fractal"] = current.fractal = idx;
       $('nameInput').value = namestr;
@@ -684,11 +721,12 @@ function performTask(number, numToProcess, processItem) {
 
   function paletteThumbnail() {
    //Thumbnail image gen
-   var canvas = document.getElementById("gradient");
-   var thumb = document.getElementById("thumb");
+   var canvas = $('gradient');
+   colours.get(canvas);
+   var thumb = $('thumb');
    thumb.width = 150;
    thumb.height = 1;
-   thumb.style.visibility='visible';
+   thumb.style.visibility = 'visible';
    var context = thumb.getContext('2d');  
    context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
    var result = thumb.toDataURL("image/png")
@@ -936,17 +974,20 @@ function performTask(number, numToProcess, processItem) {
   }
 
   function getState() {
-    //Get current state in local storage minus session/login details
+    //Get current state in local storage minus session/login details and thumbnails
     var session = localStorage["fractured.current.session"];
     var formulae = localStorage["fractured.current.formulae"];
+    var thumbs = localStorage["fractured.thumbnails"];
     delete localStorage["fractured.current.session"];
     delete localStorage["fractured.current.formulae"];
+    delete localStorage["fractured.thumbnails"];
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
     var source = JSON.stringify(localStorage);
     localStorage["fractured.current.session"] = session;
     localStorage["fractured.current.formulae"] = formulae;
+    localStorage["fractured.thumbnails"] = thumbs;
     return source;
   }
 
@@ -961,9 +1002,10 @@ function performTask(number, numToProcess, processItem) {
       localStorage["fractured.current.session"] = current.session;
       localStorage["fractured.current.formulae"] = current.formulae;
       sessionGet(readURL('ss/session_get.php')); //Get updated list...
-      loadState();
-      loadLastFractal();
+      //loadState();
+      //loadLastFractal();
       progress();
+        regenerateThumbs();
     } catch(e) {
       alert('ImportState: Error! ' + e);
     }
@@ -1003,6 +1045,10 @@ function performTask(number, numToProcess, processItem) {
     current.fractal = parseInt(localStorage["fractured.current.fractal"]);
     current.formulae = parseInt(localStorage["fractured.current.formulae"]);
 
+    //Load thumbnails
+    if (localStorage["fractured.thumbnails"])
+      thumbnails = JSON.parse(localStorage["fractured.thumbnails"]);
+
     populateFractals();
     populatePalettes();
 
@@ -1025,7 +1071,7 @@ function performTask(number, numToProcess, processItem) {
     }
   }
 
-  function saveState() {
+  function saveState(thumbs) {
     //Read the lists
     if (!fractal) return;
     try {
@@ -1041,6 +1087,8 @@ function performTask(number, numToProcess, processItem) {
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
+      //Save thumbnails
+      localStorage["fractured.thumbnails"] = JSON.stringify(thumbnails);
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);
@@ -1103,7 +1151,6 @@ function performTask(number, numToProcess, processItem) {
     if (window.requestFullScreen) {
       //Use new html5 full screen API
       if (typeof(newval) == 'boolean' && newval == true) {
-        document["inputs"].elements["autosize"].checked = true;
         requestFullScreen("main");
         main.style.top = '0px';
         main.style.left = '0px';
@@ -1192,21 +1239,30 @@ function performTask(number, numToProcess, processItem) {
 
   function autoResize(newval) {
     if (rztimeout) clearTimeout(rztimeout);
-    var timer = false;
     //If value passed, setting autoSize, otherwise responding to resize event
     if (typeof(newval) == 'boolean') {
       consoleDebug("Autosize " + newval);
-      if (!newval) return; //No change necessary
-    } else
-      timer = true;
-
-    if (timer && document["inputs"].elements["autosize"].checked == true) {
-      document.body.style.cursor = "wait";
-      rztimeout = setTimeout('fractal.applyChanges(); document.body.style.cursor = "default";', 150);
+      if (newval==undefined) return; //No change necessary
+    } else {
+      rztimeout = setTimeout('doResize();', 150);
       return;
     }
     //Update width/height immediately
-    fractal.applyChanges();
+    doResize();
+  }
+
+  function doResize() {
+    //if (document["inputs"].elements["autosize"].checked == true)
+    if (showgallery)
+      loadGallery();
+    else
+      fractal.applyChanges();
+
+    //Hide title if window too small
+    if (window.innerWidth < 930)
+      $S('title').display = "none";
+    else
+      $S('title').display = "block";
   }
 
   function beforeUnload(event) {
@@ -1581,6 +1637,7 @@ function loadFile(source, filename) {
     filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
     fractal.applyChanges();
   } else {
+      hideGallery();
     fractal.load(source);
   }
   //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
