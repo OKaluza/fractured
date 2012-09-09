@@ -6,7 +6,7 @@
 var sources = null;
 var fractal;
 var colours;
-var showgallery = true;
+var showgallery = 0;
 var showparams = true;
 var fullscreen = false;
 var filetype = 'fractal';
@@ -137,24 +137,36 @@ var thumbnails = [];
       consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
   }
 
+  function setGallery(type) {
+    showgallery = type;
+    loadGallery(0);
+  }
+
   function loadGallery(offset) {
+    if (!showgallery) showgallery = 1;
+    $S('gallery').display = "block";
+    $S('fractal-canvas').display = "none";
     if (offset == undefined) offset = this.lastoffset || 0;
     var w = $('gallery').clientWidth; //window.innerWidth - 334;
     var h = $('gallery').clientHeight; //window.innerHeight - 27;
     //$S('gallery').width = w + "px";
     //$S('gallery').height = h + "px";
-    $('gallery').innerHTML = readURL('ss/images.php?offset=' + offset + '&width=' + w + "&height=" + h);
+
+    var type = "examples";
+    //TODO define these properly? - images.php
+    if (showgallery==2) type = "recent";
+    if (showgallery==3) type = "shared";
+    if (showgallery==4) type = "gallery";
+
+    $('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
     this.lastoffset = offset;
-    showgallery = true;
-    $S('gallery').display = "block";
-    $S('fractal-canvas').display = "none";
   }
 
   function hideGallery() {
     //Hide gallery, show fractal
     $S('gallery').display = "none";
     $S('fractal-canvas').display = "block";
-    showgallery = false;
+    showgallery = 0;
   }
 
   function appInit() {
@@ -255,11 +267,9 @@ var thumbnails = [];
     doResize();
     if (restored.length > 0) {
       restoreFractal(restored);   //Restore from URL
-      hideGallery();
     } else {
-    //  loadLastFractal();  //Restore last if any
-    //    loadGallery(0);
-        showgallery = true;
+      loadLastFractal();  //Restore last if any
+      loadGallery(0);
     }
 
      ajaxReadFile('docs.html', insertHelp);
@@ -276,7 +286,7 @@ var thumbnails = [];
     }
 
     //Recreate canvas & fractal
-    source = fractal + "";
+    source = fractal.toString();
     var aa = fractal.antialias;
     var canvas = document.getElementById("fractal-canvas");
     var cparent = canvas.parentNode;
@@ -561,7 +571,7 @@ var thumbnails = [];
 
   function saveFractal() {
     fractal.applyChanges();
-    source = fractal + "";
+    source = fractal.toString();
     //Save current fractal to list
     if (current.fractal >= 0) {
       //Save existing
@@ -777,7 +787,7 @@ var thumbnails = [];
     var data = "public=" + confirm("Publish on website after uploading?");
     data += "&description=" + encodeURIComponent($('nameInput').value);
     data += "&thumbnail=" + encodeURIComponent(thumbnail("jpeg", 150).substring(23));
-    data += "&source=" + encodeURIComponent(fractal.toString(true));
+    data += "&source=" + encodeURIComponent(fractal.toString());
     progress("Uploading fractal to server...");
     ajaxPost("ss/fractal_save.php", data, fractalUploaded, updateProgress);
   }
@@ -796,7 +806,7 @@ var thumbnails = [];
 
   function packFractal() {
     fractal.applyChanges();
-    var data = window.btoa($('nameInput').value + "\n" + fractal.toString(true));
+    var data = window.btoa($('nameInput').value + "\n" + fractal.toString());
     packURL(data);
   }
 
@@ -852,7 +862,7 @@ var thumbnails = [];
 
   function exportFractalFile() {
     fractal.applyChanges();
-    source = fractal.toString(true);  //Save formulae when exporting
+    source = fractal.toString();  //Save formulae when exporting
     exportFile(fractal.name + ".fractal", "text/fractal-source", source);
   }
 
@@ -1021,14 +1031,16 @@ var thumbnails = [];
 
   function loadState() {
     //Load includes...
-    var i_source = localStorage["fractured.include"];
-    if (i_source) sources = JSON.parse(i_source);
+    sources = null;
+    //var i_source = localStorage["fractured.include"];
+    //if (i_source) sources = JSON.parse(i_source);
     if (!sources) sources = JSON.parse(readURL('/includes.json'));
 
     //Load formulae
-    var f_source = localStorage["fractured.formulae"];
-    if (f_source) formula_list = JSON.parse(f_source);
-    if (!formula_list) formula_list = JSON.parse(readURL('defaultformulae.json'));
+    formula_list = null;
+    //var f_source = localStorage["fractured.formulae"];
+    //if (f_source) formula_list = JSON.parse(f_source);
+    if (!formula_list) formula_list = JSON.parse(readURL('/defaultformulae.json'));
 
     //Custom mouse actions
     a_source = localStorage["fractured.mouseActions"];
@@ -1252,7 +1264,6 @@ var thumbnails = [];
   }
 
   function doResize() {
-    //if (document["inputs"].elements["autosize"].checked == true)
     if (showgallery)
       loadGallery();
     else
@@ -1383,7 +1394,7 @@ var julia;
 
   function canvasMouseMove(event, mouse) {
     //Mouseover processing
-    if (!fractal) return true;
+    if (!fractal || showgallery) return true;
     if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
     {
       //Convert mouse coords into fractal coords

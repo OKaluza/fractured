@@ -60,7 +60,8 @@
     //header('Content-type: image/jpeg');
     //echo $thumb;
   $data = mysql_real_escape_string($data);
-  $thumb = mysql_real_escape_string($thumb);
+  //$thumb = mysql_real_escape_string($thumb);
+
   $mysqldate = date("Y-m-d H:i:s");
 
   //Insert in loop in case (unlikely) of microtime clash
@@ -73,10 +74,14 @@
     //Could change to /100 = 35793460000 = Sat, 02 Apr 3104, but more likely to get time collisions on inserts
     $locator = udihash($inttime, 7);
 
-    $query = "INSERT INTO fractal (locator, user_id, date, name, source, public, preview) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public', '$thumb');";
+    $query = "INSERT INTO fractal (locator, user_id, date, name, source, public) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public');";
     $result = mysql_query($query);
     if ($result == 1) //Loop until insert successful
+    {
+      $filename = "../thumbs/" . $locator . ".jpg";
+      file_put_contents($filename, $thumb);
       break;
+    }
     //echo $ftime . "," . $inttime . "," . $locator . "<br>";
     //echo mysql_error();
     usleep(1000);  //Wait for 1 millisecond

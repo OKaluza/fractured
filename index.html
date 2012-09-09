@@ -168,7 +168,7 @@
             <li><span onclick="toggleFullscreen(true);">Full Screen</span></li>
           </ul>
         </li>
-        <li><span onclick="fractal.applyChanges();">Draw</span></li>
+        <li><span onclick="hideGallery(); fractal.applyChanges();">Draw</span></li>
       </ul>
 
     </nav>
@@ -371,7 +371,16 @@
   </section>
 
   <section id="main">
-    <div id="gallery"></div>
+    <div id="gallery">
+      <div id="gallery-buttons">
+        <input type="button" value="Examples" onclick="setGallery(1);">
+        <input type="button" value="Recent" onclick="setGallery(2);">
+        <input type="button" value="Shared" onclick="setGallery(3);">
+        <input type="button" value="Gallery" onclick="setGallery(4);">
+      </div>
+      <div id="gallery-display">
+      </div>
+    </div>
     <canvas id="fractal-canvas" ></canvas>
     <img id="background" src="">
     <div id="select"></div>

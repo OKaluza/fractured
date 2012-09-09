@@ -65,6 +65,7 @@ function updateFormulaLists() {
 
   //Run through the list and add to select lists
   for (key in formula_list) {
+    //consoleWrite(formula_list[key].name)
     addSelectEntry(formula_list[key]);
   }
 
@@ -101,6 +102,7 @@ function saveSelections() {
     var selname = selects[s] + "_formula";
     var select = $(selname);
     //Get selected
+    if (select.selectedIndex < 0) select.selectedIndex = 0;
     selected[selects[s]] = select.options[select.selectedIndex].value;
   }
 }
