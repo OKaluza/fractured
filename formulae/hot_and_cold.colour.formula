@@ -6,9 +6,9 @@
 //Bailout
 @:bailout = real(4);
 //Far distance
-@:fardist = real(1.0);
+@:fardist = real(1.5);
 //Close distance
-@:closedist = real(0.2);
+@:closedist = real(1.0);
 //Hot colour
 @:hotcolour = rgba(255, 120, 5, 1.0);
 //Cold colour
@@ -28,4 +28,4 @@ result:
   //return gradient(repeat * real(:closecalls) / real(count));
   rgba hcolour = @:hotcolour * (real(:closecalls)/real(count));
   rgba ccolour = @:coldcolour * (real(:farcalls)/real(count));
-  colour = rgba(hcolour.xyz + ccolour.xyz, 1.0);
+  colour = hcolour + ccolour;

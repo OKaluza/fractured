@@ -1,18 +1,24 @@
 <?php
   include("connect.php");
   include("session.php");
-?>
 
-<?php
-  $query = "SELECT * FROM fractal ORDER BY date DESC;";
-  //$query = "SELECT * FROM fractal WHERE public < 2;";
-  //$query = "SELECT * FROM fractal WHERE user_id = '$user';";
+  $type = $_GET["type"];
+  $user = $_SESSION["user_id"];
+
+  if ($type == "examples")
+    $query = "SELECT * FROM fractal WHERE user_id = -1;";
+  else if ($type == "recent")
+    $query = "SELECT * FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
+  else if ($type == "shared")
+    $query = "SELECT * FROM fractal WHERE user_id = '$user';";
+  else if ($type == "gallery")
+    $query = "SELECT * FROM fractal WHERE user_id > 0 ORDER BY date DESC;";
+
   $result = mysql_query( $query );
   // Fetch each row of the results into array $row
   $totimg = 0;
   while ($row = mysql_fetch_array($result))
   {
-    $pics[$totimg] = $row['preview'];
     $links[$totimg] = $row['locator'];
     $public[$totimg] = $row['public'];
     $totimg++;
@@ -21,12 +27,6 @@
   //Close to free resources
   mysql_close();
 
-
-?>
-
-<h1>Gallery</h1>
-  
-<?php
   if (isset($_GET['offset']))
     $offset = $_GET['offset'];
   else
@@ -89,7 +89,7 @@
     $url = $links[$x];
     echo '<div class="float">';
     echo '<a href="/'.$url.'">';
-    echo '<img src="data:image/png;base64,' . base64_encode($pics[$x]).'" />';
+	  echo '<img src="/thumbs/' . $links[$x] . '.jpg" /></a>';
     echo "</a></div>\n";
   }
 

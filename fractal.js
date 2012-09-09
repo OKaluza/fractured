@@ -208,7 +208,8 @@
         break;
       case 'rgba':
         this.typeid = 5;
-        this.value = new Colour('rgba(' + value + ')');
+        if (value.indexOf('rgba') < 0) value = 'rgba(' + value + ')';
+        this.value = new Colour(value);
         break;
       case 'expression':
         this.typeid = 6;
@@ -962,7 +963,7 @@
   }
 
   //Save fractal (write param/source file)
-  Fractal.prototype.toString = function(saveformulae) {
+  Fractal.prototype.toString = function() {
     var code = "[fractal]\n";
     if (!document["inputs"].elements["autosize"].checked) {
       //Only write width & height if autosize disabled
@@ -987,7 +988,7 @@
       if (this[category].selected != "none" && this[category].currentParams.count() > 0)
           code += "\n[params." + category + "]\n" + this[category].currentParams;
       //Formula code (###)
-      if (saveformulae && this[category].selected != "none") {
+      if (this[category].selected != "none") {
         //Don't save formula source twice if same used
         if (category=="post_transform" && this["post_transform"].selected == this["pre_transform"].selected) continue;
         if (category=="inside_colour" && this["outside_colour"].selected == this["inside_colour"].selected) break;
@@ -1181,7 +1182,7 @@
             if (parseReal(pair2[1]) != 1)
               saved["outrepeat"] = pair2[1];
           } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
-            alert("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+            consoleWrite("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
         }
       }
     }
@@ -1546,7 +1547,8 @@
   Fractal.prototype.sizeCanvas = function() {
     var width = this.width;
     var height = this.height;
-    if (!width|| !height) {
+    if (!width || !height) {
+      document.documentElement.style.overflow = "hidden";
       //Get size from element
       //width = $('main').clientWidth; //window.innerWidth - (fullscreen ? 0 : showparams ? 334 : 2);
       //height = $('main').clientHeight; //window.innerHeight - (fullscreen ? 0 : 27);
@@ -1557,7 +1559,6 @@
       $("widthInput").value = width;
       $("heightInput").value = height;
       //Disable scrollbars when using autosize
-      document.documentElement.style.overflow = "hidden";
     } else { //Enable scrollbars
       document.documentElement.style.overflow = "auto";
       this.canvas.style.width = width + "px";
@@ -1667,15 +1668,19 @@
 
     //Replace ---SECTION--- in template with formula code
     this.offsets = [];
-    shader = this.templateInsert(shader, selections, "DATA", "data", ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "INIT", "init", ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "RESET", "reset", ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 2);
+    shader = this.templateInsert(shader, selections, "DATA", "data", 
+                ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "INIT", "init",
+                ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "RESET", "reset", 
+                ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 4);
     shader = this.templateInsert(shader, selections, "ZNEXT", "znext", ["fractal"], 2);
-    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 2);
+    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 4);
     shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 2);
     shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 2);
-    shader = this.templateInsert(shader, selections, "COLOUR_CALC", "calc", ["inside_colour", "outside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "OUTSIDE_CALC", "calc", ["outside_colour"], 4);
+    shader = this.templateInsert(shader, selections, "INSIDE_CALC", "calc", ["inside_colour"], 4);
     shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
     shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
     this.offsets.push(new LineOffset("(end)", "(end)", shader.split("\n").length));

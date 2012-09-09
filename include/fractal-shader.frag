@@ -55,9 +55,13 @@ GLSL_MAIN
 
     //Run next calc step
     count = i+1;  //Current step count
-    ---PRE_TRANSFORM---
+    {
+      ---PRE_TRANSFORM---
+    }
     ---ZNEXT---
-    ---POST_TRANSFORM---
+    {
+      ---POST_TRANSFORM---
+    }
 
     //Check bailout conditions
     escaped = true;
@@ -68,7 +72,12 @@ GLSL_MAIN
     converged = false;
 
     //Colour calcs...
-    ---COLOUR_CALC---
+    {
+      ---OUTSIDE_CALC---
+    }
+    {
+      ---INSIDE_CALC---
+    }
   }
 
   if (escaped || converged)
