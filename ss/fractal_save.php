@@ -39,7 +39,6 @@
   }
 
   $user = $_SESSION["user_id"];
-  $goto = $_SERVER['HTTP_REFERER'];
   $desc = $_POST["description"];
   $public = $_POST["public"];
   if (!$desc) $desc = '';
@@ -57,10 +56,7 @@
     $data = $_POST["source"];
     $thumb = base64_decode($_POST["thumbnail"]);
   }
-    //header('Content-type: image/jpeg');
-    //echo $thumb;
   $data = mysql_real_escape_string($data);
-  //$thumb = mysql_real_escape_string($thumb);
 
   $mysqldate = date("Y-m-d H:i:s");
 
@@ -78,7 +74,10 @@
     $result = mysql_query($query);
     if ($result == 1) //Loop until insert successful
     {
-      $filename = "../thumbs/" . $locator . ".jpg";
+      if ($public == 1)
+        $filename = "../thumbs/" . $locator . ".jpg";
+      else
+        $filename = "../thumbs/" . md5($locator) . ".jpg";
       file_put_contents($filename, $thumb);
       break;
     }
@@ -88,7 +87,7 @@
   }
 
   mysql_close();
-  $loc =  $goto . $locator;
+  $loc = "http://{$_SERVER['SERVER_NAME']}/$locator";
   echo $loc;
   exit();
 ?>

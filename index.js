@@ -1,6 +1,10 @@
 //TODO:
 //Save(share) fractal after loading one, double up url
 //Clear-actions doesn't always work!?
+//Anti-alias being loaded/set after session load, incorrect save/restore in regenThumbs?
+//Still not happy with scrolling delay
+//share url still being concatenated to existing!
+//Publically shared fractal not saved as such
 
 //Globals
 var sources = null;
@@ -138,6 +142,11 @@ var thumbnails = [];
   }
 
   function setGallery(type) {
+    if (type == showgallery) return;
+    $('gal' + type).className = 'selected';
+    $('gal' + showgallery).className = '';
+    $S('note' + type).display = 'block';
+    $S('note' + showgallery).display = 'none';
     showgallery = type;
     loadGallery(0);
   }
@@ -153,7 +162,6 @@ var thumbnails = [];
     //$S('gallery').height = h + "px";
 
     var type = "examples";
-    //TODO define these properly? - images.php
     if (showgallery==2) type = "recent";
     if (showgallery==3) type = "shared";
     if (showgallery==4) type = "gallery";
@@ -266,6 +274,7 @@ var thumbnails = [];
     //Draw & update
     doResize();
     if (restored.length > 0) {
+      hideGallery();
       restoreFractal(restored);   //Restore from URL
     } else {
       loadLastFractal();  //Restore last if any
@@ -286,7 +295,7 @@ var thumbnails = [];
     }
 
     //Recreate canvas & fractal
-    source = fractal.toString();
+    source = fractal.toStringMinimal();
     var aa = fractal.antialias;
     var canvas = document.getElementById("fractal-canvas");
     var cparent = canvas.parentNode;
@@ -492,6 +501,7 @@ var thumbnails = [];
           localStorage["fractured.thumbnails"] = JSON.stringify(thumbnails);
           loadState();
           loadLastFractal();
+          hideGallery();
         }
     }
     iteration();
@@ -571,7 +581,7 @@ var thumbnails = [];
 
   function saveFractal() {
     fractal.applyChanges();
-    source = fractal.toString();
+    source = fractal.toStringNoFormulae();  //Default is to save to local storage without formulae
     //Save current fractal to list
     if (current.fractal >= 0) {
       //Save existing
@@ -862,7 +872,7 @@ var thumbnails = [];
 
   function exportFractalFile() {
     fractal.applyChanges();
-    source = fractal.toString();  //Save formulae when exporting
+    source = fractal.toString();
     exportFile(fractal.name + ".fractal", "text/fractal-source", source);
   }
 
@@ -1012,7 +1022,7 @@ var thumbnails = [];
       localStorage["fractured.current.session"] = current.session;
       localStorage["fractured.current.formulae"] = current.formulae;
       sessionGet(readURL('ss/session_get.php')); //Get updated list...
-      //loadState();
+        loadState();
       //loadLastFractal();
       progress();
         regenerateThumbs();
@@ -1038,8 +1048,8 @@ var thumbnails = [];
 
     //Load formulae
     formula_list = null;
-    //var f_source = localStorage["fractured.formulae"];
-    //if (f_source) formula_list = JSON.parse(f_source);
+    var f_source = localStorage["fractured.formulae"];
+    if (f_source) formula_list = JSON.parse(f_source);
     if (!formula_list) formula_list = JSON.parse(readURL('/defaultformulae.json'));
 
     //Custom mouse actions
