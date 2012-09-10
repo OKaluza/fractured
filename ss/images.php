@@ -6,22 +6,22 @@
   $user = $_SESSION["user_id"];
 
   if ($type == "examples")
-    $query = "SELECT * FROM fractal WHERE user_id = -1;";
+    $query = "SELECT locator FROM fractal WHERE user_id = -1 ORDER BY date;";
   else if ($type == "recent")
-    $query = "SELECT * FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
+    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
   else if ($type == "shared")
-    $query = "SELECT * FROM fractal WHERE user_id = '$user';";
+    $query = "SELECT locator FROM fractal WHERE user_id = '$user' ORDER BY date;";
   else if ($type == "gallery")
-    $query = "SELECT * FROM fractal WHERE user_id > 0 ORDER BY date DESC;";
+    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 0 ORDER BY date DESC;";
 
   $result = mysql_query( $query );
-  // Fetch each row of the results into array $row
-  $totimg = 0;
-  while ($row = mysql_fetch_array($result))
+  if (!$result) die ('Unable to run query:'.mysql_error());
+  $totimg = mysql_num_rows($result);
+  if ($totimg == 0) exit();
+  $links = array();
+  while ($row = mysql_fetch_array($result, MYSQL_NUM))
   {
-    $links[$totimg] = $row['locator'];
-    $public[$totimg] = $row['public'];
-    $totimg++;
+    $links[] = $row[0];
   }
 
   //Close to free resources
@@ -85,15 +85,16 @@
   for($x=$offset; $x < $offset + $imgpage; $x++)
   {
     if ($x == $totimg) break;
-    //$url = $public[$x] ? $links[$x] : "#";
-    $url = $links[$x];
+    $filename = "/thumbs/" . $links[$x] . ".jpg";
+    $url = "#";
+    if ($type != "gallery")
+      $url = $links[$x];
+    if (!file_exists(".." . $filename))
+      $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
     echo '<div class="float">';
     echo '<a href="/'.$url.'">';
-	  echo '<img src="/thumbs/' . $links[$x] . '.jpg" /></a>';
+	  echo '<img src="' . $filename . '" /></a>';
     echo "</a></div>\n";
   }
-
 ?>
-
-<div class="spacer">&nbsp;</div>
 

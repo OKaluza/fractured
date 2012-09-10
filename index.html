@@ -372,11 +372,15 @@
 
   <section id="main">
     <div id="gallery">
-      <div id="gallery-buttons">
-        <input type="button" value="Examples" onclick="setGallery(1);">
-        <input type="button" value="Recent" onclick="setGallery(2);">
-        <input type="button" value="Shared" onclick="setGallery(3);">
-        <input type="button" value="Gallery" onclick="setGallery(4);">
+      <div id="setgallery">
+        <input id="gal1" type="button" class="selected" value="Examples" onclick="setGallery(1);">
+        <input id="gal2" type="button" value="Recent" onclick="setGallery(2);">
+        <input id="gal3" type="button" value="Shared" onclick="setGallery(3);">
+        <input id="gal4" type="button" value="Gallery" onclick="setGallery(4);">
+        <div id="note1">Some simple example fractals showing the basic pre-defined formulae and colouring algorithms. Click on the preview image to load the fractal into the viewer.</div>
+        <div id="note2" style="display: none"><a href="/ss/rss.php"><img src="media/rss.png"></a>Recently uploaded fractals that users have shared and made available to others to view and explore. Click on the preview to open the fractal.</div>
+        <div id="note3" style="display: none">Fractals shared by you</div>
+        <div id="note4" style="display: none">Images created from fractals, the fractal settings have not been publicly shared, only the images produced from them are shown</div>
       </div>
       <div id="gallery-display">
       </div>

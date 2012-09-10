@@ -17,6 +17,8 @@
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
+  var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
+
   var savevars = {};
 
   /**
@@ -964,6 +966,22 @@
 
   //Save fractal (write param/source file)
   Fractal.prototype.toString = function() {
+    //All information required to reconstruct fractal
+    return this.paramString() + this.formulaParamString() + this.formulaSourceString() + this.paletteString();
+  }
+
+  Fractal.prototype.toStringNoFormulae = function() {
+    //All information required to reconstruct fractal if formula set already loaded
+    return this.paramString() + this.formulaParamString() + this.paletteString();
+  }
+
+  Fractal.prototype.toStringMinimal = function() {
+    //All information required to reconstruct fractal if formula set and palette already loaded
+    return this.paramString() + this.formulaParamString();
+  }
+
+  Fractal.prototype.paramString = function() {
+    //Return fractal parameters as a string
     var code = "[fractal]\n";
     if (!document["inputs"].elements["autosize"].checked) {
       //Only write width & height if autosize disabled
@@ -980,14 +998,27 @@
             "outside_colour=" + this["outside_colour"].selected + "\n" +
             "inside_colour=" + this["inside_colour"].selected + "\n" +
             "\n[params.base]\n" + this["base"].currentParams;
+    return code;
+  }
 
-    var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
+  Fractal.prototype.formulaParamString = function() {
+    //Return selected formula parameters as a string
+    var code = "";
     for (t in categories) {
       //Parameter values
       var category = categories[t];
       if (this[category].selected != "none" && this[category].currentParams.count() > 0)
           code += "\n[params." + category + "]\n" + this[category].currentParams;
+    }
+    return code;
+  }
+
+  Fractal.prototype.formulaSourceString = function() {
+    //Return selected formula definitions as a string
+    var code = "";
+    for (t in categories) {
       //Formula code (###)
+      var category = categories[t];
       if (this[category].selected != "none") {
         //Don't save formula source twice if same used
         if (category=="post_transform" && this["post_transform"].selected == this["pre_transform"].selected) continue;
@@ -995,8 +1026,12 @@
         code += "\n[formula." + category + "]\n" + this[category].getSource();
       }
     }
-    code += "\n[palette]\n" + colours.palette;
     return code;
+  }
+
+  Fractal.prototype.paletteString = function() {
+    //Return active palette as a string
+    return "\n[palette]\n" + colours.palette;
   }
 
   Fractal.prototype.loadPalette = function(source) {
