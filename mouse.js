@@ -2,6 +2,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
 
   var enableContext = false;
   var defaultMouse;
+  var mousetimer = null;
 
   //Handler class from passed functions
   /**
@@ -187,8 +188,10 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   }
  
   function handleMouseWheel(event) {
+    if (mousetimer) clearTimeout(mousetimer);
     var mouse = getMouse(event);
     if (!mouse || mouse.disabled) return true;
+    mouse.update(event);
     var nDelta = 0;
     var action = false;
     if (!event) event = window.event; // For IE, access the global (window) event object
@@ -199,15 +202,15 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
       nDelta= -event.detail; // Mozilla FireFox
 
     event.spin = nDelta > 0 ? 1 : -1;
+    mouse.spin += event.spin;
 
     //Set timer for 1/8 sec and accumulate spin
-    if (mouse.wheelTimer && mouse.spin == 0) {
+    if (mouse.wheelTimer) { // && mouse.spin == 0) {
       document.mouse.event = event; //Save event
-      //document.body.style.cursor = "wait";
-      //setTimeout('mouseWheelTimout(document.mouse);', 125);
-      setTimeout('mouseWheelTimeout(document.mouse);', 50);
+      document.body.style.cursor = "wait";
+      mousetimer = setTimeout('mouseWheelTimeout(document.mouse);', 200);
+      //setTimeout('mouseWheelTimeout(document.mouse);', 50);
     }
-    mouse.spin += event.spin;
 
     if (!mouse.wheelTimer && mouse.spin != 0)
       action = mouse.handler.wheel(event, mouse);
@@ -219,9 +222,10 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
 
   function mouseWheelTimeout(mouse) {
     //Turn hourglass off
-    //document.body.style.cursor = "default";
+    document.body.style.cursor = "default";
     mouse.event.spin = mouse.spin;
     mouse.spin = 0;
+    mousetimer = null;
     //Call implementation handler if changed..
     if (mouse.event.spin != 0) mouse.handler.wheel(mouse.event, mouse);
   }

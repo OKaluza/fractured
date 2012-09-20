@@ -29,12 +29,12 @@
     this.canvas = canvas;
     this.ctx2d = canvas.getContext("2d");
     this.gradientcanvas = document.getElementById('gradient');
-    this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     this.threads = 64;
     this.setPrecision(fp64);
     this.format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
     this.queue = this.ctx.createCommandQueue(this.devices[0], 0);
+    this.setViewport(0, 0, canvas.width, canvas.height);
   }
 
   WebCL_.prototype.setPrecision = function(fp64) {
@@ -78,17 +78,18 @@
     this.global = [this.getGlobalSize(width, threads), this.getGlobalSize(height, threads)];
 
     //If width and height changed, recreate output buffer
-    if (this.viewport.width != this.global[0] && this.viewport.height != this.global[1]) {
+    if (!this.viewport || this.viewport.width != this.global[0] || this.viewport.height != this.global[1]) {
       this.viewport = new Viewport(x, y, this.global[0], this.global[1]);
       this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, this.format, this.viewport.width, this.viewport.height, 0);
-      this.kernel.setKernelArg (2, this.output);
+      if (this.kernel) this.kernel.setKernelArg (2, this.output);
     } else {
       this.viewport.x = x;
       this.viewport.y = y;
     }
   }
 
-  WebCL_.prototype.draw = function(fractal) {
+  WebCL_.prototype.draw = function(fractal, antialias) {
+    if (antialias > 4) antialias = 4; //Temporary fix, webgl antialias is not as effective, requires higher numbers
     if (!this.queue) return;
     try {
       ctx_g = this.gradientcanvas.getContext("2d");
@@ -105,7 +106,7 @@
       this.inBuffer[5] = fractal.selected.re;
       this.inBuffer[6] = fractal.selected.im;
 
-      var inBuffer2 = new Int8Array([fractal.antialias, fractal.julia, fractal.perturb]);
+      var inBuffer2 = new Int8Array([antialias, fractal.julia, fractal.perturb]);
       var inBuffer3 = new Int32Array([this.viewport.width, this.viewport.height]);
 
       var size = this.inBuffer.byteLength;
