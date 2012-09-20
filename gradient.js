@@ -37,7 +37,7 @@ GradientEditor.prototype.update = function(source) {
   this.changed = true;
   this.palette.draw(this.canvas, true);
   //Trigger callback if any
-  if (this.callback) this.callback();
+  if (this.callback) this.callback(this);
 }
 
 //Draw gradient to passed canvas if data has changed
@@ -137,18 +137,18 @@ GradientEditor.prototype.click = function(event, mouse) {
     this.update();
     return false;
   }
-  var pal = document.getElementById('palette');
+  var pal = this.canvas;
   if (pal.getContext){
     this.cancel();  //Abort any current edit first
     var context = pal.getContext('2d'); 
-    var slider = document.getElementById("slider");
+    var ypos = findElementPos(pal)[1]+30;
 
     //Get selected colour
-    var i = this.palette.inRange(mouse.x, slider.width, pal.width);
+    var i = this.palette.inRange(mouse.x, this.palette.slider.width, pal.width);
     if (i >= 0) {
       if (event.button == 0) {
         //Edit colour on left click
-        this.edit(i, event.clientX-128, 30);
+        this.edit(i, event.clientX-128, ypos);
       } else if (event.button == 2) {
         //Delete on right click
         this.palette.remove(i);
@@ -156,7 +156,7 @@ GradientEditor.prototype.click = function(event, mouse) {
       }
     } else {
       //Clicked elsewhere, add new colour
-      this.insert(mouse.x / pal.width, event.clientX-128, 30);
+      this.insert(mouse.x / pal.width, event.clientX-128, ypos);
     }
   }
   return false;
@@ -173,11 +173,9 @@ GradientEditor.prototype.move = function(event, mouse) {
   mouse.x = mouse.clientx;
   mouse.x = mouse.clientx;
 
-  var slider = document.getElementById("slider");
-
   if (mouse.slider == null) {
     //Colour slider dragged on?
-    var i = this.palette.inDragRange(mouse.x, slider.width, this.canvas.width);
+    var i = this.palette.inDragRange(mouse.x, this.palette.slider.width, this.canvas.width);
     if (i>0) mouse.slider = i;
   }
 
