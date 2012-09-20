@@ -6,6 +6,8 @@
     this.background = new Colour("rgba(0,0,0,0)");
     //Colour palette array
     this.colours = [];
+    this.slider = new Image();
+    this.slider.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAPCAYAAAA2yOUNAAAAj0lEQVQokWNIjHT8/+zZs//Pnj37/+TJk/9XLp/+f+bEwf9HDm79v2Prqv9aKrz/GUYVEaeoMDMQryJXayWIoi0bFmFV1NWS+z/E1/Q/AwMDA0NVcez/LRsWoSia2luOUAADVcWx/xfO6/1/5fLp/1N7y//HhlmhKoCBgoyA/w3Vyf8jgyyxK4CBUF8zDAUAAJRXY0G1eRgAAAAASUVORK5CYII=";
 
     if (!source) {
       //Default
@@ -95,6 +97,7 @@
   //Palette draw to canvas
   Palette.prototype.draw = function(canvas, ui) {
     // Figure out if a webkit browser is being used
+    if (!canvas) {alert("Invalid canvas!"); return;}
 	  var webkit = /webkit/.test(navigator.userAgent.toLowerCase());
 
     if (this.colours.length == 0) {
@@ -136,11 +139,10 @@
 
       //Background colour
       var bg = document.getElementById('backgroundCUR');
-      bg.style.background = this.background.html();
+      if (bg) bg.style.background = this.background.html();
 
       //User interface controls
       if (!ui) return;  //Skip drawing slider interface
-      var slider = document.getElementById("slider");
       for (var i = 1; i < list.length-1; i++)
       {
         var x = Math.floor(width * list[i].position) + 0.5;
@@ -154,10 +156,10 @@
         context.lineTo(x, canvas.height);
         context.closePath();
         context.stroke();
-        x -= (slider.width / 2);
-        context.drawImage(slider, x, 0);  
+        x -= (this.slider.width / 2);
+        context.drawImage(this.slider, x, 0);  
       } 
-    }
+    } else alert("getContext failed!");
   }
 
 
