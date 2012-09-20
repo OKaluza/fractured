@@ -790,7 +790,7 @@
   /**
    * @constructor
    */
-  function Fractal(canvas, mode) {
+  function Fractal(canvas, mode, antialias) {
     //Construct a new default fractal object
     this.canvas = canvas;
     //Set canvas size
@@ -830,7 +830,7 @@
       this.webcl.init(canvas, renderer > WEBCL);
     }
 
-    this.antialias = 1;
+    this.antialias = antialias;
 
     this.offsets = [];
 
@@ -1618,7 +1618,7 @@
   }
 
   //Apply any changes to parameters or formula selections and redraw
-  Fractal.prototype.applyChanges = function() {
+  Fractal.prototype.applyChanges = function(antialias) {
     //Update palette
     var canvas = $('gradient');
     colours.get(canvas);
@@ -1659,7 +1659,7 @@
 
     //Update shader code & redraw
     this.writeShader();
-    this.draw();
+    this.draw(antialias);
   }
 
   //Update form controls with fractal data
@@ -1864,16 +1864,16 @@
 
   Fractal.prototype.draw = function(antialias) {
     timeDraw();
-    if (antialias != undefined) this.antialias = antialias;
+    if (antialias == undefined) antialias = this.antialias;
 
     //Set canvas size
     this.sizeCanvas();
 
     //WebCL mode
     if (this.webcl) {
-      this.webcl.draw(this);
+      this.webcl.draw(this, antialias);
     } else
-      this.renderWebGL();
+      this.renderWebGL(antialias);
 
     //Save frame image (used for julia preview background)
     this.imagedata = this.canvas.toDataURL("image/png");
@@ -1897,7 +1897,7 @@
     colours.palette.background.alpha = alpha;  //Restore alpha
   }
 
-  Fractal.prototype.renderWebGL = function() {
+  Fractal.prototype.renderWebGL = function(antialias) {
     if (!this.program) return;
     this.webgl.use(this.program);
 
@@ -1939,8 +1939,8 @@
     //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
     this.gl.clearColor(0, 0, 0, 0);
 
-    //consoleDebug('>> Drawing fractal (aa=' + this.antialias + ")");
-    this.webgl.draw2d(this.antialias);
+    //consoleDebug('>> Drawing fractal (aa=' + antialias + ")");
+    this.webgl.draw2d(antialias);
     if (window.recording)
       window.outputFrame(); 
   }
