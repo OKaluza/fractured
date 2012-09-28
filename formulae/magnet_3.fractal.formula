@@ -1,7 +1,4 @@
 //Magnet3
-// similar to kleinien group / mobius transform arangement:
-// Mobius transorm z = az^2 + b / cz^2 + d
-
 //z(n+1) =
 @znext = expression((A*z^p+B) / (C*z^p-D) + c);
 //Power (p)

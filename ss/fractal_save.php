@@ -44,7 +44,8 @@
   $type = $_POST["type"];
   if (!$desc) $desc = '';
 
-  if ($user <= 0) exit();
+  //Allow no logged in user only for sharing image
+  if ($user <= 0 && $type != 1) exit();
 
   //Get submitted details
   //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)

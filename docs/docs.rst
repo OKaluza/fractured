@@ -14,9 +14,9 @@ Introduction
 Fractured is a fast fractal renderer written in Javascript and WebGL / WebCL.
 
 I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU. 
-There are already LOTS of great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace where I could store my work on a server and access it anywhere.
+There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace where I could store my work on a server and access it anywhere.
 
-I originally started in 2009 using Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far I could take the paradigm of a standalone desktop app running in a web browser.
+I originally started using Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far I could take the paradigm of a standalone desktop app running in a web browser.
 
 Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone will find it useful.
 
@@ -38,7 +38,7 @@ Requirements
 - A modern browser supporting WebGL (Only confirmed working with Firefox, Chrome & Safari at this stage, Opera's WebGL implementation is still causing me some problems) 
 - A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
 - Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ 
-- *Disclaimer* My development plaftorm is Linux and Firefox. Other platforms have not all been well tested yet but I'm working on it. Everything should work fine though (in theory).
+- *Disclaimer* My development platform is Linux and Firefox. Other platforms have not all been well tested yet but I'm working on it. Everything should work fine though (in theory).
 
 Workspace
 =========
@@ -52,13 +52,15 @@ On first loading the app you should be presented with a workspace showing a sele
 
 Main Display
 ------------
-The main window area is initially occupied by an image gallery, this is the welcome page. When you render a fractal image it will switch to rendering mode and the fractal image will be displayed here.
+The main window area is initially occupied by an image/fractal gallery, this is the welcome screen. When you render a fractal image it will switch to rendering mode and the fractal image will be displayed here.
 
 To switch to rendering mode immediately, hit the [Draw] button.
 
-Welcome page display
-~~~~~~~~~~~~~~~~~~~~
-This is a page that shows some example images and allows viewing and loading fractals and images that other users have shared. (Only some of the options in the Fractal menu are visible in this mode)
+Welcome screen
+~~~~~~~~~~~~~~
+This page only shows when you first load the site, it displays some example images and allows viewing and loading fractals and images that other users have shared. 
+
+Only some of the options in the Fractal menu are visible in this mode.
 
 There are several large buttons at the top of the page that allow switching between the available views:
 
@@ -81,12 +83,12 @@ The default mouse actions are:
 - *Mouse scroll over fractal* zoom in and out
 - *Left-click* centre fractal on coordinate clicked on
 - *Left-click and drag* Select an area of the fractal to zoom in on
-- *Right click (or control-click on a Mac)* switch between Mandelbrot set and Julia set at selected coordinate (coord under mouse)
+- *Right click (or control-click on a Mac)* switch between Mandelbrot set and Julia set at selected coordinate (at mouse pointer)
 - *Right-click and drag* scroll fractal (if larger than display window)
 - *Shift + scroll* Rotate in 10 degree increments
 - *Alt + scroll* Rotate in 1 degree increments
 
-Julia set preview mode: to display a julia set preview as you move the mouse around a Mandelbrot set hit the ` key (the one above TAB and below ESC on most keyboards)
+Julia set preview mode: to display a Julia set preview as you move the mouse around a Mandelbrot set hit the back-tick [`] key (the one above TAB and below ESC on most keyboards)
 
 Coordinates
 -----------
@@ -130,9 +132,8 @@ The fields are:
 - *Rotate* degrees of rotation to apply
 - *Origin* complex coordinate at the centre of the fractal display
 - *Selected* complex coordinate selected for use in rendering Julia Sets and the Perturb option.
-- *Julia* when checked indicates Julia Set mode, plotting a Julia Set at the selected coord.
-- *Perturb* when checked indicates applying the selected coord as a perturbation of the rendered fractal (the value is added with every iteration of the formula)
-
+- *Julia* when checked indicates Julia Set mode, plotting a Julia Set at the selected coordinate.
+- *Perturb* when checked indicates applying the selected coordinate as a perturbation of the rendered fractal (the value is added with every iteration of the formula)
 - *Iterations* maximum number of iterations to apply the selected formula
 
 Formula
@@ -174,7 +175,7 @@ Then there are 3 renderer buttons, two of which will be unavailable unless you h
 When supported you can use them to switch between the following renderers:
 
 - **WebGL** fractals are computed in a GLSL shader using WebGL, single precision only.
-- **WebCL** fractals are computed in an OpenCL kernel and then drawn to a 2d canvas, single precision.
+- **WebCL** fractals are computed in an OpenCL kernel and then drawn to a 2D canvas, single precision.
 - **WebCL fp64** as WebCL but utilising the 64-bit floating point extensions when available for double precision fractal computation.
 
 ...and the help file... which you're now reading.
@@ -196,7 +197,9 @@ This button redraws the current fractal, changes to fractal parameters in the *t
 
 Fractal
 ~~~~~~~
-This menu contains features relating to the current fractal display (when viewing the welcome page only a subset of the items will be shown on this menu):
+This menu contains features relating to the current fractal display.
+When viewing the welcome page only a subset of the items will be shown on this menu.
+Some of the items are also only visible when logged in.
 
 - *New* Create a new fractal and reset all fractal settings to defaults.
 - *Store* stores the current fractal in local storage using the name entered in the *parameters* tab. If the name is already used you will be asked if you'd like to overwrite the existing entry (This will be cleared if you clear your browsing history! To save permanently you must save your session to the server or export).
@@ -283,7 +286,7 @@ The format of a definition is:
 - *uint* an unsigned integer value ( > 0), appears as a number entry
 - *real* a real number, appears as a number entry
 - *float* as above, but single precision only regardless of precision setting
-- *complex* a complex number value, represented as a real and imaginary value seperated by a comma in code, appears as two number entries.
+- *complex* a complex number value, represented as a real and imaginary value separated by a comma in code, appears as two number entries.
 - *rgba* a colour value, appears as a colour box which can be clicked on to bring up a colour picker
 - *list* a list of labels, the variable will be assigned a numeric value based on user selection from 0 to n-1 (where n is number of list items), appears as a drop down list.
 - *real_function* a drop down list of functions returning real number values
@@ -301,7 +304,7 @@ Following the parameter definitions a list of data variables that will be used i
 
 - *type* can be one of bool, int, uint, real, float, complex or rgba.
 - *variable_name* a standard variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number)
-- *default* initial value of variable, complex numbers can be specificed simply using parentheses, eg: (0.3,0.3)
+- *default* initial value of variable, complex numbers can be specified simply using parentheses, eg: (0.3,0.3)
 
 Formula code sections
 ---------------------

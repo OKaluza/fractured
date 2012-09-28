@@ -36,14 +36,15 @@
               <height>60</height>
             </image>';
 
-          while($rssFeed = mysql_fetch_array($getFeed)) {
-                 echo '<item>',
-                      '<title>', $rssFeed['name'], '</title>',
-                      '<link>', $root, $rssFeed['locator'], '</link>',
-                      '<description><![CDATA[' ,$rssFeed['name'],$rssFeed['user_id'],']]></description>',
-                      '</item>';
+  while($rssFeed = mysql_fetch_array($getFeed)) {
+    echo '<item>',
+         '<title>', $rssFeed['name'], '</title>';
 
-          }
+         '<link>', $root, $rssFeed['locator'], '</link>',
+         '<description><![CDATA[' ,$rssFeed['name'],']]></description>',
+         '</item>';
 
-      echo '</channel>
-      </rss>';
+  }
+
+  echo '</channel>
+        </rss>';
