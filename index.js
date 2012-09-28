@@ -172,6 +172,7 @@ var thumbnails = [];
     $S('gallery').display = "none";
     $S('fractal-canvas').display = "block";
       setAll('block', 'render');  //Unhide render mode menu options
+      setAll(current.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
     //Switch to parameters
     if (showgallery) showPanel($('tab1'), 'panel1');
     showgallery = 0;
@@ -183,6 +184,7 @@ var thumbnails = [];
     if (window.location.href.indexOf("file://") == 0) current.offline = true;
     if (!navigator.onLine) current.offline = true;
 
+    setAll('none', 'loggedin');  //hide logged in menu options
     showPanel($('tab4'), 'panel4');
     var urlq = decodeURI(window.location.href);
     var h = urlq.indexOf("#");
