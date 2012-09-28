@@ -21,7 +21,7 @@ function GradientEditor(canvas, callback) {
   this.canvas.oncontextmenu="return false;";
   this.canvas.oncontextmenu = function() { return false; }      
 
-  this.update();
+  //this.update();
 }
 
 //Palette management
@@ -192,6 +192,9 @@ GradientEditor.prototype.move = function(event, mouse) {
 
 GradientEditor.prototype.wheel = function(event, mouse) {
   this.cycle(0.01 * event.spin);
+}
+
+GradientEditor.prototype.leave = function(event, mouse) {
 }
 
 GradientEditor.prototype.cycle = function(inc) {

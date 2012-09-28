@@ -4,15 +4,23 @@
 
   $type = $_GET["type"];
   $user = $_SESSION["user_id"];
+  $thumb = 160; //Thumb size + margin
+  $str = "images";
+  if ($type == "images" || $type == "myimages")
+    $thumb = 100;
 
   if ($type == "examples")
     $query = "SELECT locator FROM fractal WHERE user_id = -1 ORDER BY date;";
-  else if ($type == "recent")
-    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
   else if ($type == "shared")
-    $query = "SELECT locator FROM fractal WHERE user_id = '$user' ORDER BY date;";
-  else if ($type == "gallery")
-    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 0 ORDER BY date DESC;";
+    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 1 and type = 0 ORDER BY date DESC;";
+  else if ($type == "myshared")
+    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 1 and type = 0 ORDER BY date;";
+  else if ($type == "myuploaded")
+    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 0 and type = 0 ORDER BY date;";
+  else if ($type == "images")
+    $query = "SELECT locator FROM fractal WHERE public = 1 and type = 1 ORDER BY date DESC;";
+  else if ($type == "myimages")
+    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and type = 1 ORDER BY date;";
 
   $result = mysql_query( $query );
   if (!$result) die ('Unable to run query:'.mysql_error());
@@ -35,15 +43,13 @@
   if ($offset >= $totimg) $offset %= $totimg;
 
   //Calculate img/page based on width and height
+  $imgpage = 18;  //Images per page
   if (isset($_GET['width']) && isset($_GET['height']))
   {
-    $thumb = 160; //Thumb size + margin
     $w = floor(($_GET['width']-10) / $thumb);
-    $h = floor(($_GET['height']-50) / $thumb);
+    $h = floor(($_GET['height']-110) / $thumb);
     $imgpage = $w * $h;
   }
-  else
-    $imgpage = 18;  //Images per page
 
   echo '<ul class="navigation">';
 
@@ -59,11 +65,14 @@
 
   echo '</ul>';
 
+  if ($type == "shared" || $type == "images")
+    echo "<a href='/ss/rss.php?type=$type'><img src='media/rss.png'></a>";
+
   //Display page jump links
   echo '<div class="ginfo">';
   if ($totimg > $imgpage)
   {
-    echo 'Jump to page: ';
+    echo 'Page: ';
     $page = 0;
     for ($i = 1; $i <= $totimg; $i += $imgpage)
     {
@@ -85,14 +94,20 @@
   for($x=$offset; $x < $offset + $imgpage; $x++)
   {
     if ($x == $totimg) break;
-    $filename = "/thumbs/" . $links[$x] . ".jpg";
-    $url = "#";
-    if ($type != "gallery")
-      $url = $links[$x];
-    if (!file_exists(".." . $filename))
-      $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
+    if ($thumb == 100)
+    {
+      $url = 'http://imgur.com/' . $links[$x] . '.jpg';
+      $filename = 'http://imgur.com/' . $links[$x] . 's.jpg';
+    }
+    else 
+    {
+      $filename = "/thumbs/" . $links[$x] . ".jpg";
+      $url = '/' . $links[$x];
+      if (!file_exists(".." . $filename))
+        $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
+    }
     echo '<div class="float">';
-    echo '<a href="/'.$url.'">';
+    echo '<a href="'.$url.'">';
 	  echo '<img src="' . $filename . '" /></a>';
     echo "</a></div>\n";
   }

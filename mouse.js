@@ -1,6 +1,5 @@
 window['mouseWheelTimeout'] = mouseWheelTimeout;
 
-  var enableContext = false;
   var defaultMouse;
   var mousetimer = null;
 
@@ -8,17 +7,19 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   /**
    * @constructor
    */
-  function MouseEventHandler(click, down, move, wheel) {
+  function MouseEventHandler(click, down, move, wheel, leave) {
     //All these functions should take (event, mouse)
     this.fallback = Function('return false;');
     this.down = down;
     this.click = click;
     this.move = move;
     this.wheel = wheel;
+    this.leave = leave;
     if (!this.down) this.down = this.fallback;
     if (!this.click) this.click = this.fallback;
     if (!this.move) this.move = this.fallback;
     if (!this.wheel) this.wheel = this.fallback;
+    if (!this.leave) this.leave = this.fallback;
   }
 
   /**
@@ -49,15 +50,9 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     if (element.addEventListener) element.addEventListener("DOMMouseScroll", handleMouseWheel, false);
     element.onmousedown = handleMouseDown;
     element.onmousewheel = handleMouseWheel;
+    element.onmouseout = handleMouseLeave;
     //To disable context menu
-    //element.oncontextmenu = function() { return false; }
-    element.oncontextmenu = function() {
-      if (enableContext) {
-        enableContext = false;
-        return true;
-      }
-      return false; 
-    }
+    element.oncontextmenu = function() { return false; }
   }
 
   Mouse.prototype.update = function(e) {
@@ -165,7 +160,8 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   }
 
   function handleMouseMove(event) {
-    var mouse = document.mouse;
+    var mouse = getMouse(event);
+    //var mouse = document.mouse;
     if (!mouse || mouse.disabled) return true;
     mouse.update(event);
     mouse.deltaX = mouse.absoluteX - mouse.lastX;
@@ -214,6 +210,18 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
 
     if (!mouse.wheelTimer && mouse.spin != 0)
       action = mouse.handler.wheel(event, mouse);
+
+    //If handler returns false, prevent default action
+    if (!action && event.preventDefault) event.preventDefault();  // Firefox
+    event.returnValue = action;
+  } 
+
+  function handleMouseLeave(event) {
+    var mouse = getMouse(event);
+    if (!mouse || mouse.disabled) return true;
+
+    var action = true;
+    if (mouse.handler.leave) mouse.handler.leave(event, mouse);
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox

@@ -96,6 +96,13 @@
 
   //Palette draw to canvas
   Palette.prototype.draw = function(canvas, ui) {
+    //Slider image not yet loaded?
+    if (!this.slider.width) {
+      var _this = this;
+      setTimeout(function() { _this.draw(canvas, ui); }, 250);
+      return;
+    }
+    
     // Figure out if a webkit browser is being used
     if (!canvas) {alert("Invalid canvas!"); return;}
 	  var webkit = /webkit/.test(navigator.userAgent.toLowerCase());

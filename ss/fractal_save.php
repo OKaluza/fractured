@@ -41,6 +41,7 @@
   $user = $_SESSION["user_id"];
   $desc = $_POST["description"];
   $public = $_POST["public"];
+  $type = $_POST["type"];
   if (!$desc) $desc = '';
 
   if ($user <= 0) exit();
@@ -68,17 +69,23 @@
     //Create a 7 digit base62 hash
     //Max = 3579346000000, /1000 = 3579346000 = runs out of digits on Fri, 04 Jun 2083
     //Could change to /100 = 35793460000 = Sat, 02 Apr 3104, but more likely to get time collisions on inserts
-    $locator = udihash($inttime, 7);
+    if (isset($_POST['locator']))
+      $locator = $_POST['locator'];
+    else
+      $locator = udihash($inttime, 7);
 
-    $query = "INSERT INTO fractal (locator, user_id, date, name, source, public) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public');";
+    $query = "INSERT INTO fractal (locator, user_id, date, name, source, public, type) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public', '$type');";
     $result = mysql_query($query);
     if ($result == 1) //Loop until insert successful
     {
-      if ($public == 1)
-        $filename = "../thumbs/" . $locator . ".jpg";
-      else
-        $filename = "../thumbs/" . md5($locator) . ".jpg";
-      file_put_contents($filename, $thumb);
+      if ($type == 0)
+      {
+        if ($public == 1)
+          $filename = "../thumbs/" . $locator . ".jpg";
+        else
+          $filename = "../thumbs/" . md5($locator) . ".jpg";
+        file_put_contents($filename, $thumb);
+      }
       break;
     }
     //echo $ftime . "," . $inttime . "," . $locator . "<br>";
