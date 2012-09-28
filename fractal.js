@@ -428,7 +428,7 @@
 
   //Add fields for all our parameters dynamically to the page
   ParameterSet.prototype.createFields = function(category, name) {
-    var field_area = document.getElementById(category + "_params");
+    var field_area = $(category + "_params");
     var divider = document.createElement("div");
     divider.className = "divider";
     var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
@@ -618,7 +618,7 @@
     //consoleDebug("Selecting " + name + " for " + this.category + "_params");
 
     //Delete any existing dynamic form fields
-    var element = document.getElementById(this.category + "_params");
+    var element = $(this.category + "_params");
     if (!element) alert("Element is null! " + this.category + " - " + name);
     removeChildren(element);
 
@@ -858,8 +858,8 @@
       this.julia = true;
       this.selected.re = this.origin.re + point.re;
       this.selected.im = this.origin.im + point.im;
-      document.getElementById("xSelInput").value = this.origin.re + point.re;
-      document.getElementById("ySelInput").value = this.origin.im + point.im;
+      $("xSelInput").value = this.origin.re + point.re;
+      $("ySelInput").value = this.origin.im + point.im;
     } else {
       this.julia = false;
     }
@@ -1884,13 +1884,14 @@
     colours.palette.background.alpha = 1.0;
     if (this.webcl) {
       this.webcl.setViewport(x, y, w, h);
-      this.webcl.draw(this);
+      this.webcl.draw(this, this.antialias);
       //this.webcl.setViewport(0, 0, this.canvas.width, this.canvas.height);
     } else {
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       this.webgl.viewport = new Viewport(x, y, w, h);
       this.gl.enable(this.gl.SCISSOR_TEST);
       this.gl.scissor(x, y, w, h);
-      this.renderWebGL();
+      this.renderWebGL(this.antialias);
       this.webgl.viewport = new Viewport(0, 0, this.canvas.width, this.canvas.height);
       this.gl.disable(this.gl.SCISSOR_TEST);
     }

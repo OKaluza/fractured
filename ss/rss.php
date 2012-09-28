@@ -3,16 +3,30 @@
   include("connect.php");
 
   // Run query...
-  $getFeed = mysql_query("SELECT * FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;")or die(mysql_error());
-  $root = 'http://fractured.ozone.id.au/';
+  $type = $_GET["type"];
+  if ($type == "shared")
+  {
+    $query = "SELECT * FROM fractal WHERE user_id > 0 and public = 1 and type = 0 ORDER BY date DESC;";
+    $title = "Recent Fractals";
+    $desc = "Newly shared fractals";
+  }
+  else if ($type == "images")
+  {
+    $query = "SELECT * FROM fractal WHERE public = 1 and type = 1 ORDER BY date DESC;";
+    $title = "Recent Images";
+    $desc = "Newly shared images";
+  }
+
+  $getFeed = mysql_query($query)or die(mysql_error());
+  $root = "http://{$_SERVER['SERVER_NAME']}/";
 
   // Output XML (RSS)
   echo '<?xml version="1.0" encoding="ISO-8859-1" ?>
         <rss version="2.0">
           <channel>
-            <title>Recent Fractals</title>
+            <title>' . $title . '</title>
             <link>http://fractured.ozone.id.au/ss/rss.php</link>
-            <description>Newly shared fractals</description>
+            <description>' . $desc . '</description>
             <language>English</language>
             <image>
               <title>website Logo</title>

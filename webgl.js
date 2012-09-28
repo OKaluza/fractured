@@ -27,7 +27,7 @@
     this.errors = false;
 
     try {
-      this.gl = canvas.getContext("experimental-webgl", { antialias: true, premultipliedAlpha: false} );
+      this.gl = canvas.getContext("experimental-webgl", { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true} );
       this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     } catch(e) {
       this.errors = e;

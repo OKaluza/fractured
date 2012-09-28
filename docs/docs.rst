@@ -1,41 +1,78 @@
-=====================
-Fractured Studio v0.5
-=====================
+================
+Fractured Studio
+================
+Version 0.5
+(c) Owen Kaluza, 2012
+
+*(NOTE: Apologies as this documentation is a work in progress and not by any means complete)*
+
+.. contents::
+  Help Contents
 
 Introduction
 ============
-Fractured Studio is a fast GPU fractal renderer written in Javascript and WebGL/WebCL.
+Fractured is a fast fractal renderer written in Javascript and WebGL / WebCL.
 
-Originally it was a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU. 
-There're already lots of great fractal programs around but from my deranged perspective I'd miss out on most of the fun if I didn't write it myself.
+I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU. 
+There are already LOTS of great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace where I could store my work on a server and access it anywhere.
 
-This project was originally started in 2009 using Java and JOGL, then I heard about WebGL, got motivated again, and ported my work to HTML5, learning Javascript along the way.
+I originally started in 2009 using Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far I could take the paradigm of a standalone desktop app running in a web browser.
 
-The formula editor and renderer was finished in late 2010 and probably should have stopped there but then I got carried away with making it a studio workspace where I could store my work on a server and access it anywhere.
+Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone will find it useful.
 
-Now many lost weekends and evenings later it seems to finally have turned into a fairly full-featured app, so here it is - maybe someone will find it useful.
+If you have any feedback email me at: owen (at) ozone.id.au
 
-*(NOTE: This documentation is a work in progress and not by any means complete)*
+Acknowledgments
+---------------
+
+- CodeMirror http://codemirror.net/ used for formula / shader code editing component.
+- Expression parser built using Jison http://zaach.github.com/jison/
+- Vector and Matrix library: sylvester.js http://sylvester.jcoglan.com/
+- Learning WebGL http://learningwebgl.com/ for WebGL tutorials
+- WebCL tutorials: Nokia Research WebCL http://webcl.nokiaresearch.com/ and, WebCL Examples http://www.ibiblio.org/e-notes/webcl/webcl.htm
+- Some fractal formulae based on those in Gnofract http://gnofract4d.sourceforge.net/ and UltraFractal http://www.ultrafractal.com/
+- ColorJack.com http://www.colorjack.com/software/dhtml+color+picker.html for the design the colour picker is based on.
 
 Requirements
 ------------
-- A modern browser supporting WebGL and HTML5 local storage (Only confirmed working with Firefox, Chrome & Safari at this stage, Opera's WebGL is still causing me some problems) 
-- A graphics card with up to date drivers that support OpenGL (or Direct3D via ANGLE on Windows)
-- Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ to try it, append /webcl to the url arguments (eg: http://fractured.ozone.id.au/webcl)
+- A modern browser supporting WebGL (Only confirmed working with Firefox, Chrome & Safari at this stage, Opera's WebGL implementation is still causing me some problems) 
+- A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
+- Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ 
 - *Disclaimer* My development plaftorm is Linux and Firefox. Other platforms have not all been well tested yet but I'm working on it. Everything should work fine though (in theory).
 
 Workspace
 =========
-On first loading the app you should be presented with a workspace showing a basic rendering of the Mandelbrot set and the following user interface elements:
+On first loading the app you should be presented with a workspace showing a selection of example fractals and the following user interface elements:
 
 - *Top Menu* containing the [Session] and [Fractal] menus and the [Draw] button
 - *Palette* an editable gradient colour palette and background colour selection
-- *Tools* the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Help]
-- *Fractal Display* occupies the rest of the available browser window, showing the rendered fractal image.
+- *Tools* the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Log]
+- *Main Display* occupies the rest of the available browser window, initially showing an image gallery, switching to display the rendered fractal image (when in rendering mode).
 - *Coordinates* at the bottom left, shows the current complex coordinate under the mouse pointer as you move it over the fractal display.
 
+Main Display
+------------
+The main window area is initially occupied by an image gallery, this is the welcome page. When you render a fractal image it will switch to rendering mode and the fractal image will be displayed here.
+
+To switch to rendering mode immediately, hit the [Draw] button.
+
+Welcome page display
+~~~~~~~~~~~~~~~~~~~~
+This is a page that shows some example images and allows viewing and loading fractals and images that other users have shared. (Only some of the options in the Fractal menu are visible in this mode)
+
+There are several large buttons at the top of the page that allow switching between the available views:
+
+- *Examples* Some simple pre-loaded example fractals, click on the thumbnail to load them into the renderer. 
+- *Shared Fractals* Fractals that have been shared by other users, you can also click on these to load them.
+- *Image Gallery* Images that have been uploaded by other users, click to view (hosted on imgur.com).
+- *My Shared* Fractals uploaded and shared by you
+- *My Uploaded* Fractals uploaded by you but not shared
+- *My Images* Images uploaded by you
+
+Loading any fractal switches to the fractal display, to go back to the welcome page, click on the "Fractured" heading in the top left corner.
+
 Fractal Display
----------------
+~~~~~~~~~~~~~~~
 This is the output of the fractal formula and parameters, showing a rendering of the selected fractal formula coloured using the selected colouring algorithms using the palette gradient.
 This area of the screen is responsive to various mouse actions, many of which can be customised (see later section on editing mouse commands).
 
@@ -48,26 +85,30 @@ The default mouse actions are:
 - *Right-click and drag* scroll fractal (if larger than display window)
 - *Shift + scroll* Rotate in 10 degree increments
 - *Alt + scroll* Rotate in 1 degree increments
-- *Shift + mouse move* Display a julia set preview as you move the mouse around a Mandelbrot set
+
+Julia set preview mode: to display a julia set preview as you move the mouse around a Mandelbrot set hit the ` key (the one above TAB and below ESC on most keyboards)
 
 Coordinates
 -----------
-As you move the mouse over the fractal display the coordinates in the complex plane are displayed in the box at the bottom left of the window. These coordinates are used for many of the available mouse actions, switching between the Mandebrot and Julia sets for instance.
+As you move the mouse over the fractal display the coordinates in the complex plane are displayed in the box at the bottom left of the window. When switching between the Mandebrot and Julia sets or selecting a region of the fractal the coordinates show the position in fractal space that the mouse is pointing to.
 
 Palette
 -------
 The palette editor allows selection of a number of colours forming a gradient which is used to colour the fractal display.
 Each of the colours in the gradient is represented by a line and a slider tool, except for the start and end colours.
+When the mouse pointer is over the palette, sliders controls appear.
 
-- The slider tools (image) can be dragged, adjusting the position of the colour in the gradient.
+- The sliders can be dragged, adjusting the position of the colour in the gradient.
 - Clicking on the line below the slider opens the Colour Selector box allowing you to edit the colour.
 - Clicking elsewhere in the gradient also opens the Colour Selector box allowing you to add a new colour at the selected position.
 - The start and end colours can also be edited by clicking at the start/end of the gradient.
 - Right-clicking on a colour position marker deletes the colour from the gradient.
+- Ctrl+click reverses the gradient.
+- Scrolling the mouse shifts all the central colours in the gradient.
 
 Colour Selector
 ~~~~~~~~~~~~~~~
-A standard colour picker box which allows selection of the Saturation and Brightness of the colour using the large square box to the left and the Hue and Opacity using the columns to the right.
+A colour picker box appears whenever you click to add or edit a colour on the gradient. This allows selection of the Saturation and Brightness of the colour using the large square box to the left and the Hue and Opacity using the columns to the right.
 
 - The box can be moved around by clicking and dragging on its edges.
 - To accept changes to the colour, press the [OK] button and the box will close.
@@ -127,15 +168,23 @@ There are also entries for *None* - disabling colouring in the selected area, an
 
 Info
 ~~~~
+Here there is a *Local storage usage* indicator showing how much of the available local storage allocation is available, this is filled by storing fractals and when exceeded no more will be able to be saved. Currently it is based on an assumption of 5MB local storage space.
+
+Then there are 3 renderer buttons, two of which will be unavailable unless you have the WebCL plugin installed.
+When supported you can use them to switch between the following renderers:
+
+- **WebGL** fractals are computed in a GLSL shader using WebGL, single precision only.
+- **WebCL** fractals are computed in an OpenCL kernel and then drawn to a 2d canvas, single precision.
+- **WebCL fp64** as WebCL but utilising the 64-bit floating point extensions when available for double precision fractal computation.
+
+...and the help file... which you're now reading.
+
+Log
+~~~
 This tab shows a log of status information and sometimes error messages from the fractal renderer.
 
 The [Clear Log] button clears all messages from the display.
 
-There is also a *Local storage usage* indicator showing how much of the available local storage allocation is available, this is filled by saving fractals and when exceeded no more will be able to be saved. Currently it is based on an assumption of 5MB local storage space.
-
-Help
-~~~~
-Hmmmm.... whatever could this be for??
 
 Top Menu
 --------
@@ -147,16 +196,19 @@ This button redraws the current fractal, changes to fractal parameters in the *t
 
 Fractal
 ~~~~~~~
-This menu contains features relating to the current fractal display:
+This menu contains features relating to the current fractal display (when viewing the welcome page only a subset of the items will be shown on this menu):
 
 - *New* Create a new fractal and reset all fractal settings to defaults.
-- *Save* stores the current fractal in local storage using the name entered in the *parameters* tab. If the name is already used you will be asked if you'd like to overwrite the existing entry.
-- *Share* Upload a fractal to the server, optionally can be published on the site. Responds with a unique URL that can be used to load this fractal.
-- *Saved Fractals* displays a sub-menu of all the saved fractals, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.
+- *Store* stores the current fractal in local storage using the name entered in the *parameters* tab. If the name is already used you will be asked if you'd like to overwrite the existing entry (This will be cleared if you clear your browsing history! To save permanently you must save your session to the server or export).
+- *Upload* Upload a fractal to the server. Responds with a unique URL that can be used to load this fractal.
+- *Share* Publish a fractal to the server (will be displayed in the shared fractals list). Responds with a unique URL that can be used to load this fractal.
+- *Share Image* Publish a screenshot of the current fractal to imgur.com (will be displayed in the shared images list). Responds with a unique URL that can be used to view this image.
+- *Stored Fractals* displays a sub-menu of all the fractals in local storage, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.
+- *Palettes* displays a sub-menu of all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Press *Save Palette* to store the current palette, *Export Palette* to download it as a file and *Palette to URL* creates a url that can be used to load a palette.
 - *Formula Sets* sub-menu of available saved formula sets and options relating to them.
 - *Save As...*
 
-  - *JPEG Image* / *PNG Image* downloads the fractal image display as an image file.
+  - *JPEG Image* / *PNG Image* grabs a screen shot of the current fractal image display as an image file of the chosen type.
   - *Fractal File* export and download the current fractal parameters and formula as a fractal data text file.
   - *Fractal URL* export and download the current fractal parameters and formula as self-contained URL with all the information necessary to display the fractal.
 
@@ -164,7 +216,9 @@ This menu contains features relating to the current fractal display:
 - *Anti-aliasing* select the anti-aliasing quality to use when rendering fractals.
 - *Script Editor* an experimental feature allowing you to write a javascript that controls the fractal display.
 - *Clear Actions* clears any saved custom mouse actions from storage.
+- *Show Preview* enables or disables the Julia set preview window.
 - *Hide/Show Tools* hides or shows the *tools* area from the window, allowing more room for the fractal display.
+- *Full Screen* enter full screen mode.
 
 Session
 ~~~~~~~
@@ -178,7 +232,7 @@ In order to use the server features you must log in, you can use any OpenID prov
 - *Import* upload a previously saved data file containing all the data for a session, which will replace the current session (also clears all data, make sure you have saved anything you want to keep!).
 - *Login with* shows the OpenID login options if not already logged in. Allows you to use an OpenID provider to log in and save sessions, formula sets and fractals on the server.
 - *Saved Sessions* (when logged in only) shows a list of saved session associated with the logged in account that have been stored on the server. Clicking on one of these allows loading all the session data and replacing the current session. If a session from this list is active it will be outlined and a [ X ] delete button will be shown to allow you to remove the saved session and delete all its data from the server.
-- *Logout* (when logged in only) log out from the server. An option to clear the session data will be given, if taken the session will be replaed by a new session.
+- *Logout* (when logged in only) log out from the server. An option to clear the session data will be given, if taken the session will be replaced by a new session.
 
 Formula Sets
 ------------
@@ -269,20 +323,20 @@ Common sections
 - *init:* inserted after data declarations, before all processing.
 - *reset:* inserted after setting up the initial conditions of the formula, selected starting coordinates etc.
 
-Fractal Formulae sections
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Fractal Formula sections
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 - *znext:* the calculation of the next z value, z(n+1), the core of the fractal formula processing. To define a fractal formula that does anything this section must be defined, but it may be defined as a *parameter* of type *expression* named znext, which will simply execute the code resulting from the entered mathematical expression in this code section. Otherwise you must define the znext section, you can define znext as a parameter or a code section but not both.
 - *escaped:* define an escape bailout test, if **break** is called here the fractal iteration halts and the escape condition will be set. This section can also be replaced by a parameter named "escape" containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).
 - *converged:* define a convergent bailout test, as escape except when triggered the converge condition will be set. This section can also be replaced by a parameter named "converge" containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).
 
-Transform Formulae sections
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform Formula sections
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - *transform:* code entered here will be inserted at the fractal z(n+1) calculation stage, before processing znext if it is a pre-transform, or after if it is a post-transform. 
 
-Colour Formulae sections
-~~~~~~~~~~~~~~~~~~~~~~~~
+Colour Formula sections
+~~~~~~~~~~~~~~~~~~~~~~~
 
 - *calc:* code entered here will be inserted after the fractal z(n+1) calculation stage, use for any additional values that must be calculated during the fractal iteration to be used in the final colour calculation. 
 - *result:* this is where the final colour is calculated, set the built in variable **colour** to the value desired. This must be an rgba value, the colours of the editable gradient can be accessed using the function **gradient(value)** where value is a number between 0 and 1 representing the position on the gradient to sample, this function returns an rgba colour value.

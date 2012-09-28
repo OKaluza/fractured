@@ -1,7 +1,3 @@
-//TODO:
-//Clear-actions doesn't always work!?
-//Fractal load, formula missing, better handling of error than alert()
-
 //Globals
 var sources = null;
 var fractal;
@@ -12,6 +8,8 @@ var fullscreen = false;
 var filetype = 'fractal';
 var recording = false;
 var debug = false; //enable for testing
+var julia = null;
+
 //Timers
 var rztimeout = undefined;
 
@@ -53,19 +51,19 @@ var thumbnails = [];
   }
 
   function consoleWrite(str) {
-    var console = document.getElementById('console');
+    var console = $('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
-    $('panel4').scrollTop = console.clientHeight - $('panel4').clientHeight + $('panel4').offsetHeight;
+    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
   }
 
   function consoleClear() {
-    var console = document.getElementById('console');
+    var console = $('console');
     console.innerHTML = '';
   }
 
   function record(state) {
     recording = state;
-    var canvas = document.getElementById("fractal-canvas");
+    var canvas = $("fractal-canvas");
     canvas.mouse.wheelTimer = !recording;
     if (recording) {
       //Ensure a multiple of 2
@@ -77,7 +75,7 @@ var thumbnails = [];
   }
 
   function outputFrame() {
-    var canvas = document.getElementById("fractal-canvas");
+    var canvas = $("fractal-canvas");
     var data = canvas.toDataURL("image/png").substring(22);  //Strip from start: "data:image/png;base64,"
     document.body.style.cursor = "wait";
     ajaxPost("http://localhost:8080/frame", data, frameDone);
@@ -150,6 +148,7 @@ var thumbnails = [];
   function loadGallery(offset) {
     if (!showgallery) showgallery = 1;
     $S('gallery').display = "block";
+      setAll('none', 'render');  //hide render mode menu options
     $S('fractal-canvas').display = "none";
     if (offset == undefined) offset = this.lastoffset || 0;
     var w = $('gallery').clientWidth; //window.innerWidth - 334;
@@ -158,9 +157,11 @@ var thumbnails = [];
     //$S('gallery').height = h + "px";
 
     var type = "examples";
-    if (showgallery==2) type = "recent";
-    if (showgallery==3) type = "shared";
-    if (showgallery==4) type = "gallery";
+    if (showgallery==2) type = "shared";
+    if (showgallery==3) type = "images";
+    if (showgallery==4) type = "myshared";
+    if (showgallery==5) type = "myuploaded";
+    if (showgallery==6) type = "myimages";
 
     $('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
     this.lastoffset = offset;
@@ -170,6 +171,9 @@ var thumbnails = [];
     //Hide gallery, show fractal
     $S('gallery').display = "none";
     $S('fractal-canvas').display = "block";
+      setAll('block', 'render');  //Unhide render mode menu options
+    //Switch to parameters
+    if (showgallery) showPanel($('tab1'), 'panel1');
     showgallery = 0;
   }
 
@@ -177,9 +181,12 @@ var thumbnails = [];
     if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
     //Force offline mode when loaded locally
     if (window.location.href.indexOf("file://") == 0) current.offline = true;
+    if (!navigator.onLine) current.offline = true;
 
     showPanel($('tab4'), 'panel4');
     var urlq = decodeURI(window.location.href);
+    var h = urlq.indexOf("#");
+    if (h > 0) urlq = urlq.substring(0, h);
     var query;
     var baseurl = "";
     if (urlq.indexOf("?") > 0) {
@@ -245,13 +252,13 @@ var thumbnails = [];
     }
 
     //Initialise app
-    showPanel($('tab1'), 'panel1');
+    //showPanel($('tab1'), 'panel1');
     //Fractal canvas event handling
-    var canvas = document.getElementById("fractal-canvas");
+    var canvas = $("fractal-canvas");
     canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
     canvas.mouse.wheelTimer = true;
     defaultMouse = document.mouse = canvas.mouse;
-    document.onkeypress = handleKey;
+    document.onkeydown = handleKey;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
     window.onresize = autoResize;
@@ -259,12 +266,12 @@ var thumbnails = [];
     $('main').onwebkitfullscreenchange = toggleFullscreen;
     window.onbeforeunload = beforeUnload;
 
+    //Colour editing and palette management
+    colours = new GradientEditor($('palette'));
+
     //Create a fractal object
     fractal = new Fractal(canvas, mode, parseInt(localStorageDefault("fractured.antialias", "2")));
     setAntiAliasMenu();
-
-    //Colour editing and palette management
-    colours = new GradientEditor($('palette'));
 
     //Draw & update
     //doResize();
@@ -291,7 +298,7 @@ var thumbnails = [];
 
     //Recreate canvas & fractal
     source = fractal.toStringMinimal();
-    var canvas = document.getElementById("fractal-canvas");
+    var canvas = $("fractal-canvas");
     var cparent = canvas.parentNode;
     cparent.removeChild(canvas);
     canvas = document.createElement("canvas");
@@ -308,7 +315,16 @@ var thumbnails = [];
   }
 
   function handleKey(event) {
-    if (fullscreen && event.keyCode == 27) toggleFullscreen();
+    switch (event.keyCode) {
+      case 27:
+        //ESC
+        if (fullscreen) toggleFullscreen();
+        //Deliberate passthrough:
+      case 192:
+        //~`
+        togglePreview();
+        break;
+    }
   }
 
   function insertHelp(data) {
@@ -331,8 +347,8 @@ var thumbnails = [];
   //session JSON received
   function sessionGet(data) {
     current.offline = false;
-    var usermenu = document.getElementById('session_user_menu');
-    var loginmenu = document.getElementById('session_login_menu');
+    var usermenu = $('session_user_menu');
+    var loginmenu = $('session_login_menu');
     //Check for invalid or empty response
     if (!data || data.charAt(0) != "[") {
       //Responds with "!" if no session, so check for as valid response
@@ -352,7 +368,7 @@ var thumbnails = [];
       //Load list of saved states/sessions
       try {
         //Clear & repopulate list
-        var menu = document.getElementById('sessions');
+        var menu = $('sessions');
         removeChildren(menu);
         var list = JSON.parse(data);
         for (var i=0; i<list.length; i++) {
@@ -503,7 +519,7 @@ var thumbnails = [];
   function regenerateThumbs() {
     //Recreate all thumbnail images
     var idx = parseInt(localStorage["fractured.fractals"]);
-    performTask(idx, Math.round(idx/10), 
+    performTask(idx, Math.ceil(idx/10), 
       function (index) {
         var i = index + 1;
         if (localStorage["fractured.fractal." + i]) {
@@ -520,7 +536,7 @@ var thumbnails = [];
 
   function populateFractals() {
     //Clear & repopulate list
-    var menu = document.getElementById('fractals');
+    var menu = $('fractals');
     removeChildren(menu);
     var idx_str = localStorage["fractured.fractals"];
     if (idx_str) {
@@ -571,7 +587,7 @@ var thumbnails = [];
     fractal.applyChanges();
   }
 
-  function saveFractal() {
+  function storeFractal() {
     fractal.applyChanges();
     source = fractal.toStringNoFormulae();  //Default is to save to local storage without formulae
     //Save current fractal to list
@@ -652,7 +668,7 @@ var thumbnails = [];
 
   function populatePalettes() {
     //Clear & repopulate list
-    var menu = document.getElementById('palettes');
+    var menu = $('palettes');
     removeChildren(menu);
     addMenuItem(menu, "Save Palette", "savePalette();", null, false, false);
     addMenuItem(menu, "Export Palette", "exportPaletteFile();", null, false, false);
@@ -703,7 +719,7 @@ var thumbnails = [];
    //if (type == undefined) type = "png";
    if (type == undefined) type = "jpeg";
    if (size == undefined) size = 32; //40;
-   var canvas = document.getElementById("fractal-canvas"),
+   var canvas = $("fractal-canvas"),
        oldh = fractal.height,
        oldw = fractal.width;
    fractal.width = fractal.height = size;
@@ -717,7 +733,7 @@ var thumbnails = [];
 
 /*/
  // Thumb generated by browser in canvas, badly aliased?
-   var thumb = document.getElementById("thumb");
+   var thumb = $("thumb");
    thumb.style.visibility='visible';
    var context = thumb.getContext('2d');  
    context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
@@ -761,18 +777,19 @@ var thumbnails = [];
   //Import/export all local storage to server
   function uploadState() {
     saveState();  //Update saved data first
-    var data = "session_id=" + (current.session ? current.session : 0);
+    var formdata = new FormData();
+    formdata.append("session_id", (current.session ? current.session : 0)); 
     if (current.session > 0 && confirm('Save changes to this session on server?')) {
       //Update existing
     } else {
       var desc = prompt("Enter description for new session");
       if (!desc || desc.length == 0) return;
-      data += "&description=" + encodeURIComponent(desc);
+      formdata.append("description", desc); 
     }
 
-    data += "&data=" + encodeURIComponent(getState());
+    formdata.append("data", getState()); 
     progress("Uploading session to server...");
-    ajaxPost("ss/session_save.php", data, sessionSaved, updateProgress);
+    ajaxPost("ss/session_save.php", formdata, sessionSaved, updateProgress);
   }
 
   function sessionSaved(data) {
@@ -781,14 +798,16 @@ var thumbnails = [];
     progress();
   }
 
-  function uploadFractalFile() {
+  function uploadFractalFile(pub) {
     fractal.applyChanges();
-    var data = "public=" + Number(confirm("Publish on website after uploading?"));
-    data += "&description=" + encodeURIComponent($('nameInput').value);
-    data += "&thumbnail=" + encodeURIComponent(thumbnail("jpeg", 150).substring(23));
-    data += "&source=" + encodeURIComponent(fractal.toString());
+    var formdata = new FormData();
+    formdata.append("public", Number(pub));
+    formdata.append("type", 0);
+    formdata.append("description", $('nameInput').value);
+    formdata.append("thumbnail", thumbnail("jpeg", 150).substring(23));
+    formdata.append("source", fractal.toString());
     progress("Uploading fractal to server...");
-    ajaxPost("ss/fractal_save.php", data, fractalUploaded, updateProgress);
+    ajaxPost("ss/fractal_save.php", formdata, fractalUploaded, updateProgress);
   }
 
   function fractalUploaded(url) {
@@ -820,19 +839,20 @@ var thumbnails = [];
   }
 
   function uploadFormulaFile(shared) {
-    var data = "public=" + shared;
+    var formdata = new FormData();
+    formdata.append("public", shared);
     //If selected, give option to update existing
     if (shared == 0 && current.formulae > 0 && confirm('Save changes to this formula set on server?'))
-      data += "&formulae=" + current.formulae;
+      formdata.append("formulae", current.formulae);
     else {
       var name = prompt("Enter name for new formula set");
       if (name == null) return;
-      data += "&name=" + encodeURIComponent(name);
+      formdata.append("name", name);
     }
 
-    data += "&data=" + encodeURIComponent(JSON.stringify(formula_list));
+    formdata.append("data", JSON.stringify(formula_list));
     progress("Uploading formulae to server...");
-    ajaxPost("ss/formula_save.php", data, formulaeSaved, updateProgress);
+    ajaxPost("ss/formula_save.php", formdata, formulaeSaved, updateProgress);
   }
 
   function formulaeSaved(response) {
@@ -874,30 +894,106 @@ var thumbnails = [];
     exportFile(fractal.name + ".palette", "text/palette", source);
   }
 
+  function exportImage(type) {
+    clearPreviewJulia();
+    //Export using blob, no way to set filename yet
+    window.URL = window.URL || window.webkitURL;
+    window.open(window.URL.createObjectURL(imageToBlob(type)));
+  }
+
   function exportFile(filename, content, data) {
     if (current.offline) {
       //Export using data URL
       location.href = 'data:' + content + ';base64,' + window.btoa(data);
-      return;
+    } else {
+
+      //Export using server side script to get proper filename
+      $("export-filename").setAttribute("value", filename);
+      $("export-content").setAttribute("value", content);
+
+      var hiddenField = document.createElement("input");
+      hiddenField.setAttribute("type", "hidden");
+      hiddenField.setAttribute("name", "data");
+      hiddenField.setAttribute("value", data);
+
+      var form = document.forms["exporter"];
+      form.appendChild(hiddenField);
+      form.submit();
+      form.removeChild(hiddenField);
     }
-
-    //Export using server side script to get proper filename
-    var fField = document.getElementById("export-filename");
-    fField.setAttribute("value", filename);
-
-    var cField = document.getElementById("export-content");
-    cField.setAttribute("value", content);
-
-    var hiddenField = document.createElement("input");
-    hiddenField.setAttribute("type", "hidden");
-    hiddenField.setAttribute("name", "data");
-    hiddenField.setAttribute("value", data);
-
-    var form = document.forms["exporter"];
-    form.appendChild(hiddenField);
-    form.submit();
-    form.removeChild(hiddenField);
   }
+
+  function convertToBinary(data) {
+    var BASE64_MARKER = ';base64,';
+    var base64Index = data.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+    var base64 = data.substring(base64Index);
+    var raw = window.atob(base64);
+    var rawLength = raw.length;
+    var array = new Uint8Array(new ArrayBuffer(rawLength));
+    for(i = 0; i < rawLength; i++) {
+      array[i] = raw.charCodeAt(i);
+    }
+    return array;
+  }
+
+  function imageToBlob(type) {
+    //Export using blob, no way to set filename yet
+    var canvas = $("fractal-canvas");
+    var data = convertToBinary(canvas.toDataURL(type));
+    var blob;
+    try {
+      //Preferred method
+      blob = new Blob([data], {type: type});
+    } catch(e) {
+      //Deprecated, chrome
+      var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder
+      var bb = new BlobBuilder;
+      bb.append(data.buffer);
+      blob = bb.getBlob(type);
+    }
+    return blob;
+  }
+
+  function uploadImgur() {
+    fractal.applyChanges();
+    var canvas = $("fractal-canvas");
+    var data = imageToBlob("image/jpeg");
+   
+    var fd = new FormData();
+    fd.append("image", data);
+    fd.append("title", fractal.name);
+    fd.append("caption", "Created using Fractured studio http://fractured.ozone.id.au");
+    fd.append("name", fractal.name + ".jpg");
+    fd.append("key", "70f934afb26ec9a9b9dc50ac1df2b40f");
+   
+    var onload = function(response) {
+      //alert(response);
+      var data = JSON.parse(response);
+      var url = data.upload.links.imgur_page;
+      var link = document.createElement("a");
+      link.setAttribute("href", url);
+      var linkText = document.createTextNode(url);
+      link.appendChild(linkText);
+      $("progressmessage").innerHTML = '';
+      $("progressstatus").innerHTML = '';
+      $("progressmessage").appendChild(link);
+      //...save in our db
+      var formdata = new FormData();
+      formdata.append("locator", data.upload.image.hash);
+      formdata.append("public", 1); //Number(confirm("Publish on website after uploading?")));
+      formdata.append("type", 1);
+      formdata.append("description", $('nameInput').value);
+      formdata.append("thumbnail", "");
+      formdata.append("source", response);
+      ajaxPost("ss/fractal_save.php", formdata);
+    }
+    // Create the XHR (Cross-Domain XHR FTW!!!)
+    var xhr = new XMLHttpRequest();
+
+    progress("Uploading image to Imgur...");
+    ajaxPost("http://api.imgur.com/2/upload.json", fd, onload, updateProgress);
+  }
+
 
   function loadFormulaeList(data) {
     if (current.offline) return;
@@ -907,12 +1003,12 @@ var thumbnails = [];
       current.formulae = parseInt(localStorage["fractured.current.formulae"]);
 
       //Clear & repopulate list
-      var menu1 = document.getElementById('formulae-public');
-      var menu2 = document.getElementById('formulae-private');
+      var menu1 = $('formulae-public');
+      var menu2 = $('formulae-private');
       var ondelete = "deleteSelectedFormulae();";
       //If not logged in, menu only contains public formula list
       if (current.loggedin == false) {
-        menu1 = document.getElementById('formulae-list');
+        menu1 = $('formulae-list');
         ondelete = null;
       }
       removeChildren(menu1);
@@ -1080,7 +1176,8 @@ var thumbnails = [];
       fractal.name = localStorage["fractured.name"];
       $('nameInput').value = fractal.name;
     } else {
-      //Draw default
+      //Draw palette
+      colours.update();
       //fractal.applyChanges();
     }
   }
@@ -1122,7 +1219,7 @@ var thumbnails = [];
     selectedTab.className = 'selected';
 
     for(i = 0; i < panels.length; i++)
-      document.getElementById(panels[i]).style.display = (name == panels[i]) ? 'block':'none';
+      $(panels[i]).style.display = (name == panels[i]) ? 'block':'none';
 
     //Resize expression edit fields
     if (name == "panel2") growTextAreas('fractal_inputs');
@@ -1144,9 +1241,19 @@ var thumbnails = [];
        textarea.style.height = newHeight + "px";
   }
 
+  function togglePreview() {
+    if (julia || fractal.julia) {
+      clearPreviewJulia();
+    } else {
+      showPreviewJulia();
+      $('previewbtn').innerHTML = "Show Preview &#10003;"
+    }
+  }
+
   function toggleParams() {
-    var sidebar = document.getElementById("left");
-    var main = document.getElementById("main");
+    clearPreviewJulia();
+    var sidebar = $("left");
+    var main = $("main");
     if (sidebar.style.display == 'none') {
       sidebar.style.display = 'block';
       main.style.left = '334px';
@@ -1161,7 +1268,8 @@ var thumbnails = [];
   }
 
   function toggleFullscreen(newval) {
-    var main = document.getElementById("main");
+    clearPreviewJulia();
+    var main = $("main");
     if (window.requestFullScreen) {
       //Use new html5 full screen API
       if (typeof(newval) == 'boolean' && newval == true) {
@@ -1179,8 +1287,8 @@ var thumbnails = [];
       return;
     }
     //Old method, full browser screen, user can then manually fullscreen the browser
-    var header = document.getElementById("header");
-    var sidebar = document.getElementById("left");
+    var header = $("header");
+    var sidebar = $("left");
     if (header.style.display == 'none') {
       header.style.display = 'block';
       sidebar.style.display = 'block';
@@ -1231,7 +1339,7 @@ var thumbnails = [];
 
   function login(id) {
     if (id) {
-      var id_field = document.getElementById("openid");
+      var id_field = $("openid");
       id_field.setAttribute("value", id);
     }
     var form = document.forms["login_form"];
@@ -1313,8 +1421,8 @@ var thumbnails = [];
   }
 
   function canvasMouseClick(event, mouse) {
-    if (julia) clearPreviewJulia(mouse);
-    var select = document.getElementById("select");
+    clearPreviewJulia();
+    var select = $("select");
 
     //Convert mouse coords into fractal coords
     var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
@@ -1352,17 +1460,12 @@ var thumbnails = [];
       } else if (event.button > 0) {
         //Right-click, not dragging
         if (event.button == 2 && !mouse.dragged) {
-          //Enable the context menu on right click if ctrl+alt+shift held
-          if (event.shiftKey && event.altKey && event.ctrlKey) {
-            enableContext = true;
-            return true;
-          }
           //Switch to julia set at selected point
           fractal.selectPoint(point);
           //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
           if (fractal.julia) consoleWrite("Julia set @ (" + fractal.selected.re.toFixed(8) + ", " + fractal.selected.im.toFixed(8) + ")");
         } else {
-          return true;
+          //return true;
         }
       }
     }
@@ -1376,60 +1479,66 @@ var thumbnails = [];
     return false;
   }
 
-var julia;
-
   function drawPreviewJulia() {
+    var canvas = $("fractal-canvas");
+    mouse = canvas.mouse;
+
+    julia.point = mouse.point;
+    julia.x = mouse.x;
+    julia.y = fractal.webgl ? canvas.height - mouse.y : mouse.y;
+    julia.w = 250;
+    julia.h = Math.round(250 * canvas.height / canvas.width);
+    if (mouse.x > canvas.width - julia.w) julia.x -= julia.w;
+    if (fractal.webgl && mouse.y < canvas.height - julia.h) julia.y -= julia.h; 
+    if (fractal.webcl && mouse.y > canvas.height - julia.h) julia.y -= julia.h; 
+
     fractal.selectPoint(julia.point);
     fractal.renderViewport(julia.x, julia.y, julia.w, julia.h);
     fractal.selectPoint();
   }
 
-  function clearPreviewJulia(mouse) {
+  function clearPreviewJulia() {
+    if (!julia) return;
+    $('previewbtn').innerHTML = "Show Preview"
+    var canvas = $("fractal-canvas");
     clearTimeout(julia.timeout);
-    mouse.moveUpdate = false;
+    document.mouse.moveUpdate = false;
       $S("fractal-canvas").backgroundImage = "url('media/bg.png')";
       $S("background").display = "none";
     julia = null;
-    if (fractal.webcl) fractal.webcl.setViewport(0, 0, mouse.element.width, mouse.element.height);
+    if (fractal.webcl) fractal.webcl.setViewport(0, 0, canvas.width, canvas.height);
     fractal.draw();
+  }
+
+  function showPreviewJulia() {
+    julia = {};
+    //WebGL implicitly clears the canvas, unless preserveDrawingBuffer requested 
+    //(which apparently is a performance problem on some platforms) so copy fractal
+    //image into background while rendering julia set previews
+    $("background").src = fractal.imagedata;
+    $S("background").display = "block";
+    $S("fractal-canvas").backgroundImage = "none";
+    document.mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
+    drawPreviewJulia();
   }
 
   function canvasMouseMove(event, mouse) {
     //Mouseover processing
+      mouse.point = new Aspect(0, 0, 0, 0);
     if (!fractal || showgallery) return true;
     if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
     {
       //Convert mouse coords into fractal coords
-      var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
-      var coord = new Aspect(point.re + fractal.origin.re, point.im + fractal.origin.im, 0, 0);
-      document.getElementById("coords").innerHTML = "&nbsp;re: " + coord.re.toFixed(8) + " im: " + coord.im.toFixed(8);
+      mouse.point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
+      var coord = new Aspect(mouse.point.re + fractal.origin.re, mouse.point.im + fractal.origin.im, 0, 0);
+      $("coords").innerHTML = "&nbsp;re: " + coord.re.toFixed(8) + " im: " + coord.im.toFixed(8);
 
       //Constantly updated mini julia set rendering
-      if (event.shiftKey && (julia || !fractal.julia)) {
-        if (!julia) {
-          julia = {};
-          //WebGL implicitly clears the canvas, unless preserveDrawingBuffer requested 
-          //(which apparently is a performance problem on some platforms) so copy fractal
-          //image into background while rendering julia set previews
-          $("background").src = fractal.imagedata;
-          $S("background").display = "block";
-          $S("fractal-canvas").backgroundImage = "none";
-          mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
-        }
-        julia.point = point;
-        julia.x = mouse.x;
-        julia.y = fractal.webgl ? mouse.element.height - mouse.y : mouse.y;
-        julia.w = 250;
-        julia.h = 250 * mouse.element.height / mouse.element.width;
-        if (mouse.x > mouse.element.width - julia.w) julia.x -= julia.w;
-        if (fractal.webgl && mouse.y < mouse.element.height - julia.h) julia.y -= julia.h; 
-        if (fractal.webcl && mouse.y > mouse.element.height - julia.h) julia.y -= julia.h; 
+      if (julia && !fractal.julia) {
         drawPreviewJulia();
         return;
       }
     }
-
-    if (julia) clearPreviewJulia(mouse);
 
     if (!mouse.isdown) return true;
 
@@ -1441,8 +1550,8 @@ var julia;
     }
 
     //Drag processing
-    var select = document.getElementById("select");
-    var main = document.getElementById("main");
+    var select = $("select");
+    var main = $("main");
     select.style.display = 'block';
 
     //Constrain selection size to canvas aspect ratio
@@ -1467,7 +1576,7 @@ var julia;
     select.style.width = select.w + "px";
     select.style.height = select.h + "px";
 
-    document.getElementById("coords").innerHTML = select.style.width + "," + select.style.height;
+    $("coords").innerHTML = select.style.width + "," + select.style.height;
   }
 
   function canvasMouseWheel(event, mouse) {
@@ -1512,32 +1621,6 @@ var editorFilename;
     if (!filename) return;
     editorFilename = filename;
     editorWindow = window.open(encodeURI("editor.html?file=" + filename), filename, "toolbar=no,scrollbars=no,location=no,statusbar=no,menubar=no,resizable=1,width=600,height=700");
-  }
-
-  function hrefImage() {
-    var canvas = document.getElementById("fractal-canvas");
-    document.location.href = canvas.toDataURL("image/jpeg");
-  }
-
-  function saveImageJPEG() {
-    var canvas = document.getElementById("fractal-canvas");
-    //window.open(canvas.toDataURL());
-    //window.open(canvas.toDataURL("image/jpeg"));
-    //addImage(canvas.toDataURL("image/png"));
-    exportFile(fractal.name + ".jpg", "jpeg", canvas.toDataURL("image/jpeg"));
-  }
-
-  function saveImagePNG() {
-    var canvas = document.getElementById("fractal-canvas");
-    //window.open(canvas.toDataURL("image/png"));
-    exportFile(fractal.name + ".png", "png", canvas.toDataURL("image/png"));
-  }
-
-  function addImage(url){
-    var img = document.createElement('img');
-    //img.setAttribute("width", "100");  
-    document.getElementById('image').appendChild(img);
-    img.src = url;
   }
 
 /////////////////////////////////////////////////////////////////////////

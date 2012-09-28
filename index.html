@@ -33,7 +33,11 @@
 
   <header id="header">
 
-    <div id="title"><h1><span id="heading1"><a href="/">Fractured</a></span><span id="bar">|</span>studio</h1><h3>0.5</h3></div>
+    <div id="title">
+      <h1><span id="heading1">
+      <a href="/">Fractured</a></span><span id="bar">|</span>studio
+      </h1><h3>0.5</h3>
+    </div>
 
     <nav id="menu">
       <ul id="nav">
@@ -93,10 +97,12 @@
         <li><span class="fly" tabindex="1">Fractal</span>
           <ul class="dd">
             <li><span onclick="newFractal();">New</span></li>
-            <li><span onclick="saveFractal();">Save</span></li>
-            <li class="loggedin"><span onclick="uploadFractalFile();">Share</span></li>
+            <li class="render"><span onclick="storeFractal();">Store</span></li>
+            <li class="loggedin render"><span onclick="uploadFractalFile(0);">Upload</span></li>
+            <li class="loggedin render"><span onclick="uploadFractalFile(1);">Share</span></li>
+            <li class="render"><span onclick="uploadImgur();">Share Image</span></li>
             <li><hr></li>
-            <li><span class="fly" tabindex="1">Saved Fractals</span>
+            <li><span class="fly" tabindex="1">Stored Fractals</span>
               <ul id="fractals" class="selectlist">
               </ul>
             </li>
@@ -123,10 +129,10 @@
               </ul>
             </li>
             <li><hr></li>
-            <li><span class="fly" tabindex="1">Save As</span>
+            <li class="render"><span class="fly" tabindex="1">Save As</span>
               <ul>
-                <li><span onclick="saveImageJPEG();">JPEG Image</span></li>
-                <li><span onclick="saveImagePNG();">PNG Image</span></li>
+                <li><span onclick="exportImage('image/jpeg');">JPEG Image</span></li>
+                <li><span onclick="exportImage('image/png');">PNG Image</span></li>
                 <li><span onclick="exportFractalFile();">Fractal File</span></li>
                 <li><span onclick="packFractal();">Fractal URL</span></li>
               </ul>
@@ -164,8 +170,9 @@
             </li>
             <li><span onclick="openEditor('include/script.js')">Script Editor</span></li>
             <li><span onclick="defaultMouseActions();">Clear actions</span></li>
+            <li class="render"><span id="previewbtn" onclick="togglePreview();">Show Preview</span></li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
-            <li><span onclick="toggleFullscreen(true);">Full Screen</span></li>
+            <li class="render"><span onclick="toggleFullscreen(true);">Full Screen</span></li>
           </ul>
         </li>
         <li><span onclick="hideGallery(); fractal.applyChanges();">Draw</span></li>
@@ -193,7 +200,7 @@
           <li onmousedown="showPanel(this, 'panel2');" class="unselected">Formula</li>
           <li onmousedown="showPanel(this, 'panel3');" class="unselected">Colour</li>
           <li onmousedown="showPanel(this, 'panel4');" id="tab4" class="unselected">Info</li>
-          <li onmousedown="showPanel(this, 'panel5');" id="tab5" class="unselected">Help</li>
+          <li onmousedown="showPanel(this, 'panel5');" id="tab5" class="unselected">Log</li>
         </ul>
       </nav>
 
@@ -330,35 +337,21 @@
       <div class="panel scroll" id="panel4" style="display: none">
         <p>Local storage usage:</p>
         <div id="indicatorbg"><div id="indicator"></div></div>
-
-        <input type="button" value="Clear log" onClick="consoleClear()">
+        <p>Renderer:</p>
         <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
         <input type="button" id="webcl" value="WebCL" onClick="switchMode(WEBCL);">
         <input type="button" id="fp64" value="WebCL fp64" onClick="switchMode(WEBCL64);">
-        <div id="consolearea">
-          <div id="console" class="info">
-            <h2>Fractured Studio</h2>
-            <p><b>Version 0.5 (c) Owen Kaluza, 2012</b></p>
-            <br>
-            <p><i>With thanks to:</i></p>
-            <ul>
-            <li><a href="http://codemirror.net/">CodeMirror</a> used for formula / shader code editing component.</li>
-            <li>Expression parser built using <a href="http://zaach.github.com/jison/">Jison</a></li>
-            <li>Vector and Matrix Math: <a href="http://sylvester.jcoglan.com/">sylvester.js</a></li>
-            <li><a href="http://learningwebgl.com/">Learning WebGL</a> for WebGL tutorials</li>
-            <li>WebCL tutorials <a href="http://webcl.nokiaresearch.com/">Nokia Research WebCL</a> and <a href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">WebCL Examples</a></li>
-            <li>Some fractal formulae based on those in <a href="http://gnofract4d.sourceforge.net/">Gnofract</a> and <a href="http://www.ultrafractal.com/">UltraFractal</a></li>
-            <li><a href="http://www.colorjack.com/software/dhtml+color+picker.html">colorjack.com</a> for the design the colour picker is based on.</li>
-            </ul>
-            <!--p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p-->
-            <hr>
-          </div>
+        <hr>
+        <div id="help">
         </div>
-
       </div>
 
       <div class="panel scroll" id="panel5" style="display: none">
-        <div id="help">
+        <input type="button" value="Clear log" onClick="consoleClear()">
+        <div id="consolearea">
+          <div id="console" class="info">
+            <!--p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p-->
+          </div>
         </div>
       </div>
 
@@ -374,13 +367,17 @@
     <div id="gallery">
       <div id="setgallery">
         <input id="gal1" type="button" class="selected" value="Examples" onclick="setGallery(1);">
-        <input id="gal2" type="button" value="Recent" onclick="setGallery(2);">
-        <input id="gal3" type="button" value="Shared" onclick="setGallery(3);">
-        <input id="gal4" type="button" value="Gallery" onclick="setGallery(4);">
+        <input id="gal2" type="button" value="Shared Fractals" onclick="setGallery(2);">
+        <input id="gal3" type="button" value="Image Gallery" onclick="setGallery(3);">
+        <input id="gal4" type="button" value="My Shared" onclick="setGallery(4);">
+        <input id="gal5" type="button" value="My Uploaded" onclick="setGallery(5);">
+        <input id="gal6" type="button" value="My Images" onclick="setGallery(6);">
         <div id="note1">Some simple example fractals showing the basic pre-defined formulae and colouring algorithms. Click on the preview image to load the fractal into the viewer.</div>
-        <div id="note2" style="display: none"><a href="/ss/rss.php"><img src="media/rss.png"></a>Recently uploaded fractals that users have shared and made available to others to view and explore. Click on the preview to open the fractal.</div>
-        <div id="note3" style="display: none">Fractals shared by you</div>
-        <div id="note4" style="display: none">Images created from fractals, the fractal settings have not been publicly shared, only the images produced from them are shown</div>
+        <div id="note2" style="display: none">Fractals that users have shared and made available to others to view and explore. Click on the preview to open the fractal.</div>
+        <div id="note3" style="display: none">Images created from fractals uploaded to Imgur.com, the fractal settings have not been publicly shared, only the images produced from them are shown</div>
+        <div id="note4" style="display: none">Fractals shared by you</div>
+        <div id="note5" style="display: none">Fractals uploaded by you (but not shared)</div>
+        <div id="note6" style="display: none">Images shared by you</div>
       </div>
       <div id="gallery-display">
       </div>
