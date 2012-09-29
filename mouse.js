@@ -7,19 +7,14 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   /**
    * @constructor
    */
-  function MouseEventHandler(click, down, move, wheel, leave) {
+  function MouseEventHandler(click, wheel, move, down, up, leave) {
     //All these functions should take (event, mouse)
-    this.fallback = Function('return false;');
-    this.down = down;
     this.click = click;
-    this.move = move;
     this.wheel = wheel;
+    this.move = move;
+    this.down = down;
+    this.up = up;
     this.leave = leave;
-    if (!this.down) this.down = this.fallback;
-    if (!this.click) this.click = this.fallback;
-    if (!this.move) this.move = this.fallback;
-    if (!this.wheel) this.wheel = this.fallback;
-    if (!this.leave) this.leave = this.fallback;
   }
 
   /**
@@ -43,6 +38,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     this.lastY = 0;
     this.slider = null;
     this.spin = 0;
+    //Option settings...
     this.wheelTimer = false;  //Timer before triggering wheel callback
     this.moveUpdate = false;  //Save mouse move origin once on mousedown or every move
 
@@ -51,8 +47,17 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     element.onmousedown = handleMouseDown;
     element.onmousewheel = handleMouseWheel;
     element.onmouseout = handleMouseLeave;
+    document.onmouseup = handleMouseUp;
+    document.onmousemove = handleMouseMove;
     //To disable context menu
     element.oncontextmenu = function() { return false; }
+  }
+
+  Mouse.prototype.setDefault = function() {
+    //Sets up this mouse as the default for the document
+    //Multiple mouse handlers can be created for elements but only
+    //one should be set to handle document events
+    defaultMouse = document.mouse = this;
   }
 
   Mouse.prototype.update = function(e) {
@@ -128,11 +133,10 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     mouse.button = event.button;
     //Set document move & up event handlers to this.mouse object's
     document.mouse = mouse;
-    document.onmouseup = handleMouseUp;
-    document.onmousemove = handleMouseMove;
 
     //Handler for mouse down
-    var action = mouse.handler.down(event, mouse);
+    var action = true;
+    if (mouse.handler.down) action = mouse.handler.down(event, mouse);
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action;
@@ -146,11 +150,12 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     if (mouse.isdown) 
     {
       mouse.update(event);
-      action = mouse.handler.click(event, mouse);
+      if (mouse.handler.click) action = mouse.handler.click(event, mouse);
       mouse.isdown = false;
       mouse.button = null;
       mouse.dragged = false;
     }
+    if (mouse.handler.up) mouse.handler.up(event, mouse);
     //Restore default mouse on document
     document.mouse = defaultMouse;
 
@@ -166,7 +171,8 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     mouse.update(event);
     mouse.deltaX = mouse.absoluteX - mouse.lastX;
     mouse.deltaY = mouse.absoluteY - mouse.lastY;
-    var action = mouse.handler.move(event, mouse);
+    var action = true;
+    if (mouse.handler.move) action = mouse.handler.move(event, mouse);
 
     //Set dragged flag if moved more than limit
     if (!mouse.dragged && mouse.isdown && Math.abs(mouse.deltaX) + Math.abs(mouse.deltaY) > 3)
@@ -189,7 +195,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     if (!mouse || mouse.disabled) return true;
     mouse.update(event);
     var nDelta = 0;
-    var action = false;
+    var action = false; //Default action disabled
     if (!event) event = window.event; // For IE, access the global (window) event object
     // cross-bowser handling of eventdata 
     if (event.wheelDelta) // IE and Opera
@@ -200,16 +206,18 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     event.spin = nDelta > 0 ? 1 : -1;
     mouse.spin += event.spin;
 
-    //Set timer for 1/8 sec and accumulate spin
-    if (mouse.wheelTimer) { // && mouse.spin == 0) {
-      document.mouse.event = event; //Save event
-      document.body.style.cursor = "wait";
-      mousetimer = setTimeout('mouseWheelTimeout(document.mouse);', 200);
-      //setTimeout('mouseWheelTimeout(document.mouse);', 50);
-    }
+    if (mouse.handler.wheel) {
+      //Set timer for 1/8 sec and accumulate spin
+      if (mouse.wheelTimer) { // && mouse.spin == 0) {
+        document.mouse.event = event; //Save event
+        document.body.style.cursor = "wait";
+        mousetimer = setTimeout('mouseWheelTimeout(document.mouse);', 200);
+        //setTimeout('mouseWheelTimeout(document.mouse);', 50);
+      }
 
-    if (!mouse.wheelTimer && mouse.spin != 0)
-      action = mouse.handler.wheel(event, mouse);
+      if (!mouse.wheelTimer && mouse.spin != 0)
+        action = mouse.handler.wheel(event, mouse);
+    }
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox

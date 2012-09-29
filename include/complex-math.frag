@@ -111,13 +111,13 @@ real __OVERLOADABLE__ atanh(in real x)
 #endif
 
 complex __OVERLOADABLE__ add(in complex a, in complex b) {return a + b;}
-complex __OVERLOADABLE__ add(in real a, in complex b) {return _C(a) + b;}
-complex __OVERLOADABLE__ add(in complex a, in real b) {return a + _C(b);}
-complex __OVERLOADABLE__ add(in real a, in real b)    {return _C(a + b);}
+complex __OVERLOADABLE__ add(in real a, in complex b) {return (a,0) + b;}
+complex __OVERLOADABLE__ add(in complex a, in real b) {return a + (b,0);}
+complex __OVERLOADABLE__ add(in real a, in real b)    {return complex(a + b,0);}
 complex __OVERLOADABLE__ sub(in complex a, in complex b) {return a - b;}
-complex __OVERLOADABLE__ sub(in real a, in complex b) {return _C(a) - b;}
-complex __OVERLOADABLE__ sub(in complex a, in real b) {return a - _C(b);}
-complex __OVERLOADABLE__ sub(in real a, in real b)    {return _C(a - b);}
+complex __OVERLOADABLE__ sub(in real a, in complex b) {return (a,0) - b;}
+complex __OVERLOADABLE__ sub(in complex a, in real b) {return a - (b,0);}
+complex __OVERLOADABLE__ sub(in real a, in real b)    {return complex(a - b,0);}
 
 complex __OVERLOADABLE__ mul(in complex a, in complex b)
 {
@@ -126,7 +126,7 @@ complex __OVERLOADABLE__ mul(in complex a, in complex b)
 
 complex __OVERLOADABLE__ mul(in real a, in complex b) {return a * b;}
 complex __OVERLOADABLE__ mul(in complex a, in real b) {return a * b;}
-complex __OVERLOADABLE__ mul(in real a, in real b) {return _C(a * b);}
+complex __OVERLOADABLE__ mul(in real a, in real b) {return complex(a * b,0);}
 
 complex __OVERLOADABLE__ div(in complex z, in complex w)
 {
@@ -136,17 +136,17 @@ complex __OVERLOADABLE__ div(in complex z, in complex w)
   return complex(dot(z,w), z.y*w.x - z.x*w.y) / dot(w,w);
 }
 
-complex __OVERLOADABLE__ div(in real a, in complex z) //{return div(_C(a), z);}
+complex __OVERLOADABLE__ div(in real a, in complex z) //{return div((a,0), z);}
 {
   return complex(a*z.x, -a*z.y) / dot(z,z);
 }
 
-complex __OVERLOADABLE__ div(in complex z, in real a) //{return div(z, _C(a));}
+complex __OVERLOADABLE__ div(in complex z, in real a) //{return div(z, (a,0));}
 {
   return complex(z.x*a, z.y*a) / (a*a);
 }
 
-complex __OVERLOADABLE__ div(in real a, in real b)    {return _C(a / b);}
+complex __OVERLOADABLE__ div(in real a, in real b)    {return complex(a / b,0);}
 
 complex __OVERLOADABLE__ inv(in complex z)
 {
@@ -162,7 +162,7 @@ complex __OVERLOADABLE__ loge(in complex z)
 
 complex __OVERLOADABLE__ log10(in complex z)
 {
-  return loge(z) / loge(_C(10));
+  return loge(z) / loge((10,0));
 }
 
 complex __OVERLOADABLE__ loge(in real r)
@@ -194,13 +194,13 @@ complex __OVERLOADABLE__ polar(in real r, in real theta)
 
 complex __OVERLOADABLE__ cpow(in real base, in real exponent)
 {
-  return _C(pow(base, exponent));
+  return complex(pow(base, exponent),0);
 }
 
 complex __OVERLOADABLE__ cpow(in real base, in complex exponent)
 {
-  if (base == 0.0) return _C(0);
-  if (exponent.y == 0.0) return _C(pow(base, exponent.x));
+  if (base == 0.0) return (0,0);
+  if (exponent.y == 0.0) return complex(pow(base, exponent.x),0);
 
   real re = log(abs(base));
   real im = atan(0.0, base);
@@ -215,12 +215,12 @@ complex __OVERLOADABLE__ cpow(in real base, in complex exponent)
 
 complex __OVERLOADABLE__ cpow(in complex base, in real exponent) 
 {
-  if (base.x == 0.0 && base.y == 0.0) return _C(0);
-  if (exponent == 0.0) return _C(1);
+  if (base.x == 0.0 && base.y == 0.0) return (0,0);
+  if (exponent == 0.0) return (1,0);
   if (exponent == 1.0) return base;
   if (exponent == 2.0) return mul(base,base);
   if (exponent == 3.0) return mul(mul(base,base),base);
-  if (base.y == 0.0) return _C(pow(base.x, exponent));
+  if (base.y == 0.0) return complex(pow(base.x, exponent),0);
   
   real re = exponent * log(cabs(base));
   real im = exponent * arg(base);
@@ -232,7 +232,7 @@ complex __OVERLOADABLE__ cpow(in complex base, in real exponent)
 
 complex __OVERLOADABLE__ cpow(in complex base, in complex exponent)
 {
-  if (base.x == 0.0 && base.y == 0.0) return _C(0);
+  if (base.x == 0.0 && base.y == 0.0) return (0,0);
 
   real re =  log(cabs(base));
   real im =  arg(base);
@@ -292,7 +292,7 @@ complex __OVERLOADABLE__ ctan(in complex z)
 //     asin(z)  =  -i * log(i*z + sqrt(1 - z*z))
 complex __OVERLOADABLE__ casin(in complex z)
 {
-  complex a = sqrt(_C(1) - mul(z,z));
+  complex a = sqrt((1,0) - mul(z,z));
   a += complex(-z.y, z.x); //z * i + a
   a = loge(a);
   return complex(a.y, -a.x);  // a * -i
@@ -302,7 +302,7 @@ complex __OVERLOADABLE__ casin(in complex z)
 //     acos(z)  =  -i * log( z + i * sqrt(1 - z*z) )
 complex __OVERLOADABLE__ cacos(in complex z)
 {
-  complex a = sqrt(_C(1) - mul(z,z));
+  complex a = sqrt((1,0) - mul(z,z));
   a = z + complex(-a.y, a.x); //z + i * a
   a = loge(a);
   return complex(a.y, -a.x);  // a * -i
@@ -312,8 +312,8 @@ complex __OVERLOADABLE__ cacos(in complex z)
 //     atan(z)  =  -i/2 * log( (i-z)/(i+z) )
 complex __OVERLOADABLE__ catan(in complex z)
 {
-  complex a = div(_I-z, _I+z);
-  return mul(_CI(-0.5), loge(a));  //-i/2 * log(a)
+  complex a = div((0,1)-z, (0,1)+z);
+  return mul((0,-0.5), loge(a));  //-i/2 * log(a)
 }
 
 complex __OVERLOADABLE__ csinh(in complex z)
@@ -338,22 +338,22 @@ complex __OVERLOADABLE__ ctanh(in complex z)
 //     asinh(z)  =  log(z + sqrt(z*z + 1))
 complex __OVERLOADABLE__ casinh(in complex z)
 {
-  return loge(z + sqrt(mul(z,z) + _C(1)));
+  return loge(z + sqrt(mul(z,z) + (1,0)));
 }
 
 // Returns the principal inverse hyperbolic cosine of a complex number.
 //     acosh(z)  =  log(z + sqrt(z*z - 1))
 complex __OVERLOADABLE__ cacosh(in complex z)
 {
-  return loge(z + sqrt(mul(z,z) - _C(1)));
+  return loge(z + sqrt(mul(z,z) - (1,0)));
 }
 
 // Returns the principal inverse hyperbolic tangent of a complex number.
 //     atanh(z)  =  1/2 * log( (1+z)/(1-z) )
 complex __OVERLOADABLE__ catanh(in complex z)
 {
-  complex a = div(_I+z, _I-z);
-  return mul(_C(0.5), loge(a));
+  complex a = div((0,1)+z, (0,1)-z);
+  return mul((0.5,0), loge(a));
 }
 
 complex __OVERLOADABLE__ csqrt(in complex z)

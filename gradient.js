@@ -17,7 +17,6 @@ function GradientEditor(canvas, callback) {
   this.palette = new Palette();
   //Event handling for palette
   this.canvas.mouse = new Mouse(this.canvas, this);
-  this.canvas.mouse.ignoreScroll = true;
   this.canvas.oncontextmenu="return false;";
   this.canvas.oncontextmenu = function() { return false; }      
 

@@ -790,9 +790,20 @@
   /**
    * @constructor
    */
-  function Fractal(canvas, mode, antialias) {
+  function Fractal(parentid, mode, antialias) {
     //Construct a new default fractal object
-    this.canvas = canvas;
+    this.canvas = document.createElement("canvas");
+    this.canvas.id = "fractal-canvas"
+    this.canvas.mouse = new Mouse(this.canvas, this);
+    this.canvas.mouse.wheelTimer = true;
+    this.canvas.mouse.setDefault();
+
+    //Remove existing canvas if any
+    var pelement = $(parentid)
+    var ccanvas = $("fractal-canvas");
+    if (ccanvas) pelement.removeChild(ccanvas);
+    pelement.appendChild(this.canvas);
+
     //Set canvas size
     this.sizeCanvas();
 
@@ -811,7 +822,7 @@
       if (!window.WebGLRenderingContext) {
         popup("Sorry, WebGL support not detected, try <a href='http://get.webgl.org'>http://get.webgl.org</a> for more information");
       } else {
-        this.webgl = new WebGL(canvas);
+        this.webgl = new WebGL(this.canvas);
         if (this.webgl.errors) {
           popup("Error initialising WebGL (" + this.webgl.errors + "), try <a href='http://get.webgl.org/troubleshooting'>http://get.webgl.org/troubleshooting</a> for more information");
         } else {
@@ -827,10 +838,11 @@
         renderer = WEBCL;
       }
       if (!this.webcl.fp64) $("fp64").disabled = true;
-      this.webcl.init(canvas, renderer > WEBCL);
+      this.webcl.init(this.canvas, renderer > WEBCL);
     }
 
     this.antialias = antialias;
+    this.preview = null;
 
     this.offsets = [];
 
@@ -1727,8 +1739,13 @@
     //shader = shader.replace(paramreg, "//(Param removed)\n");
 
     //Replace any (x,y) constants with complex(x,y)
-    var creg = /([^a-zA-Z_])\(([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)/g;
-    shader = shader.replace(creg, "$1complex($2,$4)");
+    //(where x,y can be a numeric constant)
+    //var creg = /([^a-zA-Z_])\(([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)/g;
+    //shader = shader.replace(creg, "$1complex($2,$4)");
+
+    //(...modified to also allow single variables, note: first pattern is to ignore function call match)
+    var creg = /([^a-zA-Z0-9_])\(([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\)/g
+    shader = shader.replace(creg, "$1complex($2,$5)");
 
     //Finally replace any @ symbols used to reference params in code
     return shader.replace(/@/g, "");
@@ -1945,4 +1962,259 @@
     if (window.recording)
       window.outputFrame(); 
   }
+
+//////////////////////////////////////////////////////////////////
+//Canvas event handling
+var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
+
+  //WheelAction - field id and value
+  /**
+   * @constructor
+   */
+  function WheelAction(id, value) {
+    this.id = id;
+    this.value = value;
+  }
+
+  function defaultMouseActions() {
+    mouseActions["left"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+    mouseActions["right"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+    mouseActions["middle"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+    mouseActions["wheel"] = {'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
+  }
+
+  function getCustomAction(event, button) {
+    var action = null;
+    if (!button) {
+      if (event.button == 1) button = "middle";
+      else if (event.button == 2) button = "right";
+      else button = "left";
+    }
+
+    if (event.shiftKey && event.altKey && event.ctrlKey) {
+      action = mouseActions[button]["shift+ctrl+alt"];
+    } else if (event.shiftKey && event.altKey) {
+      action = mouseActions[button]["shift+alt"];
+    } else if (event.shiftKey && event.ctrlKey) {
+      action = mouseActions[button]["shift+ctrl"];
+    } else if (event.altKey && event.ctrlKey) {
+      action = mouseActions[button]["ctrl+alt"];
+    } else if (event.ctrlKey) {
+      action = mouseActions[button]["ctrl"];
+    } else if (event.shiftKey) {
+      action = mouseActions[button]["shift"];
+    } else if (event.altKey) {
+      action = mouseActions[button]["alt"];
+    }
+
+    return action;
+  }
+
+  Fractal.prototype.click = function(event, mouse) {
+    var select = $("select");
+
+    //Convert mouse coords into fractal coords
+    var point = this.origin.convert(mouse.x, mouse.y, mouse.element);
+
+    var action = getCustomAction(event);
+
+    if (action) {
+      //Set point to assigned field
+      if ($(action + "0")) {
+        $(action + "0").value = point.re;
+        $(action + "1").value = point.im;
+        this.applyChanges();
+      }
+    } else {
+      //Selection box?
+      if (select.style.display == 'block') {
+
+        //Ignore if too small a region selected
+        if (select.w > 5 && select.h > 5) {
+          //Get element offset in document
+          //var offset = findElementPos(mouse.element);
+          //Convert coords to position relative to element
+          //select.x -= offset[0];
+          //select.y -= offset[1];
+          //Get centre of selection in fractal coords
+          var centre = this.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
+          //Adjust centre position to match mouse left click
+          this.setOrigin(centre);
+          //Adjust zoom by factor of element width to selection
+          this.applyZoom(mouse.element.width / select.w);
+        }
+      } else if (event.button == 0) {
+        //Adjust centre position to match mouse left click
+        this.setOrigin(point);
+      } else if (event.button > 0) {
+        //Right-click, not dragging
+        if (event.button == 2 && !mouse.dragged) {
+          //Switch to julia set at selected point
+          this.selectPoint(point);
+          //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
+          if (this.julia) consoleWrite("Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
+        } else {
+          //return true;
+        }
+      }
+    }
+
+    select.style.display = 'none';
+    this.copyToForm();
+    this.draw();
+  }
+
+  Fractal.prototype.down = function(event, mouse) {
+    clearPreviewJulia();
+    return false;
+  }
+
+  Fractal.prototype.up = function(event, mouse) {
+    clearPreviewJulia();
+    return true;
+  }
+
+  Fractal.prototype.move = function(event, mouse) {
+    //Mouseover processing
+      mouse.point = new Aspect(0, 0, 0, 0);
+    if (!fractal || showgallery) return true;
+    if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
+    {
+      //Convert mouse coords into fractal coords
+      mouse.point = this.origin.convert(mouse.x, mouse.y, mouse.element);
+      var coord = new Aspect(mouse.point.re + this.origin.re, mouse.point.im + this.origin.im, 0, 0);
+      $("coords").innerHTML = "&nbsp;re: " + coord.re.toFixed(8) + " im: " + coord.im.toFixed(8);
+
+      //Constantly updated mini julia set rendering
+      if (this.preview && !this.julia) {
+        drawPreviewJulia();
+        return;
+      }
+    }
+
+    if (!mouse.isdown) return true;
+
+    //Right & middle buttons: drag to scroll
+    if (mouse.button > 0) {
+      // Set the scroll position
+      window.scrollBy(-mouse.deltaX, -mouse.deltaY);
+      return true;
+    }
+
+    //Drag processing
+    var select = $("select");
+    var main = $("main");
+    select.style.display = 'block';
+
+    //Constrain selection size to canvas aspect ratio
+    select.w = Math.abs(mouse.deltaX)
+    var ratio = mouse.element.width / select.w;
+    select.h = mouse.element.height / ratio;
+
+    if (mouse.deltaX < 0)
+      select.x = mouse.x;
+    else
+      select.x = mouse.x - select.w;
+
+    var offset = findElementPos(main);
+    if (mouse.deltaY < 0)
+      select.y = mouse.lastY - select.h - offset[1];
+    else
+      select.y = mouse.lastY - offset[1];
+
+    //Copy to style to set positions
+    select.style.left = select.x + "px";
+    select.style.top = select.y + "px";
+    select.style.width = select.w + "px";
+    select.style.height = select.h + "px";
+
+    $("coords").innerHTML = select.style.width + "," + select.style.height;
+  }
+
+  Fractal.prototype.wheel = function(event, mouse) {
+    var action = getCustomAction(event, "wheel");
+    //alert(action.id);
+    if (this.preview || !(event.shiftKey || event.altKey || event.ctrlKey)) {
+      // Zoom
+      action = new WheelAction(null, 0);
+      var zoom;
+      if (event.spin < 0)
+         zoom = 1/(-event.spin * 1.1);
+      else
+         zoom = event.spin * 1.1;
+
+      if (this.preview) {
+         this.savePos.zoom *= zoom;
+         drawPreviewJulia();
+         return;
+      } else {
+        this.applyZoom(zoom);
+        //Update form fields
+        this.copyToForm();
+      }
+    }
+
+    if (!action) return true; //Default browser action
+
+    //Assign field value
+    if (action.id && $(action.id))
+      $(action.id).value = parseReal($(action.id).value, 1) + event.spin * action.value;
+
+    this.applyChanges();
+  }
+
+/////////////////////////////////////////////////////////////////////////
+//Julia set preview window
+  function drawPreviewJulia() {
+    var canvas = $("fractal-canvas");
+    mouse = canvas.mouse;
+
+    fractal.preview.point = mouse.point;
+    fractal.preview.x = mouse.x;
+    fractal.preview.y = fractal.webgl ? canvas.height - mouse.y : mouse.y;
+    fractal.preview.w = 250;
+    fractal.preview.h = Math.round(250 * canvas.height / canvas.width);
+    if (mouse.x > canvas.width - fractal.preview.w) fractal.preview.x -= fractal.preview.w;
+    if (fractal.webgl && mouse.y < canvas.height - fractal.preview.h) fractal.preview.y -= fractal.preview.h; 
+    if (fractal.webcl && mouse.y > canvas.height - fractal.preview.h) fractal.preview.y -= fractal.preview.h; 
+
+    fractal.selectPoint(fractal.preview.point);
+    fractal.renderViewport(fractal.preview.x, fractal.preview.y, fractal.preview.w, fractal.preview.h);
+    fractal.selectPoint();
+  }
+
+  function clearPreviewJulia() {
+    if (!fractal.preview) return;
+    $('previewbtn').innerHTML = "Show Preview"
+    var canvas = $("fractal-canvas");
+    clearTimeout(fractal.preview.timeout);
+    document.mouse.moveUpdate = false;
+      $S("fractal-canvas").backgroundImage = "url('media/bg.png')";
+      $S("background").display = "none";
+    fractal.preview = null;
+    if (fractal.webcl) fractal.webcl.setViewport(0, 0, canvas.width, canvas.height);
+    fractal.draw();
+  }
+
+  function showPreviewJulia() {
+    fractal.preview = {};
+    //WebGL implicitly clears the canvas, unless preserveDrawingBuffer requested 
+    //(which apparently is a performance problem on some platforms) so copy fractal
+    //image into background while rendering julia set previews
+    $("background").src = fractal.imagedata;
+    $S("background").display = "block";
+    $S("fractal-canvas").backgroundImage = "none";
+    document.mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
+    drawPreviewJulia();
+  }
+
+  function togglePreview() {
+    if (fractal.preview || fractal.julia) {
+      clearPreviewJulia();
+    } else {
+      showPreviewJulia();
+      $('previewbtn').innerHTML = "Show Preview &#10003;"
+    }
+  }
+
 
