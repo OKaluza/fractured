@@ -38,7 +38,7 @@ Requirements
 - A modern browser supporting WebGL (Only confirmed working with Firefox, Chrome & Safari at this stage, Opera's WebGL implementation is still causing me some problems) 
 - A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
 - Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ 
-- *Disclaimer* My development platform is Linux and Firefox. Other platforms have not all been well tested yet but I'm working on it. Everything should work fine though (in theory).
+- *Note* My development platform is Linux and Firefox. Other platforms have not all been well tested yet. Everything should work fine though (in theory).
 
 Workspace
 =========

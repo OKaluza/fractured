@@ -8,131 +8,167 @@ var fullscreen = false;
 var filetype = 'fractal';
 var recording = false;
 var debug = false; //enable for testing
-var julia = null;
+var reset = false; //enable to reset includes+formulae
 
 //Timers
 var rztimeout = undefined;
 
 var current = new Status();
-var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
 var thumbnails = [];
 
-  //Status - logged in, selected values
-  /**
-   * @constructor
-   */
-  function Status() {
-    this.loggedin = false;
-    this.offline = null;
-    this.session = 0;
-    this.formulae = 0;
-    this.fractal = -1;
-  }
+  function appInit() {
+    if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
+    //Force offline mode when loaded locally
+    if (window.location.href.indexOf("file://") == 0) current.offline = true;
+    if (!navigator.onLine) current.offline = true;
 
-  //WheelAction - field id and value
-  /**
-   * @constructor
-   */
-  function WheelAction(id, value) {
-    this.id = id;
-    this.value = value;
-  }
-
-  function defaultMouseActions() {
-    mouseActions["left"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-    mouseActions["right"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-    mouseActions["middle"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-    mouseActions["wheel"] = {'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-  }
-
-  function consoleDebug(str) {
-    if (debug) consoleWrite(str);
-    //alert(" called by: " + arguments.callee.caller);
-  }
-
-  function consoleWrite(str) {
-    var console = $('console');
-    console.innerHTML += "<div class='message'>" + str + "</div>";
-    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
-  }
-
-  function consoleClear() {
-    var console = $('console');
-    console.innerHTML = '';
-  }
-
-  function record(state) {
-    recording = state;
-    var canvas = $("fractal-canvas");
-    canvas.mouse.wheelTimer = !recording;
-    if (recording) {
-      //Ensure a multiple of 2
-      if (fractal.width % 2 == 1) fractal.width -= 1;
-      if (fractal.height % 2 == 1) fractal.height -= 1;
-    }
-    $('recordOn').className = recording ? 'selected_item' : '';
-    $('recordOff').className = !recording ? 'selected_item' : '';
-  }
-
-  function outputFrame() {
-    var canvas = $("fractal-canvas");
-    var data = canvas.toDataURL("image/png").substring(22);  //Strip from start: "data:image/png;base64,"
-    document.body.style.cursor = "wait";
-    ajaxPost("http://localhost:8080/frame", data, frameDone);
-  }
-
-  function frameDone(response) {
-    document.body.style.cursor = "default";
-    consoleDebug("Request sent");
-  }
-
-  //Save values of all selected parameters for use in scripting
-  function ParamVals(paramset) {
-      for (key in paramset) {
-        if (typeof(paramset[key]) == "object" && paramset[key].type != undefined)
-          this[key] = paramset[key].value; 
+    setAll('none', 'loggedin');  //hide logged in menu options
+    showPanel($('tab4'), 'panel4');
+    var urlq = decodeURI(window.location.href);
+    var h = urlq.indexOf("#");
+    if (h > 0) urlq = urlq.substring(0, h);
+    var query;
+    var baseurl = "";
+    if (urlq.indexOf("?") > 0) {
+      var parts = urlq.split("?"); //whole querystring before and after ?
+      query = parts[1]; 
+      //Strip stupid trailing /
+      if (query.charAt(query.length-1) == "/") query = query.substr(0, query.length-1);
+      baseurl = parts[0];
+    } else {
+      if (urlq.indexOf("file:///") == 0)
+         baseurl = urlq;
+      else {
+        //URL rewriting
+        var pos = urlq.lastIndexOf("/");
+        query = urlq.substr(pos+1);
+        baseurl = urlq.substr(0, pos);
       }
     }
-
-  //Script object, passed source code inserted at the step() function
-  function Script(source) {
-    this.count = 1;
-    this.step = 1;
-    this.step = Function(source);
-    this.fractal = new ParamVals(fractal.fractal.currentParams);
-    this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
-    this.postTransform = new ParamVals(fractal.post_transform.currentParams);
-    this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
-    this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
-  }
-
-  function runScript() {
-    //Run an animation script
-    var script = new Script(sources["include/script.js"])
-
-    function next() {
-      script.step();
-      if (script.count < script.steps) {
-        script.count++;
-        window.requestAnimationFrame(next);
+    var restored = "";
+    var mode;
+    if (query) {
+      var list = query.split("&");
+      for (var i=0; i<list.length; i++) {
+        if (list[i].indexOf('debug') >= 0) {
+          //debug mode enabled, show extra menus
+          debug = true;
+          $S('debugmenu').display = 'block';
+          $S('recordmenu').display = 'block';
+        } else if (list[i].indexOf('reset') >= 0) {
+          reset = true;
+          consoleWrite("Resetting all includes and formulae to defaults");
+        } else if (list[i].indexOf('fp64') == 0 || list[i].indexOf('double') == 0) {
+          mode = WEBCL64;
+        } else if (list[i].indexOf('webcl') >= 0) {
+          mode = WEBCL;
+        } else if (list[i].indexOf('webgl') >= 0) {
+          mode = WEBGL;
+        } else if (list[i].length > 20) {
+          //Load fractal from base64 packed url
+          restored = window.atob(list[i]);
+        } else if (!current.offline && list[i].length > 3) {
+          //Load fractal from hash ID
+          restored = readURL('ss/fractal_get.php?id=' + list[i]);
+          if (!restored || restored.indexOf("Error:") == 0) {
+            alert("Fractal load failed!");
+            restored = "";
+          } else 
+            baseurl += "/" + list[i]; //Save hash in baseurl
+        }
       }
     }
+    consoleDebug("Base URL: " + baseurl);
+    consoleDebug("Query options: " + query);
 
-    next();
+    //Strip commands from url (except hash if provided)
+    window.history.pushState("", "", baseurl);
+
+    //Load the last program state
+    loadState();
+
+    if (!current.offline) {
+      //Session restore:
+      sessionGet(readURL('ss/session_get.php')); //Get updated list...
+      //Load formula lists from server
+      loadFormulaeList(readURL('ss/formula_get.php'));
+    }
+
+    //Initialise app
+
+    //Colour editing and palette management
+    colours = new GradientEditor($('palette'));
+
+    //Fractal & canvas
+    fractal = new Fractal('main', mode, parseInt(localStorageDefault("fractured.antialias", "2")));
+
+    //Event handling
+    document.onkeydown = handleKey;
+    window.onresize = autoResize;
+    window.onmozfullscreenchange = toggleFullscreen
+    $('main').onwebkitfullscreenchange = toggleFullscreen;
+    window.onbeforeunload = beforeUnload;
+
+    setAntiAliasMenu();
+
+    //Draw & update
+    //doResize();
+    if (restored.length > 0) {
+      hideGallery();
+      restoreFractal(restored);   //Restore from URL
+    } else {
+      loadLastFractal();  //Restore last if any
+      loadGallery(0);
+    }
+
+    ajaxReadFile('docs.html', insertHelp);
   }
 
-  var timer;
-  function timeDraw() {
-    timer = new Date().getTime();
-    window.requestAnimationFrame(logTime);
+  function switchMode(mode) {
+    if (mode == WEBGL && fractal.webgl) return;
+    consoleWrite("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
+    if (mode > WEBGL && fractal.webcl) {
+      fractal.webcl.setPrecision(mode > 1); //Switch precision
+      sources["generated.shader"] = "";     //Force rebuild
+      fractal.applyChanges();
+      return;
+    }
+
+    //Recreate canvas & fractal
+    source = fractal.toStringMinimal();
+    fractal = new Fractal('main', mode, fractal.antialias);
+    fractal.load(source);
+    fractal.name = localStorage["fractured.name"];
   }
 
-  function logTime() {
-    var elapsed = new Date().getTime() - timer;
-    if (elapsed < 50) 
-      window.requestAnimationFrame(logTime); //Not enough time, assume triggered too early, try again
+  function handleKey(event) {
+    switch (event.keyCode) {
+      case 27:
+        //ESC
+        if (fullscreen) toggleFullscreen();
+        //Deliberate passthrough:
+      case 192:
+        //~`
+        togglePreview();
+        break;
+    }
+  }
+
+  function insertHelp(data) {
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = data;
+    var divs = tempDiv.getElementsByTagName('div')
+    if (divs.length > 0)
+      $('help').innerHTML = divs[0].innerHTML;
     else
-      consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
+      $('help').innerHTML = "Help file could not be loaded";
+  }
+
+  //Utility, set display style of all elements of classname
+  function setAll(display, classname) {
+    var elements = document.getElementsByClassName(classname)
+    for (var i=0; i<elements.length; i++)
+      elements[i].style.display = display;
   }
 
   function setGallery(type) {
@@ -176,174 +212,6 @@ var thumbnails = [];
     //Switch to parameters
     if (showgallery) showPanel($('tab1'), 'panel1');
     showgallery = 0;
-  }
-
-  function appInit() {
-    if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
-    //Force offline mode when loaded locally
-    if (window.location.href.indexOf("file://") == 0) current.offline = true;
-    if (!navigator.onLine) current.offline = true;
-
-    setAll('none', 'loggedin');  //hide logged in menu options
-    showPanel($('tab4'), 'panel4');
-    var urlq = decodeURI(window.location.href);
-    var h = urlq.indexOf("#");
-    if (h > 0) urlq = urlq.substring(0, h);
-    var query;
-    var baseurl = "";
-    if (urlq.indexOf("?") > 0) {
-      var parts = urlq.split("?"); //whole querystring before and after ?
-      query = parts[1]; 
-      //Strip stupid trailing /
-      if (query.charAt(query.length-1) == "/") query = query.substr(0, query.length-1);
-      baseurl = parts[0];
-    } else {
-      if (urlq.indexOf("file:///") == 0)
-         baseurl = urlq;
-      else {
-        //URL rewriting
-        var pos = urlq.lastIndexOf("/");
-        query = urlq.substr(pos+1);
-        baseurl = urlq.substr(0, pos);
-      }
-    }
-    var restored = "";
-    var mode;
-    if (query) {
-      var list = query.split("&");
-      for (var i=0; i<list.length; i++) {
-        if (list[i].indexOf('debug') >= 0) {
-          //debug mode enabled, show extra menus
-          debug = true;
-          $S('debugmenu').display = 'block';
-          $S('recordmenu').display = 'block';
-        } else if (list[i].indexOf('fp64') == 0 || list[i].indexOf('double') == 0) {
-          mode = WEBCL64;
-        } else if (list[i].indexOf('webcl') >= 0) {
-          mode = WEBCL;
-        } else if (list[i].indexOf('webgl') >= 0) {
-          mode = WEBGL;
-        } else if (list[i].length > 20) {
-          //Load fractal from base64 packed url
-          restored = window.atob(list[i]);
-        } else if (!current.offline && list[i].length > 4) {
-          //Load fractal from hash ID
-          restored = readURL('ss/fractal_get.php?id=' + list[i]);
-          if (!restored || restored.indexOf("Error:") == 0) {
-            alert("Fractal load failed!");
-            restored = "";
-          } else 
-            baseurl += "/" + list[i]; //Save hash in baseurl
-        }
-      }
-    }
-    consoleDebug("Base URL: " + baseurl);
-    consoleDebug("Query options: " + query);
-
-    //Strip commands from url (except hash if provided)
-    window.history.pushState("", "", baseurl);
-
-    //Load the last program state
-    loadState();
-
-    if (!current.offline) {
-      //Session restore:
-      sessionGet(readURL('ss/session_get.php')); //Get updated list...
-      //Load formula lists from server
-      loadFormulaeList(readURL('ss/formula_get.php'));
-    }
-
-    //Initialise app
-    //showPanel($('tab1'), 'panel1');
-    //Fractal canvas event handling
-    var canvas = $("fractal-canvas");
-    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
-    canvas.mouse.wheelTimer = true;
-    defaultMouse = document.mouse = canvas.mouse;
-    document.onkeydown = handleKey;
-    document.onmouseup = handleMouseUp;
-    document.onmousemove = handleMouseMove;
-    window.onresize = autoResize;
-    window.onmozfullscreenchange = toggleFullscreen
-    $('main').onwebkitfullscreenchange = toggleFullscreen;
-    window.onbeforeunload = beforeUnload;
-
-    //Colour editing and palette management
-    colours = new GradientEditor($('palette'));
-
-    //Create a fractal object
-    fractal = new Fractal(canvas, mode, parseInt(localStorageDefault("fractured.antialias", "2")));
-    setAntiAliasMenu();
-
-    //Draw & update
-    //doResize();
-    if (restored.length > 0) {
-      hideGallery();
-      restoreFractal(restored);   //Restore from URL
-    } else {
-      loadLastFractal();  //Restore last if any
-      loadGallery(0);
-    }
-
-    ajaxReadFile('docs.html', insertHelp);
-  }
-
-  function switchMode(mode) {
-    if (mode == WEBGL && fractal.webgl) return;
-    consoleWrite("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
-    if (mode > WEBGL && fractal.webcl) {
-      fractal.webcl.setPrecision(mode > 1); //Switch precision
-      sources["generated.shader"] = "";     //Force rebuild
-      fractal.applyChanges();
-      return;
-    }
-
-    //Recreate canvas & fractal
-    source = fractal.toStringMinimal();
-    var canvas = $("fractal-canvas");
-    var cparent = canvas.parentNode;
-    cparent.removeChild(canvas);
-    canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 600;
-    canvas.id = "fractal-canvas"
-    canvas.mouse = new Mouse(canvas, new MouseEventHandler(canvasMouseClick, canvasMouseDown, canvasMouseMove, canvasMouseWheel));
-    canvas.mouse.wheelTimer = true;
-    defaultMouse = document.mouse = canvas.mouse;
-    cparent.appendChild(canvas);
-
-    fractal = new Fractal(canvas, mode, fractal.antialias);
-    fractal.load(source);
-    fractal.name = localStorage["fractured.name"];
-  }
-
-  function handleKey(event) {
-    switch (event.keyCode) {
-      case 27:
-        //ESC
-        if (fullscreen) toggleFullscreen();
-        //Deliberate passthrough:
-      case 192:
-        //~`
-        togglePreview();
-        break;
-    }
-  }
-
-  function insertHelp(data) {
-    var tempDiv = document.createElement('div');
-    tempDiv.innerHTML = data;
-    var divs = tempDiv.getElementsByTagName('div')
-    if (divs.length > 0)
-      $('help').innerHTML = divs[0].innerHTML;
-    else
-      $('help').innerHTML = "Help file could not be loaded";
-  }
-
-  //Utility, set display style of all elements of classname
-  function setAll(display, classname) {
-    var elements = document.getElementsByClassName(classname)
-    for (var i=0; i<elements.length; i++)
-      elements[i].style.display = display;
   }
 
   //session JSON received
@@ -897,7 +765,6 @@ var thumbnails = [];
   }
 
   function exportImage(type) {
-    clearPreviewJulia();
     //Export using blob, no way to set filename yet
     window.URL = window.URL || window.webkitURL;
     window.open(window.URL.createObjectURL(imageToBlob(type)));
@@ -1115,7 +982,7 @@ var thumbnails = [];
       loadState();  //load the state data
       //loadLastFractal();
       progress();
-        regenerateThumbs();
+      regenerateThumbs();
     } catch(e) {
       alert('ImportState: Error! ' + e);
     }
@@ -1132,15 +999,15 @@ var thumbnails = [];
   function loadState() {
     //Load includes...
     sources = null;
-    //var i_source = localStorage["fractured.include"];
-    //if (i_source) sources = JSON.parse(i_source);
-    if (!sources) sources = JSON.parse(readURL('/includes.json'));
+    var i_source = localStorage["fractured.include"];
+    if (i_source) sources = JSON.parse(i_source);
+    if (reset || !sources) sources = JSON.parse(readURL('/includes.json', true));
 
     //Load formulae
     formula_list = null;
     var f_source = localStorage["fractured.formulae"];
     if (f_source) formula_list = JSON.parse(f_source);
-    if (!formula_list) formula_list = JSON.parse(readURL('/defaultformulae.json'));
+    if (reset || !formula_list) formula_list = JSON.parse(readURL('/defaultformulae.json', true));
 
     //Custom mouse actions
     a_source = localStorage["fractured.mouseActions"];
@@ -1243,17 +1110,7 @@ var thumbnails = [];
        textarea.style.height = newHeight + "px";
   }
 
-  function togglePreview() {
-    if (julia || fractal.julia) {
-      clearPreviewJulia();
-    } else {
-      showPreviewJulia();
-      $('previewbtn').innerHTML = "Show Preview &#10003;"
-    }
-  }
-
   function toggleParams() {
-    clearPreviewJulia();
     var sidebar = $("left");
     var main = $("main");
     if (sidebar.style.display == 'none') {
@@ -1270,7 +1127,6 @@ var thumbnails = [];
   }
 
   function toggleFullscreen(newval) {
-    clearPreviewJulia();
     var main = $("main");
     if (window.requestFullScreen) {
       //Use new html5 full screen API
@@ -1394,225 +1250,6 @@ var thumbnails = [];
     return null; //"beforeUnload";
   }
 
-//Fractal canvas mouse event handling
-  function getCustomAction(event, button) {
-    var action = null;
-    if (!button) {
-      if (event.button == 1) button = "middle";
-      else if (event.button == 2) button = "right";
-      else button = "left";
-    }
-
-    if (event.shiftKey && event.altKey && event.ctrlKey) {
-      action = mouseActions[button]["shift+ctrl+alt"];
-    } else if (event.shiftKey && event.altKey) {
-      action = mouseActions[button]["shift+alt"];
-    } else if (event.shiftKey && event.ctrlKey) {
-      action = mouseActions[button]["shift+ctrl"];
-    } else if (event.altKey && event.ctrlKey) {
-      action = mouseActions[button]["ctrl+alt"];
-    } else if (event.ctrlKey) {
-      action = mouseActions[button]["ctrl"];
-    } else if (event.shiftKey) {
-      action = mouseActions[button]["shift"];
-    } else if (event.altKey) {
-      action = mouseActions[button]["alt"];
-    }
-
-    return action;
-  }
-
-  function canvasMouseClick(event, mouse) {
-    clearPreviewJulia();
-    var select = $("select");
-
-    //Convert mouse coords into fractal coords
-    var point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
-
-    var action = getCustomAction(event);
-
-    if (action) {
-      //Set point to assigned field
-      if ($(action + "0")) {
-        $(action + "0").value = point.re;
-        $(action + "1").value = point.im;
-        fractal.applyChanges();
-      }
-    } else {
-      //Selection box?
-      if (select.style.display == 'block') {
-
-        //Ignore if too small a region selected
-        if (select.w > 5 && select.h > 5) {
-          //Get element offset in document
-          //var offset = findElementPos(mouse.element);
-          //Convert coords to position relative to element
-          //select.x -= offset[0];
-          //select.y -= offset[1];
-          //Get centre of selection in fractal coords
-          var centre = fractal.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
-          //Adjust centre position to match mouse left click
-          fractal.setOrigin(centre);
-          //Adjust zoom by factor of element width to selection
-          fractal.applyZoom(mouse.element.width / select.w);
-        }
-      } else if (event.button == 0) {
-        //Adjust centre position to match mouse left click
-        fractal.setOrigin(point);
-      } else if (event.button > 0) {
-        //Right-click, not dragging
-        if (event.button == 2 && !mouse.dragged) {
-          //Switch to julia set at selected point
-          fractal.selectPoint(point);
-          //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
-          if (fractal.julia) consoleWrite("Julia set @ (" + fractal.selected.re.toFixed(8) + ", " + fractal.selected.im.toFixed(8) + ")");
-        } else {
-          //return true;
-        }
-      }
-    }
-
-    select.style.display = 'none';
-    fractal.copyToForm();
-    fractal.draw();
-  }
-
-  function canvasMouseDown(event, mouse) {
-    return false;
-  }
-
-  function drawPreviewJulia() {
-    var canvas = $("fractal-canvas");
-    mouse = canvas.mouse;
-
-    julia.point = mouse.point;
-    julia.x = mouse.x;
-    julia.y = fractal.webgl ? canvas.height - mouse.y : mouse.y;
-    julia.w = 250;
-    julia.h = Math.round(250 * canvas.height / canvas.width);
-    if (mouse.x > canvas.width - julia.w) julia.x -= julia.w;
-    if (fractal.webgl && mouse.y < canvas.height - julia.h) julia.y -= julia.h; 
-    if (fractal.webcl && mouse.y > canvas.height - julia.h) julia.y -= julia.h; 
-
-    fractal.selectPoint(julia.point);
-    fractal.renderViewport(julia.x, julia.y, julia.w, julia.h);
-    fractal.selectPoint();
-  }
-
-  function clearPreviewJulia() {
-    if (!julia) return;
-    $('previewbtn').innerHTML = "Show Preview"
-    var canvas = $("fractal-canvas");
-    clearTimeout(julia.timeout);
-    document.mouse.moveUpdate = false;
-      $S("fractal-canvas").backgroundImage = "url('media/bg.png')";
-      $S("background").display = "none";
-    julia = null;
-    if (fractal.webcl) fractal.webcl.setViewport(0, 0, canvas.width, canvas.height);
-    fractal.draw();
-  }
-
-  function showPreviewJulia() {
-    julia = {};
-    //WebGL implicitly clears the canvas, unless preserveDrawingBuffer requested 
-    //(which apparently is a performance problem on some platforms) so copy fractal
-    //image into background while rendering julia set previews
-    $("background").src = fractal.imagedata;
-    $S("background").display = "block";
-    $S("fractal-canvas").backgroundImage = "none";
-    document.mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
-    drawPreviewJulia();
-  }
-
-  function canvasMouseMove(event, mouse) {
-    //Mouseover processing
-      mouse.point = new Aspect(0, 0, 0, 0);
-    if (!fractal || showgallery) return true;
-    if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
-    {
-      //Convert mouse coords into fractal coords
-      mouse.point = fractal.origin.convert(mouse.x, mouse.y, mouse.element);
-      var coord = new Aspect(mouse.point.re + fractal.origin.re, mouse.point.im + fractal.origin.im, 0, 0);
-      $("coords").innerHTML = "&nbsp;re: " + coord.re.toFixed(8) + " im: " + coord.im.toFixed(8);
-
-      //Constantly updated mini julia set rendering
-      if (julia && !fractal.julia) {
-        drawPreviewJulia();
-        return;
-      }
-    }
-
-    if (!mouse.isdown) return true;
-
-    //Right & middle buttons: drag to scroll
-    if (mouse.button > 0) {
-      // Set the scroll position
-      window.scrollBy(-mouse.deltaX, -mouse.deltaY);
-      return true;
-    }
-
-    //Drag processing
-    var select = $("select");
-    var main = $("main");
-    select.style.display = 'block';
-
-    //Constrain selection size to canvas aspect ratio
-    select.w = Math.abs(mouse.deltaX)
-    var ratio = mouse.element.width / select.w;
-    select.h = mouse.element.height / ratio;
-
-    if (mouse.deltaX < 0)
-      select.x = mouse.x;
-    else
-      select.x = mouse.x - select.w;
-
-    var offset = findElementPos(main);
-    if (mouse.deltaY < 0)
-      select.y = mouse.lastY - select.h - offset[1];
-    else
-      select.y = mouse.lastY - offset[1];
-
-    //Copy to style to set positions
-    select.style.left = select.x + "px";
-    select.style.top = select.y + "px";
-    select.style.width = select.w + "px";
-    select.style.height = select.h + "px";
-
-    $("coords").innerHTML = select.style.width + "," + select.style.height;
-  }
-
-  function canvasMouseWheel(event, mouse) {
-    var action = getCustomAction(event, "wheel");
-    //alert(action.id);
-    if (julia || !(event.shiftKey || event.altKey || event.ctrlKey)) {
-      // Zoom
-      action = new WheelAction(null, 0);
-      var zoom;
-      if (event.spin < 0)
-         zoom = 1/(-event.spin * 1.1);
-      else
-         zoom = event.spin * 1.1;
-
-      if (julia) {
-         fractal.savePos.zoom *= zoom;
-         drawPreviewJulia();
-         return;
-      } else {
-        fractal.applyZoom(zoom);
-        //Update form fields
-        fractal.copyToForm();
-      }
-    }
-
-    if (!action) return true; //Default browser action
-
-    //Assign field value
-    if (action.id && $(action.id))
-      $(action.id).value = parseReal($(action.id).value, 1) + event.spin * action.value;
-
-    fractal.applyChanges();
-  }
-
 /////////////////////////////////////////////////////////////////////////
 //Editor windows, data passing, saving & loading
 
@@ -1626,120 +1263,220 @@ var editorFilename;
   }
 
 /////////////////////////////////////////////////////////////////////////
-//Colour picker functions
 
-function handleFormMouseDown(event) {
-  //Event delegation from parameters form to edit colour params
-  event = event || window.event;
-  if (event.target.className == "colour") colours.edit(event.target);
-  if (event.target.type == 'text' || event.target.type == 'number') {
-    //Assigning actions to fields? (unfinished?)
-    //Parameter values
-    var types = ["base", "fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
-    for (t in types) {
-      var params = fractal[types[t]].currentParams;
-      var field;
-      if (params)
-        field = params.getField(event.target.id);
-    }
-
-    //Assign function to selected field
-    if (event.shiftKey || event.altKey || event.ctrlKey) {
-      var action = "";
-      var button = "wheel"
-      var target = event.target.id;
-      var value = 0;
-
-      if (event.shiftKey && event.altKey && event.ctrlKey) {
-        action = "shift+ctrl+alt";
-      } else if (event.shiftKey && event.altKey) {
-        action = "shift+alt";
-      } else if (event.shiftKey && event.ctrlKey) {
-        action = "shift+ctrl";
-      } else if (event.altKey && event.ctrlKey) {
-        action = "ctrl+alt";
-      } else if (event.ctrlKey) {
-        action = "ctrl";
-      } else if (event.shiftKey) {
-        action = "shift";
-      } else if (event.altKey) {
-        action = "alt";
+  function handleFormMouseDown(event) {
+    //Event delegation from parameters form to edit colour params
+    event = event || window.event;
+    if (event.target.className == "colour") colours.edit(event.target);
+    if (event.target.type == 'text' || event.target.type == 'number') {
+      //Assigning actions to fields? (unfinished?)
+      //Parameter values
+      var types = ["base", "fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
+      for (t in types) {
+        var params = fractal[types[t]].currentParams;
+        var field;
+        if (params)
+          field = params.getField(event.target.id);
       }
 
-      //Detect two-component (complex number) field
-      if (/_[01]$/i.exec(event.target.id)) {
-        if (event.button == 0) button = "left";
-        else if (event.button == 2) button = "right";
-        else button = "middle";
-        target = event.target.id.slice(0, event.target.id.length-1);
-        if (confirm("Assign position value on [" + action + "] + mouse " + button + "-click to selected field?"))
-          mouseActions[button][action] = target;
-        else {
-          var value = prompt("Assign action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 0.1);
-          if (value) mouseActions["wheel"][action] = new WheelAction(event.target.id, value);
-          return false;
+      //Assign function to selected field
+      if (event.shiftKey || event.altKey || event.ctrlKey) {
+        var action = "";
+        var button = "wheel"
+        var target = event.target.id;
+        var value = 0;
+
+        if (event.shiftKey && event.altKey && event.ctrlKey) {
+          action = "shift+ctrl+alt";
+        } else if (event.shiftKey && event.altKey) {
+          action = "shift+alt";
+        } else if (event.shiftKey && event.ctrlKey) {
+          action = "shift+ctrl";
+        } else if (event.altKey && event.ctrlKey) {
+          action = "ctrl+alt";
+        } else if (event.ctrlKey) {
+          action = "ctrl";
+        } else if (event.shiftKey) {
+          action = "shift";
+        } else if (event.altKey) {
+          action = "alt";
         }
 
-      } else {
-        //Get increment amount for scroll wheel actions...
-        var value = prompt("Assigning action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 1);
-        if (value) mouseActions["wheel"][action] = new WheelAction(target, value);
-        return false;
+        //Detect two-component (complex number) field
+        if (/_[01]$/i.exec(event.target.id)) {
+          if (event.button == 0) button = "left";
+          else if (event.button == 2) button = "right";
+          else button = "middle";
+          target = event.target.id.slice(0, event.target.id.length-1);
+          if (confirm("Assign position value on [" + action + "] + mouse " + button + "-click to selected field?"))
+            mouseActions[button][action] = target;
+          else {
+            var value = prompt("Assign action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 0.1);
+            if (value) mouseActions["wheel"][action] = new WheelAction(event.target.id, value);
+            return false;
+          }
+
+        } else {
+          //Get increment amount for scroll wheel actions...
+          var value = prompt("Assigning action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 1);
+          if (value) mouseActions["wheel"][action] = new WheelAction(target, value);
+          return false;
+        }
       }
     }
+    return true;
   }
-  return true;
-}
 
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
-function fileSelected(files) {
-  var callback = loadFile;
-  if (filetype == 'palette') callback = fractal.loadPalette;
-  if (filetype == 'formula') callback = fractal.importFormula;
-  if (filetype == 'session') {
-    if (!confirm('Loading new session. This will overwrite everything!')) return;
-    callback = importState;
-  }
-  filesProcess(files, callback);
-}
-
-function filesProcess(files, callback) {
-  // Check for the various File API support.
-  if (window.File && window.FileReader) { // && window.FileList) {
-    //All required File APIs are supported.
-    for (var i = 0; i < files.length; i++) {
-      var file = files[i];
-      //User html5 fileReader api (works offline)
-      var reader = new FileReader();
-
-      // Closure to capture the file information.
-      reader.onload = (function(file) {
-        return function(e) {
-          //alert(e.target.result);
-          callback(e.target.result, file.name);
-        };
-      })(file);
-
-      // Read in the file (AsText/AsDataURL/AsArrayBuffer/AsBinaryString)
-      reader.readAsText(file);
+  function fileSelected(files) {
+    var callback = loadFile;
+    if (filetype == 'palette') callback = fractal.loadPalette;
+    if (filetype == 'formula') callback = fractal.importFormula;
+    if (filetype == 'session') {
+      if (!confirm('Loading new session. This will overwrite everything!')) return;
+      callback = importState;
     }
-  } else {
-    alert('The File APIs are not fully supported in this browser.');
+    filesProcess(files, callback);
   }
-}
 
-function loadFile(source, filename) {
-  if (filename.indexOf(".ini") > -1) {
-    fractal.iniLoader(source);
-    filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
-    fractal.applyChanges();
-  } else {
-      hideGallery();
-    fractal.load(source);
+  function filesProcess(files, callback) {
+    // Check for the various File API support.
+    if (window.File && window.FileReader) { // && window.FileList) {
+      //All required File APIs are supported.
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        //User html5 fileReader api (works offline)
+        var reader = new FileReader();
+
+        // Closure to capture the file information.
+        reader.onload = (function(file) {
+          return function(e) {
+            //alert(e.target.result);
+            callback(e.target.result, file.name);
+          };
+        })(file);
+
+        // Read in the file (AsText/AsDataURL/AsArrayBuffer/AsBinaryString)
+        reader.readAsText(file);
+      }
+    } else {
+      alert('The File APIs are not fully supported in this browser.');
+    }
   }
-  //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
-  fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
-  $('nameInput').value = fractal.name;
-}
 
+  function loadFile(source, filename) {
+    if (filename.indexOf(".ini") > -1) {
+      fractal.iniLoader(source);
+      filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
+      fractal.applyChanges();
+    } else {
+        hideGallery();
+      fractal.load(source);
+    }
+    //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
+    fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
+    $('nameInput').value = fractal.name;
+  }
+
+  //Status - logged in, selected values
+  /**
+   * @constructor
+   */
+  function Status() {
+    this.loggedin = false;
+    this.offline = null;
+    this.session = 0;
+    this.formulae = 0;
+    this.fractal = -1;
+  }
+
+  function consoleDebug(str) {
+    if (debug) consoleWrite(str);
+    //alert(" called by: " + arguments.callee.caller);
+  }
+
+  function consoleWrite(str) {
+    var console = $('console');
+    console.innerHTML += "<div class='message'>" + str + "</div>";
+    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
+  }
+
+  function consoleClear() {
+    var console = $('console');
+    console.innerHTML = '';
+  }
+
+  function record(state) {
+    recording = state;
+    var canvas = $("fractal-canvas");
+    canvas.mouse.wheelTimer = !recording;
+    if (recording) {
+      //Ensure a multiple of 2
+      if (fractal.width % 2 == 1) fractal.width -= 1;
+      if (fractal.height % 2 == 1) fractal.height -= 1;
+    }
+    $('recordOn').className = recording ? 'selected_item' : '';
+    $('recordOff').className = !recording ? 'selected_item' : '';
+  }
+
+  function outputFrame() {
+    var canvas = $("fractal-canvas");
+    var data = canvas.toDataURL("image/png").substring(22);  //Strip from start: "data:image/png;base64,"
+    document.body.style.cursor = "wait";
+    ajaxPost("http://localhost:8080/frame", data, frameDone);
+  }
+
+  function frameDone(response) {
+    document.body.style.cursor = "default";
+    consoleDebug("Request sent");
+  }
+
+  //Save values of all selected parameters for use in scripting
+  function ParamVals(paramset) {
+      for (key in paramset) {
+        if (typeof(paramset[key]) == "object" && paramset[key].type != undefined)
+          this[key] = paramset[key].value; 
+      }
+    }
+
+  //Script object, passed source code inserted at the step() function
+  function Script(source) {
+    this.count = 1;
+    this.step = 1;
+    this.step = Function(source);
+    this.fractal = new ParamVals(fractal.fractal.currentParams);
+    this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
+    this.postTransform = new ParamVals(fractal.post_transform.currentParams);
+    this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
+    this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
+  }
+
+  function runScript() {
+    //Run an animation script
+    var script = new Script(sources["include/script.js"])
+
+    function next() {
+      script.step();
+      if (script.count < script.steps) {
+        script.count++;
+        window.requestAnimationFrame(next);
+      }
+    }
+
+    next();
+  }
+
+  var timer;
+  function timeDraw() {
+    timer = new Date().getTime();
+    window.requestAnimationFrame(logTime);
+  }
+
+  function logTime() {
+    var elapsed = new Date().getTime() - timer;
+    if (elapsed < 50) 
+      window.requestAnimationFrame(logTime); //Not enough time, assume triggered too early, try again
+    else
+      consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
+  }

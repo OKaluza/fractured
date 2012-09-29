@@ -44,10 +44,16 @@ function ajaxReadFile(filename, callback, nocache, progress)
   http.send(null); 
 }
 
-function readURL(url) {
+function readURL(url, nocache) {
   //Read url (synchronous)
   var http = new XMLHttpRequest();
-  http.open('GET', url, false);
+  //Add date to url to prevent caching
+  if (nocache)
+  {
+    var d = new Date();
+    http.open("GET", url + "?d=" + d.getTime(), false); 
+  } else
+    http.open('GET', url, false);
   http.overrideMimeType('text/plain; charset=x-user-defined');
   http.send(null);
   if (http.status != 200) return '';

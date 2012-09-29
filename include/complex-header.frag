@@ -1,7 +1,4 @@
 //Maths library prototypes
-#define _C(x) complex(real(x),0.0)
-#define _CI(x) complex(0.0,real(x))
-#define _I complex(0.0,1.0)
 #define ident(args) args
 #define zero(args) 0
 #define czero(args) complex(0.0,0.0)
