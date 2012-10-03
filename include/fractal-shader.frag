@@ -10,7 +10,8 @@ GLSL_MAIN
   complex z_1;              //Value of z(n-1)
   complex z_2;              //Value of z(n-2)
   int count = 0;            //Step counter
-  bool escaped, converged;  //Bailout flags
+  bool escaped = false;     //Bailout flags
+  bool converged = false;
 
   int limit = iterations;   //Max iterations
   rgba colour = rgba(0.0,0.0,0.0,0.0);
@@ -64,12 +65,10 @@ GLSL_MAIN
     }
 
     //Check bailout conditions
-    escaped = true;
     ---ESCAPED---
-    escaped = false;
-    converged = true;
     ---CONVERGED---
-    converged = false;
+
+    if (escaped || converged) break;
 
     //Colour calcs...
     {

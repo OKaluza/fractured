@@ -5,9 +5,11 @@
 @:power = expression(p);
 //Bailout
 @:bailout = expression(escape);
+//Log function
+@:lfn = real_function(log);
 
-real :il = 1.0/log(@:power);  //Inverse log of (power)
-real :lp = log(log(@:bailout)/2.0);
+real :il = 1.0/:lfn(@:power);  //Inverse log of (power)
+real :lp = :lfn(:lfn(@:bailout)/2.0);
 real :sum = 10.0;
 real :sum2 = 5.0;
 real :ac = 0.0;
@@ -29,7 +31,7 @@ calc:
 result:
   :sum /= real(count);
   :sum2 /= real(count-1);
-  real f = :il * (:lp - log(log(cabs(z))));
+  real f = :il * (:lp - :lfn(:lfn(cabs(z))));
   real idx = :sum2 + (:sum - :sum2) * (f+1.0);
   colour = gradient(:repeat * idx);
 

@@ -340,7 +340,7 @@ ul.auto-toc {
 <p>I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU.
 There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace where I could store my work on a server and access it anywhere.</p>
 <p>I originally started using Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far I could take the paradigm of a standalone desktop app running in a web browser.</p>
-<p>Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone will find it useful.</p>
+<p>Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone else will find it useful.</p>
 <p>If you have any feedback email me at: owen (at) ozone.id.au</p>
 <div class="section" id="acknowledgments">
 <h2><a class="toc-backref" href="#id2">Acknowledgments</a></h2>
@@ -361,6 +361,7 @@ There are many great fractal programs around, but, from my deranged perspective,
 <li>A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.</li>
 <li>Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: <a class="reference external" href="http://webcl.nokiaresearch.com/">http://webcl.nokiaresearch.com/</a></li>
 <li><em>Note</em> My development platform is Linux and Firefox. Other platforms have not all been well tested yet. Everything should work fine though (in theory).</li>
+<li><em>Note 2</em> On Windows, browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this &quot;feature&quot; is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in <a class="reference external" href="about:config">about:config</a>, in Chrome: run with arguments: –use-gl=desktop).</li>
 </ul>
 </div>
 </div>
@@ -645,8 +646,8 @@ section:
 <h3><a class="toc-backref" href="#id27">Fractal Formula sections</a></h3>
 <ul class="simple">
 <li><em>znext:</em> the calculation of the next z value, z(n+1), the core of the fractal formula processing. To define a fractal formula that does anything this section must be defined, but it may be defined as a <em>parameter</em> of type <em>expression</em> named znext, which will simply execute the code resulting from the entered mathematical expression in this code section. Otherwise you must define the znext section, you can define znext as a parameter or a code section but not both.</li>
-<li><em>escaped:</em> define an escape bailout test, if <strong>break</strong> is called here the fractal iteration halts and the escape condition will be set. This section can also be replaced by a parameter named &quot;escape&quot; containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).</li>
-<li><em>converged:</em> define a convergent bailout test, as escape except when triggered the converge condition will be set. This section can also be replaced by a parameter named &quot;converge&quot; containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).</li>
+<li><em>escaped:</em> define an escape bailout test, set the <strong>escaped</strong> built in variable to true here if your bailout condition is met, false otherwise, eg: escaped = (norm(z) &gt; 4.0); if escaped is set to true, the fractal iteration halts. This section can also be replaced by a parameter named &quot;escape&quot; containing a numeric value (which will be used with a default bailout function) or an expression parameter (which will bailout if it evaluates to true).</li>
+<li><em>converged:</em> define a convergent bailout test, same as escape except should set the <strong>converged</strong> built in to true when triggered. This section can also be replaced by a parameter named &quot;converge&quot; containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).</li>
 </ul>
 </div>
 <div class="section" id="transform-formula-sections">

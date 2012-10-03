@@ -1,8 +1,8 @@
 //Gaussian integers
 //Palette repeat
 @:repeat = real(1);
-//Mode
-@:mode = list('round|trunc|floor|ceil');
+//Round Mode
+@:rmode = define('round|trunc|floor|ceil');
 //Colour by
 @:colourby = list('min dist|iteration @ min|angle @ min|max dist|iteration @ max|angle @ max|avg dist|min/mean/max angle|max/min ratio');
 //Normalisation
@@ -35,15 +35,8 @@ init:
     :normfac = :normfunc(z); //f(z) normalisation
 
 calc:
-  //Mode = round/truncate/floor/ceiling
-  if (:mode == 0)
-    :r = cabs(z - mul(round(div(z,:normfac)), :normfac));
-  if (:mode == 1)
-    :r = cabs(z - mul(trunc(div(z,:normfac)), :normfac));
-  if (:mode == 2)
-    :r = cabs(z - mul(floor(div(z,:normfac)), :normfac));
-  if (:mode == 3)
-    :r = cabs(z - mul(ceil(div(z,:normfac)), :normfac));
+  //Round Mode = round/truncate/floor/ceiling
+  :r = cabs(z - mul(:rmode(div(z,:normfac)), :normfac));
 
   :total = :total + :r;
   :rave = :total / real(count);

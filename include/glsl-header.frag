@@ -6,7 +6,7 @@ precision highp float;
 #define OPENCL_MAIN 
 
 #define set_result(c) gl_FragColor = c;
-#define __OVERLOADABLE__ 
+#define _call_
 #define real float
 #define complex vec2
 #define rgba vec4
@@ -29,15 +29,15 @@ uniform rgba background;
 varying complex coord;
 
 //GLSL only maths library prototypes
-real __OVERLOADABLE__ log10(in real r);
-real __OVERLOADABLE__ trunc(in real x);
-real __OVERLOADABLE__ round(in real x);
-real __OVERLOADABLE__ cosh(in real x);
-real __OVERLOADABLE__ tanh(in real x);
-real __OVERLOADABLE__ sinh(in real x);
-real __OVERLOADABLE__ acosh(in real x);
-real __OVERLOADABLE__ atanh(in real x);
-real __OVERLOADABLE__ asinh(in real x);
-complex __OVERLOADABLE__ round(in complex z);
-complex __OVERLOADABLE__ trunc(in complex z);
+real _call_ log10(in real r);
+real _call_ trunc(in real x);
+real _call_ round(in real x);
+real _call_ cosh(in real x);
+real _call_ tanh(in real x);
+real _call_ sinh(in real x);
+real _call_ acosh(in real x);
+real _call_ atanh(in real x);
+real _call_ asinh(in real x);
+complex _call_ round(in complex z);
+complex _call_ trunc(in complex z);
 

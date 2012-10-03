@@ -51,6 +51,7 @@
                 <li><span onclick="openEditor('include/fractal-shader.frag');">Body Template</span></li>
                 <li><span onclick="openEditor('include/complex-math.frag');">Complex Library</span></li>
                 <li><span onclick="openEditor('include/shader2d.vert');">Vertex Shader</span></li>
+                <li><span onclick="openEditor('generated.hlsl');">Generated HLSL</span></li>
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
@@ -124,8 +125,9 @@
                   <ul id="formulae-private" class="selectlist">
                   </ul>
                 </li>
-                <li><span onclick="uploadFormulaFile(1);">Publish</span></li>
-                <li><span onclick="uploadFormulaFile(0);">Upload</span></li>
+                <li><span onclick="uploadFormulaSet(1);">Publish</span></li>
+                <li><span onclick="uploadFormulaSet(0);">Upload</span></li>
+                <li><span onclick="exportFormulaSet();">Export</span></li>
               </ul>
             </li>
             <li><hr></li>
@@ -142,6 +144,7 @@
                 <li><span onclick="filetype='fractal'; $('fileupload').click();">Fractal</span></li>
                 <li><span onclick="filetype='palette'; $('fileupload').click();">Palette</span></li>
                 <li><span onclick="filetype='formula'; $('fileupload').click();">Formula</span></li>
+                <li><span onclick="filetype='formulae'; $('fileupload').click();">Formula Set</span></li>
               </ul>
             </li>
             <li><hr></li>

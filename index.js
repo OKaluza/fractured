@@ -1,3 +1,9 @@
+//TODO:
+//Import/download formula set: not saved in session unless page reloaded, should replace session formula set immediately
+//Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
+// - possibly reconsider saving includes in session when stored on server
+// Delete thumbnails before regen, if fail gen recover gracefully
+
 //Globals
 var sources = null;
 var fractal;
@@ -708,7 +714,7 @@ var thumbnails = [];
     $("popupmessage").appendChild(link);
   }
 
-  function uploadFormulaFile(shared) {
+  function uploadFormulaSet(shared) {
     var formdata = new FormData();
     formdata.append("public", shared);
     //If selected, give option to update existing
@@ -757,6 +763,10 @@ var thumbnails = [];
 
   function exportFormulaFile(filename, type, source) {
     exportFile(filenameToName(filename)[0] + "." + categoryToType(type) + ".formula", "text/fractal-formula", source);
+  }
+
+  function exportFormulaSet() {
+    exportFile("fractured.formulae", "text/fractal-formulae", JSON.stringify(formula_list));
   }
 
   function exportPaletteFile() {
@@ -1333,6 +1343,7 @@ var editorFilename;
     var callback = loadFile;
     if (filetype == 'palette') callback = fractal.loadPalette;
     if (filetype == 'formula') callback = fractal.importFormula;
+    if (filetype == 'formulae') callback = importFormulae;
     if (filetype == 'session') {
       if (!confirm('Loading new session. This will overwrite everything!')) return;
       callback = importState;

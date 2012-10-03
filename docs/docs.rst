@@ -18,7 +18,7 @@ There are many great fractal programs around, but, from my deranged perspective,
 
 I originally started using Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far I could take the paradigm of a standalone desktop app running in a web browser.
 
-Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone will find it useful.
+Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone else will find it useful.
 
 If you have any feedback email me at: owen (at) ozone.id.au
 
@@ -39,6 +39,7 @@ Requirements
 - A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
 - Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ 
 - *Note* My development platform is Linux and Firefox. Other platforms have not all been well tested yet. Everything should work fine though (in theory).
+- *Note 2* On Windows, browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this "feature" is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop).
 
 Workspace
 =========
@@ -276,7 +277,7 @@ The format of a definition is:
 - *@* Indicates to the formula parser that this is a parameter definition, must start with this symbol.
 - *Description* Enter the information you want to appear in the control label in this comment area on the line before the actual definition. This description can be left out, in which case the variable name will be used as a label instead.
 - *variable_name* Enter a variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number) this is the name by which you will use this parameters value in the formula code.
-- *type* the type of value: bool, int, uint, real, float, complex, rgba, list, real_function, complex_function, bailout_function or expression
+- *type* the type of value: bool, int, uint, real, float, complex, rgba, list, real_function, complex_function, bailout_function, expression or define
 - *default* the default value that is inserted for the parameter if it has not been edited.
 
 **Parameter types explained**
@@ -289,6 +290,7 @@ The format of a definition is:
 - *complex* a complex number value, represented as a real and imaginary value separated by a comma in code, appears as two number entries.
 - *rgba* a colour value, appears as a colour box which can be clicked on to bring up a colour picker
 - *list* a list of labels, the variable will be assigned a numeric value based on user selection from 0 to n-1 (where n is number of list items), appears as a drop down list.
+- *define* a list of labels, the name of the parameter will be defined literally to the value of the selected entry (as #define param_name selected_value in generated code)
 - *real_function* a drop down list of functions returning real number values
 - *complex_function* a drop down list of functions returning complex number values
 - *bailout_function* a drop down list of bailout functions
@@ -330,8 +332,8 @@ Fractal Formula sections
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 - *znext:* the calculation of the next z value, z(n+1), the core of the fractal formula processing. To define a fractal formula that does anything this section must be defined, but it may be defined as a *parameter* of type *expression* named znext, which will simply execute the code resulting from the entered mathematical expression in this code section. Otherwise you must define the znext section, you can define znext as a parameter or a code section but not both.
-- *escaped:* define an escape bailout test, if **break** is called here the fractal iteration halts and the escape condition will be set. This section can also be replaced by a parameter named "escape" containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).
-- *converged:* define a convergent bailout test, as escape except when triggered the converge condition will be set. This section can also be replaced by a parameter named "converge" containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).
+- *escaped:* define an escape bailout test, set the **escaped** built in variable to true here if your bailout condition is met, false otherwise, eg: escaped = (norm(z) > 4.0); if escaped is set to true, the fractal iteration halts. This section can also be replaced by a parameter named "escape" containing a numeric value (which will be used with a default bailout function) or an expression parameter (which will bailout if it evaluates to true).
+- *converged:* define a convergent bailout test, same as escape except should set the **converged** built in to true when triggered. This section can also be replaced by a parameter named "converge" containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).
 
 Transform Formula sections
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

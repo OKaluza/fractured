@@ -298,7 +298,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       "sampler1D sampler1DShadow sampler2D sampler2DShadow sampler3D samplerCube " + 
       "vec2 vec3 vec4 void struct " + 
       "complex real RGB rgba " + //Custom types for fractals 
-      "list real_function complex_function bailout_function expression"),
+      "list real_function complex_function bailout_function expression define"),
     stdlib: words("abs acos all any asin atan " +
       "ceil clamp cos cross dFdx dFdy " +
       "degrees distance dot equal exp exp2 " +
@@ -316,7 +316,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       "texture3DProj texture3DProjLod textureCube textureCubeLod " +
       //Fractal addons...
       "ident zero czero gradient mul div add sub inv sqr cube cpow " + 
-      "loge log10 manhattan norm cabs arg neg conj polar " + 
+      "ln lnr log10 manhattan norm cabs arg neg conj polar " + 
       "cosh tanh sinh acosh atanh asinh cexp csin ccos ctan casin cacos " + 
       "catan csinh ccosh ctanh casinh cacosh catanh csqrt csqrt2 equals " + 
       "trunc round trunc round flip sqr imag gamma"),
