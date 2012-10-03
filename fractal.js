@@ -4,18 +4,18 @@
   var WEBCL64 = 2;
   var renderer = WEBGL;
   //Regular expressions
-  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression)\((.*)\);/gi;
+  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression|define)\((.*)\);/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\s*,\s*([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\)?/;
 
   //Take real, return real
-  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "ident", "log", "log10", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
+  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "ident", "log", "log10", "lnr", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
   //Take complex, return complex (including real functions that work component-wise)
-  var complexfunctions = ["abs", "acos", "cacos", "cacosh", "asin", "casin", "casinh", "atan", "catan", "catanh", "ceil", "conj", "cos", "ccos", "ccosh", "exp", "cexp", "flip", "floor", "ident", "log", "loge", "neg", "inv", "round", "sin", "csin", "csinh", "sqr", "sqrt", "tan", "ctan", "ctanh", "trunc", "czero"];
+  var complexfunctions = ["abs", "acos", "cacos", "cacosh", "asin", "casin", "casinh", "atan", "catan", "catanh", "ceil", "conj", "cos", "ccos", "ccosh", "exp", "cexp", "flip", "floor", "ident", "log", "ln", "neg", "inv", "round", "sin", "csin", "csinh", "sqr", "sqrt", "tan", "ctan", "ctanh", "trunc", "czero"];
   //Take complex, return real
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
-  //atan2=arg, cmag=|z|=norm, recip=inv, log=loge, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
+  //atan2=arg, cmag=|z|=norm, recip=inv, log=ln, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
   var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
 
@@ -217,6 +217,23 @@
         this.typeid = 6;
         this.value = value;
         break;
+      case 'define':
+        //Similar to list but #define instead of assigning numeric value of list index
+        this.typeid = 7;
+        var listmatch = listreg.exec(value);
+        if (!listmatch) {
+          //????Assume parsing a selection value into a prefined list
+          this.value = value;
+        } else {
+          //Populate list items...'entry=value|entry=value'
+          var items = listmatch[1].split("|");
+          this.list = [];
+          for (var i = 0; i < items.length; i++) {
+            this.list.push(items[i]);
+          }
+          this.value = items[0]; //Initial selection is first item
+        }
+        break;
     }
     //consoleDebug(this.label + " parsed as " + this.type + " value = " + this.value);
   }
@@ -273,6 +290,7 @@
     type = this.type;
     if (this.type == 'list') type = 'int';
     if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
+    if (this.type == 'define') return comment + "#define " + key + " " + this.value + "\n";
     if (this.type == 'expression') return comment + "#define " + key + " " + this.toGLSL() + "\n";
     if (this.type.indexOf('function') > 0) return comment + "#define " + key + "(args) " + this.value + "(args)\n";
     if (this.uniform)
@@ -303,6 +321,7 @@
         break;
       case 4: //Function name
       case 6: //Expression
+      case 7: //Define list
         this.value = this.input.value.trim();
         break;
       case 5: //RGBA colour
@@ -550,6 +569,14 @@
           input.setAttribute("spellcheck", false);
           spanin.appendChild(input);
           break;
+        case 7: 
+          //List of literal values (val1|val2 etc...)
+          input = document.createElement("select");
+          for (k in this[key].list)
+            input.options[input.options.length] = new Option(this[key].list[k]);
+          input.value = this[key].value;
+          spanin.appendChild(input);
+          break;
       }
       //Save the field element
       this[key].input = input;
@@ -660,9 +687,17 @@
     if (this.selected == "none" || this.selected == "same") return "";
     var key = this.getkey();
     if (!key) return "";
-    if (formula_list[key])
+    if (formula_list[key]) {
+      //TEMPORARY HACK FOR OLD ESCAPE/CONVERGE TESTS and LOGE == LN
+      var source = formula_list[key].source.replace(/if \((.*)\) break;/g, "converged = ($1);");
+      var source = source.replace("loge", "ln");
+      if (source != formula_list[key].source) {
+        formula_list[key].source = source;
+        alert(source);
+      }
       return formula_list[key].source;
-    alert("No entry found: " + key);
+    }
+    consoleWrite("Formula Missing! No entry found for: " + key);
     return "";
   }
 
@@ -712,10 +747,10 @@
           converged_defined = false;
         } else if (this.currentParams["converge"].type == 'expression')
           //Expression converge param, insert the break test
-          sections["converged"] = "\n  if (converge) break;\n";
+          sections["converged"] = "\n  converged = (converge);\n";
         else
           //Numeric converge param, insert default test
-          sections["converged"] = "\n  if (bailtest(z) < converge) break;\n";
+          sections["converged"] = "\n  converged = (bailtest(z) < converge);\n";
       }
 
       if (sections["escaped"].length == 0) {
@@ -723,11 +758,11 @@
         if (!this.currentParams["escape"] || this.currentParams["escape"].type != 'expression') {
           //If no converged test either create a default bailout
           if (!converged_defined || this.currentParams["escape"]) {
-            sections["escaped"] = "\n  if (bailtest(z) > escape) break;\n";
+            sections["escaped"] = "\n  escaped = (bailtest(z) > escape);\n";
           }
         } else
           //Expression escape param, insert break test
-          sections["escaped"] = "\n  if (escape) break;\n";
+          sections["escaped"] = "\n  escaped = (escape);\n";
       }
 
       if (!this.currentParams["escape"]) sections["data"] += "\n#define escape 4.0\n";
@@ -1711,7 +1746,9 @@
                       "inside_colour" : this["inside_colour"].getParsedFormula()};
 
     //Add headers + core code template
-    var shader = sources[header] + sources["include/complex-header.frag"] + sources["include/fractal-shader.frag"];
+    //var shader = sources[header] + sources["include/complex-header.frag"] + sources["include/fractal-shader.frag"];
+    //Insert the complex maths library + core code template
+    var shader = sources[header] + sources["include/complex-math.frag"] + sources["include/fractal-shader.frag"];
 
     //Replace ---SECTION--- in template with formula code
     this.offsets = [];
@@ -1733,7 +1770,7 @@
     this.offsets.push(new LineOffset("(end)", "(end)", shader.split("\n").length));
 
     //Append the complex maths library
-    shader = shader + sources["include/complex-math.frag"];
+    //shader = shader + sources["include/complex-math.frag"];
 
     //Remove param declarations, replace with newline to preserve line numbers
     //shader = shader.replace(paramreg, "//(Param removed)\n");
@@ -1744,7 +1781,7 @@
     //shader = shader.replace(creg, "$1complex($2,$4)");
 
     //(...modified to also allow single variables, note: first pattern is to ignore function call match)
-    var creg = /([^a-zA-Z0-9_])\(([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\)/g
+    var creg = /([^a-zA-Z0-9_\)])\(([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\)/g
     shader = shader.replace(creg, "$1complex($2,$5)");
 
     //Finally replace any @ symbols used to reference params in code
@@ -1836,6 +1873,11 @@
       this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
       this.parseErrors(errors, /0:(\d+)/);
+      //Get HLSL source if available
+      if (debug) {
+        var angle = this.gl.getExtension("WEBGL_debug_shaders");
+        if (angle) sources["generated.hlsl"] = angle.getTranslatedShaderSource(this.program.fshader);
+      }
     } else if (this.webcl) {
       errors = this.webcl.buildProgram(source);
       this.parseErrors(errors, /:(\d+):/);

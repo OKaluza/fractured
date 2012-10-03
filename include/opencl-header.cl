@@ -13,6 +13,7 @@
 #endif
 
 #define OPENCL
+#define _call_ __OVERLOADABLE__ 
 #define rgba float4
 #define in const
 #define discard return (rgba)(0)
@@ -83,30 +84,25 @@ complex convert(int2 pos, int2 size, real zoom, real rotation)
    return rotate2d((complex)(re, im), -rotation);
 }
 
-__kernel void fractured(__global struct Input* input, read_only image2d_t palette, write_only image2d_t output)
+__kernel void sample(__global struct Input* input, read_only image2d_t palette, __global float4* temp, int j, int k)
 {
   int2 pos = (int2)(get_global_id(0), get_global_id(1));
   int2 size = (int2)(input->width, input->height);
   complex dims = (complex)(input->width, input->height);
   complex coord = input->origin + convert(pos, size, input->zoom, input->rotation);
 
-  //Draw and blend in multiple passes for anti-aliasing
-  rgba pixel = (rgba)(0);
-  for (int j=0; j<input->antialias; j++) {
-    for (int k=0; k<input->antialias; k++) {
-      complex offset = (complex)((real)j/(real)input->antialias-0.5, (real)k/(real)input->antialias-0.5);
-      pixel += calcpixel(coord, offset, input->julia, input->perturb, input->pixelsize, 
-                         dims, input->origin, input->selected, palette, input->background);
-    }
-  }
-  float aa = (float)input->antialias*(float)input->antialias;
-  pixel /= (rgba)(aa);
-  //pixel.x /= aa;
-  //pixel.y /= aa;
-  //pixel.z /= aa;
-  //pixel.w /= aa;
-  //rgba pixel = calcpixel(coord, input->antialias, input->julia, input->perturb, input->pixelsize, 
-  //                       dims, input->origin, input->selected, palette, input->background);
-  write_imageui(output, (int2)(pos.x, pos.y), (uint4)(255*pixel.x,255*pixel.y,255*pixel.z,255*pixel.w));
+  complex offset = (complex)((real)j/(real)input->antialias-0.5, (real)k/(real)input->antialias-0.5);
+  rgba pixel = calcpixel(coord, offset, input->julia, input->perturb, input->pixelsize, 
+                     dims, input->origin, input->selected, palette, input->background);
+
+  if (j==0 && k==0) temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] = (rgba)(0);
+  temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] += pixel;
 }
 
+__kernel void average(write_only image2d_t output, __global float4* temp, int passes)
+{
+  int2 pos = (int2)(get_global_id(0), get_global_id(1));
+  rgba pixel = temp[get_global_id(1)*get_global_size(0)+get_global_id(0)];
+  pixel /= (rgba)passes;
+  write_imageui(output, (int2)(pos.x, pos.y), (uint4)(255*pixel.x,255*pixel.y,255*pixel.z,255*pixel.w));
+}

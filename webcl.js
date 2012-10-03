@@ -56,10 +56,13 @@
              + ":  " 
              + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_LOG);
     }
-    this.kernel = this.program.createKernel("fractured");
-    this.kernel.setKernelArg (0, this.input);
-    this.kernel.setKernelArg (1, this.palette);
-    if (this.output) this.kernel.setKernelArg (2, this.output);
+    this.k_sample = this.program.createKernel("sample");
+    this.k_sample.setKernelArg(0, this.input);
+    this.k_sample.setKernelArg(1, this.palette);
+    if (this.temp) this.k_sample.setKernelArg(2, this.temp);
+    this.k_average = this.program.createKernel("average");
+    if (this.output) this.k_average.setKernelArg(0, this.output);
+    if (this.temp) this.k_average.setKernelArg(1, this.temp);
   }
 
   //Calculates global work size given problem size and thread count
@@ -81,7 +84,10 @@
     if (!this.viewport || this.viewport.width != this.global[0] || this.viewport.height != this.global[1]) {
       this.viewport = new Viewport(x, y, this.global[0], this.global[1]);
       this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, this.format, this.viewport.width, this.viewport.height, 0);
-      if (this.kernel) this.kernel.setKernelArg (2, this.output);
+      this.temp = this.ctx.createBuffer(WebCL.CL_MEM_READ_WRITE, this.global[0]*this.global[1]*4*4);
+      if (this.k_sample) this.k_sample.setKernelArg (2, this.temp);
+      if (this.k_average) this.k_average.setKernelArg(0, this.output);
+      if (this.k_average) this.k_average.setKernelArg(1, this.temp);
     } else {
       this.viewport.x = x;
       this.viewport.y = y;
@@ -94,10 +100,10 @@
     if (!this.queue) return;
     try {
       ctx_g = this.gradientcanvas.getContext("2d");
+      var outImage = this.ctx2d.createImageData(this.viewport.width, this.viewport.height);
       var gradient = ctx_g.getImageData(0, 0, this.gradientcanvas.width, 1);
 
       //Pass additional args
-      //this.kernel.setKernelArg (2, value, WebCL.types.FLOAT);
       var background = colours.palette.background;
       this.inBuffer[0] = fractal.origin.zoom;
       this.inBuffer[1] = fractal.origin.rotate;
@@ -122,12 +128,21 @@
       consoleDebug("WebCL: Global (" + this.global[0] + "x" + this.global[1] + 
                    ") Local (" + this.local[0] + "x" + this.local[1] + ")");
 
-      this.queue.enqueueNDRangeKernel(this.kernel, this.global.length, [], this.global, this.local, []);
-
-      var outImage = this.ctx2d.createImageData(this.viewport.width, this.viewport.height);
+      for (var j=0; j<antialias; j++) {
+        for (var k=0; k<antialias; k++) {
+          consoleDebug("Antialias pass ... " + j + " - " + k);
+          this.k_sample.setKernelArg(3, j);
+          this.k_sample.setKernelArg(4, k);
+          this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
+          this.queue.finish();
+        }
+      }
+      //Combine
+      consoleDebug("Combining samples...");
+      this.k_average.setKernelArg(2, antialias*antialias);
+      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
 
       this.queue.enqueueReadImage(this.output, false, [0,0,0], [this.viewport.width,this.viewport.height,1], 0, 0, outImage.data, []);
-
       this.queue.finish();
 
       this.ctx2d.putImageData(outImage, this.viewport.x, this.viewport.y);

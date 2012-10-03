@@ -5,12 +5,14 @@
 @:power = expression(p);
 //Bailout
 @:bailout = expression(escape);
+//Log function
+@:lfn = real_function(log);
 
 //Inverse log of (power)
-real :il = 1.0/log(:power);
-real :lp = log(log(@:bailout));
+real :il = 1.0/:lfn(:power);
+real :lp = :lfn(:lfn(@:bailout));
 
 result:
-  real mu = real(count) + (:lp - log(log(cabs(z)))) * :il;
+  real mu = real(count) + (:lp - :lfn(:lfn(cabs(z)))) * :il;
   colour = gradient(:repeat * mu / real(limit));
 

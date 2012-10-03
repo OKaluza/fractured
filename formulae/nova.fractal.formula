@@ -11,7 +11,7 @@
 @converge = real(0.00001);
 
 converged:
-  if (bailtest(z-z_1) < converge) break;
+  converged = (bailtest(z-z_1) < converge);
 
 //Reset, called immediately before iterating
 reset:
