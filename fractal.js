@@ -830,7 +830,6 @@
     this.canvas = document.createElement("canvas");
     this.canvas.id = "fractal-canvas"
     this.canvas.mouse = new Mouse(this.canvas, this);
-    this.canvas.mouse.wheelTimer = true;
     this.canvas.mouse.setDefault();
 
     //Remove existing canvas if any
@@ -1921,8 +1920,21 @@
     }
   }
 
+  Fractal.prototype.timeDraw = function() {
+    if (!window.requestAnimationFrame) return;
+    var timer = new Date().getTime();
+    function logTime() {
+      var elapsed = new Date().getTime() - timer;
+      if (elapsed < 50) 
+        window.requestAnimationFrame(logTime); //Not enough time, assume triggered too early, try again
+      else
+        consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
+    }
+    window.requestAnimationFrame(logTime);
+  }
+
   Fractal.prototype.draw = function(antialias) {
-    timeDraw();
+    this.timeDraw();
     if (antialias == undefined) antialias = this.antialias;
 
     //Set canvas size
@@ -2188,12 +2200,52 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       if (this.preview) {
          this.savePos.zoom *= zoom;
          drawPreviewJulia();
-         return;
       } else {
-        this.applyZoom(zoom);
-        //Update form fields
-        this.copyToForm();
+        //Zoom box processing
+        var select = $("select");
+
+        if (select.timer) clearTimeout(select.timer);
+        if (!select.zoom) select.zoom = 1.0;
+        if (!select.mouse) {
+          //Handle wheel events on select element too
+          select.mouse = mouse;
+          select.onmousewheel = handleMouseWheel;
+          if (select.addEventListener) select.addEventListener("DOMMouseScroll", handleMouseWheel, false);
+        }
+        select.zoom *= zoom;
+
+        //Constrain selection size to mouse.element aspect ratio
+        var z = select.zoom;
+        if (z > 1.0) {
+          z = 1.0 / z;
+          select.w = this.canvas.width * z;
+          select.h = this.canvas.height * z;
+          select.x = 0.5*(this.canvas.width - select.w);
+          select.y = 0.5*(this.canvas.height - select.h);
+        } else {
+          select.style.background = "transparent";
+          select.style.borderColor = "#EECC11";
+          select.x = select.y = 0;
+          select.w = this.canvas.width * z;
+          select.h = this.canvas.height * z;
+          select.style.borderLeftWidth = Math.round(0.5 * (this.canvas.width - select.w)) + "px";
+          select.style.borderRightWidth = select.style.borderLeftWidth;
+          select.style.borderTopWidth = Math.round(0.5 * (this.canvas.height - select.h)) + "px";
+          select.style.borderBottomWidth = select.style.borderTopWidth;
+        }
+
+        //Copy to style to set positions
+        select.style.left = select.x + "px";
+        select.style.top = select.y + "px";
+        select.style.width = select.w + "px";
+        select.style.height = select.h + "px";
+        select.style.display = 'block';
+
+        //Set timer
+        document.body.style.cursor = "wait";
+        select.timer = setTimeout('selectZoom();', 350);
       }
+      return false;
     }
 
     if (!action) return true; //Default browser action
@@ -2205,6 +2257,21 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     this.applyChanges();
   }
 
+  function selectZoom() {
+    //Zoom box processing
+    var select = $('select');
+    select.timer = null;
+    document.body.style.cursor = "default";
+    fractal.applyZoom(select.zoom);
+    //Update form fields
+    fractal.copyToForm();
+    fractal.applyChanges();
+    select.zoom = null;
+    select.style.display = 'none';
+    select.style.background = "#EECC11";
+    select.style.borderColor = "#596380";
+    select.style.borderWidth = "1px";
+  }
 /////////////////////////////////////////////////////////////////////////
 //Julia set preview window
   function drawPreviewJulia() {

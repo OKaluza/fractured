@@ -1,7 +1,5 @@
-window['mouseWheelTimeout'] = mouseWheelTimeout;
 
   var defaultMouse;
-  var mousetimer = null;
 
   //Handler class from passed functions
   /**
@@ -39,7 +37,6 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     this.slider = null;
     this.spin = 0;
     //Option settings...
-    this.wheelTimer = false;  //Timer before triggering wheel callback
     this.moveUpdate = false;  //Save mouse move origin once on mousedown or every move
 
     // for mouse scrolling in Firefox
@@ -190,7 +187,6 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
   }
  
   function handleMouseWheel(event) {
-    if (mousetimer) clearTimeout(mousetimer);
     var mouse = getMouse(event);
     if (!mouse || mouse.disabled) return true;
     mouse.update(event);
@@ -206,18 +202,7 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     event.spin = nDelta > 0 ? 1 : -1;
     mouse.spin += event.spin;
 
-    if (mouse.handler.wheel) {
-      //Set timer for 1/8 sec and accumulate spin
-      if (mouse.wheelTimer) { // && mouse.spin == 0) {
-        document.mouse.event = event; //Save event
-        document.body.style.cursor = "wait";
-        mousetimer = setTimeout('mouseWheelTimeout(document.mouse);', 200);
-        //setTimeout('mouseWheelTimeout(document.mouse);', 50);
-      }
-
-      if (!mouse.wheelTimer && mouse.spin != 0)
-        action = mouse.handler.wheel(event, mouse);
-    }
+    if (mouse.handler.wheel) action = mouse.handler.wheel(event, mouse);
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
@@ -235,15 +220,4 @@ window['mouseWheelTimeout'] = mouseWheelTimeout;
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action;
   } 
-
-  function mouseWheelTimeout(mouse) {
-    //Turn hourglass off
-    document.body.style.cursor = "default";
-    mouse.event.spin = mouse.spin;
-    mouse.spin = 0;
-    mousetimer = null;
-    //Call implementation handler if changed..
-    if (mouse.event.spin != 0) mouse.handler.wheel(mouse.event, mouse);
-  }
-
 
