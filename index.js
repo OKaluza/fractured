@@ -1,8 +1,8 @@
 //TODO:
-//Import/download formula set: not saved in session unless page reloaded, should replace session formula set immediately
 //Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
 // - possibly reconsider saving includes in session when stored on server
 // Delete thumbnails before regen, if fail gen recover gracefully
+// Note in docs that adding scalars to complex is incorrect?
 
 //Globals
 var sources = null;
@@ -926,6 +926,7 @@ var thumbnails = [];
       updateFormulaLists();
       fractal.copyToForm();  //Update selections
       fractal.reselectAll();
+      localStorage["fractured.formulae"] = data;
     } catch(e) {
       alert('ImportFormulae: Error! ' + e);
     }
@@ -1421,7 +1422,6 @@ var editorFilename;
   function record(state) {
     recording = state;
     var canvas = $("fractal-canvas");
-    canvas.mouse.wheelTimer = !recording;
     if (recording) {
       //Ensure a multiple of 2
       if (fractal.width % 2 == 1) fractal.width -= 1;
@@ -1471,23 +1471,13 @@ var editorFilename;
       script.step();
       if (script.count < script.steps) {
         script.count++;
-        window.requestAnimationFrame(next);
+        if (window.requestAnimationFrame)
+          window.requestAnimationFrame(next);
+        else
+          next();
       }
     }
 
     next();
   }
 
-  var timer;
-  function timeDraw() {
-    timer = new Date().getTime();
-    window.requestAnimationFrame(logTime);
-  }
-
-  function logTime() {
-    var elapsed = new Date().getTime() - timer;
-    if (elapsed < 50) 
-      window.requestAnimationFrame(logTime); //Not enough time, assume triggered too early, try again
-    else
-      consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
-  }
