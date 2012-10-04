@@ -775,7 +775,7 @@
 
       //Same colouring, always use the outside result...
       if (this.selected == "same")
-        sections["calc"] = "\n  escaped = true;\n";
+        sections["calc"] = "\n  if (i==limit-1) escaped = true;\n";
     }
 
     return sections;
@@ -1631,8 +1631,6 @@
     if (!width || !height) {
       document.documentElement.style.overflow = "hidden";
       //Get size from element
-      //width = $('main').clientWidth; //window.innerWidth - (fullscreen ? 0 : showparams ? 334 : 2);
-      //height = $('main').clientHeight; //window.innerHeight - (fullscreen ? 0 : 27);
       this.canvas.style.width = "100%";
       this.canvas.style.height = "100%";
       width = this.canvas.clientWidth;
@@ -1868,12 +1866,12 @@
     if (this.webgl) {
       this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
       //Restore uniforms/attributes for fractal program
-      var uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected", "dims", "pixelsize", "background"];
+      var uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected_", "dims", "pixelsize", "background"];
       this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
       this.parseErrors(errors, /0:(\d+)/);
       //Get HLSL source if available
-      if (debug) {
+      if (current.debug) {
         var angle = this.gl.getExtension("WEBGL_debug_shaders");
         if (angle) sources["generated.hlsl"] = angle.getTranslatedShaderSource(this.program.fshader);
       }
@@ -1978,7 +1976,7 @@
     this.gl.uniform1i(this.program.uniforms["perturb"], this.perturb);
     this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.background.rgbaGL());
     this.gl.uniform2f(this.program.uniforms["origin"], this.origin.re, this.origin.im);
-    this.gl.uniform2f(this.program.uniforms["selected"], this.selected.re, this.selected.im);
+    this.gl.uniform2f(this.program.uniforms["selected_"], this.selected.re, this.selected.im);
     this.gl.uniform2f(this.program.uniforms["dims"], this.webgl.viewport.width, this.webgl.viewport.height);
     this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.webgl.viewport));
 
@@ -2013,7 +2011,7 @@
 
     //consoleDebug('>> Drawing fractal (aa=' + antialias + ")");
     this.webgl.draw2d(antialias);
-    if (window.recording)
+    if (current.recording)
       window.outputFrame(); 
   }
 
@@ -2131,7 +2129,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   Fractal.prototype.move = function(event, mouse) {
     //Mouseover processing
       mouse.point = new Aspect(0, 0, 0, 0);
-    if (!fractal || showgallery) return true;
+    if (!fractal || current.gallery) return true;
     if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
     {
       //Convert mouse coords into fractal coords

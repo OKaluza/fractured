@@ -52,13 +52,14 @@
                 <li><span onclick="openEditor('include/complex-math.frag');">Complex Library</span></li>
                 <li><span onclick="openEditor('include/shader2d.vert');">Vertex Shader</span></li>
                 <li><span onclick="openEditor('generated.hlsl');">Generated HLSL</span></li>
+                <li><span onclick="current.debugOff();">Disable Debug</span></li>
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
             <div id="session_user_menu" class="loggedin">
               <li><span onclick="uploadState();">Save</span></li>
               <li><span onclick="exportStateFile();">Export</span></li>
-              <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
+              <li><span onclick="current.filetype='session'; $('fileupload').click();">Import</span></li>
               <li><hr></li>
               <li><span class="fly" tabindex="1">Saved Sessions</span>
                 <ul id="sessions" class="selectlist">
@@ -69,7 +70,7 @@
             </div>
             <div id="session_login_menu" class="loggedout">
               <li><span onclick="exportStateFile();">Export</span></li>
-              <li><span onclick="filetype='session'; $('fileupload').click();">Import</span></li>
+              <li><span onclick="current.filetype='session'; $('fileupload').click();">Import</span></li>
               <li><span class="fly" tabindex="1">Login with</span>
                 <ul class="login">
                   <li><span onclick="toggle('openid_form'); $('openid').focus();">
@@ -141,10 +142,10 @@
             </li>
             <li><span class="fly" tabindex="1">Import</span>
               <ul>
-                <li><span onclick="filetype='fractal'; $('fileupload').click();">Fractal</span></li>
-                <li><span onclick="filetype='palette'; $('fileupload').click();">Palette</span></li>
-                <li><span onclick="filetype='formula'; $('fileupload').click();">Formula</span></li>
-                <li><span onclick="filetype='formulae'; $('fileupload').click();">Formula Set</span></li>
+                <li><span onclick="current.filetype='fractal'; $('fileupload').click();">Fractal</span></li>
+                <li><span onclick="current.filetype='palette'; $('fileupload').click();">Palette</span></li>
+                <li><span onclick="current.filetype='formula'; $('fileupload').click();">Formula</span></li>
+                <li><span onclick="current.filetype='formulae'; $('fileupload').click();">Formula Set</span></li>
               </ul>
             </li>
             <li><hr></li>
