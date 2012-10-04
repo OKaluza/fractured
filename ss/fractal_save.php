@@ -38,6 +38,15 @@
     return str_pad($hash, $len, "0", STR_PAD_LEFT);
   }
 
+  function writeThumb($public, $locator, $thumb)
+  {
+    if ($public == 1)
+      $filename = "../thumbs/" . $locator . ".jpg";
+    else
+      $filename = "../thumbs/" . md5($locator) . ".jpg";
+    file_put_contents($filename, $thumb);
+  }
+
   $user = $_SESSION["user_id"];
   $desc = $_POST["description"];
   $public = $_POST["public"];
@@ -80,13 +89,18 @@
     if ($result == 1) //Loop until insert successful
     {
       if ($type == 0)
-      {
-        if ($public == 1)
-          $filename = "../thumbs/" . $locator . ".jpg";
-        else
-          $filename = "../thumbs/" . md5($locator) . ".jpg";
-        file_put_contents($filename, $thumb);
-      }
+        writeThumb($public, $locator, $thumb);
+      break;
+    }
+    else if (isset($_POST['locator']))
+    {
+      //Update allowed if locator set and user_id matches
+      $query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator';";
+      //$query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator' AND user_id = '$user';";
+      $result = mysql_query($query);
+      if (!$result) die('Invalid query: ' . mysql_error());
+      //if ($type == 0)
+        writeThumb($public, $locator, $thumb);
       break;
     }
     //echo $ftime . "," . $inttime . "," . $locator . "<br>";

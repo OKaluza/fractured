@@ -21,9 +21,11 @@ uniform bool perturb;
 uniform real pixelsize;
 uniform complex dims;
 uniform complex origin;
-uniform complex selected;
+uniform complex selected_;
 uniform sampler2D palette;
 uniform rgba background;
+
+complex selected = selected_; //Allow transform
 
 //Current complex coordinate
 varying complex coord;
