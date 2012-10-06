@@ -5,7 +5,8 @@
 %%
 
 \s+                    /* skip whitespace */
-[0-9]+("."[0-9]+)?\b   return 'NUMBER'
+[0-9]+("."[0-9]+)\b    return 'REAL'
+[0-9]+                 return 'INTEGER'
 "*"                    return '*'
 "."                    return '*'
 "/"                    return '/'
@@ -15,6 +16,7 @@
 "("                    return '('
 ")"                    return ')'
 "|"                    return '|'
+","                    return ','
 "=="                   return '=='
 "!="                   return '!='
 "<="                   return '<='
@@ -27,7 +29,7 @@
 "pi"                   return 'PI'
 "e"                    return 'E'
 <<EOF>>                return 'EOF'
-[_a-zA-Z][_a-zA-Z0-9]* return 'IDENTIFIER';
+[@:]*[_a-zA-Z][_a-zA-Z0-9]* return 'IDENTIFIER';
 .                      return 'INVALID'
 
 /lex
@@ -39,6 +41,7 @@
 %left '+' '-'
 %left '*' '/'
 %left '^'
+%left CPLX
 %left NORM
 %left UMINUS
 
@@ -48,98 +51,86 @@
 
 expressions
     : e EOF
-        {return $1;}
+        {return $e;}
     ;
 
 e
     : e '+' e
         {
-          var a = parseFloat($1);
-          var b = parseFloat($3);
-          if (a && b) {
-            var result = a + b + "";
-            if (result.indexOf(".") < 0) result += ".0";
-            $$ = result;
-          } else 
-            $$ = "add(" + $1 + "," + $3 + ")";
+          var a = parseFloat($e1);
+          var b = parseFloat($e2);
+          if (a && b)
+            $$ = a + b + ((a+b) % 1 === 0 ? ".0" : "");
+          else 
+            $$ = "add(" + $e1 + "," + $e2 + ")";
         }
     | e '-' e
         {
-          var a = parseFloat($1);
-          var b = parseFloat($3);
-          if (a && b) {
-            var result = a - b + "";
-            if (result.indexOf(".") < 0) result += ".0";
-            $$ = result;
-          } else 
-            $$ = "sub(" + $1 + "," + $3 + ")";
+          var a = parseFloat($e1);
+          var b = parseFloat($e2);
+          if (a && b)
+            $$ = a - b + ((a-b) % 1 === 0 ? ".0" : "");
+          else 
+            $$ = "sub(" + $e1 + "," + $e2 + ")";
         }
     | e '*' e
         {
-          var a = parseFloat($1);
-          var b = parseFloat($3);
-          if (a && b) {
-            var result = a * b + "";
-            if (result.indexOf(".") < 0) result += ".0";
-            $$ = result;
-          } else 
- 
-            $$ = "mul(" + $1 + "," + $3 + ")";
+          var a = parseFloat($e1);
+          var b = parseFloat($e2);
+          if (a && b)
+            $$ = a * b + ((a*b) % 1 === 0 ? ".0" : "");
+          else 
+             $$ = "mul(" + $e1 + "," + $e2 + ")";
         }
     | e '/' e
         {
-          var a = parseFloat($1);
-          var b = parseFloat($3);
-          if (a && b) {
-            var result = a / b + "";
-            if (result.indexOf(".") < 0) result += ".0";
-            $$ = result;
-          } else 
-            $$ = "div(" + $1 + "," + $3 + ")";
+          var a = parseFloat($e1);
+          var b = parseFloat($e2);
+          if (a && b)
+            $$ = a / b + ((a/b) % 1 === 0 ? ".0" : "");
+          else 
+            $$ = "div(" + $e1 + "," + $e2 + ")";
         }
     | e '^' e
         {
-          if ($3 == 0) $$ = "1.0";
-          else if ($3 == 1) $$ = $1;
-          else if ($3 == 2) $$ = "sqr(" + $1 + ")";
-          else if ($3 == 3) $$ = "cube(" + $1 + ")";
-          else $$ = "cpow(" + $1 + "," + $3 + ")";
+          if ($e2 == 0) $$ = "1.0";
+          else if ($e2 == 1) $$ = $e1;
+          else if ($e2 == 2) $$ = "sqr(" + $e1 + ")";
+          else if ($e2 == 3) $$ = "cube(" + $e1 + ")";
+          else $$ = "cpow(" + $e1 + "," + $e2 + ")";
         }
-    | e '==' e
-        {$$ = $1 + " == " + $3;}
-    | e '!=' e
-        {$$ = $1 + " != " + $3;}
-    | e '<=' e
-        {$$ = $1 + " <= " + $3;}
-    | e '>=' e
-        {$$ = $1 + " >= " + $3;}
-    | e '<' e
-        {$$ = $1 + " < " + $3;}
-    | e '>' e
-        {$$ = $1 + " > " + $3;}
-    | '-' e %prec UMINUS
-        {$$ = "-" + $2;}
-    | '!' e %prec UNOT
-        {$$ = "!" + $2;}
-    | '(' e ')'
-        {$$ = $2;}
-    | '|' e '|' %prec NORM
-        {$$ = "norm(" + $2 + ")";}
-    | NUMBER
-        {
-          if (yytext.indexOf(".") < 0) 
-            $$ = yytext + ".0"; }
-        }
-    | E
-        {$$ = "E";}
-    | PI
-        {$$ = "PI";}
+    | e '==' e -> $e1 + " == " + $e2
+    | e '!=' e -> $e1 + " != " + $e2
+    | e '<=' e -> $e1 + " <= " + $e2
+    | e '>=' e -> $e1 + " >= " + $e2
+    | e '<' e  -> $e1 + " < " + $e2
+    | e '>' e  -> $e1 + " > " + $e2
+    | '!' e %prec UNOT   -> "!" + $e
+    | '(' e ')' -> "(" + $e + ")"
+    | '|' e '|' %prec NORM -> "norm(" + $e + ")"
+    | '(' e ')' '(' e ')' -> "mul((" + $e1 + "),(" + $e2 + "))"
+    | constant '(' e ')' -> "mul(" + $constant + ",(" + $e + "))"
+    | constant
+    | '(' e ',' e ')' %prec CPLX
+        {$$ = "complex(" + $e1 + "," + $e2 + ")";}
     | IDENTIFIER
     | call
     ;
 
-call
-    : IDENTIFIER '(' e ')'
-        {$$ = $1 + "(" + $3 + ")";}
+number
+    : INTEGER  -> $1 + ".0"
+    | REAL
+    | E
+    | PI
     ;
+
+constant
+    : number
+    | '-' number -> "-" + $number
+    ;
+
+call
+    : IDENTIFIER '(' e ')' -> $1 + "(" + $e + ")"
+    ;
+
 

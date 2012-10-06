@@ -50,6 +50,10 @@ function requestFullScreen(id) {
       element.webkitRequestFullScreen();
 }
 
+function isFullScreen() {
+  return document.fullScreen || document.webkitIsFullScreen || document.mozFullScreen;
+}
+
 //JQuery style lookup by id and style
 function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
 function $S(o) { o=$(o); if(o) return(o.style); }

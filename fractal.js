@@ -115,6 +115,48 @@
     return invalid_default == undefined ? 0.0 : invalid_default;
   }
 
+  function parseExpressions(code) {
+    //Parse all \...\ enclosed sections as expressions
+    var reg = /\\([\s\S]*)\\/gm;
+    var match;
+    while (match = reg.exec(code)) {
+      //Replace the matched expression with parser result
+      var newval = code.slice(0, reg.lastIndex - match[0].length);
+      var result = parseExpression(match[1]);
+      //consoleDebug(match[1] + " -> "  + result);
+      code = newval + result + code.slice(reg.lastIndex, code.length);
+      reg.lastIndex += (result - match[0].length); //Adjust search position
+    }
+    return code;
+  }
+
+  function parseExpression(expr) {
+    //Optimisation: 
+    //find all variables in expression and if found in param list, replace with their value
+    //(requires savevars[] array created when parsing parameters in toCode())
+    var reg = /[_a-zA-Z][_a-zA-Z0-9]*/g;
+    var match;
+    while (match = reg.exec(expr)) {
+      if (savevars[match[0]]) {
+        //Replace the matched param with value
+        var newval = expr.slice(0, reg.lastIndex - match[0].length);
+        expr = newval + savevars[match[0]] + expr.slice(reg.lastIndex, expr.length);
+        reg.lastIndex += (savevars[match[0]] - match[0].length); //Adjust search position
+      }
+    }
+
+    //Parse an expression into correct complex maths functions using the Jison parser
+    var parsed;
+    //Run the parser and report errors
+    try {
+      parsed = parser.parse(expr);
+    } catch(e) {
+      alert(e.message);
+      return "(0,0)"
+    }
+    return parsed;
+  }
+
   /**
    * @constructor
    */
@@ -257,28 +299,8 @@
       return this.value.rgbaGLSL();
     else if (this.typeid == 6) //expression
     {
-      //Find all variables in expression and if found in param list, replace with their value
-      var expr = this.value;
-      var reg = /[_a-zA-Z][_a-zA-Z0-9]*/g;
-       var match;
-       while (match = reg.exec(expr)) {
-         if (savevars[match[0]]) {
-            //Replace the matched param with value
-            var newval = expr.slice(0, reg.lastIndex - match[0].length);
-            expr = newval + savevars[match[0]] + expr.slice(reg.lastIndex, expr.length);
-            reg.lastIndex += (savevars[match[0]] - match[0].length); //Adjust search position
-         }
-      }
-      //Replace integer constants in parsed expression with float (by adding .0)
-      var parsed;
-      try {
-        parsed = parser.parse(expr);
-      } catch(e) {
-        alert(e.message);
-        return "C(0)"
-      }
-      return parsed;
-
+      //Use expression parser
+      return parseExpression(this.value);
     }
     else
       return "" + this.value;
@@ -368,10 +390,18 @@
   ParameterSet.prototype.toCode = function() {
     //Return GLSL code defining parameters
     var code = "";
-    //First scan and save floating point params for replacement when parsing expressions
+    //First scan and save real/complex params for replacement when parsing expressions
     savevars = {};
-    for (key in this)
+    for (key in this) {
       if (this[key].type == 'real') savevars[key] = this[key].value;
+      if (this[key].type == 'complex') {
+        if (this[key].value.im == 0)
+          savevars[key] = this[key].value.re;
+        else
+          savevars[key] = this[key].value.toString();
+      }
+    }
+    //Generate the declaration
     for (key in this)
     {
       if (typeof(this[key]) == 'object') {
@@ -796,6 +826,7 @@
     }
 
     //Get the parameter declaration code
+    //(This also saves values of parameters in savevars[] array)
     var params = this.currentParams.toCode();
 
     //Strip out param definitions, replace with declarations
@@ -808,6 +839,10 @@
     //(to prevent namespace clashes in globals/function names/params)
     //(: is used only for tenary operator ?: in glsl)
     sections["data"] = data.replace(/:([a-zA-Z_])/g, this.category + "_$1");
+
+    //Parse any /expression/s 
+    for (key in sections)
+      sections[key] = parseExpressions(sections[key]);
 
     //return code;
     return sections;
@@ -1778,10 +1813,10 @@
     //shader = shader.replace(creg, "$1complex($2,$4)");
 
     //(...modified to also allow single variables, note: first pattern is to ignore function call match)
-    var creg = /([^a-zA-Z0-9_\)])\(([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z][a-zA-Z0-9_]*))\)/g
+    var creg = /([^a-zA-Z0-9_\)])\(([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\)/g
     shader = shader.replace(creg, "$1complex($2,$5)");
 
-    //Finally replace any @ symbols used to reference params in code
+    //Finally, replace any @ symbols used to reference params in code
     return shader.replace(/@/g, "");
   }
 
@@ -1903,7 +1938,7 @@
               lineno += this[this.offsets[last].category].lineoffsets[section];
               var key = formulaKey(this.offsets[last].category, this[this.offsets[last].category].selected);
               if (key) {
-                alert("Error on line number " + lineno +  "\nSection: " + section + "\nof " + 
+                alert("Error on line number: " + (isNaN(lineno) ? "??" : lineno) +  "\nSection: " + section + "\nof " + 
                       sectionnames[this.offsets[last].category] + " formula: " + 
                       (key ? formula_list[key].label : "?") + "\n--------------\n" + errors);
                 found = true;
@@ -1968,7 +2003,7 @@
   }
 
   Fractal.prototype.renderWebGL = function(antialias) {
-    if (!this.program) return;
+    if (!this.program || !this.program.uniforms) return;
     this.webgl.use(this.program);
 
     //Uniform variables
@@ -2106,7 +2141,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
           //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
           if (this.julia) consoleWrite("Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
         } else {
-          //return true;
+          //No redraw
+          return false;
         }
       }
     }
@@ -2149,7 +2185,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     //Right & middle buttons: drag to scroll
     if (mouse.button > 0) {
       // Set the scroll position
-      window.scrollBy(-mouse.deltaX, -mouse.deltaY);
+      if (isFullScreen()) {
+        $('main').scrollLeft -= mouse.deltaX;
+        $('main').scrollTop -= mouse.deltaY;
+      } else
+        window.scrollBy(-mouse.deltaX, -mouse.deltaY);
       return true;
     }
 
@@ -2201,6 +2241,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       } else {
         //Zoom box processing
         var select = $("select");
+        var main = $("main");
 
         if (select.timer) clearTimeout(select.timer);
         if (!select.zoom) select.zoom = 1.0;
@@ -2216,19 +2257,19 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         var z = select.zoom;
         if (z > 1.0) {
           z = 1.0 / z;
-          select.w = this.canvas.width * z;
-          select.h = this.canvas.height * z;
-          select.x = 0.5*(this.canvas.width - select.w);
-          select.y = 0.5*(this.canvas.height - select.h);
+          select.w = main.offsetWidth * z;
+          select.h = main.offsetHeight * z;
+          select.x = 0.5*(main.offsetWidth - select.w);
+          select.y = 0.5*(main.offsetHeight - select.h);
         } else {
           select.style.background = "transparent";
           select.style.borderColor = "#EECC11";
           select.x = select.y = 0;
-          select.w = this.canvas.width * z;
-          select.h = this.canvas.height * z;
-          select.style.borderLeftWidth = Math.round(0.5 * (this.canvas.width - select.w)) + "px";
+          select.w = main.offsetWidth * z;
+          select.h = main.offsetHeight * z;
+          select.style.borderLeftWidth = Math.round(0.5 * (main.offsetWidth - select.w)) + "px";
           select.style.borderRightWidth = select.style.borderLeftWidth;
-          select.style.borderTopWidth = Math.round(0.5 * (this.canvas.height - select.h)) + "px";
+          select.style.borderTopWidth = Math.round(0.5 * (main.offsetHeight - select.h)) + "px";
           select.style.borderBottomWidth = select.style.borderTopWidth;
         }
 
