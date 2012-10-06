@@ -9,9 +9,9 @@
 
 //Globals
 var current;  //Status
-var sources = null;
-var fractal;
-var colours;
+var sources;  //Source files
+var fractal;  //Fractal renderer
+var colours;  //Gradient
 
 //Timers
 var rztimeout = undefined;
@@ -681,7 +681,7 @@ var rztimeout = undefined;
     if (current.locator && confirm("Overwrite existing fractal on server? (Only works if you created the original)")) formdata.append("locator", current.locator);
     formdata.append("description", $('nameInput').value);
     formdata.append("thumbnail", thumbnail("jpeg", 150).substring(23));
-    //if (locator)  //TEMPORARY - demo fractals, don't save formulae + palette
+    //if (current.locator)  //TEMPORARY - demo fractals, don't save formulae + palette
     //  formdata.append("source", fractal.toStringMinimal());
     //else
     formdata.append("source", fractal.toString());
@@ -1129,9 +1129,12 @@ var rztimeout = undefined;
         requestFullScreen("main");
         main.style.top = '-1px';  //-1 because chrome sucks
         main.style.left = '0px';
+        if (!document["inputs"].elements["autosize"].checked) {
+          main.style.overflow = "auto";
+        }
       } else {
         //Response to fullscreenchange event
-        if (!(document.fullScreen || document.webkitIsFullScreen || document.mozFullScreen)) {
+        if (!isFullScreen()) {
           main.style.top = '27px';
           main.style.left = showparams ? '334px' : '1px';
         }

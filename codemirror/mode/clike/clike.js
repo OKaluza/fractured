@@ -12,6 +12,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       hooks = parserConfig.hooks || {},
       multiLineStrings = parserConfig.multiLineStrings;
   var isOperatorChar = /[+\-*&%=<>!?|\/]/;
+  var isMarkChar = /\\/;
 
   var curPunc;
 
@@ -46,6 +47,10 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     if (isOperatorChar.test(ch)) {
       stream.eatWhile(isOperatorChar);
       return "operator";
+    }
+    if (isMarkChar.test(ch)) {
+      stream.eatWhile(isMarkChar);
+      return "marker";
     }
     stream.eatWhile(/[\w\$_:]/);
     var cur = stream.current();
@@ -320,7 +325,9 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       "cosh tanh sinh acosh atanh asinh cexp csin ccos ctan casin cacos " + 
       "catan csinh ccosh ctanh casinh cacosh catanh csqrt csqrt2 equals " + 
       "trunc round trunc round flip sqr imag gamma"),
-    stdvar: words("gl_BackColor gl_BackLightModelProduct gl_BackLightProduct " +
+    stdvar: words("z c z_1 z_2 point coord selected limit count escaped converged colour " +
+      "offset julia perturb pixelsize dims origin selected_ palette background antialias " +
+      "gl_BackColor gl_BackLightModelProduct gl_BackLightProduct " +
       "gl_BackMaterial gl_BackSecondaryColor gl_ClipPlane gl_ClipVertex " +
       "gl_Color gl_Color gl_DepthRange gl_DepthRangeParameters " +
       "gl_EyePlaneQ gl_EyePlaneR gl_EyePlaneS gl_EyePlaneT gl_Fog " +
@@ -348,18 +355,10 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     hooks: {
       "#": cppHook,
       "@": function(stream, state) {
-        if (stream.eat('"')) {
-          state.tokenize = tokenAtString;
-          return tokenAtString(stream, state);
-        }
         stream.eatWhile(/[\w\$_:]/);
         return "param";
       }/*,
       ":": function(stream, state) {
-        if (stream.eat('"')) {
-          state.tokenize = tokenAtString;
-          return tokenAtString(stream, state);
-        }
         stream.eatWhile(/[\w\$_@]/);
         return "local";
       }*/

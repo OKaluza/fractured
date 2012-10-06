@@ -95,8 +95,8 @@
     else if (isset($_POST['locator']))
     {
       //Update allowed if locator set and user_id matches
-      $query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator';";
-      //$query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator' AND user_id = '$user';";
+      $query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator' AND user_id = '$user';";
+      //$query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator';";
       $result = mysql_query($query);
       if (!$result) die('Invalid query: ' . mysql_error());
       //if ($type == 0)

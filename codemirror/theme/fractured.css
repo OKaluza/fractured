@@ -6,6 +6,7 @@
 .cm-s-fracturedlight .CodeMirror-gutter-text { color: #888; }
 */
 
+.cm-s-fracturedlight span.cm-marker {color: gray; font-weight:bold;}
 .cm-s-fracturedlight span.cm-keyword {color: #7f0055; font-weight:bold;}
 .cm-s-fracturedlight span.cm-atom {color: brown;}
 .cm-s-fracturedlight span.cm-number {color: brown;}
@@ -28,6 +29,7 @@
 .cm-s-fractureddark .CodeMirror-gutter-text { color: #888; }
 .cm-s-fractureddark .CodeMirror-cursor { border-left: 1px solid white !important; }
 
+.cm-s-fractureddark span.cm-marker {color: #8ca; font-weight:bold;}
 .cm-s-fractureddark span.cm-keyword {color: #8f6500; font-weight:bold;}
 .cm-s-fractureddark span.cm-atom {color: limegreen;}
 .cm-s-fractureddark span.cm-number {color: limegreen;}
