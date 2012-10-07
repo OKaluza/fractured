@@ -1,4 +1,6 @@
 //TODO:
+//When zooming, if fractal smaller than #main, use it's dimensions instead for zoom box
+//Select params panel after loading fractal?
 //Sometimes loaded palette is not drawn
 //Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
 // - possibly reconsider saving includes in session when stored on server
@@ -28,21 +30,20 @@ var rztimeout = undefined;
     var h = urlq.indexOf("#");
     if (h > 0) urlq = urlq.substring(0, h);
     var query;
-    var baseurl = "";
     if (urlq.indexOf("?") > 0) {
       var parts = urlq.split("?"); //whole querystring before and after ?
       query = parts[1]; 
       //Strip stupid trailing /
       if (query.charAt(query.length-1) == "/") query = query.substr(0, query.length-1);
-      baseurl = parts[0];
+      current.baseurl = parts[0];
     } else {
       if (urlq.indexOf("file:///") == 0)
-         baseurl = urlq;
+         current.baseurl = urlq;
       else {
         //URL rewriting
         var pos = urlq.lastIndexOf("/");
         query = urlq.substr(pos+1);
-        baseurl = urlq.substr(0, pos);
+        current.baseurl = urlq.substr(0, pos);
       }
     }
     var restored = "";
@@ -74,16 +75,18 @@ var rztimeout = undefined;
           if (!restored || restored.indexOf("Error:") == 0) {
             alert("Fractal load failed!");
             restored = "";
-          } else 
-            baseurl += "/" + current.locator; //Save hash in baseurl
+            current.locator = null;
+          }
         }
       }
     }
-    consoleDebug("Base URL: " + baseurl);
+    consoleDebug("Base URL: " + current.baseurl);
     consoleDebug("Query options: " + query);
 
     //Strip commands from url (except hash if provided)
-    window.history.pushState("", "", baseurl);
+    var base = current.baseurl;
+    if (current.locator) base += "/" + current.locator
+    window.history.pushState("", "", base);
 
     //Colour editing and palette management
     colours = new GradientEditor($('palette'));
@@ -725,7 +728,7 @@ var rztimeout = undefined;
   }
 
   function packURL(data) {
-    var loc = window.location + "?" + data;
+    var loc = current.baseurl + "?" + data;
     var link = document.createElement("a");
     link.setAttribute("href", loc);
     var linkText = document.createTextNode("here it is");
@@ -1384,6 +1387,7 @@ var editorFilename;
     this.gallery = 0;
     this.filetype = 'fractal';
     this.recording = false;
+    this.baseurl = "";
     this.locator = null;
 
     //Persistent settings:
