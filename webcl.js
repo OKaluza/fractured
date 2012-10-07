@@ -1,20 +1,28 @@
   /**
    * @constructor
    */
-  function WebCL_() {
+  function WebCL_(pid, devid) {
+    if (!pid) pid = 0;
+    if (!devid) devid = 0;
+    this.pid = pid;
+    this.devid = devid;
     this.fp64 = false;
     try {
       if (window.WebCL == undefined) return false;
 
       this.platforms = WebCL.getPlatformIDs();
+      if (this.pid >= this.platforms.length) this.pid = this.platforms.length-1;
       this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
-                                              this.platforms[0]],
+                                              this.platforms[this.pid]],
                                               WebCL.CL_DEVICE_TYPE_DEFAULT);
       this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
+      if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
+      consoleDebug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + 
+                  " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME));
 
       //Check for double precision support
-      var extensions = this.platforms[0].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
-      extensions += " " + this.devices[0].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
+      var extensions = this.platforms[this.pid].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
+      extensions += " " + this.devices[this.devid].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
       if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
         this.fp64 = true; //Initial state of flag shows availability of fp64 support
       consoleDebug("WebCL ready, extensions: " + extensions);
@@ -33,7 +41,7 @@
     this.setPrecision(fp64);
     this.format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
-    this.queue = this.ctx.createCommandQueue(this.devices[0], 0);
+    this.queue = this.ctx.createCommandQueue(this.devices[this.devid], 0);
     this.setViewport(0, 0, canvas.width, canvas.height);
   }
 
@@ -49,12 +57,12 @@
 
     this.program = this.ctx.createProgramWithSource(kernelSrc);
     try {
-      this.program.buildProgram ([this.devices[0]], "");
+      this.program.buildProgram ([this.devices[this.devid]], "");
     } catch(e) {
       return "Failed to build WebCL program. Error "
-             + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_STATUS)
+             + this.program.getProgramBuildInfo (this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_STATUS)
              + ":  " 
-             + this.program.getProgramBuildInfo (this.devices[0], WebCL.CL_PROGRAM_BUILD_LOG);
+             + this.program.getProgramBuildInfo (this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_LOG);
     }
     this.k_sample = this.program.createKernel("sample");
     this.k_sample.setKernelArg(0, this.input);

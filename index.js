@@ -1,5 +1,4 @@
 //TODO:
-//Some default palettes in the menu?
 //Sometimes loaded palette is not drawn
 //Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
 // - possibly reconsider saving includes in session when stored on server
@@ -86,6 +85,9 @@ var rztimeout = undefined;
     //Strip commands from url (except hash if provided)
     window.history.pushState("", "", baseurl);
 
+    //Colour editing and palette management
+    colours = new GradientEditor($('palette'));
+
     //Load the last program state
     loadState();
 
@@ -97,9 +99,6 @@ var rztimeout = undefined;
     }
 
     //Initialise app
-
-    //Colour editing and palette management
-    colours = new GradientEditor($('palette'));
 
     //Fractal & canvas
     fractal = new Fractal('main', mode, current.antialias);
@@ -308,9 +307,7 @@ var rztimeout = undefined;
       try {
         localStorage.removeItem("fractured.names." + idx);
         localStorage.removeItem("fractured.fractal." + idx);
-        //localStorage.removeItem("fractured.thumbnail." + idx);
-        current.fractal = -1; //localStorage["fractured.current.fractal"] = -1;
-        current.save();
+        current.selectFractal(-1);
         populateFractals();
       } catch(e) {
         alert('Storage delete error! ' + e);
@@ -375,10 +372,8 @@ var rztimeout = undefined;
             setTimeout(iteration, 10); // Wait 10 ms to let the UI update.
         else {
           //Finished
-          //populateFractals();
           progress();
           current.save(); //Save in local storage
-          //loadState();
           populateFractals();
           loadLastFractal();
           hideGallery();
@@ -391,6 +386,8 @@ var rztimeout = undefined;
   function regenerateThumbs() {
     //Recreate all thumbnail images
     var idx = parseInt(localStorage["fractured.fractals"]);
+    current.thumbnails = [];  //Clear existing
+    current.save(); //Save in local storage
     performTask(idx, Math.ceil(idx/10), 
       function (index) {
         var i = index + 1;
@@ -400,7 +397,6 @@ var rztimeout = undefined;
           document["inputs"].elements["autosize"].checked = false;
           fractal.applyChanges(6);
           var result = $('fractal-canvas').toDataURL("image/jpeg")
-          //localStorage["fractured.thumbnail." + i] = result;
           current.thumbnails[i] = result;
         }
       });
@@ -420,11 +416,8 @@ var rztimeout = undefined;
         var onclick = "selectedFractal(" + i + ")";
         var ondelete = "deleteFractal(" + i + ");";
         var span = addMenuItem(menu, namestr, onclick, ondelete, current.fractal == i, true);
-        //if (localStorage["fractured.thumbnail." + i]) {
         if (current.thumbnails[i]) {
-          //localStorage.removeItem("fractured.thumbnail." + i);
           var img = new Image;
-          //img.src = localStorage["fractured.thumbnail." + i];
           img.src = current.thumbnails[i];
           img.className = "thumb";
           span.appendChild(img);
@@ -435,17 +428,14 @@ var rztimeout = undefined;
   }
 
   function selectedFractal(idx) {
-      hideGallery();
-    current.fractal = idx;
-    current.save();
+    hideGallery();
+    current.selectFractal(idx);
     fractal.load(localStorage["fractured.fractal." + idx]);
     fractal.name = localStorage["fractured.names." + idx];
     $('nameInput').value = fractal.name;
-        //Generate thumbnails on select!
-        if (!current.thumbnails[idx])
-          current.thumbnails[idx] = thumbnail();
-        //if (!localStorage["fractured.thumbnail." + idx])
-        //    localStorage["fractured.thumbnail." + idx] = thumbnail();
+    //Generate thumbnails on select!
+    if (!current.thumbnails[idx])
+      current.thumbnails[idx] = thumbnail();
     populateFractals();
   }
 
@@ -455,8 +445,7 @@ var rztimeout = undefined;
     fractal.formulaDefaults();
     fractal.copyToForm();
     //De-select
-    current.fractal = -1;
-    current.save();
+    current.selectFractal(-1);
     populateFractals();
     fractal.applyChanges();
   }
@@ -474,7 +463,6 @@ var rztimeout = undefined;
           try {
             localStorage["fractured.names." + idx] = fractal.name; //namestr;
             localStorage["fractured.fractal." + idx] = source;
-            //localStorage["fractured.thumbnail." + idx] = thumbnail();
             current.thumbnails[idx] = thumbnail();
             populateFractals();
           } catch(e) {
@@ -509,11 +497,9 @@ var rztimeout = undefined;
     try {
       localStorage["fractured.names." + idx] = namestr;
       localStorage["fractured.fractal." + idx] = source;
-      //localStorage["fractured.thumbnail." + idx] = thumbnail();
       current.thumbnails[idx] = thumbnail();
       localStorage["fractured.fractals"] = idx;
-      current.fractal = idx;
-      current.save();
+      current.selectFractal(idx);
       $('nameInput').value = namestr;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
@@ -523,20 +509,25 @@ var rztimeout = undefined;
     populateFractals();
   }
 
+  function PaletteEntry(source, thumb) {
+    this.data = source;
+    this.thumb = thumb;
+  }
+
   function savePalette() {
-    source = colours.palette + "";
     //Save current palette to list
-    var idx_str = localStorage["fractured.palettes"];
-    var idx = (idx_str ? parseInt(idx_str) : 0);
-    idx++;  //Increment index
     try {
-      localStorage["fractured.palette." + idx] = source;
-      localStorage["fractured.palette_img." + idx] = paletteThumbnail();
-      localStorage["fractured.palettes"] = idx;
+      source = colours.palette + "";
+      var pstr = localStorage["fractured.palettes"];
+      var palettes = [];
+      if (pstr) palettes = JSON.parse(pstr);
+      //Back compat:
+        if (typeof(palettes) != 'object') palettes = [];
+      var idx = palettes.length;
+      palettes.push(new PaletteEntry(source, paletteThumbnail()));
+      localStorage["fractured.palettes"] = JSON.stringify(palettes);
     } catch(e) {
-      //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Storage error! ' + e);
-      //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
     populatePalettes();
   }
@@ -548,37 +539,62 @@ var rztimeout = undefined;
     addMenuItem(menu, "Save Palette", "savePalette();", null, false, false);
     addMenuItem(menu, "Export Palette", "exportPaletteFile();", null, false, false);
     addMenuItem(menu, "Palette to URL", "packPalette();", null, false, false);
-    var idx_str = localStorage["fractured.palettes"];
-    var inc = 1;
-    if (idx_str) {
-      var idx = parseInt(idx_str);
-      for (var i=1; i<=idx; i++) {
-        var source = localStorage["fractured.palette." + i];
-        if (!source) continue; //namestr = "unnamed";
-        var onclick = "colours.read(localStorage['fractured.palette." + i + "']); fractal.applyChanges()";
-        var ondelete = "deletePalette(" + i + ");";
-        var span = addMenuItem(menu, "", onclick, ondelete, true, false);
-        inc++;
-        if (localStorage["fractured.palette_img." + i]) {
-          var palimg = span; //document.createElement("span");
-          palimg.style.backgroundImage = "url('" + localStorage["fractured.palette_img." + i] + "')";
-          palimg.style.backgroundRepeat = "repeat-y";
-          palimg.style.height = "14px";
-          palimg.style.width = "150px";
-          palimg.style.margin = "1px 0px";
-          palimg.style.padding = "3px 0px";
-          //span.appendChild(palimg);
-        }
+    var palettes;
+    if (!localStorage["fractured.palettes"])
+      //Default palettes
+      palettes = JSON.parse(readURL('/palettes.json', true));
+    else
+      palettes = JSON.parse(localStorage["fractured.palettes"]);
+
+    for (var i=0; i<palettes.length; i++) {
+      var onclick = "loadPalette(" + i + ");";
+      var ondelete = "deletePalette(" + i + ");";
+      var span = addMenuItem(menu, "", onclick, ondelete, true, false);
+      if (!palettes[i].thumb) {
+        colours.read(palettes[i].data);
+        colours.update();
+        palettes[i].thumb = paletteThumbnail();
       }
+
+      var palimg = new Image;
+      palimg.src = palettes[i].thumb;
+      palimg.style.height = "18px";
+      palimg.style.width = "150px";
+      palimg.style.margin = "0px";
+      palimg.style.padding = "0px";
+      span.style.padding = "2px 2px 0px";
+      span.style.height = "20px";
+      span.appendChild(palimg);
     }
+
+    if (!localStorage["fractured.palettes"])
+      localStorage["fractured.palettes"] = JSON.stringify(palettes);
+
     checkMenuHasItems(menu);
+  }
+
+  function loadPalette(idx) {
+    try {
+      var pstr = localStorage["fractured.palettes"];
+      if (pstr) {
+        var palettes = JSON.parse(pstr);
+        colours.read(palettes[idx].data);
+        fractal.applyChanges();
+      }
+    } catch(e) {
+      alert('Storage access error! ' + e);
+    }
   }
 
   function deletePalette(idx) {
     try {
-      localStorage.removeItem("fractured.palette." + idx);
-      localStorage.removeItem("fractured.palette_img." + idx);
-      populatePalettes();
+      var pstr = localStorage["fractured.palettes"];
+      if (pstr) {
+        var palettes = JSON.parse(pstr);
+        palettes.splice(idx,1);
+        localStorage["fractured.palettes"] = JSON.stringify(palettes);
+        populatePalettes();
+      }
     } catch(e) {
       alert('Storage delete error! ' + e);
     }
@@ -640,7 +656,7 @@ var rztimeout = undefined;
       loadState();
       if (!current.offline)
         sessionGet(readURL('ss/session_get.php')); //Get updated list...
-      colours.read(); //Palette reset
+      loadPalette(0); //Palette reset
       newFractal();
       current.clear();
       window.onbeforeunload = null;
@@ -681,9 +697,10 @@ var rztimeout = undefined;
     if (current.locator && confirm("Overwrite existing fractal on server? (Only works if you created the original)")) formdata.append("locator", current.locator);
     formdata.append("description", $('nameInput').value);
     formdata.append("thumbnail", thumbnail("jpeg", 150).substring(23));
-    //if (current.locator)  //TEMPORARY - demo fractals, don't save formulae + palette
-    //  formdata.append("source", fractal.toStringMinimal());
-    //else
+    /*
+      if (current.locator)  //TEMPORARY - demo fractals, don't save formulae + palette
+        formdata.append("source", fractal.toStringMinimal());
+      else//*/
     formdata.append("source", fractal.toString());
     progress("Uploading fractal to server...");
     ajaxPost("ss/fractal_save.php", formdata, fractalUploaded, updateProgress);
@@ -985,7 +1002,6 @@ var rztimeout = undefined;
       current.save();
       sessionGet(readURL('ss/session_get.php')); //Get updated list...
       loadState();  //load the state data
-      //loadLastFractal();
       progress();
       regenerateThumbs();
     } catch(e) {
@@ -1033,6 +1049,7 @@ var rztimeout = undefined;
     $S('indicator').width = (350 * indic) + 'px';
   }
 
+
   function loadLastFractal() {
     //Load current fractal (as default)
     var source = localStorage["fractured.active"];
@@ -1041,8 +1058,8 @@ var rztimeout = undefined;
       fractal.name = localStorage["fractured.name"];
       $('nameInput').value = fractal.name;
     } else {
-      //Draw default palette
-      colours.update();
+      //Load & draw default palettes
+      loadPalette(0);
     }
   }
 
@@ -1062,8 +1079,6 @@ var rztimeout = undefined;
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = fractal.name;
-      //Save thumbnails
-      //localStorage["fractured.thumbnails"] = JSON.stringify(thumbnails);
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);
@@ -1403,6 +1418,11 @@ var editorFilename;
     this.session = 0;
     this.formulae = 0;
     this.fractal = -1;
+    this.save();
+  }
+
+  Status.prototype.selectFractal = function(idx) {
+    this.fractal = idx;
     this.save();
   }
 

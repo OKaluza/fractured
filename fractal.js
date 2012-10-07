@@ -925,6 +925,7 @@
     this.origin.re += point.re;
     this.origin.im += point.im;
     consoleWrite("Origin: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
+    //consoleWrite("Origin: re: " + this.origin.re + " im: " + this.origin.im);
   }
 
   Fractal.prototype.applyZoom = function(factor) {
@@ -1888,6 +1889,7 @@
 
   Fractal.prototype.updateShader = function(source) {
     //Save for debugging
+    this.timeAction("Compile");
     sources["generated.shader"] = source;
     consoleWrite("Rebuilding fractal shader using:");
     consoleWrite("formula: " + this["fractal"].selected);
@@ -1953,7 +1955,7 @@
     }
   }
 
-  Fractal.prototype.timeDraw = function() {
+  Fractal.prototype.timeAction = function(action) {
     if (!window.requestAnimationFrame) return;
     var timer = new Date().getTime();
     function logTime() {
@@ -1961,13 +1963,13 @@
       if (elapsed < 50) 
         window.requestAnimationFrame(logTime); //Not enough time, assume triggered too early, try again
       else
-        consoleWrite("Draw took: " + (elapsed / 1000) + " seconds");
+        consoleWrite(action + " took: " + (elapsed / 1000) + " seconds");
     }
     window.requestAnimationFrame(logTime);
   }
 
   Fractal.prototype.draw = function(antialias) {
-    this.timeDraw();
+    this.timeAction("Draw");
     if (antialias == undefined) antialias = this.antialias;
 
     //Set canvas size
