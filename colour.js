@@ -10,13 +10,8 @@
     this.slider.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAPCAYAAAA2yOUNAAAAj0lEQVQokWNIjHT8/+zZs//Pnj37/+TJk/9XLp/+f+bEwf9HDm79v2Prqv9aKrz/GUYVEaeoMDMQryJXayWIoi0bFmFV1NWS+z/E1/Q/AwMDA0NVcez/LRsWoSia2luOUAADVcWx/xfO6/1/5fLp/1N7y//HhlmhKoCBgoyA/w3Vyf8jgyyxK4CBUF8zDAUAAJRXY0G1eRgAAAAASUVORK5CYII=";
 
     if (!source) {
-      //Default
-      this.colours.push(new ColourPos("rgba(0,0,0,1)", 0));
-      this.colours.push(new ColourPos("rgba(59,45,30,1)", 0.05));
-      this.colours.push(new ColourPos("rgba(31,194,188,1)", 0.15));
-      this.colours.push(new ColourPos("rgba(255,244,218,1)", 0.25));
-      this.colours.push(new ColourPos("rgba(246,222,148,1)", 0.35));
-      this.colours.push(new ColourPos("rgba(253,132,48,1)", 0.45));
+      //Default greyscale
+      this.colours.push(new ColourPos("rgba(255,255,255,1)", 0));
       this.colours.push(new ColourPos("rgba(0,0,0,1)", 1.0));
       return;
     }
