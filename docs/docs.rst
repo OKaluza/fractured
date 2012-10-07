@@ -45,7 +45,7 @@ Workspace
 =========
 On first loading the app you should be presented with a workspace showing a selection of example fractals and the following user interface elements:
 
-- *Top Menu* containing the [Session] and [Fractal] menus and the [Draw] button
+- *Top Menu* containing the [Session], [Fractal] and [Palette] menus and the [Draw] button
 - *Palette* an editable gradient colour palette and background colour selection
 - *Tools* the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Log]
 - *Main Display* occupies the rest of the available browser window, initially showing an image gallery, switching to display the rendered fractal image (when in rendering mode).
@@ -190,11 +190,19 @@ The [Clear Log] button clears all messages from the display.
 
 Top Menu
 --------
-Now we get to the menu bar which has various options controlling fractal rendering and allowing saving and loading fractals and other data to local storage and to the web server.
+Now we get to the menu bar which has various options controlling fractal rendering and allowing saving and loading fractals and other data to local storage and to the web server, going from right to left we have:
 
 Draw
 ~~~~
 This button redraws the current fractal, changes to fractal parameters in the *tools* area are not usually applied instantly and you must press this button to redraw the fractal display.
+
+Palette
+~~~~~~~
+- This menu displays all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Above the list of saved palettes the other functions are:
+
+- *Save Palette* stores the current palette in the list.
+- *Export Palette* download active palette as a file.
+- *Palette to URL* writes the active palette into a url link that can be used to load that palette, useful to share a palette with someone else.
 
 Fractal
 ~~~~~~~
@@ -208,7 +216,6 @@ Some of the items are also only visible when logged in.
 - *Share* Publish a fractal to the server (will be displayed in the shared fractals list). Responds with a unique URL that can be used to load this fractal.
 - *Share Image* Publish a screenshot of the current fractal to imgur.com (will be displayed in the shared images list). Responds with a unique URL that can be used to view this image.
 - *Stored Fractals* displays a sub-menu of all the fractals in local storage, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.
-- *Palettes* displays a sub-menu of all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Press *Save Palette* to store the current palette, *Export Palette* to download it as a file and *Palette to URL* creates a url that can be used to load a palette.
 - *Formula Sets* sub-menu of available saved formula sets and options relating to them.
 - *Save As...*
 
@@ -354,14 +361,59 @@ Complex numbers are represented as two-dimensional vector types, and created usi
 
 This is a bit of a hack and you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations for which the complex number definition is the same (addition and subtraction) but not for multiplication and division. As operators can't be overloaded in GLSL, for mathematically correct results you should never use the * and / operators to multiply and divide complex types. Use the built in *mul()* and *div()* functions instead which are designed to do correct complex number multiplication and division.
 
+*eg: if x is a complex number:*
 ::
 
-  eg: if x is a complex number:
   x = x*(1.5,-1); -- incorrect!
   x = mul(x,(1.5,-1)); -- correct!
 
-For mathematical expressions it is much better using the **expression** parameter type, expressions entered in these parameters will multiply complex numbers correctly using the * and / operators and result in much more readable mathematical language, with the bonus that the expression can be easily edited in the tools panel without having to open the formula editor.
-The expression parser will automatically translate any multiplication, division and power operations to the correct form.
+Solution: The Expression Parser
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The expression parser allows you to enter mathematical expressions using complex numbers using the * (multiply) / (divide) and ^ (raise to power) symbols and behind the scenes convert the expression to the formula code necessary to evaluate the expression correctly. This allows entering formulae in much clearer mathematical notation than would be possible using the format noted previously.
+
+There are two ways of using this feature:
+
+The **expression** parameter type creates an editable parameter where a formula expression can be entered, this has the additional bonus that the expression contents can be easily edited in the tools panel while working with a fractal without having to open the formula editor.
+
+In the formula editor code sections, any text surrounded by forward-slash "/" characters will also be processed by the expression parser.
+
+For example, entering:
+
+::
+
+  z = /z^2 + c/;
+
+will be translated internally to:
+
+::
+
+  z = add(sqr(z), c);
+
+Some other forms the parser will recognise:
+
+A period can be used instead of * for multiplication as long as it is not between two digits:
+
+3.z ==> 3*z
+
+Two bracketed expressions without an operator between them will be implicitly multiplied:
+
+(z + 1)(z - 1) ==> (z + 1) * (z - 1)
+
+A numeric constant immediately before a set of brackets will be be an implicit multiplication:
+
+3(z + 1) ==> 3 * (z + 1)
+
+This does not work with variables, eg: x(z + 1) as it is indistinguishable from a function call to the parser.
+
+No other forms of implicit multiplication are recognised, elsewhere you must insert a multiplication symbol.
+
+A set of brackets with a comma implies a complex number, in parsed expressions the components of the complex number can contain any expression:
+
+(sin(x), y^2) ==> complex(sin(x), y^2)
+
+In base formula code you are limited to single constants or variables as the real and imaginary components of complex number initialisations.
+
+Expressions can also be entered over multiple lines and semi-colons are not required at the end of lines.
 
 **Note: Colour and Transform formulae**
 As the same colour and transform formula can be selected twice in different categories, variables and parameters declared in these formula can cause conflicts (attempting to declare a variable or parameter of the same name twice).
@@ -382,6 +434,57 @@ If the above is not followed in a colour formula, for example, and this colour f
 
 (ERROR: 0:180: 'myparam' : redefinition).
 (ERROR: 0:182: 'x' : redefinition).
+
+Built in variables
+~~~~~~~~~~~~~~~~~~
+(TODO: Explanation required!)
+
+- z
+- c
+- z_1
+- z_2
+- point
+- coord
+- selected
+- limit
+- count
+- escaped
+- converged
+- colour
+- offset
+- julia
+- perturb
+- pixelsize
+- dims
+- origin
+- palette
+- background
+- antialias
+
+- PI
+- E
+
+Functions:
+~~~~~~~~~~
+Maths functions from GLSL: (need to cross-reference and confirm available in OpenCL)
+
+- abs acos asin atan
+- ceil cos cross
+- degrees distance dot equal exp exp2
+- floor inversesqrt length
+- log log2 max min mix mod
+- normalize pow radians sign sin sqrt tan
+
+Additional functions provided:
+
+- ident zero czero gradient
+- mul div add sub inv sqr cube cpow
+- ln lnr log10 manhattan norm cabs
+- arg neg conj polar
+- cosh tanh sinh acosh atanh asinh 
+- cexp csin ccos ctan casin cacos
+- catan csinh ccosh ctanh casinh
+- cacosh catanh csqrt csqrt2 equals
 
 **TODO: Further document maths library functions, custom mouse actions, scripting, default formulae**
 

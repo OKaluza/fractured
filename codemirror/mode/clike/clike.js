@@ -300,7 +300,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     name: "clike",
     keywords: words("if while else do discard return break continue for switch case default"),
     blockKeywords: words("do else for if switch while"),
-    atoms: words("true false PI TWO_PI E"),
+    atoms: words("true false PI E"),
     modifiers: words("attribute const in inout out varying uniform"),
     labels: words("init: reset: znext: escaped: converged: transform: calc: result:"),
     types: words("bool bvec2 bvec3 bvec4 float int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 

@@ -38,8 +38,7 @@
 
   while($rssFeed = mysql_fetch_array($getFeed)) {
     echo '<item>',
-         '<title>', $rssFeed['name'], '</title>';
-
+         '<title>', $rssFeed['name'], '</title>',
          '<link>', $root, $rssFeed['locator'], '</link>',
          '<description><![CDATA[' ,$rssFeed['name'],']]></description>',
          '</item>';

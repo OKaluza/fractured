@@ -4,7 +4,8 @@
 #define czero(args) complex(0.0,0.0)
 
 #define PI  real(3.141592654)
-#define E   real(2.718281828)/Maths functions
+#define E   real(2.718281828)
+
 real _call_ inv(in real r)  {return 1.0/r;}
 real _call_ neg(in real x)  {return -x;}
 real _call_ sqr(in real x)  {return x*x;}
