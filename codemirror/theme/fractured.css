@@ -15,9 +15,9 @@
 .cm-s-fracturedlight span.cm-meta {color: gray;}
 
 .cm-s-fracturedlight span.cm-modifier {color: #558fff;}
-.cm-s-fracturedlight span.cm-label {color: #900; font-weight:bold;}
-.cm-s-fracturedlight span.cm-stdlib {color: #000088; font-weight:bold;}
-.cm-s-fracturedlight span.cm-stdvar {color: #0099aa; font-weight:bold;}
+.cm-s-fracturedlight span.cm-label {color: #900; font-weight:bold; text-decoration: underline;}
+.cm-s-fracturedlight span.cm-stdlib {color: #008; font-weight:bold;}
+.cm-s-fracturedlight span.cm-stdvar {color: #089; font-weight:bold;}
 .cm-s-fracturedlight span.cm-type {color: blue;}
 .cm-s-fracturedlight span.cm-param {color: black; font-weight:bold;}
 .cm-s-fracturedlight span.cm-local {color: #633;}
@@ -38,11 +38,11 @@
 .cm-s-fractureddark span.cm-meta {color: #8ca;}
 
 .cm-s-fractureddark span.cm-modifier {color: #558fff;}
-.cm-s-fractureddark span.cm-label {color: #af6; font-weight:bold;}
+.cm-s-fractureddark span.cm-label {color: khaki; font-weight:bold; text-decoration: underline;}
 .cm-s-fractureddark span.cm-stdlib {color: #ba0; font-weight:bold;}
-.cm-s-fractureddark span.cm-stdvar {color: #00de90; font-weight:bold;}
-.cm-s-fractureddark span.cm-type {color: aqua;}
-.cm-s-fractureddark span.cm-param {color: khaki; font-weight:bold;}
+.cm-s-fractureddark span.cm-stdvar {color: #8cc; font-weight:bold;}
+.cm-s-fractureddark span.cm-type {color: #7a0;}
+.cm-s-fractureddark span.cm-param {color: #ccc; font-weight:bold;}
 .cm-s-fractureddark span.cm-local {color: seagreen; }
 
 /* Unused? */

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="Docutils 0.8.1: http://docutils.sourceforge.net/" />
-<title>Fractured Studio</title>
+<title>Fractured - User Guide</title>
 <style type="text/css">
 
 body {
@@ -277,14 +277,15 @@ ul.auto-toc {
 </style>
 </head>
 <body>
-<div class="document" id="fractured-studio">
-<h1 class="title">Fractured Studio</h1>
+<div class="document" id="fractured-user-guide">
+<h1 class="title">Fractured - User Guide</h1>
 
-<p>Version 0.5
-(c) Owen Kaluza, 2012</p>
-<p><em>(NOTE: Apologies as this documentation is a work in progress and not by any means complete)</em></p>
-<div class="contents topic" id="help-contents">
-<p class="topic-title first">Help Contents</p>
+<div class="line-block">
+<div class="line">Fractured | Fractal art studio | Version 0.6</div>
+<div class="line">(c) Owen Kaluza, 2012</div>
+</div>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first"><cite>Table of contents</cite></p>
 <ul class="simple">
 <li><a class="reference internal" href="#introduction" id="id2">Introduction</a><ul>
 <li><a class="reference internal" href="#acknowledgments" id="id3">Acknowledgments</a></li>
@@ -331,9 +332,10 @@ ul.auto-toc {
 </ul>
 </li>
 <li><a class="reference internal" href="#formula-language" id="id32">Formula language</a><ul>
-<li><a class="reference internal" href="#solution-the-expression-parser" id="id33">Solution: The Expression Parser</a></li>
-<li><a class="reference internal" href="#built-in-variables" id="id34">Built in variables</a></li>
-<li><a class="reference internal" href="#functions" id="id35">Functions:</a></li>
+<li><a class="reference internal" href="#complexities-of-complex-arithmetic" id="id33">Complexities of complex arithmetic</a></li>
+<li><a class="reference internal" href="#solution-the-expression-parser" id="id34">Solution: The Expression Parser</a></li>
+<li><a class="reference internal" href="#built-in-variables" id="id35">Built in variables</a></li>
+<li><a class="reference internal" href="#functions" id="id36">Functions</a></li>
 </ul>
 </li>
 </ul>
@@ -348,12 +350,13 @@ There are many great fractal programs around, but, from my deranged perspective,
 <p>I originally started using Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far I could take the paradigm of a standalone desktop app running in a web browser.</p>
 <p>Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone else will find it useful.</p>
 <p>If you have any feedback email me at: owen (at) ozone.id.au</p>
+<p><em>(NOTE: Apologies as this documentation is a work in progress and not by any means complete)</em></p>
 <div class="section" id="acknowledgments">
 <h2><a class="toc-backref" href="#id3">Acknowledgments</a></h2>
 <ul class="simple">
 <li>CodeMirror <a class="reference external" href="http://codemirror.net/">http://codemirror.net/</a> used for formula / shader code editing component.</li>
 <li>Expression parser built using Jison <a class="reference external" href="http://zaach.github.com/jison/">http://zaach.github.com/jison/</a></li>
-<li>Vector and Matrix library: sylvester.js <a class="reference external" href="http://sylvester.jcoglan.com/">http://sylvester.jcoglan.com/</a></li>
+<li>Vector and Matrix library: glMatrix <a class="reference external" href="https://github.com/toji/gl-matrix">https://github.com/toji/gl-matrix</a></li>
 <li>Learning WebGL <a class="reference external" href="http://learningwebgl.com/">http://learningwebgl.com/</a> for WebGL tutorials</li>
 <li>WebCL tutorials: Nokia Research WebCL <a class="reference external" href="http://webcl.nokiaresearch.com/">http://webcl.nokiaresearch.com/</a> and, WebCL Examples <a class="reference external" href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">http://www.ibiblio.org/e-notes/webcl/webcl.htm</a></li>
 <li>Some fractal formulae based on those in Gnofract <a class="reference external" href="http://gnofract4d.sourceforge.net/">http://gnofract4d.sourceforge.net/</a> and UltraFractal <a class="reference external" href="http://www.ultrafractal.com/">http://www.ultrafractal.com/</a></li>
@@ -503,7 +506,7 @@ When supported you can use them to switch between the following renderers:</p>
 <li><strong>WebCL</strong> fractals are computed in an OpenCL kernel and then drawn to a 2D canvas, single precision.</li>
 <li><strong>WebCL fp64</strong> as WebCL but utilising the 64-bit floating point extensions when available for double precision fractal computation.</li>
 </ul>
-<p>...and the help file... which you're now reading.</p>
+<p>...and the help file... you're reading it.</p>
 </div>
 <div class="section" id="log">
 <h3><a class="toc-backref" href="#id17">Log</a></h3>
@@ -683,15 +686,27 @@ section:
 <h2><a class="toc-backref" href="#id32">Formula language</a></h2>
 <p>Apart from the special format of the parameter definitions and section headers, the formula code is entered in a C-style syntax as a form of augmented GLSL ES 2.0 (<a class="reference external" href="http://www.khronos.org/opengles/2_X">http://www.khronos.org/opengles/2_X</a>) with an additional function library for complex numbers and some definitions and pre-processing for ease of use writing fractal formulae.</p>
 <p>Complex numbers are represented as two-dimensional vector types, and created using the type <em>complex</em>, complex constants can be defined in code in the form (re, im), eg: complex Z = (-1,0.5). You can then access the real component (-1.0) as Z.x and the imaginary component (0.5) as Z.y.</p>
-<p>This is a bit of a hack and you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations for which the complex number definition is the same (addition and subtraction) but not for multiplication and division. As operators can't be overloaded in GLSL, for mathematically correct results you should never use the * and / operators to multiply and divide complex types. Use the built in <em>mul()</em> and <em>div()</em> functions instead which are designed to do correct complex number multiplication and division.</p>
-<p><em>eg: if x is a complex number:</em></p>
+<p>All code statements in the formula definition must end in a semi-colon &quot;;&quot; as with in other c-style languages.</p>
+<div class="section" id="complexities-of-complex-arithmetic">
+<h3><a class="toc-backref" href="#id33">Complexities of complex arithmetic</a></h3>
+<p>When writing formula code you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations but not others.</p>
+<p>Addition and subtraction of two complex numbers and multiplication of a real number with a complex number works correctly as these operations are defined for complex numbers the same as the equivalent vector operations.</p>
+<p>Multiplication and division of complex numbers and addition/subtraction of complex to real numbers do not.</p>
+<p>The best way to avoid this problem is to use the <strong>expression parser</strong> discussed in the section below, this will automatically translate your operations into the correct form, in fact you might as well skip ahead to the next heading as the rest of this section is for information purposes only and not relevant if you stick to using the expression parser for entering equations.</p>
+<p>As operators can't be overloaded in GLSL, for mathematically correct results with complex numbers the <em>mul()</em> and <em>div()</em> functions have been defined instead of * and / which are designed to do correct complex number multiplication and division. For addition/subtraction ensure if you add or subtract a real number to a complex you declare it as a complex with a zero imaginary component, alternatively there are add() and sub() functions defined that handle all combinations of complex and real addition/subtraction.</p>
+<p><em>eg: if z is a complex number</em>:</p>
 <pre class="literal-block">
-x = x*(1.5,-1); -- incorrect!
-x = mul(x,(1.5,-1)); -- correct!
+z = z*(1.5,-1);       -- incorrect, component-wise vector multiplication
+z = mul(z,(1.5,-1));  -- correct, complex multiplication
+
+z = z + (1,0);        -- correct, adds 1.0 only to the real part of z
+z = z + 1.0;          -- incorrect, adds 1.0 to both components of z
 </pre>
+<p>If writing equations directly into the formula code you must also be careful to always put a decimal point in real number constants, eg: 1. or 1.0 instead of just 1 or you will get type errors from the GLSL compiler when using them with complex or real number variables, another reason to use the expression parser instead...</p>
+</div>
 <div class="section" id="solution-the-expression-parser">
-<h3><a class="toc-backref" href="#id33">Solution: The Expression Parser</a></h3>
-<p>The expression parser allows you to enter mathematical expressions using complex numbers using the * (multiply) / (divide) and ^ (raise to power) symbols and behind the scenes convert the expression to the formula code necessary to evaluate the expression correctly. This allows entering formulae in much clearer mathematical notation than would be possible using the format noted previously.</p>
+<h3><a class="toc-backref" href="#id34">Solution: The Expression Parser</a></h3>
+<p>The expression parser allows you to enter mathematical expressions using any combination of complex and real numbers using the * (multiply) / (divide) and ^ (raise to power) symbols. Behind the scenes it will convert the expression to the formula code necessary to evaluate the expression correctly. This allows entering formulae in much clearer mathematical notation than would be possible using raw GLSL code as noted previously.</p>
 <p>There are two ways of using this feature:</p>
 <p>The <strong>expression</strong> parameter type creates an editable parameter where a formula expression can be entered, this has the additional bonus that the expression contents can be easily edited in the tools panel while working with a fractal without having to open the formula editor.</p>
 <p>In the formula editor code sections, any text surrounded by forward-slash &quot;/&quot; characters will also be processed by the expression parser.</p>
@@ -717,8 +732,8 @@ z = add(sqr(z), c);
 <p>In base formula code you are limited to single constants or variables as the real and imaginary components of complex number initialisations.</p>
 <p>Expressions can also be entered over multiple lines and semi-colons are not required at the end of lines.</p>
 <p><strong>Note: Colour and Transform formulae</strong>
-As the same colour and transform formula can be selected twice in different categories, variables and parameters declared in these formula can cause conflicts (attempting to declare a variable or parameter of the same name twice).</p>
-<p>To get around this you can use the colon &quot;:&quot; character at the start of any variable or after the &#64; in a parameter name. When the formula code is translated to shader code the &quot;:&quot; will be replaced with the formula type, preventing &quot;redefinition&quot; errors.</p>
+As the same colour and transform formula can be selected twice in different categories, variables and parameters declared in these formulae can cause conflicts (attempting to declare a variable or parameter of the same name twice).</p>
+<p>To get around this you can use the colon &quot;:&quot; character at the start of any variable or after the &#64; in a parameter name. When the formula code is translated to shader code the &quot;:&quot; will be replaced with the formula type, preventing &quot;redefinition&quot; errors, eg:</p>
 <pre class="literal-block">
 eg: &#64;myparam = real(1);
 or: complex x = (4,5);
@@ -733,7 +748,7 @@ complex :x = (4,5);
 </pre>
 </div>
 <div class="section" id="built-in-variables">
-<h3><a class="toc-backref" href="#id34">Built in variables</a></h3>
+<h3><a class="toc-backref" href="#id35">Built in variables</a></h3>
 <p>(TODO: Explanation required!)</p>
 <ul class="simple">
 <li>z</li>
@@ -762,7 +777,7 @@ complex :x = (4,5);
 </ul>
 </div>
 <div class="section" id="functions">
-<h3><a class="toc-backref" href="#id35">Functions:</a></h3>
+<h3><a class="toc-backref" href="#id36">Functions</a></h3>
 <p>Maths functions from GLSL: (need to cross-reference and confirm available in OpenCL)</p>
 <ul class="simple">
 <li>abs acos asin atan</li>
