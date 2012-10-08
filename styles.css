@@ -443,3 +443,18 @@ a.gallery {font: 8pt verdana; margin-right: 5px; display: block; width: 100px;
 a.gallery:hover {color: #000; background-color: #DD3}
 a.selected {color: #FFF; background-color: #D91}
 a.selected:hover {color: #000; background-color: #FD3}
+
+/* Override some codemirror defaults */
+.CodeMirror {
+  font-family: 'Droid Sans Mono',monospace;
+  font-size: 9pt;
+  line-height: 1.0em;
+background: #fff;
+min-width: 206px; max-width: 206px;
+border: 1px solid #998; border-radius: 3px; min-height: 20px;
+margin: 2px; padding: 0px;
+}
+div.row .CodeMirror:focus {border-color: blue;}
+.CodeMirror-scroll {height: auto; overflow: visible;}
+
+.cm-s-fracturedlight { background: #fff; }

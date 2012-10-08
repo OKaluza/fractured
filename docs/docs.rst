@@ -1,13 +1,10 @@
-================
-Fractured Studio
-================
-Version 0.5
-(c) Owen Kaluza, 2012
+======================
+Fractured - User Guide
+======================
+| Fractured | Fractal art studio | Version 0.6
+| (c) Owen Kaluza, 2012
 
-*(NOTE: Apologies as this documentation is a work in progress and not by any means complete)*
-
-.. contents::
-  Help Contents
+.. contents:: `Table of contents`
 
 Introduction
 ============
@@ -22,12 +19,14 @@ Now many lost weekends and evenings later it seems to finally have turned into a
 
 If you have any feedback email me at: owen (at) ozone.id.au
 
+*(NOTE: Apologies as this documentation is a work in progress and not by any means complete)*
+
 Acknowledgments
 ---------------
 
 - CodeMirror http://codemirror.net/ used for formula / shader code editing component.
 - Expression parser built using Jison http://zaach.github.com/jison/
-- Vector and Matrix library: sylvester.js http://sylvester.jcoglan.com/
+- Vector and Matrix library: glMatrix https://github.com/toji/gl-matrix
 - Learning WebGL http://learningwebgl.com/ for WebGL tutorials
 - WebCL tutorials: Nokia Research WebCL http://webcl.nokiaresearch.com/ and, WebCL Examples http://www.ibiblio.org/e-notes/webcl/webcl.htm
 - Some fractal formulae based on those in Gnofract http://gnofract4d.sourceforge.net/ and UltraFractal http://www.ultrafractal.com/
@@ -179,7 +178,7 @@ When supported you can use them to switch between the following renderers:
 - **WebCL** fractals are computed in an OpenCL kernel and then drawn to a 2D canvas, single precision.
 - **WebCL fp64** as WebCL but utilising the 64-bit floating point extensions when available for double precision fractal computation.
 
-...and the help file... which you're now reading.
+...and the help file... you're reading it.
 
 Log
 ~~~
@@ -274,9 +273,7 @@ Parameter definitions
 A parameter definition is a description of a formula variable or option which you want to allow to be controlled by the user interface.
 These definitions specify the controls that appear when you select this formula.
 
-The format of a definition is:
-
-::
+The format of a definition is::
 
   //Description
   @variable_name = type(default);
@@ -305,9 +302,7 @@ The format of a definition is:
 
 Data declarations
 -----------------
-Following the parameter definitions a list of data variables that will be used in the formula calculation can be defined, in the form:
-
-::
+Following the parameter definitions a list of data variables that will be used in the formula calculation can be defined, in the form::
 
   type variable_name = default;
 
@@ -319,9 +314,7 @@ Formula code sections
 ---------------------
 These are sections of code that will be processed in various points during the fractal calculation, different sections are available depending on the type of formula being edited. 
 
-They are defined in the form:
-
-::
+They are defined in the form::
 
   section:
     code statements...
@@ -359,17 +352,33 @@ Apart from the special format of the parameter definitions and section headers, 
 
 Complex numbers are represented as two-dimensional vector types, and created using the type *complex*, complex constants can be defined in code in the form (re, im), eg: complex Z = (-1,0.5). You can then access the real component (-1.0) as Z.x and the imaginary component (0.5) as Z.y.
 
-This is a bit of a hack and you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations for which the complex number definition is the same (addition and subtraction) but not for multiplication and division. As operators can't be overloaded in GLSL, for mathematically correct results you should never use the * and / operators to multiply and divide complex types. Use the built in *mul()* and *div()* functions instead which are designed to do correct complex number multiplication and division.
+All code statements in the formula definition must end in a semi-colon ";" as with in other c-style languages.
 
-*eg: if x is a complex number:*
-::
+Complexities of complex arithmetic
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When writing formula code you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations but not others.
 
-  x = x*(1.5,-1); -- incorrect!
-  x = mul(x,(1.5,-1)); -- correct!
+Addition and subtraction of two complex numbers and multiplication of a real number with a complex number works correctly as these operations are defined for complex numbers the same as the equivalent vector operations.
+
+Multiplication and division of complex numbers and addition/subtraction of complex to real numbers do not.
+
+The best way to avoid this problem is to use the **expression parser** discussed in the section below, this will automatically translate your operations into the correct form, in fact you might as well skip ahead to the next heading as the rest of this section is for information purposes only and not relevant if you stick to using the expression parser for entering equations.
+
+As operators can't be overloaded in GLSL, for mathematically correct results with complex numbers the *mul()* and *div()* functions have been defined instead of * and / which are designed to do correct complex number multiplication and division. For addition/subtraction ensure if you add or subtract a real number to a complex you declare it as a complex with a zero imaginary component, alternatively there are add() and sub() functions defined that handle all combinations of complex and real addition/subtraction.
+
+*eg: if z is a complex number*::
+
+  z = z*(1.5,-1);       -- incorrect, component-wise vector multiplication
+  z = mul(z,(1.5,-1));  -- correct, complex multiplication
+
+  z = z + (1,0);        -- correct, adds 1.0 only to the real part of z
+  z = z + 1.0;          -- incorrect, adds 1.0 to both components of z
+
+If writing equations directly into the formula code you must also be careful to always put a decimal point in real number constants, eg: 1. or 1.0 instead of just 1 or you will get type errors from the GLSL compiler when using them with complex or real number variables, another reason to use the expression parser instead...
 
 Solution: The Expression Parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The expression parser allows you to enter mathematical expressions using complex numbers using the * (multiply) / (divide) and ^ (raise to power) symbols and behind the scenes convert the expression to the formula code necessary to evaluate the expression correctly. This allows entering formulae in much clearer mathematical notation than would be possible using the format noted previously.
+The expression parser allows you to enter mathematical expressions using any combination of complex and real numbers using the * (multiply) / (divide) and ^ (raise to power) symbols. Behind the scenes it will convert the expression to the formula code necessary to evaluate the expression correctly. This allows entering formulae in much clearer mathematical notation than would be possible using raw GLSL code as noted previously.
 
 There are two ways of using this feature:
 
@@ -377,15 +386,11 @@ The **expression** parameter type creates an editable parameter where a formula 
 
 In the formula editor code sections, any text surrounded by forward-slash "/" characters will also be processed by the expression parser.
 
-For example, entering:
-
-::
+For example, entering::
 
   z = /z^2 + c/;
 
-will be translated internally to:
-
-::
+will be translated internally to::
 
   z = add(sqr(z), c);
 
@@ -416,11 +421,9 @@ In base formula code you are limited to single constants or variables as the rea
 Expressions can also be entered over multiple lines and semi-colons are not required at the end of lines.
 
 **Note: Colour and Transform formulae**
-As the same colour and transform formula can be selected twice in different categories, variables and parameters declared in these formula can cause conflicts (attempting to declare a variable or parameter of the same name twice).
+As the same colour and transform formula can be selected twice in different categories, variables and parameters declared in these formulae can cause conflicts (attempting to declare a variable or parameter of the same name twice).
 
-To get around this you can use the colon ":" character at the start of any variable or after the @ in a parameter name. When the formula code is translated to shader code the ":" will be replaced with the formula type, preventing "redefinition" errors.
-
-::
+To get around this you can use the colon ":" character at the start of any variable or after the @ in a parameter name. When the formula code is translated to shader code the ":" will be replaced with the formula type, preventing "redefinition" errors, eg::
 
   eg: @myparam = real(1);
   or: complex x = (4,5);
@@ -428,12 +431,10 @@ To get around this you can use the colon ":" character at the start of any varia
   @:myparam = real(1);
   complex :x = (4,5);
 
-If the above is not followed in a colour formula, for example, and this colour formula is selected for both inside and outside colouring, you will get errors of the form:
+If the above is not followed in a colour formula, for example, and this colour formula is selected for both inside and outside colouring, you will get errors of the form::
 
-::
-
-(ERROR: 0:180: 'myparam' : redefinition).
-(ERROR: 0:182: 'x' : redefinition).
+  (ERROR: 0:180: 'myparam' : redefinition).
+  (ERROR: 0:182: 'x' : redefinition).
 
 Built in variables
 ~~~~~~~~~~~~~~~~~~
@@ -464,8 +465,8 @@ Built in variables
 - PI
 - E
 
-Functions:
-~~~~~~~~~~
+Functions
+~~~~~~~~~
 Maths functions from GLSL: (need to cross-reference and confirm available in OpenCL)
 
 - abs acos asin atan

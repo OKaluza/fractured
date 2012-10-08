@@ -6,6 +6,9 @@
 <title>Fractured | Fractal Studio</title>
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" href="codemirror/lib/codemirror.css">
+<link rel="stylesheet" href="codemirror/theme/fractured.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
 <script type="text/javascript" src="colourPicker.js"></script>
@@ -19,7 +22,7 @@
 <script type="text/javascript" src="fractal.js"></script>
 <script type="text/javascript" src="colour.js"></script>
 
-<script type="text/javascript" src="sylvester.js"></script>
+<script type="text/javascript" src="gl-matrix.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
 <script type="text/javascript" src="webcl.js"></script>
 
@@ -36,7 +39,7 @@
     <div id="title">
       <h1><span id="heading1">
       <a href="/">Fractured</a></span><span id="bar">|</span>studio
-      </h1><h3>0.5</h3>
+      </h1><h3>0.6</h3>
     </div>
 
     <nav id="menu">
@@ -204,8 +207,8 @@
       <nav id="tabs">
         <ul>
           <li onmousedown="showPanel(this, 'panel1');" id="tab1" class="selected">Parameters</li>
-          <li onmousedown="showPanel(this, 'panel2');" class="unselected">Formula</li>
-          <li onmousedown="showPanel(this, 'panel3');" class="unselected">Colour</li>
+          <li onmousedown="showPanel(this, 'panel2');" id="tab2" class="unselected">Formula</li>
+          <li onmousedown="showPanel(this, 'panel3');" id="tab3" class="unselected">Colour</li>
           <li onmousedown="showPanel(this, 'panel4');" id="tab4" class="unselected">Info</li>
           <li onmousedown="showPanel(this, 'panel5');" id="tab5" class="unselected">Log</li>
         </ul>

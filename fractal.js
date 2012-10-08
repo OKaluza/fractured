@@ -4,7 +4,7 @@
   var WEBCL64 = 2;
   var renderer = WEBGL;
   //Regular expressions
-  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression|define)\((.*)\);/gi;
+  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression|define)\(([\S\s]*?)\);/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\s*,\s*([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\)?/;
@@ -66,13 +66,14 @@
     var re = scalex * (x - half_w) / (half_w * this.zoom);
     var im = scaley * (y - half_h) / (half_h * this.zoom);
 
-    //Apply rotation around Z to selected point (uses sylvester.js vector fns)
+    //Apply rotation around Z to selected point
     var arad = -this.rotate * Math.PI / 180.0;
-    var axis = Line.create($V([0,0,0]), $V([0,0,1]));
-    var apos = $V([re, im, 0]);
-    var newPos = apos.rotate(arad, axis);
-    //return new Aspect(newPos.e(1), newPos.e(2), this.rotate, this.zoom);
-    return new Complex(newPos.e(1), newPos.e(2));
+    var m = mat4.create();
+    mat4.identity(m); // Set to identity
+    mat4.rotate(m, arad, [0, 0, 1]); // Rotate around the Z axis
+    var vec = vec3.create([re, im, 0]);
+    mat4.multiplyVec3(m, vec);
+    return new Complex(vec[0], vec[1]);
   }
 
   //Complex number type
@@ -134,14 +135,14 @@
     //Optimisation: 
     //find all variables in expression and if found in param list, replace with their value
     //(requires savevars[] array created when parsing parameters in toCode())
-    var reg = /[_a-zA-Z][_a-zA-Z0-9]*/g;
+    var reg = /@?:?([_a-zA-Z][_a-zA-Z0-9]*)/g;
     var match;
     while (match = reg.exec(expr)) {
-      if (savevars[match[0]]) {
+      if (savevars[match[1]]) {
         //Replace the matched param with value
         var newval = expr.slice(0, reg.lastIndex - match[0].length);
-        expr = newval + savevars[match[0]] + expr.slice(reg.lastIndex, expr.length);
-        reg.lastIndex += (savevars[match[0]] - match[0].length); //Adjust search position
+        expr = newval + savevars[match[1]] + expr.slice(reg.lastIndex, expr.length);
+        reg.lastIndex += (savevars[match[1]] - match[0].length); //Adjust search position
       }
     }
 
@@ -342,9 +343,14 @@
         this.value.im = parseReal(this.input[1].value);
         break;
       case 4: //Function name
-      case 6: //Expression
       case 7: //Define list
         this.value = this.input.value.trim();
+        break;
+      case 6: //Expression
+        if (this.input.editor)
+          this.value = this.input.editor.getValue();
+        else
+          this.value = this.input.value.trim();
         break;
       case 5: //RGBA colour
         this.value = new Colour(this.input.style.backgroundColor);
@@ -477,6 +483,20 @@
 
   //Add fields for all our parameters dynamically to the page
   ParameterSet.prototype.createFields = function(category, name) {
+    switch (category) {
+      case "base":
+        if (selectedTab != $('tab1')) return;
+        break;
+      case "fractal":
+      case "pre_transform":
+      case "post_transform":
+        if (selectedTab != $('tab2')) return;
+        break;
+      case "inside_colour":
+      case "outside_colour":
+        if (selectedTab != $('tab3')) return;
+        break;
+    }
     var field_area = $(category + "_params");
     var divider = document.createElement("div");
     divider.className = "divider";
@@ -595,9 +615,18 @@
           //Expression
           input = document.createElement("textarea");
           input.value = this[key].value;
-          input.setAttribute("onkeyup", "grow(this);");
           input.setAttribute("spellcheck", false);
           spanin.appendChild(input);
+          //if (typeof CodeMirror == 'function') {
+            input.editor = new CodeMirror.fromTextArea(input, {
+              mode: "text/x-glsl",
+              theme: "fracturedlight",
+              indentUnit: 2,
+              tabSize: 2,
+              matchBrackets: true,
+              lineWrapping: true
+            });
+          //}
           break;
         case 7: 
           //List of literal values (val1|val2 etc...)
@@ -649,14 +678,14 @@
     this.params = {};
     this.defaultparams = {};
     this.lineoffsets = {};
-    if (category == "base")
-      this.select("default");
-    else
-      this.reselect();
+    this.reselect();
   }
 
   Formula.prototype.reselect = function() {
-    this.selectByIndex();
+    if (this.category == "base")
+      this.select("default");
+    else
+      this.selectByIndex();
   }
 
   Formula.prototype.selectByIndex = function(idx) {
@@ -704,8 +733,6 @@
     }
     //consoleDebug("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
        //consoleTrace();
-    growTextAreas('fractal_inputs');  //Resize expression fields
-    growTextAreas('colour_inputs');  //Resize expression fields
   }
 
   Formula.prototype.getkey = function() {
@@ -1159,6 +1186,7 @@
 
     var lines = source.split("\n"); // split on newlines
     var section = "";
+    var curparam = null;
 
     //var formulas = {};
 
@@ -1283,23 +1311,29 @@
         //  }
         //}
         if (!category) category = "base";
-        var pair2 = line.split("=");
-        if (this[category].currentParams[pair2[0]])
-          this[category].currentParams[pair2[0]].parse(pair2[1]);
-        else { //Not defined in formula, skip
-          if (pair2[0] == "vary") { //Moved to fractured transform, hack to transfer param from old saves
-            if (parseReal(pair2[1]) > 0) {
-              this["post_transform"].select("fractured");
-              saved["vary"] = pair2[1];
-            }
-          } else if (pair2[0] == "inrepeat") { //Moved to colour, hack to transfer param from old saves
-            if (parseReal(pair2[1]) != 1)
-              saved["inrepeat"] = pair2[1];
-          } else if (pair2[0] == "outrepeat") { //Moved to colour, hack to transfer param from old saves
-            if (parseReal(pair2[1]) != 1)
-              saved["outrepeat"] = pair2[1];
-          } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
-            consoleWrite("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+        if (curparam && line.indexOf("=") < 0 && line.length > 0) {
+          //Multi-line value (ok for expressions)
+          curparam.value += "\n" + lines[i];
+        } else {
+          var pair2 = line.split("=");
+          if (this[category].currentParams[pair2[0]]) {
+            curparam = this[category].currentParams[pair2[0]];
+            curparam.parse(pair2[1]);
+          } else { //Not defined in formula, skip
+            if (pair2[0] == "vary") { //Moved to fractured transform, hack to transfer param from old saves
+              if (parseReal(pair2[1]) > 0) {
+                this["post_transform"].select("fractured");
+                saved["vary"] = pair2[1];
+              }
+            } else if (pair2[0] == "inrepeat") { //Moved to colour, hack to transfer param from old saves
+              if (parseReal(pair2[1]) != 1)
+                saved["inrepeat"] = pair2[1];
+            } else if (pair2[0] == "outrepeat") { //Moved to colour, hack to transfer param from old saves
+              if (parseReal(pair2[1]) != 1)
+                saved["outrepeat"] = pair2[1];
+            } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
+              consoleWrite("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+          }
         }
       }
     }
@@ -2243,7 +2277,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
       } else {
         //Zoom box processing
         var select = $("select");
-        var main = $("main");
+        var el = this.canvas; //$("el");
 
         if (select.timer) clearTimeout(select.timer);
         if (!select.zoom) select.zoom = 1.0;
@@ -2259,19 +2293,19 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         var z = select.zoom;
         if (z > 1.0) {
           z = 1.0 / z;
-          select.w = main.offsetWidth * z;
-          select.h = main.offsetHeight * z;
-          select.x = 0.5*(main.offsetWidth - select.w);
-          select.y = 0.5*(main.offsetHeight - select.h);
+          select.w = el.offsetWidth * z;
+          select.h = el.offsetHeight * z;
+          select.x = 0.5*(el.offsetWidth - select.w);
+          select.y = 0.5*(el.offsetHeight - select.h);
         } else {
           select.style.background = "transparent";
           select.style.borderColor = "#EECC11";
           select.x = select.y = 0;
-          select.w = main.offsetWidth * z;
-          select.h = main.offsetHeight * z;
-          select.style.borderLeftWidth = Math.round(0.5 * (main.offsetWidth - select.w)) + "px";
+          select.w = el.offsetWidth * z;
+          select.h = el.offsetHeight * z;
+          select.style.borderLeftWidth = Math.round(0.5 * (el.offsetWidth - select.w)) + "px";
           select.style.borderRightWidth = select.style.borderLeftWidth;
-          select.style.borderTopWidth = Math.round(0.5 * (main.offsetHeight - select.h)) + "px";
+          select.style.borderTopWidth = Math.round(0.5 * (el.offsetHeight - select.h)) + "px";
           select.style.borderBottomWidth = select.style.borderTopWidth;
         }
 

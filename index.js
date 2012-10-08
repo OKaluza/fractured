@@ -1,12 +1,8 @@
 //TODO:
-//When zooming, if fractal smaller than #main, use it's dimensions instead for zoom box
-//Select params panel after loading fractal?
 //Sometimes loaded palette is not drawn
+//Link to full page docs?
 //Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
 // - possibly reconsider saving includes in session when stored on server
-// Delete thumbnails before regen, if fail gen recover gracefully
-// Note in docs that adding scalars to complex is incorrect?
-//
 
 //Globals
 var current;  //Status
@@ -126,6 +122,16 @@ var rztimeout = undefined;
     }
 
     ajaxReadFile('docs.html', insertHelp);
+    loadScript("/codemirror-compressed.js", "");
+  }
+
+  function loadScript(filename, onload){
+    var head = document.getElementsByTagName('head')[0];
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = filename;
+    script.setAttribute("onload", onload);
+    head.appendChild(script);
   }
 
   function switchMode(mode) {
@@ -772,11 +778,11 @@ var rztimeout = undefined;
     saveState();  //Update saved data first
     //data url version, always use for now for session state as quicker than server round trip
     location.href = 'data:text/fractal-workspace;base64,' + window.btoa(getState());
-    return;
-    
+    /* 
     var d=new Date();
     var fname = "workspace " + d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate() + ".fractured";
     exportFile(fname, "text/fractal-workspace", getState());
+    */
   }
 
   function exportFractalFile() {
@@ -1012,14 +1018,6 @@ var rztimeout = undefined;
     }
   }
 
-  function loadScript(filename) {
-    var head = document.getElementsByTagName('head')[0];
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = filename;
-    head.appendChild(script);
-  }
-
   function loadState() {
     //Load includes...
     sources = null;
@@ -1103,24 +1101,19 @@ var rztimeout = undefined;
     for(i = 0; i < panels.length; i++)
       $(panels[i]).style.display = (name == panels[i]) ? 'block':'none';
 
-    //Resize expression edit fields
-    if (name == "panel2") growTextAreas('fractal_inputs');
-    if (name == "panel3") growTextAreas('colour_inputs');
+    //Update edit fields
+    if (name == "panel1")
+      fractal["base"].reselect();
+    if (name == "panel2") {
+      fractal["fractal"].reselect();
+      fractal["pre_transform"].reselect();
+      fractal["post_transform"].reselect();
+    }
+    if (name == "panel3") {
+      fractal["outside_colour"].reselect();
+      fractal["inside_colour"].reselect();
+    }
     return false;
-  }
-
-  function growTextAreas(form_id) {
-    var elem = $(form_id).elements;
-    for(var i = 0; i < elem.length; i++)
-      if (elem[i].type == 'textarea') grow(elem[i]);
-  }
-
-  function grow(textarea) {
-    // Value of the line-height CSS property for the textarea.
-    var newHeight = textarea.scrollHeight;
-    var currentHeight = textarea.clientHeight;
-    if (newHeight > currentHeight)
-       textarea.style.height = newHeight + "px";
   }
 
   function toggleParams() {
@@ -1147,12 +1140,12 @@ var rztimeout = undefined;
         requestFullScreen("main");
         main.style.top = '-1px';  //-1 because chrome sucks
         main.style.left = '0px';
-        if (!document["inputs"].elements["autosize"].checked) {
+        if (!document["inputs"].elements["autosize"].checked)
           main.style.overflow = "auto";
-        }
       } else {
         //Response to fullscreenchange event
         if (!isFullScreen()) {
+          main.style.overflow = "visible";
           main.style.top = '27px';
           main.style.left = showparams ? '334px' : '1px';
         }
@@ -1384,7 +1377,7 @@ var editorFilename;
   function Status() {
     this.loggedin = false;
     this.offline = null;
-    this.gallery = 0;
+    this.gallery = 1;
     this.filetype = 'fractal';
     this.recording = false;
     this.baseurl = "";
