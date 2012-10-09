@@ -15,7 +15,7 @@
     $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 1 and type = 0 ORDER BY date DESC;";
   else if ($type == "myshared")
     $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 1 and type = 0 ORDER BY date;";
-  else if ($type == "myuploaded")
+  else if ($type == "myuploads")
     $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 0 and type = 0 ORDER BY date;";
   else if ($type == "images")
     $query = "SELECT locator FROM fractal WHERE public = 1 and type = 1 ORDER BY date DESC;";

@@ -28,6 +28,7 @@
 
 <!--
 <script type="text/javascript" src="fractured-compressed.js"></script>
+<script type="text/javascript" src="gl-matrix-min.js"></script>
 -->
 
 </head>
@@ -48,14 +49,12 @@
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
               <ul class="dd">
-                <li><span onclick="openEditor('generated.shader');">Generated Source</span></li>
-                <li><span onclick="openEditor('include/glsl-header.frag');">GLSL Header</span></li>
-                <li><span onclick="openEditor('include/opencl-header.cl');">OpenCL Header</span></li>
-                <li><span onclick="openEditor('include/fractal-shader.frag');">Body Template</span></li>
-                <li><span onclick="openEditor('include/complex-math.frag');">Complex Library</span></li>
-                <li><span onclick="openEditor('include/shader2d.vert');">Vertex Shader</span></li>
-                <li><span onclick="openEditor('generated.hlsl');">Generated HLSL</span></li>
+                <li><span class="fly" tabindex="1">Edit</span>
+                  <ul id="debugedit" class="selectlist">
+                  </ul>
+                </li>
                 <li><span onclick="current.debugOff();">Disable Debug</span></li>
+            <li class="render"><span onclick="uploadFlickr();">Share on Flickr</span></li>
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
@@ -105,7 +104,7 @@
             <li class="render"><span onclick="storeFractal();">Store</span></li>
             <li class="loggedin render"><span onclick="uploadFractalFile(0);">Upload</span></li>
             <li class="loggedin render"><span onclick="uploadFractalFile(1);">Share</span></li>
-            <li class="render"><span onclick="uploadImgur();">Share Image</span></li>
+            <li class="render"><span onclick="uploadImgur();">Share on Imgur</span></li>
             <li><hr></li>
             <li><span class="fly" tabindex="1">Stored Fractals</span>
               <ul id="fractals" class="selectlist">
@@ -376,18 +375,18 @@
   <section id="main">
     <div id="gallery">
       <div id="setgallery">
-        <input id="gal1" type="button" class="selected" value="Examples" onclick="setGallery(1);">
-        <input id="gal2" type="button" value="Shared Fractals" onclick="setGallery(2);">
-        <input id="gal3" type="button" value="Image Gallery" onclick="setGallery(3);">
-        <input id="gal4" type="button" value="My Shared" onclick="setGallery(4);">
-        <input id="gal5" type="button" value="My Uploaded" onclick="setGallery(5);">
-        <input id="gal6" type="button" value="My Images" onclick="setGallery(6);">
-        <div id="note1">Some simple example fractals showing the basic pre-defined formulae and colouring algorithms. Click on the preview image to load the fractal into the viewer.</div>
-        <div id="note2" style="display: none">Fractals that users have shared and made available to others to view and explore. Click on the preview to open the fractal.</div>
-        <div id="note3" style="display: none">Images created from fractals and shared on Imgur.com</div>
-        <div id="note4" style="display: none">Fractals shared by you</div>
-        <div id="note5" style="display: none">Fractals uploaded by you (but not shared)</div>
-        <div id="note6" style="display: none">Images shared by you on Imgur</div>
+        <a id="#examples" href="#examples">Examples</a>
+        <a id="#shared" href="#shared">Shared</a>
+        <a id="#images" href="#images">Images</a>
+        <a id="#myshared" href="#myshared">My Shared </a>
+        <a id="#myuploads" href="#myuploads">My Uploads</a>
+        <a id="#myimages" href="#myimages">My Images</a>
+        <div id="note#examples">Some simple example fractals showing the basic pre-defined formulae and colouring algorithms. Click on the preview image to load the fractal into the viewer.</div>
+        <div id="note#shared">Fractals that users have shared and made available to others to view and explore. Click on the preview to open the fractal.</div>
+        <div id="note#images">Images created from fractals and shared on Imgur.com</div>
+        <div id="note#myshared">Fractals shared by you</div>
+        <div id="note#myuploads">Fractals uploaded by you (but not shared)</div>
+        <div id="note#myimages">Images shared by you on Imgur</div>
       </div>
       <div id="gallery-display">
       </div>

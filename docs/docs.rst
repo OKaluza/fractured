@@ -4,6 +4,8 @@ Fractured - User Guide
 | Fractured | Fractal art studio | Version 0.6
 | (c) Owen Kaluza, 2012
 
+To view : http://fractured.ozone.id.au/docs.html
+
 .. contents:: `Table of contents`
 
 Introduction
@@ -11,15 +13,15 @@ Introduction
 Fractured is a fast fractal renderer written in Javascript and WebGL / WebCL.
 
 I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU. 
-There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace where I could store my work on a server and access it anywhere.
+There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace to store my work on a server and access it anywhere.
 
-I originally started using Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far I could take the paradigm of a standalone desktop app running in a web browser.
-
-Now many lost weekends and evenings later it seems to finally have turned into a fairly usable thing and I've had enough, so here it is - maybe someone else will find it useful.
+It started in Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken.
+  
+Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, so here it is - maybe someone else will find it useful.
 
 If you have any feedback email me at: owen (at) ozone.id.au
 
-*(NOTE: Apologies as this documentation is a work in progress and not by any means complete)*
+*(NOTE: Apologies as this documentation file is still a work in progress)*
 
 Acknowledgments
 ---------------

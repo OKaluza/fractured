@@ -1,4 +1,5 @@
 //TODO:
+//Fixed size images revert to window size
 //Sometimes loaded palette is not drawn
 //Link to full page docs?
 //Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
@@ -49,7 +50,7 @@ var rztimeout = undefined;
       for (var i=0; i<list.length; i++) {
         if (list[i].indexOf('debug') >= 0) {
           //debug mode enabled, show extra menus
-          current.debug = true;
+          current.debugOn();
           current.save();
         } else if (list[i].indexOf('reset') >= 0) {
           consoleWrite("Resetting all includes and formulae to defaults");
@@ -105,6 +106,7 @@ var rztimeout = undefined;
     //Event handling
     document.onkeydown = handleKey;
     window.onresize = autoResize;
+    window.onhashchange = hashChanged;
     window.onmozfullscreenchange = toggleFullscreen
     $('main').onwebkitfullscreenchange = toggleFullscreen;
     window.onbeforeunload = beforeUnload;
@@ -112,13 +114,12 @@ var rztimeout = undefined;
     setAntiAliasMenu();
 
     //Draw & update
-    //doResize();
     loadLastFractal();  //Restore last if any
     if (restored.length > 0) {
       hideGallery();
       restoreFractal(restored);   //Restore from URL
     } else {
-      loadGallery(0);
+      setGallery(current.gallery);
     }
 
     ajaxReadFile('docs.html', insertHelp);
@@ -180,18 +181,23 @@ var rztimeout = undefined;
       elements[i].style.display = display;
   }
 
-  function setGallery(type) {
-    if (type == current.gallery) return;
-    $('gal' + type).className = 'selected';
-    $('gal' + current.gallery).className = '';
-    $S('note' + type).display = 'block';
-    $S('note' + current.gallery).display = 'none';
-    current.gallery = type;
+  function hashChanged() {
+    if ($(location.hash)) setGallery(location.hash);
+  }
+
+  function setGallery(id) {
+    if (!id) id = "#examples";
+    if (current.gallery) {
+      $(current.gallery).className = '';
+      $S('note' + current.gallery).display = 'none';
+    }
+    $(id).className = 'selected';
+    $S('note' + id).display = 'block';
+    current.gallery = id;
     loadGallery(0);
   }
 
   function loadGallery(offset) {
-    if (!current.gallery) current.gallery = 1;
     $S('gallery').display = "block";
       setAll('none', 'render');  //hide render mode menu options
     $S('fractal-canvas').display = "none";
@@ -201,13 +207,7 @@ var rztimeout = undefined;
     //$S('gallery').width = w + "px";
     //$S('gallery').height = h + "px";
 
-    var type = "examples";
-    if (current.gallery==2) type = "shared";
-    if (current.gallery==3) type = "images";
-    if (current.gallery==4) type = "myshared";
-    if (current.gallery==5) type = "myuploaded";
-    if (current.gallery==6) type = "myimages";
-
+    type = current.gallery.substr(1);
     $('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
     this.lastoffset = offset;
   }
@@ -219,8 +219,8 @@ var rztimeout = undefined;
       setAll('block', 'render');  //Unhide render mode menu options
       setAll(current.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
     //Switch to parameters
-    if (current.gallery) showPanel($('tab1'), 'panel1');
-    current.gallery = 0;
+    if (current.gallery && selectedTab == $('tab4')) showPanel($('tab1'), 'panel1');
+    current.gallery = null;
   }
 
   //session JSON received
@@ -832,10 +832,15 @@ var rztimeout = undefined;
     }
   }
 
-  function convertToBinary(data) {
+  function imageBase64(type) {
+    var canvas = $("fractal-canvas");
+    var data = canvas.toDataURL(type);
     var BASE64_MARKER = ';base64,';
     var base64Index = data.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
-    var base64 = data.substring(base64Index);
+    return data.substring(base64Index);
+  }
+
+  function convertToBinary(base64) {
     var raw = window.atob(base64);
     var rawLength = raw.length;
     var array = new Uint8Array(new ArrayBuffer(rawLength));
@@ -848,7 +853,7 @@ var rztimeout = undefined;
   function imageToBlob(type) {
     //Export using blob, no way to set filename yet
     var canvas = $("fractal-canvas");
-    var data = convertToBinary(canvas.toDataURL(type));
+    var data = convertToBinary(imageBase64(type));
     var blob;
     try {
       //Preferred method
@@ -871,7 +876,7 @@ var rztimeout = undefined;
     var fd = new FormData();
     fd.append("image", data);
     fd.append("title", fractal.name);
-    fd.append("caption", "Created using Fractured studio http://fractured.ozone.id.au");
+    fd.append("caption", "Created using Fractured Studio http://fractured.ozone.id.au");
     fd.append("name", fractal.name + ".jpg");
     fd.append("key", "70f934afb26ec9a9b9dc50ac1df2b40f");
    
@@ -901,6 +906,50 @@ var rztimeout = undefined;
 
     progress("Uploading image to Imgur...");
     ajaxPost("http://api.imgur.com/2/upload.json", fd, onload, updateProgress);
+  }
+
+/* Flickr http://api.flickr.com/services/upload/
+Arguments
+
+photo
+    The file to upload.
+title (optional)
+    The title of the photo.
+description (optional)
+    A description of the photo. May contain some limited HTML.
+tags (optional)
+    A space-seperated list of tags to apply to the photo.
+is_public, is_friend, is_family (optional)
+    Set to 0 for no, 1 for yes. Specifies who can view the photo.
+safety_level (optional)
+    Set to 1 for Safe, 2 for Moderate, or 3 for Restricted.
+content_type (optional)
+    Set to 1 for Photo, 2 for Screenshot, or 3 for Other.
+hidden (optional)
+    Set to 1 to keep the photo in global search results, 2 to hide from public searches. 
+*/
+  function uploadFlickr() {
+    fractal.applyChanges();
+    var canvas = $("fractal-canvas");
+    var data = imageToBlob("image/jpeg");
+   
+    var fd = new FormData();
+    fd.append("photo", data);
+    fd.append("title", fractal.name);
+    fd.append("description", "Created using Fractured Studio http://fractured.ozone.id.au");
+    fd.append("tags", fractal.name);
+    fd.append("is_public", 0);
+    fd.append("hidden", 2);
+   
+    var onload = function(response) {
+      alert(response);
+      progress();
+    }
+    // Create the XHR (Cross-Domain XHR FTW!!!)
+    var xhr = new XMLHttpRequest();
+
+    progress("Uploading image to Flickr...");
+    ajaxPost("ss/flickr_upload.php", fd, onload, updateProgress);
   }
 
 
@@ -1025,6 +1074,16 @@ var rztimeout = undefined;
     if (i_source) sources = JSON.parse(i_source);
     if (!sources) sources = JSON.parse(readURL('/includes.json', true));
 
+    if (current.debug) {
+      //Entries for all source files in debug edit menu
+      var menu = $('debugedit');
+      removeChildren(menu);
+      for (key in sources) {
+        var onclick = "openEditor('" + key + "')";
+        addMenuItem(menu, key, onclick, null, false, false);
+      }
+    }
+    
     //Load formulae
     formula_list = null;
     var f_source = localStorage["fractured.formulae"];
@@ -1215,7 +1274,7 @@ var rztimeout = undefined;
         fractal.applyChanges();
 
       //Hide title if window too small
-      if (window.innerWidth < 930)
+      if (window.innerWidth < 990)
         $S('title').display = "none";
       else
         $S('title').display = "block";
@@ -1377,7 +1436,7 @@ var editorFilename;
   function Status() {
     this.loggedin = false;
     this.offline = null;
-    this.gallery = 1;
+    this.gallery = location.hash;
     this.filetype = 'fractal';
     this.recording = false;
     this.baseurl = "";
@@ -1393,10 +1452,7 @@ var editorFilename;
       this.antialias = data.antialias;
       this.debug = data.debug;
       this.thumbnails = data.thumbnails;
-      if (this.debug) {
-        $S('debugmenu').display = 'block';
-        $S('recordmenu').display = 'block';
-      }
+      if (this.debug) this.debugOn();
     } else {
       this.fractal = -1;
       this.session = 0;
@@ -1432,6 +1488,12 @@ var editorFilename;
     data.debug = this.debug;
     data.thumbnails = this.thumbnails;
     localStorage["fractured.current"] = JSON.stringify(data);
+  }
+
+  Status.prototype.debugOn = function() {
+    this.debug = true;
+    $S('debugmenu').display = 'block';
+    $S('recordmenu').display = 'block';
   }
 
   Status.prototype.debugOff = function() {
@@ -1473,7 +1535,7 @@ var editorFilename;
 
   function outputFrame() {
     var canvas = $("fractal-canvas");
-    var data = canvas.toDataURL("image/png").substring(22);  //Strip from start: "data:image/png;base64,"
+    var data = imageBase64("image/png");
     document.body.style.cursor = "wait";
     ajaxPost("http://localhost:8080/frame", data, frameDone);
   }

@@ -17,7 +17,7 @@ fractal.origin.rotate = angle*180.0/Math.PI;
 fractal.loadParams();
 //Cycle the palette
 colours.cycle(1.0 / this.steps, true);
-//Rewrite shader
-fractal.writeShader();
+//Update
+fractal.applyChanges();
 //Redraw
 fractal.draw();

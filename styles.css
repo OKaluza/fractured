@@ -410,13 +410,12 @@ div#gallery {width: 100%; height: 100%; margin: 0px; padding: 0;
   border-radius: 6px;
 }
 #setgallery {padding: 5px;}
-#setgallery div {margin-left: 5px; color: #ccb; font-size: 10pt;}
-#setgallery input[type="button"] {height: 26px; font-size: 12pt; margin-left: 5px; padding: 0px 5px; min-width: 30px; 
-            border: none; border-radius: 4px; background: #554; color: #eee;}
-#setgallery input[type="button"]:hover {background:#ead0a3; color: black}
-#setgallery input.selected {background:#9a8053;}
-#setgallery input[type="button"]:focus { outline-width:0; }/*focus styles - removes the dotted outline */
-#setgallery input[type="button"]::-moz-focus-inner { border:0; }
+#setgallery div {margin-left: 5px; color: #ccb; font-size: 10pt; display: none;}
+#setgallery a {height: 26px; font-size: 12pt; margin: 4px 0px 4px 4px; padding: 0px 5px; min-width: 30px; line-height: 26px;
+            border: none; border-radius: 4px; background: #554; color: #eee; text-decoration: none; display: inline-block}
+#setgallery a:hover {background:#ead0a3; color: black}
+#setgallery a.selected {background:#9a8053;}
+#setgallery a:focus { outline-width:0; }/*focus styles - removes the dotted outline */
 div.float {margin: 0; padding-left: 10px; padding-bottom: 10px; float: left}
 div.float p {text-align: center}    
 div.float img {border: 0; display: block;}
