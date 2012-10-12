@@ -3,47 +3,54 @@
   include("connect.php");
 
   // Run query...
+  $root = "http://{$_SERVER['SERVER_NAME']}/";
   $type = $_GET["type"];
   if ($type == "shared")
   {
-    $query = "SELECT * FROM fractal WHERE user_id > 0 and public = 1 and type = 0 ORDER BY date DESC;";
+    $query = "SELECT name,locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
     $title = "Recent Fractals";
     $desc = "Newly shared fractals";
   }
   else if ($type == "images")
   {
-    $query = "SELECT * FROM fractal WHERE public = 1 and type = 1 ORDER BY date DESC;";
+    $query = "SELECT name,url FROM image ORDER BY date DESC;";
     $title = "Recent Images";
     $desc = "Newly shared images";
   }
 
   $getFeed = mysql_query($query)or die(mysql_error());
-  $root = "http://{$_SERVER['SERVER_NAME']}/";
 
   // Output XML (RSS)
   echo '<?xml version="1.0" encoding="ISO-8859-1" ?>
-        <rss version="2.0">
+        <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
           <channel>
             <title>' . $title . '</title>
-            <link>http://fractured.ozone.id.au/ss/rss.php</link>
+            <link>' . $root . 'rss.php?type=' . $type . '</link>
             <description>' . $desc . '</description>
-            <language>English</language>
+            <language>en-uk</language>
             <image>
-              <title>website Logo</title>
-              <url>http://fractured.ozone.id.au/media/logo.png</url>
-              <link>http://fractured.ozone.id.au/</link>
+              <title>' . $title . '</title>
+              <url>' . $root . 'media/logo.png</url>
+              <link>' . $root . 'rss.php?type=' . $type . '</link>
               <width>60</width>
               <height>60</height>
             </image>';
 
+  echo "\n<atom:link href='{$root}rss.php?type={$type}' rel='self' type='application/rss+xml' />\n";
+
   while($rssFeed = mysql_fetch_array($getFeed)) {
-    echo '<item>',
-         '<title>', $rssFeed['name'], '</title>',
-         '<link>', $root, $rssFeed['locator'], '</link>',
-         '<description><![CDATA[' ,$rssFeed['name'],']]></description>',
-         '</item>';
+    if ($type == "shared")
+      $link = $root . $rssFeed['locator'];
+    else if ($type == "images")
+      $link = $rssFeed['url'];
 
+    $name = htmlspecialchars($rssFeed['name']);
+
+    echo "<item>\n",
+         "<title>{$name}</title>\n",
+         "<link>$link</link>\n",
+         "<guid>$link</guid>\n",
+         "<description><![CDATA[{$name}]]></description>\n",
+         "</item>\n";
   }
-
-  echo '</channel>
-        </rss>';
+  echo "</channel></rss>";

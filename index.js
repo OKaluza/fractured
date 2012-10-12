@@ -1,7 +1,7 @@
 //TODO:
+//Image on flickr (or imgur) deleted, detect and remove from db?
 //Fixed size images revert to window size
 //Sometimes loaded palette is not drawn
-//Link to full page docs?
 //Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
 // - possibly reconsider saving includes in session when stored on server
 
@@ -45,6 +45,7 @@ var rztimeout = undefined;
     }
     var restored = "";
     var mode;
+    var flickr = false;
     if (query) {
       var list = query.split("&");
       for (var i=0; i<list.length; i++) {
@@ -52,6 +53,8 @@ var rztimeout = undefined;
           //debug mode enabled, show extra menus
           current.debugOn();
           current.save();
+        } else if (list[i].indexOf('flickr') >= 0) {
+          flickr = true; //Skip gallery display
         } else if (list[i].indexOf('reset') >= 0) {
           consoleWrite("Resetting all includes and formulae to defaults");
           delete localStorage["fractured.include"];
@@ -118,8 +121,12 @@ var rztimeout = undefined;
     if (restored.length > 0) {
       hideGallery();
       restoreFractal(restored);   //Restore from URL
+    } else if (flickr) {
+      //Return to last drawn fractal
+      hideGallery();
+      fractal.applyChanges();
     } else {
-      setGallery(current.gallery);
+      setGallery(location.hash);
     }
 
     ajaxReadFile('docs.html', insertHelp);
@@ -170,8 +177,6 @@ var rztimeout = undefined;
     var divs = tempDiv.getElementsByTagName('div')
     if (divs.length > 0)
       $('help').innerHTML = divs[0].innerHTML;
-    else
-      $('help').innerHTML = "Help file could not be loaded";
   }
 
   //Utility, set display style of all elements of classname
@@ -893,13 +898,11 @@ var rztimeout = undefined;
       $("progressmessage").appendChild(link);
       //...save in our db
       var formdata = new FormData();
-      formdata.append("locator", data.upload.image.hash);
-      formdata.append("public", 1); //Number(confirm("Publish on website after uploading?")));
-      formdata.append("type", 1);
+      formdata.append("url", 'http://imgur.com/' + data.upload.image.hash + '.jpg');
       formdata.append("description", $('nameInput').value);
-      formdata.append("thumbnail", "");
-      formdata.append("source", response);
-      ajaxPost("ss/fractal_save.php", formdata);
+      formdata.append("thumbnail", 'http://imgur.com/' + data.upload.image.hash + 's.jpg');
+      formdata.append("info", response);
+      ajaxPost("ss/image_save.php", formdata);
     }
     // Create the XHR (Cross-Domain XHR FTW!!!)
     var xhr = new XMLHttpRequest();
@@ -908,27 +911,13 @@ var rztimeout = undefined;
     ajaxPost("http://api.imgur.com/2/upload.json", fd, onload, updateProgress);
   }
 
-/* Flickr http://api.flickr.com/services/upload/
-Arguments
-
-photo
-    The file to upload.
-title (optional)
-    The title of the photo.
-description (optional)
-    A description of the photo. May contain some limited HTML.
-tags (optional)
-    A space-seperated list of tags to apply to the photo.
-is_public, is_friend, is_family (optional)
-    Set to 0 for no, 1 for yes. Specifies who can view the photo.
-safety_level (optional)
-    Set to 1 for Safe, 2 for Moderate, or 3 for Restricted.
-content_type (optional)
-    Set to 1 for Photo, 2 for Screenshot, or 3 for Other.
-hidden (optional)
-    Set to 1 to keep the photo in global search results, 2 to hide from public searches. 
-*/
   function uploadFlickr() {
+    var test = JSON.parse(readURL('ss/flickr.php?test'));
+    if (!test.username) {
+      window.location = "/ss/flickr.php?auth";
+      return;
+    }
+
     fractal.applyChanges();
     var canvas = $("fractal-canvas");
     var data = imageToBlob("image/jpeg");
@@ -936,20 +925,35 @@ hidden (optional)
     var fd = new FormData();
     fd.append("photo", data);
     fd.append("title", fractal.name);
-    fd.append("description", "Created using Fractured Studio http://fractured.ozone.id.au");
+    fd.append("description", 'Created using <a href="http://fractured.ozone.id.au">Fractured Studio http://fractured.ozone.id.au</a>');
     fd.append("tags", fractal.name);
-    fd.append("is_public", 0);
+    fd.append("public", 1);
+    fd.append("friend", 1);
+    fd.append("family", 1);
     fd.append("hidden", 2);
    
     var onload = function(response) {
-      alert(response);
-      progress();
+      var data = JSON.parse(response);
+      var link = document.createElement("a");
+      link.setAttribute("href", data.url);
+      var linkText = document.createTextNode(data.url);
+      link.appendChild(linkText);
+      $("progressmessage").innerHTML = '';
+      $("progressstatus").innerHTML = '';
+      $("progressmessage").appendChild(link);
+      //...save in our db
+      var formdata = new FormData();
+      formdata.append("url", data.url);
+      formdata.append("description", $('nameInput').value);
+      formdata.append("thumbnail", data.thumb);
+      formdata.append("info", response);
+      ajaxPost("ss/image_save.php", formdata);
     }
     // Create the XHR (Cross-Domain XHR FTW!!!)
     var xhr = new XMLHttpRequest();
 
     progress("Uploading image to Flickr...");
-    ajaxPost("ss/flickr_upload.php", fd, onload, updateProgress);
+    ajaxPost("ss/flickr.php?upload", fd, onload, updateProgress);
   }
 
 
@@ -961,11 +965,8 @@ hidden (optional)
       var menu1 = $('formulae-public');
       var menu2 = $('formulae-private');
       var ondelete = "deleteSelectedFormulae();";
-      //If not logged in, menu only contains public formula list
-      if (current.loggedin == false) {
-        menu1 = $('formulae-list');
+      if (current.loggedin == false)
         ondelete = null;
-      }
       removeChildren(menu1);
       removeChildren(menu2);
       var list = JSON.parse(data);
@@ -1053,9 +1054,17 @@ hidden (optional)
     try {
       var parsed = JSON.parse(source);
       if (!parsed) return;
+      importParsedState(parsed);
+    } catch(e) {
+      alert('ImportState: Error! ' + e);
+    }
+  }
+
+  function importParsedState(data) {
+    try {
       localStorage.clear(); //clear the entire database
-      for (key in parsed)
-        localStorage[key] = parsed[key];
+      for (key in data)
+        localStorage[key] = data[key];
       //Replace session id, not saved in state data
       current.save();
       sessionGet(readURL('ss/session_get.php')); //Get updated list...
@@ -1063,9 +1072,10 @@ hidden (optional)
       progress();
       regenerateThumbs();
     } catch(e) {
-      alert('ImportState: Error! ' + e);
+      alert('ImportParsedState: Error! ' + e);
     }
   }
+
 
   function loadState() {
     //Load includes...
@@ -1378,18 +1388,6 @@ var editorFilename;
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
   function fileSelected(files) {
-    var callback = loadFile;
-    if (current.filetype == 'palette') callback = fractal.loadPalette;
-    if (current.filetype == 'formula') callback = fractal.importFormula;
-    if (current.filetype == 'formulae') callback = importFormulae;
-    if (current.filetype == 'session') {
-      if (!confirm('Loading new session. This will overwrite everything!')) return;
-      callback = importState;
-    }
-    filesProcess(files, callback);
-  }
-
-  function filesProcess(files, callback) {
     // Check for the various File API support.
     if (window.File && window.FileReader) { // && window.FileList) {
       //All required File APIs are supported.
@@ -1402,7 +1400,7 @@ var editorFilename;
         reader.onload = (function(file) {
           return function(e) {
             //alert(e.target.result);
-            callback(e.target.result, file.name);
+            importFile(e.target.result, file.name);
           };
         })(file);
 
@@ -1414,18 +1412,51 @@ var editorFilename;
     }
   }
 
-  function loadFile(source, filename) {
-    if (filename.indexOf(".ini") > -1) {
-      fractal.iniLoader(source);
-      filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
-      fractal.applyChanges();
+  function importFile(source, filename) {
+    //Determine file type from content
+    if (source.charAt(0) == '{') {
+      //JSON: session, formulae
+      try {
+        var parsed = JSON.parse(source);
+        if (!parsed) return;
+        if (parsed["fractured.name"]) {
+          //Session state
+          consoleDebug("Import: SESSION");
+          importParsedState(parsed);
+        } else {
+          //Formula set
+          consoleDebug("Import: FORMULA SET");
+          importFormulae(source);
+        }
+      } catch(e) {
+        alert('ImportFile: JSON Parse Error! ' + e);
+      }
     } else {
-        hideGallery();
-      fractal.load(source);
+      //Text: formula, fractal, palette
+      if (/\[Fractal\]/ig.exec(source)) {
+        //Fractal file
+        consoleDebug("Import: FRACTAL");
+        if (filename.indexOf(".ini") > -1) {
+          fractal.iniLoader(source);
+          filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
+          fractal.applyChanges();
+        } else {
+            hideGallery();
+          fractal.load(source);
+        }
+        //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
+        fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
+        $('nameInput').value = fractal.name;
+      } else if (source.indexOf('Background=') == 0) {
+        //Palette
+        consoleDebug("Import: PALETTE");
+        colours.read(source);
+      } else {
+        //Assume formula definition
+        consoleDebug("Import: FORMULA");
+        fractal.importFormula(source, filename);
+      }
     }
-    //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
-    fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
-    $('nameInput').value = fractal.name;
   }
 
   //Status - logged in, selected values
@@ -1436,8 +1467,7 @@ var editorFilename;
   function Status() {
     this.loggedin = false;
     this.offline = null;
-    this.gallery = location.hash;
-    this.filetype = 'fractal';
+    this.gallery = null;
     this.recording = false;
     this.baseurl = "";
     this.locator = null;

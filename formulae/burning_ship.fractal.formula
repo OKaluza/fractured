@@ -1,6 +1,6 @@
-//Burning ship with subtracted coord (mirrored)
+//Burning ship
 //z(n+1) = 
-@znext = expression(abs(z)^p - c); 
+@znext = expression(abs(z)^p + c); 
 //Power (p)
 @p = real(2);
 //Escape

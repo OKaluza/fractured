@@ -12,43 +12,48 @@
   if ($type == "examples")
     $query = "SELECT locator FROM fractal WHERE user_id = -1 ORDER BY date;";
   else if ($type == "shared")
-    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 1 and type = 0 ORDER BY date DESC;";
+    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
   else if ($type == "myshared")
-    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 1 and type = 0 ORDER BY date;";
+    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 1 ORDER BY date;";
   else if ($type == "myuploads")
-    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 0 and type = 0 ORDER BY date;";
+    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 0 ORDER BY date;";
   else if ($type == "images")
-    $query = "SELECT locator FROM fractal WHERE public = 1 and type = 1 ORDER BY date DESC;";
+    $query = "SELECT url,thumb FROM image ORDER BY date DESC;";
   else if ($type == "myimages")
-    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and type = 1 ORDER BY date;";
+    $query = "SELECT url,thumb FROM image WHERE user_id = '$user' ORDER BY date;";
 
   $result = mysql_query( $query );
   if (!$result) die ('Unable to run query:'.mysql_error());
   $totimg = mysql_num_rows($result);
-  if ($totimg == 0) exit();
-  $links = array();
-  while ($row = mysql_fetch_array($result, MYSQL_NUM))
+  $imgpage = 0;
+  if ($totimg > 0) 
   {
-    $links[] = $row[0];
-  }
+    $links = array();
+    $thumbs = array();
+    while ($row = mysql_fetch_array($result, MYSQL_NUM))
+    {
+      $links[] = $row[0];
+      if ($thumb == 100) $thumbs[] = $row[1];
+    }
 
-  //Close to free resources
-  mysql_close();
+    //Close to free resources
+    mysql_close();
 
-  if (isset($_GET['offset']))
-    $offset = $_GET['offset'];
-  else
-    $offset = 0;
-  //Wrap around
-  if ($offset >= $totimg) $offset %= $totimg;
+    if (isset($_GET['offset']))
+      $offset = $_GET['offset'];
+    else
+      $offset = 0;
+    //Wrap around
+    if ($offset >= $totimg) $offset %= $totimg;
 
-  //Calculate img/page based on width and height
-  $imgpage = 18;  //Images per page
-  if (isset($_GET['width']) && isset($_GET['height']))
-  {
-    $w = floor(($_GET['width']-10) / $thumb);
-    $h = floor(($_GET['height']-110) / $thumb);
-    $imgpage = $w * $h;
+    //Calculate img/page based on width and height
+    $imgpage = 18;  //Images per page
+    if (isset($_GET['width']) && isset($_GET['height']))
+    {
+      $w = floor(($_GET['width']-10) / $thumb);
+      $h = floor(($_GET['height']-110) / $thumb);
+      $imgpage = $w * $h;
+    }
   }
 
   echo '<ul class="navigation">';
@@ -68,6 +73,29 @@
   if ($type == "shared" || $type == "images")
     echo "<a href='/ss/rss.php?type=$type'><img src='media/rss.png'></a>";
 
+  echo '<div class="divider"></div>';
+
+  for($x=$offset; $x < $offset + $imgpage; $x++)
+  {
+    if ($x == $totimg) break;
+    if ($thumb == 100)
+    {
+      $url = $links[$x];
+      $filename = $thumbs[$x];
+    }
+    else 
+    {
+      $filename = "/thumbs/" . $links[$x] . ".jpg";
+      $url = '/' . $links[$x];
+      if (!file_exists(".." . $filename))
+        $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
+    }
+    echo '<div class="float">';
+    echo '<a href="'.$url.'">';
+	  echo '<img src="' . $filename . '" /></a>';
+    echo "</a></div>\n";
+  }
+
   //Display page jump links
   echo '<div class="ginfo">';
   if ($totimg > $imgpage)
@@ -84,32 +112,11 @@
         echo '<a href="javascript:loadGallery(' . $pageoffset . ');">' . $page . "</a>\n";
     }
   }
-  echo ' ... Displaying images ';
+  echo ' ... Images ';
   $last = $offset + $imgpage;
   if ($last > $totimg) {$last = $totimg;}
   echo $offset + 1 . " to $last  of $totimg"; 
   echo '</div>';
 
-
-  for($x=$offset; $x < $offset + $imgpage; $x++)
-  {
-    if ($x == $totimg) break;
-    if ($thumb == 100)
-    {
-      $url = 'http://imgur.com/' . $links[$x] . '.jpg';
-      $filename = 'http://imgur.com/' . $links[$x] . 's.jpg';
-    }
-    else 
-    {
-      $filename = "/thumbs/" . $links[$x] . ".jpg";
-      $url = '/' . $links[$x];
-      if (!file_exists(".." . $filename))
-        $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
-    }
-    echo '<div class="float">';
-    echo '<a href="'.$url.'">';
-	  echo '<img src="' . $filename . '" /></a>';
-    echo "</a></div>\n";
-  }
 ?>
 

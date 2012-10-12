@@ -67,7 +67,6 @@ div.gap {height: 5px; }
 
 .divider{
   clear: both; margin: 1px 5px 3px 0px; padding: 5px 0px 0px; 
-  border-top: dotted 1px #aaa;
   font-size: 8pt;
 }
 .divider-label{
@@ -193,7 +192,7 @@ nav#menu {float: left;}
 #nav {
     height:24px;
     padding-left:2px;
-    padding-top:2px;
+    padding-top:1px;
     position:relative;
     z-index:2;
 }
@@ -427,21 +426,9 @@ div.ginfo a  {padding-left: 10px; font-family: verdana, helvetica}
 /* Navigation Buttons */
 ul.navigation {list-style-type: none; margin: 0px 10px; padding: 3px 0px; border-top: 1px solid #666;}
 ul.navigation li {margin-right: 10px;}
-ul.navigation li a {border-radius: 4px; display: block; width: 5em; color: #FFF; background-color: #036; padding: 2px 0; text-align: center; text-decoration: none;}
-ul.navigation li a:hover {color: #FFF; background-color: #69C}
+ul.navigation li a {border-radius: 4px; display: block; width: 5em; color: #FFF; background-color: #543; padding: 2px 0; text-align: center; text-decoration: none;}
+ul.navigation li a:hover {color: #FFF; background-color: #963}
 ul.navigation li span {border-radius: 4px; display: block; width: 5em; color: #aaa; background-color: #333; padding: 2px 0; text-align: center; text-decoration: none;}
-
-/* Links as buttons with hover */
-a.button {height: 14px; font: 8pt verdana; margin-right: 5px; margin-left: 5px; display: block; width: auto; 
-          min-width: 5em; padding: .2em .2em; text-align: center; text-decoration: none; float: right;}
-a.button a:hover {}
-
-a.gallery {font: 8pt verdana; margin-right: 5px; display: block; width: 100px;  
-          min-width: 5em; padding: .2em .2em; text-align: center; text-decoration: none; float: left;
-          color: #333; background-color: #DDA; }
-a.gallery:hover {color: #000; background-color: #DD3}
-a.selected {color: #FFF; background-color: #D91}
-a.selected:hover {color: #000; background-color: #FD3}
 
 /* Override some codemirror defaults */
 .CodeMirror {
