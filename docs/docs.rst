@@ -1,10 +1,16 @@
+.. |copy| unicode:: 0xA9 .. copyright sign
+.. |formula| image:: media/formula.png
+.. |image| image:: media/camerai.png
+.. |palette| image:: media/palette.png
+.. |settings| image:: media/settingsi.png
+
 ======================
 Fractured - User Guide
 ======================
 | Fractured | Fractal art studio | Version 0.6
-| (c) Owen Kaluza, 2012
+| |copy| Owen Kaluza, 2012
 
-To view : http://fractured.ozone.id.au/docs.html
+http://fractured.ozone.id.au/docs.html
 
 .. contents:: `Table of contents`
 
@@ -39,14 +45,14 @@ Requirements
 - A modern browser supporting WebGL (Only confirmed working with Firefox, Chrome & Safari at this stage, Opera's WebGL implementation is still causing me some problems) 
 - A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
 - Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ 
-- *Note* My development platform is Linux and Firefox. Other platforms have not all been well tested yet. Everything should work fine though (in theory).
+- *Note* My development platform is Linux, Firefox, NVidia. Other platforms have not all been well tested yet. Everything should work fine though (in theory).
 - *Note 2* On Windows, browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this "feature" is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop).
 
 Workspace
 =========
 On first loading the app you should be presented with a workspace showing a selection of example fractals and the following user interface elements:
 
-- *Top Menu* containing the [Session], [Fractal] and [Palette] menus and the [Draw] button
+- *Top Menu* containing the [Studio], [Fractal], |formula| Formula, |image| Image, |palette| Palette and |settings| Settings menus and the [Draw] button
 - *Palette* an editable gradient colour palette and background colour selection
 - *Tools* the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Log]
 - *Main Display* occupies the rest of the available browser window, initially showing an image gallery, switching to display the rendered fractal image (when in rendering mode).
@@ -67,11 +73,11 @@ Only some of the options in the Fractal menu are visible in this mode.
 There are several large buttons at the top of the page that allow switching between the available views:
 
 - *Examples* Some simple pre-loaded example fractals, click on the thumbnail to load them into the renderer. 
-- *Shared Fractals* Fractals that have been shared by other users, you can also click on these to load them.
-- *Image Gallery* Images that have been uploaded by other users, click to view (hosted on imgur.com).
+- *Shared* Fractals that have been shared by other users, you can also click on these to load them.
+- *Images* Images that have been uploaded by other users, click to view (hosted on imgur or flickr).
 - *My Shared* Fractals uploaded and shared by you
-- *My Uploaded* Fractals uploaded by you but not shared
-- *My Images* Images uploaded by you
+- *My Uploads* Fractals uploaded by you but not shared
+- *My Images* Images uploaded by you to imgur / flickr
 
 Loading any fractal switches to the fractal display, to go back to the welcome page, click on the "Fractured" heading in the top left corner.
 
@@ -191,40 +197,21 @@ The [Clear Log] button clears all messages from the display.
 
 Top Menu
 --------
-Now we get to the menu bar which has various options controlling fractal rendering and allowing saving and loading fractals and other data to local storage and to the web server, going from right to left we have:
+Now we get to the menu bar which has various options controlling fractal rendering and allowing saving and loading fractals and other data to local storage and to the web server.
+
+When viewing the welcome page only a subset of the items will be shown in the menu.
+Some of the items are also only visible when logged in.
+
+Going from right to left we have:
 
 Draw
 ~~~~
 This button redraws the current fractal, changes to fractal parameters in the *tools* area are not usually applied instantly and you must press this button to redraw the fractal display.
 
-Palette
-~~~~~~~
-- This menu displays all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Above the list of saved palettes the other functions are:
+Settings
+~~~~~~~~
+|settings| Application preferences and utilities:
 
-- *Save Palette* stores the current palette in the list.
-- *Export Palette* download active palette as a file.
-- *Palette to URL* writes the active palette into a url link that can be used to load that palette, useful to share a palette with someone else.
-
-Fractal
-~~~~~~~
-This menu contains features relating to the current fractal display.
-When viewing the welcome page only a subset of the items will be shown on this menu.
-Some of the items are also only visible when logged in.
-
-- *New* Create a new fractal and reset all fractal settings to defaults.
-- *Store* stores the current fractal in local storage using the name entered in the *parameters* tab. If the name is already used you will be asked if you'd like to overwrite the existing entry (This will be cleared if you clear your browsing history! To save permanently you must save your session to the server or export).
-- *Upload* Upload a fractal to the server. Responds with a unique URL that can be used to load this fractal.
-- *Share* Publish a fractal to the server (will be displayed in the shared fractals list). Responds with a unique URL that can be used to load this fractal.
-- *Share Image* Publish a screenshot of the current fractal to imgur.com (will be displayed in the shared images list). Responds with a unique URL that can be used to view this image.
-- *Stored Fractals* displays a sub-menu of all the fractals in local storage, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.
-- *Formula Sets* sub-menu of available saved formula sets and options relating to them.
-- *Save As...*
-
-  - *JPEG Image* / *PNG Image* grabs a screen shot of the current fractal image display as an image file of the chosen type.
-  - *Fractal File* export and download the current fractal parameters and formula as a fractal data text file.
-  - *Fractal URL* export and download the current fractal parameters and formula as self-contained URL with all the information necessary to display the fractal.
-
-- *Import* select and upload a previously exported data file, can select importing of a fractal, palette or formula file.
 - *Anti-aliasing* select the anti-aliasing quality to use when rendering fractals.
 - *Script Editor* an experimental feature allowing you to write a javascript that controls the fractal display.
 - *Clear Actions* clears any saved custom mouse actions from storage.
@@ -232,23 +219,26 @@ Some of the items are also only visible when logged in.
 - *Hide/Show Tools* hides or shows the *tools* area from the window, allowing more room for the fractal display.
 - *Full Screen* enter full screen mode.
 
-Session
+Palette
 ~~~~~~~
-This menu gives you options over the current *session* data, a *session* represents all the currently saved fractals and formula stored in local storage. This data can be stored on the server and then retrieved from another browser on another computer. It also allows more fractal files to be saved that would otherwise fit in the allocated local storage space, if you run low on space you can just save your session to the server and start a new session.
+|palette| This menu displays all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Above the list of saved palettes the other functions are:
 
-In order to use the server features you must log in, you can use any OpenID provider account to log in, Google, Yahoo, myOpenID, AOL and StackExchange account options are provided on the menu, others are supported by selecting the top *OpenID* option.
+- *Save Palette* stores the current palette in the list.
+- *Export Palette* download active palette as a file.
+- *Palette to URL* writes the active palette into a url link that can be used to load that palette, useful to share a palette with someone else.
 
-- *New* clears the session data and creates a new session, this will delete any saved fractals and formulae, make sure you have exported or uploaded your session data before you do this!
-- *Save* (when logged in only) saves the current set of saved fractals and formula as a session entry on the server, if the current session was previously saved allows saving over the previous data. If not you will be prompted for a description for the session. 
-- *Export* download a data file containing all the data in the current session.
-- *Import* upload a previously saved data file containing all the data for a session, which will replace the current session (also clears all data, make sure you have saved anything you want to keep!).
-- *Login with* shows the OpenID login options if not already logged in. Allows you to use an OpenID provider to log in and save sessions, formula sets and fractals on the server.
-- *Saved Sessions* (when logged in only) shows a list of saved session associated with the logged in account that have been stored on the server. Clicking on one of these allows loading all the session data and replacing the current session. If a session from this list is active it will be outlined and a [ X ] delete button will be shown to allow you to remove the saved session and delete all its data from the server.
-- *Logout* (when logged in only) log out from the server. An option to clear the session data will be given, if taken the session will be replaced by a new session.
+Image
+~~~~~
+|image| Actions that take a screen shot of the current fractal.
 
-Formula Sets
-------------
-The Formula Sets menu under the Fractal menu has a set of features allowing you to save and restore sets of formula for later use or sharing.
+- *Save JPEG Image* save current fractal image display as a JPEG image file (smaller image file but slightly lower quality).
+- *Save PNG Image* save current fractal image as a PNG file (best quality, larger file size)
+- *Share on Imgur* Publish an image of the current fractal to imgur.com (will be displayed in the shared images list). Responds with a unique URL that can be used to view this image. Imgur doesn't require logging in but your images will not be kept idefinitely if they don't receive any views for a long time.
+- *Share on Flickr* Publish an image of the current fractal to Flickr.com (will be displayed in the shared images list). Responds with a unique URL that can be used to view this image, requires you to log in to your Flickr account.
+
+Formula
+~~~~~~~
+|formula| A set of features allowing you to save and restore sets of formula for later use or sharing.
 The first two menu options *Public* and *Uploaded* contain formula sets on the server which you can choose to load.
 Selecting one of the names formula sets from either of these sub-menus will prompt you to download and use this formula set.
 *Warning* loading a formula set will replace all your active formula definitions.
@@ -258,6 +248,34 @@ Once you have loaded a formula set from the server it will be highlighted in the
 - The *Uploaded* list contains only your own formula sets that you have uploaded.
 - The *Publish* option will upload your current formula set and make it available for all users.
 - The *Upload* option will save your current formula set on the server but only you will be able to access it later.
+- The *Export* option will save your current formula set as a data file.
+
+Fractal
+~~~~~~~
+This menu contains features relating to the current fractal display.
+
+- *New* Create a new fractal and reset all fractal settings to defaults.
+- *Store* stores the current fractal in local storage using the name entered in the *parameters* tab. If the name is already used you will be asked if you'd like to overwrite the existing entry (This will be cleared if you clear your browsing history! To save permanently you must save your session to the server or export).
+- *Upload* Upload a fractal to the server. Responds with a unique URL that can be used to load this fractal.
+- *Share* Publish a fractal to the server (will be displayed in the shared fractals list). Responds with a unique URL that can be used to load this fractal.
+- *Stored Fractals* displays a sub-menu of all the fractals in local storage, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.
+- *Save As...*
+  - *Fractal File* export and download the current fractal parameters and formula as a fractal data text file.
+  - *Fractal URL* export and download the current fractal parameters and formula as self-contained URL with all the information necessary to display the fractal.
+
+Studio
+~~~~~~
+This menu gives you options over the current studio *session* data, a *session* represents all the currently saved fractals, formulae, palettes etc stored in local storage. This data can be stored on the server and then retrieved from another browser on another computer. It also allows more fractal files to be saved that would otherwise fit in the allocated local storage space, if you run low on space you can just save your session to the server and start a new session.
+
+In order to use the server features you must log in, you can use any OpenID provider account to log in, Google, Yahoo, myOpenID, AOL and StackExchange account options are provided on the menu, others are supported by selecting the *OpenID* option and entering your identity URL.
+
+- *New* clears the session data and creates a new session, this will delete any saved fractals and formulae, make sure you have exported or uploaded your session data before you do this!
+- *Save* (when logged in only) saves the current set of saved fractals, formula, palettes etc as a session entry on the server, if the current session was previously saved allows saving over the previous data. If not you will be prompted for a description for the session. 
+- *Export* download a data file containing all the data in the current session.
+- *Import* select and upload a previously exported data file, supports importing of a fractal, palette, formula, formula set or studio session file. Importing a previously exported session will replace the current session and clear all data, make sure you have saved anything you want to keep.
+- *Login with* shows the OpenID login options if not already logged in. Allows you to use an OpenID provider to log in and save sessions, formula sets and fractals on the server.
+- *Saved Sessions* (when logged in only) shows a list of saved session associated with the logged in account that have been stored on the server. Clicking on one of these allows loading all the session data and replacing the current session. If a session from this list is active it will be outlined and a [ X ] delete button will be shown to allow you to remove the saved session and delete all its data from the server.
+- *Logout* (when logged in only) log out from the server. An option to clear the session data will be given, if you press No here all your session data will still be loaded even after logging out, it can be cleared by starting a new session (the "New" option above.)
 
 Editing Formulae
 ================
@@ -283,16 +301,14 @@ The format of a definition is::
 - *@* Indicates to the formula parser that this is a parameter definition, must start with this symbol.
 - *Description* Enter the information you want to appear in the control label in this comment area on the line before the actual definition. This description can be left out, in which case the variable name will be used as a label instead.
 - *variable_name* Enter a variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number) this is the name by which you will use this parameters value in the formula code.
-- *type* the type of value: bool, int, uint, real, float, complex, rgba, list, real_function, complex_function, bailout_function, expression or define
+- *type* the type of value: bool, int, real, complex, rgba, list, real_function, complex_function, bailout_function, expression or define
 - *default* the default value that is inserted for the parameter if it has not been edited.
 
 **Parameter types explained**
 
 - *bool* a true/false value, appears as a check box
 - *int* an integer value, appears as a number entry
-- *uint* an unsigned integer value ( > 0), appears as a number entry
 - *real* a real number, appears as a number entry
-- *float* as above, but single precision only regardless of precision setting
 - *complex* a complex number value, represented as a real and imaginary value separated by a comma in code, appears as two number entries.
 - *rgba* a colour value, appears as a colour box which can be clicked on to bring up a colour picker
 - *list* a list of labels, the variable will be assigned a numeric value based on user selection from 0 to n-1 (where n is number of list items), appears as a drop down list.

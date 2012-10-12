@@ -50,11 +50,10 @@
   $user = $_SESSION["user_id"];
   $desc = $_POST["description"];
   $public = $_POST["public"];
-  $type = $_POST["type"];
   if (!$desc) $desc = '';
 
-  //Allow no logged in user only for sharing image
-  if ($user <= 0 && $type != 1) exit();
+  //Allow no logged in user only
+  if ($user <= 0) exit();
 
   //Get submitted details
   //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
@@ -84,12 +83,12 @@
     else
       $locator = udihash($inttime, 7);
 
-    $query = "INSERT INTO fractal (locator, user_id, date, name, source, public, type) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public', '$type');";
+    $query = "INSERT INTO fractal (locator, user_id, date, name, source, public) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public');";
+
     $result = mysql_query($query);
     if ($result == 1) //Loop until insert successful
     {
-      if ($type == 0)
-        writeThumb($public, $locator, $thumb);
+      writeThumb($public, $locator, $thumb);
       break;
     }
     else if (isset($_POST['locator']))
@@ -99,8 +98,7 @@
       //$query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator';";
       $result = mysql_query($query);
       if (!$result) die('Invalid query: ' . mysql_error());
-      //if ($type == 0)
-        writeThumb($public, $locator, $thumb);
+      writeThumb($public, $locator, $thumb);
       break;
     }
     //echo $ftime . "," . $inttime . "," . $locator . "<br>";

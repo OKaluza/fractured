@@ -4,7 +4,7 @@
   var WEBCL64 = 2;
   var renderer = WEBGL;
   //Regular expressions
-  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|uint|real|float|complex|rgba|list|real_function|complex_function|bailout_function|expression|define)\(([\S\s]*?)\);/gi;
+  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|real|complex|rgba|list|real_function|complex_function|bailout_function|expression|define)\(([\S\s]*?)\);/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\s*,\s*([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\)?/;
@@ -185,14 +185,12 @@
           this.value = (/^true$/i).test(value);
         break;
       case 'int':
-      case 'uint':
         this.typeid = 0;
         if (typeof(value) == 'number')
           this.value = value | 0; //Bitwise ops convert to integers
         if (typeof(value) == 'string')
           this.value = parseInt(value);
         break;
-      case 'float':
       case 'real':
         this.typeid = 1;
         if (typeof(value) == 'number')
