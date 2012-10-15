@@ -893,9 +893,10 @@ var rztimeout = undefined;
       link.setAttribute("href", url);
       var linkText = document.createTextNode(url);
       link.appendChild(linkText);
-      $("progressmessage").innerHTML = '';
-      $("progressstatus").innerHTML = '';
-      $("progressmessage").appendChild(link);
+      $('progressmessage').innerHTML = '';
+      $('progressstatus').innerHTML = '';
+      $S('progressbar').width = 0;
+      $('progressmessage').appendChild(link);
       //...save in our db
       var formdata = new FormData();
       formdata.append("url", 'http://imgur.com/' + data.upload.image.hash + '.jpg');
@@ -938,9 +939,10 @@ var rztimeout = undefined;
       link.setAttribute("href", data.url);
       var linkText = document.createTextNode(data.url);
       link.appendChild(linkText);
-      $("progressmessage").innerHTML = '';
-      $("progressstatus").innerHTML = '';
-      $("progressmessage").appendChild(link);
+      $('progressmessage').innerHTML = '';
+      $('progressstatus').innerHTML = '';
+      $S('progressbar').width = 0;
+      $('progressmessage').appendChild(link);
       //...save in our db
       var formdata = new FormData();
       formdata.append("url", data.url);

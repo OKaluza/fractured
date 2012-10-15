@@ -31,6 +31,10 @@
     this.zoom = zoom; 
   }
 
+  Aspect.prototype.print = function() {
+    return this.re + ',' + this.im + ',' + this.rotate + ',' + this.zoom;
+  }
+
   Aspect.prototype.toString = function() {
     return "origin=(" + this.re + "," + this.im + ")\n" + 
            "zoom=" + this.zoom + "\n" + 
@@ -945,21 +949,33 @@
   }
 
 //Actions
+  Fractal.prototype.restoreLink = function() {
+    return '<a href="javascript:fractal.restore('+ this.origin.print() + ', new Complex'+ this.selected + ', ' + fractal.julia + ');">@</a> '; 
+  }
+
+  Fractal.prototype.restore = function(im, re, rotate, zoom, selected, julia) {
+    //Restore position settings to a previous state
+    this.origin = new Aspect(im, re, rotate, zoom);
+    this.selected = selected;
+    this.julia = julia;
+    this.copyToForm();
+    this.draw();
+  }
+
   Fractal.prototype.setOrigin = function(point) {
     //Adjust centre position
     this.origin.re += point.re;
     this.origin.im += point.im;
-    consoleWrite("Origin: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
-    //consoleWrite("Origin: re: " + this.origin.re + " im: " + this.origin.im);
+    consoleWrite(this.restoreLink() + "Origin: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
   }
 
   Fractal.prototype.applyZoom = function(factor) {
     //Adjust zoom
     this.origin.zoom *= factor;
-    consoleWrite("Zoom: " + this.origin.zoom.toFixed(8));
+    consoleWrite(this.restoreLink() + "Zoom: " + this.origin.zoom.toFixed(8));
   }
 
-  Fractal.prototype.selectPoint = function(point) {
+  Fractal.prototype.selectPoint = function(point, log) {
     //Julia set switch
     if (point && !this.julia) {
       this.julia = true;
@@ -975,6 +991,13 @@
     var tempPos = this.origin.clone();
     this.origin = this.savePos.clone();
     this.savePos = tempPos;
+
+    if (log) {
+      if (this.julia) 
+        consoleWrite(this.restoreLink() + "Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
+      else
+        consoleWrite(this.restoreLink() + "Mandelbrot set switch");
+    }
   }
 
   Fractal.prototype.resetDefaults = function() {
@@ -2171,9 +2194,7 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         //Right-click, not dragging
         if (event.button == 2 && !mouse.dragged) {
           //Switch to julia set at selected point
-          this.selectPoint(point);
-          //consoleWrite("Julia set @ re: " + point.re.toFixed(8) + " im: " + point.im.toFixed(8));
-          if (this.julia) consoleWrite("Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
+          this.selectPoint(point, true);
         } else {
           //No redraw
           return false;

@@ -11,6 +11,7 @@
   if ($_SESSION['useragent'] != $_SERVER['HTTP_USER_AGENT'])
   {
     $user = $_SESSION["user_id"] = 0;
+    session_destroy();
   }
 
   if ($user > 0)
