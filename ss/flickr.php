@@ -10,6 +10,7 @@ $f = new phpFlickr($api_key, $api_secret);
 if (isset($_GET['test']))
 {
   $username = "null";
+  $id = "null";
   if ($_SESSION['OauthToken'])
   {
     $f->setOauthToken($_SESSION['OauthToken'], $_SESSION['OauthSecretToken']);
