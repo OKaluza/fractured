@@ -1579,22 +1579,43 @@ var editorFilename;
 
   //Save values of all selected parameters for use in scripting
   function ParamVals(paramset) {
-      for (key in paramset) {
-        if (typeof(paramset[key]) == "object" && paramset[key].type != undefined)
-          this[key] = paramset[key].value; 
+    this.set = paramset;
+    for (key in paramset) {
+      if (typeof(paramset[key]) == "object" && paramset[key].type != undefined)
+        this[key] = paramset[key].value; 
+    }
+  }
+
+  ParamVals.prototype.update = function() {
+    //Copy changed values to fields
+    for (key in this.set) {
+      if (typeof(this.set[key]) == "object" && this.set[key].type != undefined) {
+        this.set[key].value = this[key]; 
+        this.set[key].copyToElement();
       }
     }
+  }
 
   //Script object, passed source code inserted at the step() function
   function Script(source) {
     this.count = 1;
     this.step = 1;
     this.step = Function(source);
+    this.base = new ParamVals(fractal.base.currentParams);
     this.fractal = new ParamVals(fractal.fractal.currentParams);
     this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
     this.postTransform = new ParamVals(fractal.post_transform.currentParams);
     this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
     this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
+  }
+
+  Script.prototype.update = function() {
+    this.base.update();
+    this.fractal.update();
+    this.preTransform.update();
+    this.postTransform.update();
+    this.insideColour.update();
+    this.outsideColour.update();
   }
 
   function runScript() {

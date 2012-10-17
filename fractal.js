@@ -4,7 +4,7 @@
   var WEBCL64 = 2;
   var renderer = WEBGL;
   //Regular expressions
-  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])@(:?\w*)\s*=\s*(bool|int|real|complex|rgba|list|real_function|complex_function|bailout_function|expression|define)\(([\S\s]*?)\);/gi;
+  var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])(@@?)(:?\w*)\s*=\s*(bool|int|real|complex|rgba|range|list|real_function|complex_function|bailout_function|expression|define)\(([\S\s]*?)\);/gi;
   var boolreg = /(true|false)/i;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\s*,\s*([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\)?/;
@@ -154,9 +154,9 @@
     var parsed;
     //Run the parser and report errors
     try {
-      parsed = parser.parse(expr);
+      parsed = parser.parse(expr + ""); //Ensure passed a string
     } catch(e) {
-      alert(e.message);
+      alert('Error parsing expression: "' + expr + '"\n : ' + e.message);
       return "(0,0)"
     }
     return parsed;
@@ -279,6 +279,21 @@
           this.value = items[0]; //Initial selection is first item
         }
         break;
+      case 'range':
+        this.typeid = 8;
+        //value,min,max,step
+        var num = 0;
+        var items = value.split(",");
+        this.value = 0.0;
+        this.min = 0.0;
+        this.max = 1.0;
+        this.step = 0.05;
+        if (items.length > 0) this.value = parseReal(items[0]);
+        if (items.length > 1) this.min = parseReal(items[1]);
+        if (items.length > 2) this.max = parseReal(items[2]);
+        if (items.length > 3) this.step = parseReal(items[3]);
+        break;
+
     }
     //consoleDebug(this.label + " parsed as " + this.type + " value = " + this.value);
   }
@@ -294,7 +309,7 @@
         return strval;
     }
 
-    if (this.typeid == 1) //real/float
+    if (this.typeid == 1 || this.typeid == 8) //real/range
       return realStr(this.value);
     else if (this.typeid == 2) //complex
       return "complex(" + realStr(this.value.re) + "," + realStr(this.value.im) + ")";
@@ -313,20 +328,20 @@
     //Return GLSL const/uniform declaration for this parameter
     var comment = this.label ? "//" + this.label + "\n" : "";
     type = this.type;
-    if (this.type == 'list') type = 'int';
-    if (this.type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
-    if (this.type == 'define') return comment + "#define " + key + " " + this.value + "\n";
-    if (this.type == 'expression') return comment + "#define " + key + " " + this.toGLSL() + "\n";
-    if (this.type.indexOf('function') > 0) return comment + "#define " + key + "(args) " + this.value + "(args)\n";
+    if (type == 'list') type = 'int';
+    if (type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
+    if (type == 'define') return comment + "#define " + key + " " + this.value + "\n";
+    if (type == 'expression') return comment + "#define " + key + " " + this.toGLSL() + "\n";
+    if (type.indexOf('function') > 0) return comment + "#define " + key + "(args) " + this.value + "(args)\n";
+    if (type == 'range') type = 'real'; 
     if (this.uniform)
       return comment + "uniform " + type + " " + key + ";\n";
     return comment + "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
   }
 
-  Param.prototype.setFromElement = function(key) {
+  Param.prototype.setFromElement = function() {
     //Get param value from associated form field
     if (!this.input) return;
-    //if (this.typeid != 2 && !field) {consoleDebug("No field found for: " + key); return;}
     switch (this.typeid)
     {
       case -1: //Boolean = checkbox
@@ -338,6 +353,7 @@
         this.value = parseInt(this.input.value);
         break;
       case 1: //real = entry
+      case 8: //range = range entry
         this.value = parseReal(this.input.value);
         break;
       case 2: //complex = 2 x entry
@@ -359,6 +375,41 @@
         break;
     }
   }
+
+  Param.prototype.copyToElement = function() {
+    //Copy param value to associated form field
+    if (!this.input) return;
+    switch (this.typeid)
+    {
+      case -1: //Boolean = checkbox
+        this.input.checked = this.value;
+        break;
+      case 0: //Integer = entry
+      case 1: //real = entry
+      case 3: //Integer from list
+      case 4: //Function name
+      case 7: //Define list
+      case 8: //range = range entry
+        this.input.value = this.value;
+        break;
+      case 2: //complex = 2 x entry
+        this.input[0].value = this.value.re;
+        this.input[1].value = this.value.im;
+        break;
+        this.value = this.input.value.trim();
+        break;
+      case 6: //Expression
+        if (this.input.editor)
+          this.input.editor.setValue(this.value);
+        else
+          this.value = this.input.value = this.value;
+        break;
+      case 5: //RGBA colour
+        this.input.style.backgroundColor = this.value.html();
+        break;
+    }
+  }
+
 
   /**
    * @constructor
@@ -391,7 +442,7 @@
     for (key in this)
     {
       if (typeof(this[key]) == 'object')
-        this[key].setFromElement(key);
+        this[key].setFromElement();
     }
   }
 
@@ -441,12 +492,12 @@
     var match;
     while (match = paramreg.exec(source)) {
       //Label/comment (optional)
-      //name, type, value
+      //@name = type(value);
       var label = match[2];
-      var name = match[3];
-      var type = match[4];
-      var value = match[5];
-      var uniform = name.charAt(0) == "_" ? true : false;
+      var uniform = match[3].length == 2; //@@ == uniform param
+      var name = match[4];
+      var type = match[5];
+      var value = match[6];
 
       this[name] = new Param(value, type, label, uniform);
     };
@@ -563,10 +614,17 @@
           break;
         case 0: //Integer
         case 1: //real
+        case 8: //range
           input = document.createElement("input");
           input.id = category + '_' + key;
           input.type = "number";
-          if (this[key].type == 1) input.setAttribute("step", 0.1);
+          if (this[key].typeid == 1) input.setAttribute("step", 0.1);
+          if (this[key].typeid == 8) {
+            input.type = "range";
+            input.setAttribute("min", this[key].min);
+            input.setAttribute("max", this[key].max);
+            input.setAttribute("step", this[key].step);
+          }
           input.value = this[key].value;
           spanin.appendChild(input);
           break;
@@ -639,6 +697,14 @@
           spanin.appendChild(input);
           break;
       }
+      //Instant update for uniform values...
+      if (this[key].uniform) {
+        if (this[key].typeid == 2) {
+          input[0].setAttribute("onchange", "fractal.applyChanges();");
+          input[1].setAttribute("onchange", "fractal.applyChanges();");
+        } else
+          input.setAttribute("onchange", "fractal.applyChanges();");
+      }
       //Save the field element
       this[key].input = input;
     }
@@ -659,6 +725,7 @@
           gl.uniform1i(uniform, this[key].value);
           break;
         case 1: //real
+        case 8: //range
           gl.uniform1f(uniform, this[key].value);
           break;
         case 2: //complex (2xreal)

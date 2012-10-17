@@ -7,7 +7,7 @@
 ======================
 Fractured - User Guide
 ======================
-| Fractured | Fractal art studio | Version 0.6
+| Fractured | Fractal art studio | Version 0.6 (Oct 2012)
 | |copy| Owen Kaluza, 2012
 
 http://fractured.ozone.id.au/docs.html
@@ -21,7 +21,7 @@ Fractured is a fast fractal renderer written in Javascript and WebGL / WebCL.
 I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU. 
 There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace to store my work on a server and access it anywhere.
 
-It started in Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken.
+It started in Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken.
   
 Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, so here it is - maybe someone else will find it useful.
 
@@ -301,7 +301,7 @@ The format of a definition is::
 - *@* Indicates to the formula parser that this is a parameter definition, must start with this symbol.
 - *Description* Enter the information you want to appear in the control label in this comment area on the line before the actual definition. This description can be left out, in which case the variable name will be used as a label instead.
 - *variable_name* Enter a variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number) this is the name by which you will use this parameters value in the formula code.
-- *type* the type of value: bool, int, real, complex, rgba, list, real_function, complex_function, bailout_function, expression or define
+- *type* the type of value: bool, int, real, complex, rgba, list, real_function, complex_function, bailout_function, expression, define or range
 - *default* the default value that is inserted for the parameter if it has not been edited.
 
 **Parameter types explained**
@@ -317,6 +317,7 @@ The format of a definition is::
 - *complex_function* a drop down list of functions returning complex number values
 - *bailout_function* a drop down list of bailout functions
 - *expression* a mathematical expression that will be parsed and converted into formula code
+- *range* as real number, but appears as a slider control, optional additional values min, max, step (comma separated, defaults 0, 1, 0.05)
 
 Data declarations
 -----------------

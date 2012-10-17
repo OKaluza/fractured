@@ -91,7 +91,17 @@ GLSL_MAIN
   }
 
   //Combine with global alpha from background colour
-  colour.w = colour.w + background.w;
+  float alpha = colour.w + background.w;
+  //Brightness adjust
+  colour.xyz += brightness;
+  //Saturation & Contrast adjust
+  const rgba LumCoeff = rgba(0.2125, 0.7154, 0.0721, 0);
+  rgba AvgLumin = rgba(0.5, 0.5, 0.5, 0.0);
+  rgba intensity = rgba(dot(colour, LumCoeff));
+  colour = mix(intensity, colour, saturation);
+  colour = mix(AvgLumin, colour, contrast);
+  //Set alpha
+  colour.w = alpha;
   set_result(colour);
 }
 
