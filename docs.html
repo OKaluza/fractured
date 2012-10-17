@@ -281,7 +281,7 @@ ul.auto-toc {
 <h1 class="title">Fractured - User Guide</h1>
 
 <div class="line-block">
-<div class="line">Fractured | Fractal art studio | Version 0.6</div>
+<div class="line">Fractured | Fractal art studio | Version 0.6 (Oct 2012)</div>
 <div class="line">© Owen Kaluza, 2012</div>
 </div>
 <p><a class="reference external" href="http://fractured.ozone.id.au/docs.html">http://fractured.ozone.id.au/docs.html</a></p>
@@ -350,7 +350,7 @@ ul.auto-toc {
 <p>Fractured is a fast fractal renderer written in Javascript and WebGL / WebCL.</p>
 <p>I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU.
 There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace to store my work on a server and access it anywhere.</p>
-<p>It started in Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished in late 2010 and probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken.</p>
+<p>It started in Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken.</p>
 <p>Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, so here it is - maybe someone else will find it useful.</p>
 <p>If you have any feedback email me at: owen (at) ozone.id.au</p>
 <p><em>(NOTE: Apologies as this documentation file is still a work in progress)</em></p>
@@ -626,7 +626,7 @@ These definitions specify the controls that appear when you select this formula.
 <li><em>&#64;</em> Indicates to the formula parser that this is a parameter definition, must start with this symbol.</li>
 <li><em>Description</em> Enter the information you want to appear in the control label in this comment area on the line before the actual definition. This description can be left out, in which case the variable name will be used as a label instead.</li>
 <li><em>variable_name</em> Enter a variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number) this is the name by which you will use this parameters value in the formula code.</li>
-<li><em>type</em> the type of value: bool, int, real, complex, rgba, list, real_function, complex_function, bailout_function, expression or define</li>
+<li><em>type</em> the type of value: bool, int, real, complex, rgba, list, real_function, complex_function, bailout_function, expression, define or range</li>
 <li><em>default</em> the default value that is inserted for the parameter if it has not been edited.</li>
 </ul>
 <p><strong>Parameter types explained</strong></p>
@@ -642,6 +642,7 @@ These definitions specify the controls that appear when you select this formula.
 <li><em>complex_function</em> a drop down list of functions returning complex number values</li>
 <li><em>bailout_function</em> a drop down list of bailout functions</li>
 <li><em>expression</em> a mathematical expression that will be parsed and converted into formula code</li>
+<li><em>range</em> as real number, but appears as a slider control, optional additional values min, max, step (comma separated, defaults 0, 1, 0.05)</li>
 </ul>
 </div>
 <div class="section" id="data-declarations">

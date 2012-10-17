@@ -13,11 +13,13 @@ var y = Math.cos(angle)-1.0;
 
 //Rotate
 fractal.origin.rotate = angle*180.0/Math.PI;
+//Increase iterations
+this.base["iterations"]++;
 //Update parameter changes to form
-fractal.loadParams();
+this.update();
 //Cycle the palette
 colours.cycle(1.0 / this.steps, true);
-//Update
+//Update & redraw
 fractal.applyChanges();
 //Redraw
-fractal.draw();
+//fractal.draw();
