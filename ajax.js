@@ -22,14 +22,14 @@ function ajaxReadFile(filename, callback, nocache, progress)
     if(http.readyState == 4) {
       if(http.status == 200) {
         setProgress(100);
-        consoleDebug("RECEIVED: " + filename);
+        debug("RECEIVED: " + filename);
         if (callback)
           callback(http.responseText, filename);
       } else {
         if (callback)
           callback("Error: " + http.status);    //Error callback
         else
-          consoleWrite("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
+          print("Ajax Read File Error: returned status code " + http.status + " " + http.statusText);
       }
     }
   } 
@@ -67,7 +67,7 @@ function updateProgress(evt)
   //evt.total: total bytes set in header by server (for download) or from client (upload)
   if (evt.lengthComputable) {
     setProgress(evt.loaded / evt.total * 100);
-    //consoleWrite(evt.loaded + " / " + evt.total);
+    //print(evt.loaded + " / " + evt.total);
   }
 } 
 
@@ -89,14 +89,14 @@ function ajaxPost(url, params, callback, progress)
     if(http.readyState == 4)
       if(http.status == 200) {
         setProgress(100);
-        consoleDebug("POST: " + url);
+        debug("POST: " + url);
         if (callback)
           callback(http.responseText);
       } else {
         if (callback)
           callback("Error, status:" + http.status);    //Error callback
         else
-          consoleWrite("Ajax Post Error: returned status code " + http.status + " " + http.statusText);
+          print("Ajax Post Error: returned status code " + http.status + " " + http.statusText);
       }
   }
 

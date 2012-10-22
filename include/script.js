@@ -4,7 +4,7 @@ if (this.count == 1) {
   this.inc = 2*Math.PI / this.steps;
 }
 
-consoleWrite("Animating: step " + this.count + "/" + this.steps);
+print("Animating: step " + this.count + "/" + this.steps);
 
 var angle = this.inc * this.count;
 if (angle >= 2*Math.PI) angle -= 2*Math.PI;

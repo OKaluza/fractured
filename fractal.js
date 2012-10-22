@@ -50,8 +50,8 @@
   Aspect.prototype.pixelSize = function(element) {
     var unit = 2.0 / this.zoom;
     var pixel = unit / element.width; //height?
-    //consoleDebug(element.width + " x " + element.height + " ==> " + size[0] + " x " + size[1]);
-    //if (this.zoom > 100) consoleDebug("Warning, precision too low, pixel size: " + pixel);
+    //debug(element.width + " x " + element.height + " ==> " + size[0] + " x " + size[1]);
+    //if (this.zoom > 100) debug("Warning, precision too low, pixel size: " + pixel);
     return pixel;
 //    return new Array(pwidth,pheight);
   }
@@ -129,7 +129,7 @@
       //Replace the matched expression with parser result
       var newval = code.slice(0, reg.lastIndex - match[0].length);
       var result = parseExpression(match[1]);
-      //consoleDebug(match[1] + " -> "  + result);
+      //debug(match[1] + " -> "  + result);
       code = newval + result + code.slice(reg.lastIndex, code.length);
       reg.lastIndex += (result - match[0].length); //Adjust search position
     }
@@ -296,7 +296,7 @@
         break;
 
     }
-    //consoleDebug(this.label + " parsed as " + this.type + " value = " + this.value);
+    //debug(this.label + " parsed as " + this.type + " value = " + this.value);
   }
 
   Param.prototype.toGLSL = function() {
@@ -465,7 +465,7 @@
     for (key in this)
     {
       if (typeof(this[key]) == 'object') {
-        //consoleDebug(key + " = " + this[key].value);
+        //debug(key + " = " + this[key].value);
         code += this[key].declare(key);
       }
     }
@@ -519,11 +519,11 @@
           //But if it is still the default, it will be updated to the new default
           if (!defaults[key] || other[key].value != defaults[key].value) {
             this[key].value = other[key].value
-            //consoleDebug("Restored value for " + key + " : " + temp + " ==> " + this[key].value);
+            //debug("Restored value for " + key + " : " + temp + " ==> " + this[key].value);
           }
         } else
           //If we changed a parameter type then value can't and shouldn't be restored
-          consoleDebug("Parameter type changed: " + this[key].type + " != " + other[key].type + 
+          debug("Parameter type changed: " + this[key].type + " != " + other[key].type + 
                        " -- " + key + ", value discarded: " + other[key].value);
       }
 
@@ -531,7 +531,7 @@
       if (defaults[key])
         defaults[key].value = temp;
       else
-        consoleWrite("!No defaults entry for [" + key + "] to save value: " + temp);
+        print("!No defaults entry for [" + key + "] to save value: " + temp);
     }
   }
 
@@ -766,7 +766,7 @@
     //Formula selected, parse it's parameters
     if (name) this.selected = name;
     else name = this.selected;  //Re-selecting current
-    //consoleDebug("Selecting " + name + " for " + this.category + "_params");
+    //debug("Selecting " + name + " for " + this.category + "_params");
 
     //Delete any existing dynamic form fields
     var element = $(this.category + "_params");
@@ -796,7 +796,7 @@
       //Update the fields
       this.params[name].createFields(this.category, name);
     }
-    //consoleDebug("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
+    //debug("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
        //consoleTrace();
   }
 
@@ -819,7 +819,7 @@
       }
       return formula_list[key].source;
     }
-    consoleWrite("Formula Missing! No entry found for: " + key);
+    print("Formula Missing! No entry found for: " + key);
     return "";
   }
 
@@ -1029,13 +1029,13 @@
     //Adjust centre position
     this.origin.re += point.re;
     this.origin.im += point.im;
-    consoleWrite(this.restoreLink() + "Origin: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
+    print(this.restoreLink() + "Origin: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
   }
 
   Fractal.prototype.applyZoom = function(factor) {
     //Adjust zoom
     this.origin.zoom *= factor;
-    consoleWrite(this.restoreLink() + "Zoom: " + this.origin.zoom.toFixed(8));
+    print(this.restoreLink() + "Zoom: " + this.origin.zoom.toFixed(8));
   }
 
   Fractal.prototype.selectPoint = function(point, log) {
@@ -1057,14 +1057,14 @@
 
     if (log) {
       if (this.julia) 
-        consoleWrite(this.restoreLink() + "Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
+        print(this.restoreLink() + "Julia set @ (" + this.selected.re.toFixed(8) + ", " + this.selected.im.toFixed(8) + ")");
       else
-        consoleWrite(this.restoreLink() + "Mandelbrot set switch");
+        print(this.restoreLink() + "Mandelbrot set switch");
     }
   }
 
   Fractal.prototype.resetDefaults = function() {
-    //consoleDebug("resetDefaults<hr>");
+    //debug("resetDefaults<hr>");
     //Default aspect & parameters
     this.name = "unnamed"
     this.width = 0;
@@ -1127,7 +1127,7 @@
 
       if (confirm("Replace formula definition " + key + " with new definition from this file?")) {
         formula_list[key].source = source;
-        consoleDebug("Replacing formula code for: " + key);
+        debug("Replacing formula code for: " + key);
         return;
       }
     }
@@ -1248,7 +1248,7 @@
 
   //Load fractal from file
   Fractal.prototype.load = function(source, noapply) {
-    //consoleDebug("load<hr>");
+    //debug("load<hr>");
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
@@ -1323,7 +1323,7 @@
             lines[j] = lines[j].replace("formula." + pair[1], "formula." + pair[0]);
             if (pair[0] == "inside_colour") lines[j] = lines[j].replace(pair[1] + "_in_", ":");
             if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", ":");
-            //if (lines[j] != oldline) consoleDebug(oldline + " ==> " + lines[j]);
+            //if (lines[j] != oldline) debug(oldline + " ==> " + lines[j]);
           }
 
           //Formula name, create entry if none
@@ -1352,14 +1352,14 @@
               if (buffer.length > 0) {
                 //New entry?
                 if (!formula_list[key]) {
-                  consoleDebug("Imported new formula: " + key);
+                  debug("Imported new formula: " + key);
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
                 } else if (formula_list[key].source.strip() != buffer.strip()) {
                   //First search other formulae in this category for duplicate entries!
                   var found = false;
                   for (k in formula_list) {
                     if (formula_list[k].source.strip() == buffer.strip()) {
-                      consoleDebug("Found duplicate formula definition, using name: " + formula_list[k].name + " (was: " + name + ")");
+                      debug("Found duplicate formula definition, using name: " + formula_list[k].name + " (was: " + name + ")");
                       name = formula_list[k].name;
                       found = true;
                       break;
@@ -1369,7 +1369,7 @@
                   if (!found) {
                     var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
                     name = f.name; //Get new name
-                    consoleDebug("Imported new formula definition for existing formula: " + key + ", saved as " + name);
+                    debug("Imported new formula definition for existing formula: " + key + ", saved as " + name);
                   }
                 }
               }
@@ -1425,7 +1425,7 @@
               if (parseReal(pair2[1]) != 1)
                 saved["outrepeat"] = pair2[1];
             } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
-              consoleWrite("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+              print("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
           }
         }
       }
@@ -1767,7 +1767,7 @@
 
 
   Fractal.prototype.loadParams = function() {
-    //consoleDebug("loadParams<hr>");
+    //debug("loadParams<hr>");
     //Parse param fields from formula code
     this["fractal"].select();
     this["pre_transform"].select();
@@ -1805,7 +1805,7 @@
     }
 
     if (width != this.canvas.width || height != this.canvas.height) {
-      consoleDebug("Resize " + width + "x" + height);
+      debug("Resize " + width + "x" + height);
       this.canvas.width = width;
       this.canvas.height = height;
       if (this.webgl) {
@@ -1815,7 +1815,7 @@
 
       //Update WebCL buffer on size change
       if (this.webcl && (this.webcl.viewport.width != this.canvas.width || this.webcl.viewport.height != this.canvas.height)) {
-        consoleDebug("Size changed, WebCL resize");
+        debug("Size changed, WebCL resize");
         this.webcl.setViewport(0, 0, width, height);
       }
     }
@@ -1869,7 +1869,7 @@
 
   //Update form controls with fractal data
   Fractal.prototype.copyToForm = function() {
-    //consoleDebug("copyToForm<hr>");
+    //debug("copyToForm<hr>");
     document["inputs"].elements["nameInput"].value = this.name;
     document["inputs"].elements["widthInput"].value = this.width;
     document["inputs"].elements["heightInput"].value = this.height;
@@ -1962,7 +1962,7 @@
     //Save the line offset where inserted
     var match = regex.exec(shader);
     var offset = shader.slice(0, match.index).split("\n").length;
-    //consoleDebug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
+    //debug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
 
     //Get sources
     for (s in sourcelist) {
@@ -1981,7 +1981,7 @@
 
       //Save offset for this section from this formula selection
       this.offsets.push(new LineOffset(sourcelist[s], section, offset + source.split("\n").length - 1));
-      //consoleDebug(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
+      //debug(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
 
       //Concatentate to final code to insert at marker position
       source += code + "\n";
@@ -2016,19 +2016,19 @@
     if (sources["generated.shader"] != source)
       this.updateShader(source);
     else
-      consoleDebug("Shader build skipped, no changes");
+      debug("Shader build skipped, no changes");
   }
 
   Fractal.prototype.updateShader = function(source) {
     //Save for debugging
     this.timeAction("Compile");
     sources["generated.shader"] = source;
-    consoleWrite("Rebuilding fractal shader using:");
-    consoleWrite("formula: " + this["fractal"].selected);
-    if (this["pre_transform"].selected != "none") consoleWrite("Pre-transform: " + this["pre_transform"].selected);
-    if (this["post_transform"].selected != "none") consoleWrite("Post-transform: " + this["post_transform"].selected);
-    if (this["outside_colour"].selected != "none") consoleWrite("Outside colour: " + this["outside_colour"].selected);
-    if (this["inside_colour"].selected != "none") consoleWrite("Inside colour: " + this["inside_colour"].selected);
+    print("Rebuilding fractal shader using:");
+    print("formula: " + this["fractal"].selected);
+    if (this["pre_transform"].selected != "none") print("Pre-transform: " + this["pre_transform"].selected);
+    if (this["post_transform"].selected != "none") print("Post-transform: " + this["post_transform"].selected);
+    if (this["outside_colour"].selected != "none") print("Outside colour: " + this["outside_colour"].selected);
+    if (this["inside_colour"].selected != "none") print("Inside colour: " + this["inside_colour"].selected);
 
     //Compile the shader using WebGL or WebCL
     var errors = "";
@@ -2062,7 +2062,7 @@
         var last = null
         for (i in this.offsets) {
           if (last) {
-            //consoleDebug("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
+            //debug("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
             if (lineno >= this.offsets[last].value && lineno < this.offsets[i].value) {
               var section = this.offsets[last].section;
               //Adjust the line number
@@ -2093,7 +2093,7 @@
       if (elapsed < 50) 
         window.requestAnimationFrame(logTime); //Not enough time, assume triggered too early, try again
       else
-        consoleWrite(action + " took: " + (elapsed / 1000) + " seconds");
+        print(action + " took: " + (elapsed / 1000) + " seconds");
     }
     window.requestAnimationFrame(logTime);
   }
@@ -2177,7 +2177,7 @@
     //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
     this.gl.clearColor(0, 0, 0, 0);
 
-    //consoleDebug('>> Drawing fractal (aa=' + antialias + ")");
+    //debug('>> Drawing fractal (aa=' + antialias + ")");
     this.webgl.draw2d(antialias);
     if (current.recording)
       window.outputFrame(); 

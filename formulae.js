@@ -67,7 +67,7 @@ function updateFormulaLists() {
 
   //Run through the list and add to select lists
   for (key in formula_list) {
-    //consoleWrite(formula_list[key].name)
+    //print(formula_list[key].name)
     addSelectEntry(formula_list[key]);
   }
 
@@ -129,7 +129,7 @@ function formulaFilename(category, label) {
 function formulaKey(category, label, check) {
   var key = categoryToType(category) + "/" + labelToName(label);
   if (check && !formula_list[key]) {
-    //consoleWrite("No formula entry found for: " + category + " / " + label);
+    //print("No formula entry found for: " + category + " / " + label);
     return null;
   }
   return key;

@@ -39,7 +39,7 @@ function rebuild() {
       else
         ajaxReadFile(filename, saveSource, true);
     } else {
-      consoleWrite("restored: " + filename);
+      print("restored: " + filename);
     }
   }
 
@@ -72,7 +72,7 @@ function saveLocal() {
   var fdata = JSON.stringify(formula_list)
   $('formula_output').value = fdata;
   $('include_output').value = idata;
-  consoleWrite("Rebuild complete");
+  print("Rebuild complete");
   
   $('link1').href = 'data:text/plain;base64,' + window.btoa(fdata);
   $('link2').href = 'data:text/plain;base64,' + window.btoa(idata);
@@ -84,11 +84,11 @@ function saveLocal() {
 }
 
 //Console functions
-function consoleDebug(str) {
-  //consoleWrite(str);
+function debug(str) {
+  //print(str);
 }
 
-function consoleWrite(str) {
+function print(str) {
   var console = document.getElementById('console');
   console.innerHTML += "<div class='message'>" + str + "</div>";
   //$('panel4').scrollTop = console.clientHeight - $('panel4').clientHeight + $('panel4').offsetHeight;
@@ -111,7 +111,7 @@ function iframeReadFile(doc) {
   iframe.setAttribute('name', doc);
   iframe.setAttribute('onload', 'transferHTML(this)');
   // insert the script into our page
-    consoleWrite("Loading " + doc);
+    print("Loading " + doc);
     //<iframe onload="transferHTML();" id="hiddenContent" name=""></iframe>
   document.getElementById('hidden').appendChild(iframe);
 }
@@ -128,14 +128,14 @@ function transferHTML(srcFrame) {
   //}
   sources[doc] = localStorage[doc] = srcContent;
 
-  consoleWrite("loaded: " + doc);
+  print("loaded: " + doc);
   checkSources();
 }
 
 //Source file loaded
 function saveSource(data, filename) {
   sources[filename] = localStorage[filename] = data; //Save content
-  consoleWrite("loaded: " + filename);
+  print("loaded: " + filename);
   checkSources();
 }
 
