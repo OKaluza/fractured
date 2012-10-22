@@ -268,12 +268,12 @@
   }
 
   Colour.prototype.rgbaObj = function() {
-  //consoleWrite('R:' + this.red + ' G:' + this.green + ' B:' + this.blue + ' A:' + this.alpha);
+  //print('R:' + this.red + ' G:' + this.green + ' B:' + this.blue + ' A:' + this.alpha);
     return({'R':this.red, 'G':this.green, 'B':this.blue, 'A':this.alpha});
   }
 
   Colour.prototype.print = function() {
-    consoleWrite(this.printString(true));
+    print(this.printString(true));
   }
 
   Colour.prototype.printString = function(alpha) {

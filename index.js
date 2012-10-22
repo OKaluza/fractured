@@ -54,7 +54,7 @@ var rztimeout = undefined;
         } else if (list[i].indexOf('flickr') >= 0) {
           flickr = true; //Skip gallery display
         } else if (list[i].indexOf('reset') >= 0) {
-          consoleWrite("Resetting all formulae to defaults");
+          print("Resetting all formulae to defaults");
           delete localStorage["fractured.formulae"];
         } else if (list[i].indexOf('fp64') == 0 || list[i].indexOf('double') == 0) {
           mode = WEBCL64;
@@ -77,8 +77,8 @@ var rztimeout = undefined;
         }
       }
     }
-    consoleDebug("Base URL: " + current.baseurl);
-    consoleDebug("Query options: " + query);
+    debug("Base URL: " + current.baseurl);
+    debug("Query options: " + query);
 
     //Strip commands from url (except hash if provided)
     var base = current.baseurl;
@@ -151,7 +151,7 @@ var rztimeout = undefined;
 
   function switchMode(mode) {
     if (mode == WEBGL && fractal.webgl) return;
-    consoleWrite("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
+    print("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
     if (mode > WEBGL && fractal.webcl) {
       fractal.webcl.setPrecision(mode > 1); //Switch precision
       sources["generated.shader"] = "";     //Force rebuild
@@ -248,7 +248,7 @@ var rztimeout = undefined;
       //Responds with "!" if no session, so check for as valid response
       if (data.charAt(0) != "!") {
         //Offline mode
-        consoleWrite('Offline!');
+        print('Offline!');
         current.offline = true;
         return;
       }
@@ -1291,7 +1291,7 @@ var rztimeout = undefined;
 
     //If value passed, setting autoSize, otherwise responding to resize event
     if (typeof(newval) == 'boolean') {
-      consoleDebug("Autosize " + newval);
+      debug("Autosize " + newval);
       if (newval!=undefined) {
         //Update width/height immediately
         doResize();
@@ -1375,7 +1375,7 @@ test.innerHTML = txt;
 var width = (test.clientWidth + 1);
           
           var digit = field.value.substr(i-1, 1);
-          //consoleWrite(i + " : (" + txt + ") " + width);
+          //print(i + " : (" + txt + ") " + width);
           //Mouse over and is digit?
           if (coord[0] < width && /[0-9]/.test(digit)) {
             pos = i;
@@ -1383,7 +1383,7 @@ var width = (test.clientWidth + 1);
             break;
           }
         }
-        //consoleWrite("Mouse: " + coord[0] + " digit: " + pos);
+        //print("Mouse: " + coord[0] + " digit: " + pos);
 
         //Find decimal point and calculate decimal places
         var dpt = field.value.indexOf(".");
@@ -1452,11 +1452,11 @@ var width = (test.clientWidth + 1);
         if (!parsed) return;
         if (parsed["fractured.name"]) {
           //Session state
-          consoleDebug("Import: SESSION");
+          debug("Import: SESSION");
           importParsedState(parsed);
         } else {
           //Formula set
-          consoleDebug("Import: FORMULA SET");
+          debug("Import: FORMULA SET");
           importFormulae(source);
         }
       } catch(e) {
@@ -1466,7 +1466,7 @@ var width = (test.clientWidth + 1);
       //Text: formula, fractal, palette
       if (/\[Fractal\]/ig.exec(source)) {
         //Fractal file
-        consoleDebug("Import: FRACTAL");
+        debug("Import: FRACTAL");
         if (filename.indexOf(".ini") > -1) {
           fractal.iniLoader(source);
           filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
@@ -1480,11 +1480,11 @@ var width = (test.clientWidth + 1);
         $('nameInput').value = fractal.name;
       } else if (source.indexOf('Background=') == 0) {
         //Palette
-        consoleDebug("Import: PALETTE");
+        debug("Import: PALETTE");
         colours.read(source);
       } else {
         //Assume formula definition
-        consoleDebug("Import: FORMULA");
+        debug("Import: FORMULA");
         fractal.importFormula(source, filename);
       }
     }
@@ -1566,12 +1566,12 @@ var width = (test.clientWidth + 1);
 
 
 
-  function consoleDebug(str) {
-    if (current.debug) consoleWrite(str);
+  function debug(str) {
+    if (current.debug) print(str);
     //alert(" called by: " + arguments.callee.caller);
   }
 
-  function consoleWrite(str) {
+  function print(str) {
     var console = $('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
     $('panel_log').scrollTop = console.clientHeight - $('panel_log').clientHeight + $('panel_log').offsetHeight;
@@ -1603,7 +1603,7 @@ var width = (test.clientWidth + 1);
 
   function frameDone(response) {
     document.body.style.cursor = "default";
-    consoleDebug("Request sent");
+    debug("Request sent");
   }
 
   //Save values of all selected parameters for use in scripting

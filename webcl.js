@@ -17,7 +17,7 @@
                                               WebCL.CL_DEVICE_TYPE_DEFAULT);
       this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
       if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
-      consoleDebug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + 
+      debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + 
                   " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME));
 
       //Check for double precision support
@@ -25,7 +25,7 @@
       extensions += " " + this.devices[this.devid].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
       if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
         this.fp64 = true; //Initial state of flag shows availability of fp64 support
-      consoleDebug("WebCL ready, extensions: " + extensions);
+      debug("WebCL ready, extensions: " + extensions);
 
     } catch(e) {
       alert(e.message);
@@ -133,12 +133,12 @@
       this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], gradient.width*4, 0, gradient.data, []);
 
       // Init ND-range
-      consoleDebug("WebCL: Global (" + this.global[0] + "x" + this.global[1] + 
+      debug("WebCL: Global (" + this.global[0] + "x" + this.global[1] + 
                    ") Local (" + this.local[0] + "x" + this.local[1] + ")");
 
       for (var j=0; j<antialias; j++) {
         for (var k=0; k<antialias; k++) {
-          consoleDebug("Antialias pass ... " + j + " - " + k);
+          debug("Antialias pass ... " + j + " - " + k);
           this.k_sample.setKernelArg(3, j);
           this.k_sample.setKernelArg(4, k);
           this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
@@ -146,7 +146,7 @@
         }
       }
       //Combine
-      consoleDebug("Combining samples...");
+      debug("Combining samples...");
       this.k_average.setKernelArg(2, antialias*antialias);
       this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
 
