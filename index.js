@@ -1,9 +1,8 @@
 //TODO:
-//Image on flickr (or imgur) deleted, detect and remove from db?
+//Load formulae, need to update parameters on selected tab (showPanel)
+//Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
 //Fixed size images revert to window size
 //Sometimes loaded palette is not drawn
-//Download session, if includes.json has changed may need to do a reset, probably need a way to automate this in future
-// - possibly reconsider saving includes in session when stored on server
 
 //Globals
 var current;  //Status
@@ -19,9 +18,8 @@ var rztimeout = undefined;
     //Force offline mode when loaded locally
     if (window.location.href.indexOf("file://") == 0) current.offline = true;
     if (!navigator.onLine) current.offline = true;
-
+    showPanel('info');
     setAll('none', 'loggedin');  //hide logged in menu options
-    showPanel($('tab4'), 'panel4');
     current = new Status();
     var urlq = decodeURI(window.location.href);
     var h = urlq.indexOf("#");
@@ -56,8 +54,7 @@ var rztimeout = undefined;
         } else if (list[i].indexOf('flickr') >= 0) {
           flickr = true; //Skip gallery display
         } else if (list[i].indexOf('reset') >= 0) {
-          consoleWrite("Resetting all includes and formulae to defaults");
-          delete localStorage["fractured.include"];
+          consoleWrite("Resetting all formulae to defaults");
           delete localStorage["fractured.formulae"];
         } else if (list[i].indexOf('fp64') == 0 || list[i].indexOf('double') == 0) {
           mode = WEBCL64;
@@ -114,15 +111,25 @@ var rztimeout = undefined;
     $('main').onwebkitfullscreenchange = toggleFullscreen;
     window.onbeforeunload = beforeUnload;
 
+    //Form mouse wheel
+    var forms = ["param_inputs", "fractal_inputs", "colour_inputs"];
+    for (var f in forms) {
+      var element = $(forms[f]);
+      if (element.addEventListener) element.addEventListener("DOMMouseScroll", handleFormMouseWheel, false);
+      element.onmousewheel = handleFormMouseWheel;
+    }
+
     setAntiAliasMenu();
 
     //Draw & update
     loadLastFractal();  //Restore last if any
     if (restored.length > 0) {
+      current.gallery = 1;
       hideGallery();
       restoreFractal(restored);   //Restore from URL
     } else if (flickr) {
       //Return to last drawn fractal
+      current.gallery = 1;
       hideGallery();
       fractal.applyChanges();
     } else {
@@ -161,6 +168,9 @@ var rztimeout = undefined;
 
   function handleKey(event) {
     switch (event.keyCode) {
+      case 13:
+        handleFormEnter(event);
+        break;
       case 27:
         //ESC
         //Deliberate passthrough:
@@ -224,7 +234,7 @@ var rztimeout = undefined;
       setAll('block', 'render');  //Unhide render mode menu options
       setAll(current.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
     //Switch to parameters
-    if (current.gallery && selectedTab == $('tab4')) showPanel($('tab1'), 'panel1');
+    if (current.gallery && selectedTab == $('tab_info')) showPanel('params');;
     current.gallery = null;
   }
 
@@ -1081,10 +1091,8 @@ var rztimeout = undefined;
 
   function loadState() {
     //Load includes...
-    sources = null;
-    var i_source = localStorage["fractured.include"];
-    if (i_source) sources = JSON.parse(i_source);
-    if (!sources) sources = JSON.parse(readURL('/includes.json', true));
+    //(Allow cache, when changed update the version number)
+    sources = JSON.parse(readURL('/includes_0.6.json', false));
 
     if (current.debug) {
       //Entries for all source files in debug edit menu
@@ -1101,13 +1109,6 @@ var rztimeout = undefined;
     var f_source = localStorage["fractured.formulae"];
     if (f_source) formula_list = JSON.parse(f_source);
     if (!formula_list) formula_list = JSON.parse(readURL('/defaultformulae.json', true));
-
-    //Custom mouse actions
-    a_source = localStorage["fractured.mouseActions"];
-    if (a_source)
-      mouseActions = JSON.parse(a_source);
-    else
-      defaultMouseActions();
 
     //Create formula entries in drop-downs (and any saved load sources)
     updateFormulaLists();
@@ -1139,13 +1140,8 @@ var rztimeout = undefined;
     //Read the lists
     if (!fractal) return;
     try {
-      //Save custom mouse actions
-      localStorage["fractured.mouseActions"] = JSON.stringify(mouseActions);
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formula_list);
-      //Save include sources
-      sources["generated.shader"] = "";
-      localStorage["fractured.include"] = JSON.stringify(sources);
       //Save script
       localStorage["include/script.js"] = sources["include/script.js"];
       //Save current fractal (as default)
@@ -1159,30 +1155,31 @@ var rztimeout = undefined;
 
 /////////////////////////////////////////////////////////////////////////
 ////Tab controls
-  var panels = ['panel1', 'panel2', 'panel3', 'panel4', 'panel5'];
+  var panels = ['panel_params', 'panel_formula', 'panel_colour', 'panel_info', 'panel_log'];
   var selectedTab = null;
-  function showPanel(tab, name)
+  function showPanel(name)
   {
-    if (!selectedTab) selectedTab = $('tab1');
+    var tab = $('tab_' + name);
+    var panel = 'panel_' + name;
+    if (!selectedTab) selectedTab = $('tab_params');
 
     selectedTab.className = 'unselected';
     selectedTab = tab;
     selectedTab.className = 'selected';
 
     for(i = 0; i < panels.length; i++)
-      $(panels[i]).style.display = (name == panels[i]) ? 'block':'none';
+      $(panels[i]).style.display = (panel == panels[i]) ? 'block':'none';
 
     //Update edit fields
-    if (name == "panel1")
-      fractal["base"].reselect();
-    if (name == "panel2") {
+    if (panel == "panel_formula") {
       fractal["fractal"].reselect();
       fractal["pre_transform"].reselect();
       fractal["post_transform"].reselect();
     }
-    if (name == "panel3") {
+    if (panel == "panel_colour") {
       fractal["outside_colour"].reselect();
       fractal["inside_colour"].reselect();
+      fractal["filter"].reselect();
     }
     return false;
   }
@@ -1328,64 +1325,96 @@ var editorFilename;
     //Event delegation from parameters form to edit colour params
     event = event || window.event;
     if (event.target.className == "colour") colours.edit(event.target);
+    return true;
+  }
+
+  function handleFormEnter(event) {
+    //Enter key pressed
+    event = event || window.event;
     if (event.target.type == 'text' || event.target.type == 'number') {
-      //Assigning actions to fields? (unfinished?)
-      //Parameter values
-      var types = ["base", "fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
-      for (t in types) {
-        var params = fractal[types[t]].currentParams;
-        var field;
-        if (params)
-          field = params.getField(event.target.id);
-      }
-
-      //Assign function to selected field
+      //Copy coord to selected field
       if (event.shiftKey || event.altKey || event.ctrlKey) {
-        var action = "";
-        var button = "wheel"
         var target = event.target.id;
-        var value = 0;
-
-        if (event.shiftKey && event.altKey && event.ctrlKey) {
-          action = "shift+ctrl+alt";
-        } else if (event.shiftKey && event.altKey) {
-          action = "shift+alt";
-        } else if (event.shiftKey && event.ctrlKey) {
-          action = "shift+ctrl";
-        } else if (event.altKey && event.ctrlKey) {
-          action = "ctrl+alt";
-        } else if (event.ctrlKey) {
-          action = "ctrl";
-        } else if (event.shiftKey) {
-          action = "shift";
-        } else if (event.altKey) {
-          action = "alt";
-        }
-
         //Detect two-component (complex number) field
         if (/_[01]$/i.exec(event.target.id)) {
-          if (event.button == 0) button = "left";
-          else if (event.button == 2) button = "right";
-          else button = "middle";
           target = event.target.id.slice(0, event.target.id.length-1);
-          if (confirm("Assign position value on [" + action + "] + mouse " + button + "-click to selected field?"))
-            mouseActions[button][action] = target;
-          else {
-            var value = prompt("Assign action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 0.1);
-            if (value) mouseActions["wheel"][action] = new WheelAction(event.target.id, value);
-            return false;
-          }
-
-        } else {
-          //Get increment amount for scroll wheel actions...
-          var value = prompt("Assigning action on mouse scroll wheel + [" + action + "] to selected field. Enter increment value or 0 to cancel", 1);
-          if (value) mouseActions["wheel"][action] = new WheelAction(target, value);
-          return false;
+          $(target + "0").value = fractal.canvas.mouse.coord.re;
+          $(target + "1").value = fractal.canvas.mouse.coord.im;
         }
       }
     }
+
+    //Redraw
+    fractal.applyChanges();
     return true;
   }
+
+
+  function handleFormMouseWheel(event) {
+    //Event delegation from parameters form
+    event = event || window.event;
+    if (event.target.type == 'text' || event.target.type == 'number' || event.target.type == 'range') {
+      var field = event.target; 
+      if (field.timer) clearTimeout(field.timer);
+      wheelSpin(event);
+      field.style.cursor = "wait";
+      if (event.target.type == 'range') {
+        //Adjust by step
+        field.value = parseReal(field.value) + parseReal(field.step) * event.spin;
+      } else if (event.shiftKey || event.altKey || event.ctrlKey) {
+        //Get mouse position relative to field
+        var coord = mousePageCoord(event);
+        elementRelativeCoord(field, coord)
+        //Calculate the digit position the mouse is above
+        //...for each digit in field
+        var pos = field.value.length;
+        for (var i=1; i<=field.value.length; i++) {
+          var txt=field.value.substr(0,i);
+var test = $("fonttest");
+test.innerHTML = txt;
+var width = (test.clientWidth + 1);
+          
+          var digit = field.value.substr(i-1, 1);
+          //consoleWrite(i + " : (" + txt + ") " + width);
+          //Mouse over and is digit?
+          if (coord[0] < width && /[0-9]/.test(digit)) {
+            pos = i;
+            field.style.cursor = "none";  //Hide cursor so can see digit below
+            break;
+          }
+        }
+        //consoleWrite("Mouse: " + coord[0] + " digit: " + pos);
+
+        //Find decimal point and calculate decimal places
+        var dpt = field.value.indexOf(".");
+        var places = 0;
+        if (dpt >= 0) places = field.value.length - dpt - 1;
+
+        //Replace digits with 0 except one we are changing, use this to calculate increment value
+        var zeros = field.value.replace(/[1-9]/g, "0");
+        //Multiply wheel spin by place unit val
+        var spin = event.spin * parseReal(zeros.substr(0,pos-1) + "1" + zeros.substr(pos));
+        var val = parseReal(field.value);
+        if (val < 0) spin = -spin;  //Reverse direction
+        //Add increment value to existing value, ensure same decimal places
+        field.value = (spin + val).toFixed(places);
+
+      } else {
+        var pos = field.value.indexOf(".");
+        var frac = "";
+        if (pos >= 0) frac = field.value.substr(pos); else pos = field.value.length;
+        var val = parseReal(field.value.substr(0, pos), 1);
+        field.value = ((val | 0) + event.spin) + frac;
+      }
+
+      field.timer = setTimeout('fractal.applyChanges(); $S("' + field.id + '").cursor = "text";', 150);
+      //field.timer = setTimeout('fractal.applyChanges();', 150);
+      if (event.preventDefault) event.preventDefault();  // Firefox
+      return false;
+    }
+    return true;
+  }
+ 
 
 /////////////////////////////////////////////////////////////////////////
 //File upload handling
@@ -1545,7 +1574,7 @@ var editorFilename;
   function consoleWrite(str) {
     var console = $('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
-    $('panel5').scrollTop = console.clientHeight - $('panel5').clientHeight + $('panel5').offsetHeight;
+    $('panel_log').scrollTop = console.clientHeight - $('panel_log').clientHeight + $('panel_log').offsetHeight;
   }
 
   function consoleClear() {
@@ -1594,6 +1623,7 @@ var editorFilename;
         this.set[key].copyToElement();
       }
     }
+    fractal.copyToForm();
   }
 
   //Script object, passed source code inserted at the step() function
@@ -1601,21 +1631,21 @@ var editorFilename;
     this.count = 1;
     this.step = 1;
     this.step = Function(source);
-    this.base = new ParamVals(fractal.base.currentParams);
     this.fractal = new ParamVals(fractal.fractal.currentParams);
     this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
     this.postTransform = new ParamVals(fractal.post_transform.currentParams);
     this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
     this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
+    this.filter = new ParamVals(fractal.filter.currentParams);
   }
 
   Script.prototype.update = function() {
-    this.base.update();
     this.fractal.update();
     this.preTransform.update();
     this.postTransform.update();
     this.insideColour.update();
     this.outsideColour.update();
+    this.filter.update();
   }
 
   function runScript() {

@@ -171,7 +171,6 @@
               </ul>
             </li>
             <li><span onclick="openEditor('include/script.js')">Script Editor</span></li>
-            <li><span onclick="defaultMouseActions();">Clear actions</span></li>
             <li class="render"><span id="previewbtn" onclick="togglePreview();">Show Preview</span></li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
             <li class="render"><span onclick="toggleFullscreen(true);">Full Screen</span></li>
@@ -201,15 +200,15 @@
 
       <nav id="tabs">
         <ul>
-          <li onmousedown="showPanel(this, 'panel1');" id="tab1" class="selected">Parameters</li>
-          <li onmousedown="showPanel(this, 'panel2');" id="tab2" class="unselected">Formula</li>
-          <li onmousedown="showPanel(this, 'panel3');" id="tab3" class="unselected">Colour</li>
-          <li onmousedown="showPanel(this, 'panel4');" id="tab4" class="unselected">Info</li>
-          <li onmousedown="showPanel(this, 'panel5');" id="tab5" class="unselected">Log</li>
+          <li onmousedown="showPanel('params');" id="tab_params" class="selected">Parameters</li>
+          <li onmousedown="showPanel('formula');" id="tab_formula" class="unselected">Formula</li>
+          <li onmousedown="showPanel('colour');" id="tab_colour" class="unselected">Colour</li>
+          <li onmousedown="showPanel('info');" id="tab_info" class="unselected">Info</li>
+          <li onmousedown="showPanel('log');" id="tab_log" class="unselected">Log</li>
         </ul>
       </nav>
 
-      <div class="panel" id="panel1" style="display: none">
+      <div class="panel" id="panel_params" style="display: none">
 
         <form id="param_inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
           <div class="row">
@@ -249,26 +248,47 @@
             <label for="perturb">Perturb</label>
             <span class="field"><input type="checkbox" id="perturb" checked="unchecked"></span>
           </div>
-
-          <div class="clear"></div>
           <div class="row">
+            <label for="iterations">Iterations</label>
+            <span class="field"><input type="number" id="iterations"></span>
           </div>
 
-          <div id="base_params" width="100%"></div>
 
           <div class="clear"></div>
-
-
+          <div class="gap"></div>
+        <div class="mouse" style="padding: 5px; margin: 5px 10px 0px 5px; border: 1px solid #999; border-radius: 3px; font-size: 9pt;">
+          <div id="actionlist">
+            <img src='media/mouse.png' class='right'><p style="color: #887; font-weight:bold;">Mouse &amp; Keyboard Quick Reference</p>
+            <b>Left-click</b>
+            <ul><li>Set Origin</li>
+            <li>Drag: Select region</li></ul>
+            <b>Right-click</b><br>
+            <ul><li>Julia Set switch</li>
+            <li>Drag: Pan (when fractal larger than window)</li></ul>
+            <b>Middle-click</b><br>
+            <ul><li>Drag: Pan (when fractal larger than window)</li></ul>
+            <b>Scroll-wheel - fractal display</b><br>
+            <ul><li>Zoom</li>
+            <li>[shift] Rotate 10&deg;</li></ul>
+            <b>Scroll-wheel - parameter field</b><br>
+            <ul><li>Adjust value of parameter by &plusmn;1</li>
+            <li>[shift] Adjust value of digit under pointer by &plusmn;1</li></ul>
+            <img src='media/keyboard.png' class='right'>
+            <b>Keys:</b><br>
+            <ul><li>[Enter] Apply changes and Draw</li>
+            <li>[ESC] or [`] Toggle Julia Set preview</li></ul>
+          </div>
+        </div>
 
         </form>
 
       </div>
 
-      <div class="panel" id="panel2" style="display: none">
+      <div class="panel" id="panel_formula" style="display: none">
         <form id="fractal_inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
         <p>Fractal</p>
         <div class="field">
-          <select id="fractal_formula" onchange="fractal['fractal'].select(this.value)">
+          <select id="fractal_formula" class="formula" onchange="fractal['fractal'].select(this.value)">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('fractal');">
@@ -279,7 +299,7 @@
 
         <p>Pre-Transform</p>
         <div class="field">
-          <select id="pre_transform_formula" onchange="fractal['pre_transform'].select(this.value)">
+          <select id="pre_transform_formula" class="formula" onchange="fractal['pre_transform'].select(this.value)">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -291,7 +311,7 @@
 
         <p>Post-Transform</p>
         <div class="field">
-          <select id="post_transform_formula" onchange="fractal['post_transform'].select(this.value)">
+          <select id="post_transform_formula" class="formula" onchange="fractal['post_transform'].select(this.value)">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -301,7 +321,6 @@
           </div>
         </div>
 
-
           <div class="gap"></div>
           <div id="fractal_params" width="100%"></div>
           <div id="pre_transform_params" width="100%"></div>
@@ -309,11 +328,11 @@
         </form>
       </div>
 
-      <div class="panel" id="panel3" style="display: none">
+      <div class="panel" id="panel_colour" style="display: none">
         <form id="colour_inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
         <p>Outside Colour</p>
         <div class="field">
-          <select id="outside_colour_formula" onchange="fractal['outside_colour'].select(this.value)">
+          <select id="outside_colour_formula" class="formula" onchange="fractal['outside_colour'].select(this.value)">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
@@ -323,7 +342,7 @@
         </div>
         <p>Inside Colour</p>
         <div class="field">
-          <select id="inside_colour_formula" onchange="fractal['inside_colour'].select(this.value)">
+          <select id="inside_colour_formula" class="formula" onchange="fractal['inside_colour'].select(this.value)">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
@@ -332,15 +351,27 @@
           </div>
         </div>
 
+        <p>Filter</p>
+        <div class="field">
+          <select id="filter_formula" class="formula" onchange="fractal['filter'].select(this.value)">
+            <option value="none"></option>
+          </select>
+          <div class="formula_buttons">
+            <input type="button" value="Edit" onclick="fractal.editFormula('filter');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('filter');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('filter');">
+          </div>
+        </div>
 
           <div class="gap"></div>
 
           <div id="outside_colour_params" width="100%"></div>
           <div id="inside_colour_params" width="100%"></div>
+          <div id="filter_params" width="100%"></div>
         </form>
       </div>
 
-      <div class="panel scroll" id="panel4" style="display: none">
+      <div class="panel scroll" id="panel_info" style="display: none">
         <p>Local storage usage:</p>
         <div id="indicatorbg"><div id="indicator"></div></div>
         <p>Renderer:</p>
@@ -353,7 +384,7 @@
         </div>
       </div>
 
-      <div class="panel scroll" id="panel5" style="display: none">
+      <div class="panel scroll" id="panel_log" style="display: none">
         <input type="button" value="Clear log" onClick="consoleClear()">
         <div id="consolearea">
           <div id="console" class="info">
@@ -398,10 +429,9 @@
     </div>
   </section>
 
+  <div id="fonttest"></div>
   <!-- Hidden -->
   <div id="hidden" style="display: none">
-    <img src="media/slider.png" id="slider">
-    <img src="media/SatVal.png">
     <canvas id="gradient" width="2048" height="1"></canvas>
     <canvas id="thumb" width="32" height=32"></canvas>
 

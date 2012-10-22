@@ -56,12 +56,14 @@ function updateFormulaLists() {
   $("post_transform_formula").options.length = 0;
   $("outside_colour_formula").options.length = 0;
   $("inside_colour_formula").options.length = 0;
+  $("filter_formula").options.length = 0;
 
   addToSelect("pre_transform", "none", "");
   addToSelect("post_transform", "none", "");
   addToSelect("outside_colour", "none", "");
   addToSelect("inside_colour", "none", "");
   addToSelect("inside_colour", "same", "As above");
+  addToSelect("filter", "none", "");
 
   //Run through the list and add to select lists
   for (key in formula_list) {
@@ -75,6 +77,7 @@ function updateFormulaLists() {
   $('post_transform_formula').value = varDefault(selected['post_transform'], "none");
   $('outside_colour_formula').value = varDefault(selected['outside_colour'], $("outside_colour_formula").options[1].value);
   $('inside_colour_formula').value = varDefault(selected['inside_colour'], "none");
+  $('filter_formula').value = varDefault(selected['filter'], "none");
 }
 
 function addSelectEntry(entry) {
@@ -84,8 +87,9 @@ function addSelectEntry(entry) {
   } else if (entry.type.indexOf("transform") > -1) {
     entry.field = addToSelect("pre_transform", entry.name, entry.label);
     entry.field = addToSelect("post_transform", entry.name, entry.label);
-  } else if (entry.type.indexOf("fractal") > -1)
+  } else if (entry.type.indexOf("fractal") > -1 || entry.type.indexOf("filter") > -1) {
     entry.field = addToSelect(entry.type, entry.name, entry.label);
+  }
 }
 
 function addToSelect(type, name, label) {
@@ -96,7 +100,7 @@ function addToSelect(type, name, label) {
 }
 
 function saveSelections() {
-  var selects = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
+  var selects = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour", "filter"];
   selected = {};
   for (s in selects) {
     var selname = selects[s] + "_formula";

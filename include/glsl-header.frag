@@ -16,6 +16,7 @@ precision highp float;
 
 //Uniform data
 uniform complex offset;
+uniform int iterations;
 uniform bool julia;
 uniform bool perturb;
 uniform real pixelsize;

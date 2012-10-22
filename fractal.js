@@ -17,7 +17,8 @@
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=ln, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
-  var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour"];
+  var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour", "filter"];
+  var sectionnames = {"fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour", "filter" : "Filter"}
 
   var savevars = {};
 
@@ -111,7 +112,7 @@
   }
 
   function parseReal(value, invalid_default) {
-    //Parse string as real number, uses parseReal but always returns a valid 
+    //Parse string as real number, uses parseFloat but always returns a valid 
     //number (empty/invalid returns 0)
     var n = parseFloat(value);
     //Check is number
@@ -536,27 +537,24 @@
 
   //Add fields for all our parameters dynamically to the page
   ParameterSet.prototype.createFields = function(category, name) {
+    //Now processed whenever showPanel called and only displays fields in active panel
     switch (category) {
-      case "base":
-        if (selectedTab != $('tab1')) return;
-        break;
       case "fractal":
       case "pre_transform":
       case "post_transform":
-        if (selectedTab != $('tab2')) return;
+        if (selectedTab != $('tab_formula')) return;
         break;
       case "inside_colour":
       case "outside_colour":
-        if (selectedTab != $('tab3')) return;
+      case "filter":
+        if (selectedTab != $('tab_colour')) return;
         break;
     }
     var field_area = $(category + "_params");
     var divider = document.createElement("div");
     divider.className = "divider";
-    var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
-                        "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
     var label = "";
-    if (category != "base") {
+    if (sectionnames[category]) {
       var key = formulaKey(category, name);
       if (!formula_list[key]) {
         //Formula from fractal has been deleted and attempting to select...
@@ -570,16 +568,11 @@
       divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[category] + ": " + label));
       divider.appendChild(divlabel);
     }
+    field_area.appendChild(divider);
 
     for (key in this)
     {
       if (typeof(this[key]) != 'object') continue;
-
-      //Append divider before first param
-      if (divider) {
-        field_area.appendChild(divider);
-        divider = null;
-      }
 
       var row = document.createElement("div");
       row.className = "row";
@@ -601,6 +594,7 @@
       //Create the input fields
       this[key].input = null;
       var input;
+      var onchange = "fractal.applyChanges();"
       switch (this[key].typeid)
       {
         case -1: //Boolean
@@ -618,15 +612,20 @@
           input = document.createElement("input");
           input.id = category + '_' + key;
           input.type = "number";
+          input.value = this[key].value;
+          spanin.appendChild(input);
           if (this[key].typeid == 1) input.setAttribute("step", 0.1);
           if (this[key].typeid == 8) {
             input.type = "range";
             input.setAttribute("min", this[key].min);
             input.setAttribute("max", this[key].max);
             input.setAttribute("step", this[key].step);
+            input.numval = document.createElement("span");
+            input.numval.innerHTML = parseReal(this[key].value).toFixed(2);
+            onchange = "this.numval.innerHTML = parseReal(this.value).toFixed(2);" + onchange;
+            input.setAttribute("onchange", onchange);
+            spanin.appendChild(input.numval);
           }
-          input.value = this[key].value;
-          spanin.appendChild(input);
           break;
         case 2: //complex (2xreal)
           input = [null, null];
@@ -677,7 +676,7 @@
           input.value = this[key].value;
           input.setAttribute("spellcheck", false);
           spanin.appendChild(input);
-          //if (typeof CodeMirror == 'function') {
+          if (typeof CodeMirror == 'function') {
             input.editor = new CodeMirror.fromTextArea(input, {
               mode: "text/x-glsl",
               theme: "fracturedlight",
@@ -686,7 +685,7 @@
               matchBrackets: true,
               lineWrapping: true
             });
-          //}
+          }
           break;
         case 7: 
           //List of literal values (val1|val2 etc...)
@@ -700,10 +699,10 @@
       //Instant update for uniform values...
       if (this[key].uniform) {
         if (this[key].typeid == 2) {
-          input[0].setAttribute("onchange", "fractal.applyChanges();");
-          input[1].setAttribute("onchange", "fractal.applyChanges();");
+          input[0].setAttribute("onchange", onchange);
+          input[1].setAttribute("onchange", onchange);
         } else
-          input.setAttribute("onchange", "fractal.applyChanges();");
+          input.setAttribute("onchange", onchange);
       }
       //Save the field element
       this[key].input = input;
@@ -750,19 +749,16 @@
     this.reselect();
   }
 
-  Formula.prototype.reselect = function() {
-    if (this.category == "base")
-      this.select("default");
-    else
-      this.selectByIndex();
-  }
-
-  Formula.prototype.selectByIndex = function(idx) {
-    //Select by index from select control
+  Formula.prototype.reselect = function(idx) {
+    //Select, by index from select control if present and idx provided
     var sel = $(this.category + '_formula');
-    if (idx != undefined)
-      sel.selectedIndex = idx;
-    var name = sel.options[sel.selectedIndex].value;
+    var name = 'default';
+    //Formula categories may have a select element, in which case use it
+    if (sel) {
+      if (idx != undefined)
+        sel.selectedIndex = idx;
+      name = sel.options[sel.selectedIndex].value;
+    }
     this.select(name);
   }
 
@@ -830,7 +826,7 @@
   Formula.prototype.getCodeSections = function() {
     var code = this.getSource();
     var section = "data";
-    var sections = {"init" : "", "reset" : "", "znext" : "", "escaped" : "", "converged" : "", "calc" : "", "result" : "", "transform" : ""};
+    var sections = {"init" : "", "reset" : "", "znext" : "", "escaped" : "", "converged" : "", "calc" : "", "result" : "", "transform" : "", "filter" : ""};
     var match;
     var lastIdx = 0;
     var reg = /^([a-z]+):/gm;
@@ -1078,22 +1074,24 @@
     this.selected = new Complex(0, 0);
     this.julia = false;
     this.perturb = false;
+    this.iterations = 100;
 
-    //Reset default base params
-    this["base"] = new Formula("base");
+    //Reset default params
     this["fractal"] = new Formula("fractal");
     this["pre_transform"] = new Formula("pre_transform");
     this["post_transform"] = new Formula("post_transform");
     this["inside_colour"] = new Formula("inside_colour");
     this["outside_colour"] = new Formula("outside_colour");
+    this["filter"] = new Formula("filter");
   }
 
   Fractal.prototype.formulaDefaults = function() {
-    this["fractal"].selectByIndex(0);
-    this["pre_transform"].selectByIndex(0);
-    this["post_transform"].selectByIndex(0);
-    this["outside_colour"].selectByIndex(1);
-    this["inside_colour"].selectByIndex(0);
+    this["fractal"].reselect(0);
+    this["pre_transform"].reselect(0);
+    this["post_transform"].reselect(0);
+    this["outside_colour"].reselect(1);
+    this["inside_colour"].reselect(0);
+    this["filter"].reselect(0);
   }
 
   Fractal.prototype.editFormula = function(category) {
@@ -1159,6 +1157,7 @@
     this["post_transform"].reselect();
     this["outside_colour"].reselect();
     this["inside_colour"].reselect();
+    this["filter"].reselect();
   }
 
   //Save fractal (write param/source file)
@@ -1189,12 +1188,13 @@
             "selected=" + this.selected + "\n" +
             "julia=" + this.julia + "\n" +
             "perturb=" + this.perturb + "\n" +
+            "iterations=" + this.iterations + "\n" +
             "fractal=" + this["fractal"].selected + "\n" +
             "pre_transform=" + this["pre_transform"].selected + "\n" +
             "post_transform=" + this["post_transform"].selected + "\n" +
             "outside_colour=" + this["outside_colour"].selected + "\n" +
             "inside_colour=" + this["inside_colour"].selected + "\n" +
-            "\n[params.base]\n" + this["base"].currentParams;
+            "filter=" + this["filter"].selected + "\n";
     return code;
   }
 
@@ -1254,7 +1254,7 @@
     this.formulaDefaults();
     //1. Load fixed params as key=value: origin, selected, julia, perturb, 
     //2. Load selected formula names
-    //3. Load code for each selected formula (including "base")
+    //3. Load code for each selected formula
     //4. For each formula, load formula params into params[formula]
     //5. Load palette
     //Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
@@ -1303,7 +1303,7 @@
         var pair = line.split("=");
 
         //Process ini format params
-        if (pair[0] == "width" || pair[0] == "height")
+        if (pair[0] == "width" || pair[0] == "height" || pair[0] == "iterations")
           this[pair[0]] = parseInt(pair[1]);
         else if (pair[0] == "zoom" || pair[0] == "rotate")
           this.origin[pair[0]] = parseReal(pair[1]);
@@ -1376,6 +1376,7 @@
             }
           }
 
+          if (category != "base") //TEMP 
           this[category].select(name);
           //alert("formulas[" + pair[1] + "] = " + pair[0]);
           //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
@@ -1384,6 +1385,11 @@
       } else if (section.slice(0, 7) == "params.") {
         var pair1 = section.split(".");
         var category = pair1[1];
+          if (category == "base") { //TEMP 
+            var pair = line.split("=");
+            this.iterations = parseInt(pair[1]);
+            continue;
+          }
         var formula = this[category].selected;
         //Old style params.transform, add ":" to params
         if (category == "post_transform" && line.indexOf(":") < 0) {
@@ -1398,7 +1404,6 @@
         //    line = line.replace(pair1[1], category);
         //  }
         //}
-        if (!category) category = "base";
         if (curparam && line.indexOf("=") < 0 && line.length > 0) {
           //Multi-line value (ok for expressions)
           curparam.value += "\n" + lines[i];
@@ -1433,9 +1438,9 @@
     var reup = false;
     if (saved["vary"]) {
       this["post_transform"].currentParams[":vary"].parse(saved["vary"]); 
-      this["post_transform"].currentParams[":miniter"].value = this["base"].currentParams["iterations"].value; 
+      this["post_transform"].currentParams[":miniter"].value = this.iterations; 
       reup  = true;
-      this["base"].currentParams["iterations"].value *= 2;
+      this.iterations *= 2;
     }
     if (saved["inrepeat"] && this["inside_colour"].currentParams[":repeat"] != undefined) {
       this["inside_colour"].currentParams[":repeat"].parse(saved["inrepeat"]);
@@ -1508,7 +1513,7 @@
         else if (pair[0] == "PerturbFlag" || pair[0] == "zFlag")
           this.perturb = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "Iterations")
-          this["base"].currentParams["iterations"].value = parseInt(pair[1]) + 1;   //Extra iteration in loop
+          this.iterations = parseInt(pair[1]) + 1;   //Extra iteration in loop
         else if (pair[0] == "Xstart")
           this.origin.re = parseReal(pair[1]);
         else if (pair[0] == "Ystart")
@@ -1548,12 +1553,9 @@
           //Initially copy to both repeat params
           saved["inrepeat"] = parseReal(pair[1]);
           saved["outrepeat"] = parseReal(pair[1]);
-          //this["base"].currentParams["outrepeat"].parse(pair[1]);
-          //this["base"].currentParams["inrepeat"].parse(pair[1]);
         }
         else if (pair[0] == "PaletteRepeatIn")
           saved["inrepeat"] = parseReal(pair[1]);
-          //this["base"].currentParams["inrepeat"].parse(pair[1]);
         else if (pair[0] == "Outside") {
           saved["outside"] = pair[1];
           this['outside_colour'].select(convertFormulaName(pair[1]));
@@ -1566,8 +1568,8 @@
           if (parseReal(pair[1]) > 0) {
             this["post_transform"].select("fractured");
             this["post_transform"].currentParams[":vary"].parse(pair[1]);
-            this["post_transform"].currentParams[":miniter"].value = this["base"].currentParams["iterations"].value; 
-            this["base"].currentParams["iterations"].value *= 2;
+            this["post_transform"].currentParams[":miniter"].value = this.iterations; 
+            this.iterations *= 2;
           }
         }
         //Following parameters need to be created rather than just set values, save for processing later
@@ -1767,12 +1769,12 @@
   Fractal.prototype.loadParams = function() {
     //consoleDebug("loadParams<hr>");
     //Parse param fields from formula code
-    this["base"].select();
     this["fractal"].select();
     this["pre_transform"].select();
     this["post_transform"].select();
     this["inside_colour"].select();
     this["outside_colour"].select();
+    this["filter"].select();
     //Copy params to form fields
     this.copyToForm();
   }
@@ -1837,6 +1839,7 @@
       this.height = parseInt($("heightInput").value);
     }
 
+    this.iterations = parseReal($("iterations").value);
     this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
     this.perturb = document["inputs"].elements["perturb"].checked ? 1 : 0;
     this.origin.rotate = parseReal($("rotate").value);
@@ -1852,12 +1855,12 @@
     document["inputs"].elements["rotate"].value = this.origin.rotate;
 
     //Copy form values to defined parameters
-    this["base"].currentParams.setFromForm();
     this["fractal"].currentParams.setFromForm();
     this["pre_transform"].currentParams.setFromForm();
     this["post_transform"].currentParams.setFromForm();
     this["inside_colour"].currentParams.setFromForm();
     this["outside_colour"].currentParams.setFromForm();
+    this["filter"].currentParams.setFromForm();
 
     //Update shader code & redraw
     this.writeShader();
@@ -1878,11 +1881,13 @@
     document["inputs"].elements["rotate"].value = this.origin.rotate;
     document["inputs"].elements["julia"].checked = this.julia;
     document["inputs"].elements["perturb"].checked = this.perturb;
+    document["inputs"].elements["iterations"].value = this.iterations;
     $('fractal_formula').value = this["fractal"].selected;
     $('pre_transform_formula').value = this["pre_transform"].selected;
     $('post_transform_formula').value = this["post_transform"].selected;
     $('outside_colour_formula').value = this["outside_colour"].selected;
     $('inside_colour_formula').value = this["inside_colour"].selected;
+    $('filter_formula').value = this["filter"].selected;
     //No width or height? Set autosize, otherwise disable
     if (this.width == 0 || this.height == 0)
       document["inputs"].elements["autosize"].checked = true;
@@ -1893,22 +1898,26 @@
   //Create shader from source components
   Fractal.prototype.generateShader = function(header) {
     //Get formula selections
-    var selections = {"base" : this["base"].getParsedFormula(), 
-                      "fractal" : this["fractal"].getParsedFormula(),
+    var selections = {"fractal" : this["fractal"].getParsedFormula(),
                       "pre_transform" : this["pre_transform"].getParsedFormula(),
                       "post_transform" : this["post_transform"].getParsedFormula(),
                       "outside_colour" : this["outside_colour"].getParsedFormula(),
-                      "inside_colour" : this["inside_colour"].getParsedFormula()};
+                      "inside_colour" : this["inside_colour"].getParsedFormula(),
+                      "filter" : this["filter"].getParsedFormula()};
 
     //Add headers + core code template
     //var shader = sources[header] + sources["include/complex-header.frag"] + sources["include/fractal-shader.frag"];
     //Insert the complex maths library + core code template
-    var shader = sources[header] + sources["include/complex-math.frag"] + sources["include/fractal-shader.frag"];
+    //var shader = "#define MAXITER " + this.iterations + "\n" + 
+    var shader = "#define MAXITER " + (100 * Math.ceil(this.iterations / 100)) + "\n" + 
+                 sources[header] + 
+                 sources["include/complex-math.frag"] + 
+                 sources["include/fractal-shader.frag"];
 
     //Replace ---SECTION--- in template with formula code
     this.offsets = [];
     shader = this.templateInsert(shader, selections, "DATA", "data", 
-                ["base", "pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
+                ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour", "filter"], 2);
     shader = this.templateInsert(shader, selections, "INIT", "init",
                 ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
     shader = this.templateInsert(shader, selections, "RESET", "reset", 
@@ -1922,6 +1931,7 @@
     shader = this.templateInsert(shader, selections, "INSIDE_CALC", "calc", ["inside_colour"], 4);
     shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
     shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
+    shader = this.templateInsert(shader, selections, "FILTER", "filter", ["filter"], 2);
     this.offsets.push(new LineOffset("(end)", "(end)", shader.split("\n").length));
 
     //Append the complex maths library
@@ -1950,8 +1960,8 @@
     spaces = spaces.substr(0, indent);
 
     //Save the line offset where inserted
-    var pos = regex.exec(shader).index;
-    var offset = shader.slice(0, pos).split("\n").length;
+    var match = regex.exec(shader);
+    var offset = shader.slice(0, match.index).split("\n").length;
     //consoleDebug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
 
     //Get sources
@@ -2025,7 +2035,7 @@
     if (this.webgl) {
       this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
       //Restore uniforms/attributes for fractal program
-      var uniforms = ["palette", "offset", "julia", "perturb", "origin", "selected_", "dims", "pixelsize", "background"];
+      var uniforms = ["palette", "offset", "iterations", "julia", "perturb", "origin", "selected_", "dims", "pixelsize", "background"];
       this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
       this.parseErrors(errors, /0:(\d+)/);
@@ -2043,8 +2053,6 @@
 
   Fractal.prototype.parseErrors = function(errors, regex) {
     if (errors) {
-      var sectionnames = {"base" : "", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", 
-                          "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour"}
       var match = regex.exec(errors);
       var found = false;
       if (match) {
@@ -2131,6 +2139,7 @@
     this.webgl.use(this.program);
 
     //Uniform variables
+    this.gl.uniform1i(this.program.uniforms["iterations"], this.iterations);
     this.gl.uniform1i(this.program.uniforms["julia"], this.julia);
     this.gl.uniform1i(this.program.uniforms["perturb"], this.perturb);
     this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.background.rgbaGL());
@@ -2140,12 +2149,12 @@
     this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.webgl.viewport));
 
     //Parameter uniforms...
-    this["base"].currentParams.setUniforms(this.gl, this.program.program), 
     this["fractal"].currentParams.setUniforms(this.gl, this.program.program),
     this["pre_transform"].currentParams.setUniforms(this.gl, this.program.program),
     this["post_transform"].currentParams.setUniforms(this.gl, this.program.program),
     this["outside_colour"].currentParams.setUniforms(this.gl, this.program.program),
     this["inside_colour"].currentParams.setUniforms(this.gl, this.program.program);
+    this["filter"].currentParams.setUniforms(this.gl, this.program.program), 
 
     //Gradient texture
     this.gl.activeTexture(this.gl.TEXTURE0);
@@ -2176,50 +2185,6 @@
 
 //////////////////////////////////////////////////////////////////
 //Canvas event handling
-var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shift+ctrl', 'shift+alt', 'ctrl+alt', 'shift+ctrl+alt'
-
-  //WheelAction - field id and value
-  /**
-   * @constructor
-   */
-  function WheelAction(id, value) {
-    this.id = id;
-    this.value = value;
-  }
-
-  function defaultMouseActions() {
-    mouseActions["left"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-    mouseActions["right"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-    mouseActions["middle"] = {'shift':null, 'ctrl':null, 'alt':null, 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-    mouseActions["wheel"] = {'shift':new WheelAction('rotate',10), 'ctrl':null, 'alt':new WheelAction('rotate',1), 'shift+ctrl':null, 'shift+alt':null, 'ctrl+alt':null, 'shift+ctrl+alt':null};
-  }
-
-  function getCustomAction(event, button) {
-    var action = null;
-    if (!button) {
-      if (event.button == 1) button = "middle";
-      else if (event.button == 2) button = "right";
-      else button = "left";
-    }
-
-    if (event.shiftKey && event.altKey && event.ctrlKey) {
-      action = mouseActions[button]["shift+ctrl+alt"];
-    } else if (event.shiftKey && event.altKey) {
-      action = mouseActions[button]["shift+alt"];
-    } else if (event.shiftKey && event.ctrlKey) {
-      action = mouseActions[button]["shift+ctrl"];
-    } else if (event.altKey && event.ctrlKey) {
-      action = mouseActions[button]["ctrl+alt"];
-    } else if (event.ctrlKey) {
-      action = mouseActions[button]["ctrl"];
-    } else if (event.shiftKey) {
-      action = mouseActions[button]["shift"];
-    } else if (event.altKey) {
-      action = mouseActions[button]["alt"];
-    }
-
-    return action;
-  }
 
   Fractal.prototype.click = function(event, mouse) {
     var select = $("select");
@@ -2227,45 +2192,34 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     //Convert mouse coords into fractal coords
     var point = this.origin.convert(mouse.x, mouse.y, mouse.element);
 
-    var action = getCustomAction(event);
+    //Selection box?
+    if (select.style.display == 'block') {
 
-    if (action) {
-      //Set point to assigned field
-      if ($(action + "0")) {
-        $(action + "0").value = point.re;
-        $(action + "1").value = point.im;
-        this.applyChanges();
-      }
-    } else {
-      //Selection box?
-      if (select.style.display == 'block') {
-
-        //Ignore if too small a region selected
-        if (select.w > 5 && select.h > 5) {
-          //Get element offset in document
-          //var offset = findElementPos(mouse.element);
-          //Convert coords to position relative to element
-          //select.x -= offset[0];
-          //select.y -= offset[1];
-          //Get centre of selection in fractal coords
-          var centre = this.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
-          //Adjust centre position to match mouse left click
-          this.setOrigin(centre);
-          //Adjust zoom by factor of element width to selection
-          this.applyZoom(mouse.element.width / select.w);
-        }
-      } else if (event.button == 0) {
+      //Ignore if too small a region selected
+      if (select.w > 5 && select.h > 5) {
+        //Get element offset in document
+        //var offset = findElementPos(mouse.element);
+        //Convert coords to position relative to element
+        //select.x -= offset[0];
+        //select.y -= offset[1];
+        //Get centre of selection in fractal coords
+        var centre = this.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
         //Adjust centre position to match mouse left click
-        this.setOrigin(point);
-      } else if (event.button > 0) {
-        //Right-click, not dragging
-        if (event.button == 2 && !mouse.dragged) {
-          //Switch to julia set at selected point
-          this.selectPoint(point, true);
-        } else {
-          //No redraw
-          return false;
-        }
+        this.setOrigin(centre);
+        //Adjust zoom by factor of element width to selection
+        this.applyZoom(mouse.element.width / select.w);
+      }
+    } else if (event.button == 0) {
+      //Adjust centre position to match mouse left click
+      this.setOrigin(point);
+    } else if (event.button > 0) {
+      //Right-click, not dragging
+      if (event.button == 2 && !mouse.dragged) {
+        //Switch to julia set at selected point
+        this.selectPoint(point, true);
+      } else {
+        //No redraw
+        return false;
       }
     }
 
@@ -2292,8 +2246,8 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
     {
       //Convert mouse coords into fractal coords
       mouse.point = this.origin.convert(mouse.x, mouse.y, mouse.element);
-      var coord = new Aspect(mouse.point.re + this.origin.re, mouse.point.im + this.origin.im, 0, 0);
-      $("coords").innerHTML = "&nbsp;re: " + coord.re.toFixed(8) + " im: " + coord.im.toFixed(8);
+      mouse.coord = new Aspect(mouse.point.re + this.origin.re, mouse.point.im + this.origin.im, 0, 0);
+      $("coords").innerHTML = "&nbsp;re: " + mouse.coord.re.toFixed(8) + " im: " + mouse.coord.im.toFixed(8);
 
       //Constantly updated mini julia set rendering
       if (this.preview && !this.julia) {
@@ -2346,11 +2300,17 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
   }
 
   Fractal.prototype.wheel = function(event, mouse) {
-    var action = getCustomAction(event, "wheel");
-    //alert(action.id);
-    if (this.preview || !(event.shiftKey || event.altKey || event.ctrlKey)) {
+    if (!this.preview && event.shiftKey) {
+        $('rotate').value = parseReal($('rotate').value, 1) + event.spin * 10;
+        //Accumulate spin before applying changes
+        //First clear any existing timer
+        if (this.timer) clearTimeout(this.timer);
+        //Set timer
+        document.body.style.cursor = "wait";
+        this.timer = setTimeout('fractal.applyChanges(); document.body.style.cursor = "default";', 350);
+
+    } else {
       // Zoom
-      action = new WheelAction(null, 0);
       var zoom;
       if (event.spin < 0)
          zoom = 1/(-event.spin * 1.1);
@@ -2405,17 +2365,11 @@ var mouseActions = {}; //left,right,middle,wheel - 'shift', 'ctrl', 'alt', 'shif
         //Set timer
         document.body.style.cursor = "wait";
         select.timer = setTimeout('selectZoom();', 350);
+
       }
-      return false;
     }
 
-    if (!action) return true; //Default browser action
-
-    //Assign field value
-    if (action.id && $(action.id))
-      $(action.id).value = parseReal($(action.id).value, 1) + event.spin * action.value;
-
-    this.applyChanges();
+    return false;
   }
 
   function selectZoom() {

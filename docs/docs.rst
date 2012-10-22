@@ -16,18 +16,16 @@ http://fractured.ozone.id.au/docs.html
 
 Introduction
 ============
-Fractured is a fast fractal renderer written in Javascript and WebGL / WebCL.
+Fractured is a fractal exploration application written in Javascript and WebGL / WebCL.
 
-I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU. 
-There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace to store my work on a server and access it anywhere.
+It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae. Despite there being a proliferation of great fractal programs around, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself.
+I also wanted to render complex fractals faster on the GPU with GLSL which was not being done at the time I started except a few proof of concept demos. 
 
-It started in Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken.
+First attempt was in Java and JOGL, then I heard about WebGL which seemed the perfect framework for it, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken and I got attached to the idea of creating an online studio workspace to store my work on a server and access it anywhere allowing sharing fractal images, formulae and parameters. Also I began to enjoy writing Javascript, possibly a case of stockholm syndrome.
   
-Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, so here it is - maybe someone else will find it useful.
+Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, it does what I need and maybe someone else will find it useful.
 
-If you have any feedback email me at: owen (at) ozone.id.au
-
-*(NOTE: Apologies as this documentation file is still a work in progress)*
+*(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)*
 
 Acknowledgments
 ---------------
@@ -42,11 +40,13 @@ Acknowledgments
 
 Requirements
 ------------
-- A modern browser supporting WebGL (Only confirmed working with Firefox, Chrome & Safari at this stage, Opera's WebGL implementation is still causing me some problems) 
+- A modern browser supporting WebGL, confirmed working with Firefox, Chrome & Safari.
 - A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
 - Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ 
 - *Note* My development platform is Linux, Firefox, NVidia. Other platforms have not all been well tested yet. Everything should work fine though (in theory).
-- *Note 2* On Windows, browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this "feature" is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop).
+- **Note: Windows** windows browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this "feature" is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop).
+- **Note: Safari** if not enabled, WebGL can be switched on  by going into preferences -> advanced, show develop menu. Then select Enable WebGL on the Develop menu.
+- **Note: Opera** Opera's WebGL implementation is still causing me some problems, hope to support it in the future.
 
 Workspace
 =========
@@ -91,12 +91,11 @@ The default mouse actions are:
 - *Mouse scroll over fractal* zoom in and out
 - *Left-click* centre fractal on coordinate clicked on
 - *Left-click and drag* Select an area of the fractal to zoom in on
-- *Right click (or control-click on a Mac)* switch between Mandelbrot set and Julia set at selected coordinate (at mouse pointer)
+- *Right click* switch between Mandelbrot set and Julia set at selected coordinate (at mouse pointer)
 - *Right-click and drag* scroll fractal (if larger than display window)
 - *Shift + scroll* Rotate in 10 degree increments
-- *Alt + scroll* Rotate in 1 degree increments
 
-Julia set preview mode: to display a Julia set preview as you move the mouse around a Mandelbrot set hit the back-tick [`] key (the one above TAB and below ESC on most keyboards)
+Julia set preview mode: to display a Julia set preview as you move the mouse around a Mandelbrot set hit the [ESC] or back-tick [`] key. Hit the key again to turn the preview off.
 
 Coordinates
 -----------
@@ -127,6 +126,10 @@ A colour picker box appears whenever you click to add or edit a colour on the gr
 Tools
 -----
 The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the "Tools" area.
+
+Many of the parameters in this area can be adjusted using the mouse scroll wheel.
+Scrolling over a numeric parameter will update the value in increments of 1 and redraw the fractal.
+Finer adjustment can be achieved by holding [SHIFT] while scrolling, then only the digit under the mouse pointer will be updated. (If the mouse is not over a digit then the last digit will be updated instead). This is very handy to interactively adjust parameters and instantly see the effect on the fractal rendering.
 
 Parameters
 ~~~~~~~~~~
@@ -186,7 +189,7 @@ When supported you can use them to switch between the following renderers:
 - **WebCL** fractals are computed in an OpenCL kernel and then drawn to a 2D canvas, single precision.
 - **WebCL fp64** as WebCL but utilising the 64-bit floating point extensions when available for double precision fractal computation.
 
-...and the help file... you're reading it.
+...followed by the documentation file you're now reading.
 
 Log
 ~~~
@@ -194,6 +197,7 @@ This tab shows a log of status information and sometimes error messages from the
 
 The [Clear Log] button clears all messages from the display.
 
+Some log entries will have a "@" symbol before them, this can be clicked to restore the view to the previous logged state.
 
 Top Menu
 --------
@@ -214,7 +218,6 @@ Settings
 
 - *Anti-aliasing* select the anti-aliasing quality to use when rendering fractals.
 - *Script Editor* an experimental feature allowing you to write a javascript that controls the fractal display.
-- *Clear Actions* clears any saved custom mouse actions from storage.
 - *Show Preview* enables or disables the Julia set preview window.
 - *Hide/Show Tools* hides or shows the *tools* area from the window, allowing more room for the fractal display.
 - *Full Screen* enter full screen mode.
@@ -506,6 +509,6 @@ Additional functions provided:
 - catan csinh ccosh ctanh casinh
 - cacosh catanh csqrt csqrt2 equals
 
-**TODO: Further document maths library functions, custom mouse actions, scripting, default formulae**
+**TODO: Further document maths library functions, scripting, default formulae**
 
 

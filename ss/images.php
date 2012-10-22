@@ -73,7 +73,8 @@
   if ($type == "shared" || $type == "images")
     echo "<a href='/ss/rss.php?type=$type'><img src='media/rss.png'></a>";
 
-  echo '<div class="divider"></div>';
+  echo '<div class="clear"></div>';
+  echo '<div class="gap"></div>';
 
   for($x=$offset; $x < $offset + $imgpage; $x++)
   {

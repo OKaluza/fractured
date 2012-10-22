@@ -18,7 +18,8 @@ inc = {
 "include/fractal-shader.frag" : "",
 "include/complex-math.frag" : "",
 "include/shader2d.vert" : "",
-"include/script.js" : ""
+"include/script.js" : "",
+"generated.shader" : ""
 }
 
 for key in inc:
@@ -26,17 +27,17 @@ for key in inc:
   f = open(key, 'r')
   inc[key] = f.read()
 
-f = open('includes.json', 'w')
+f = open('includes_0.6.json', 'w')
 f.write(json.dumps(inc))
 
 sources = OrderedDict()
 
 p = re.compile('[^\w()]+')
 
-process("base", ["Default"])
 process("fractal", ["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Cactus","Phoenix"])
 process("transform", ["Inverse","Functions"])
 process("colour", ["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"])
+process("filter", ["Colour Adjustment"])
 
 f = open('defaultformulae.json', 'w')
 f.write(json.dumps(sources))

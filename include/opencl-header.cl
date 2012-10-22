@@ -32,7 +32,7 @@ rgba read_palette(image2d_t palette, float mu)
   return (rgba)(p.x/255.0, p.y/255.0, p.z/255.0, p.w/255.0); 
 }
 
-#define CALCPIXEL rgba calcpixel(complex coord, complex offset, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
+#define CALCPIXEL rgba calcpixel(int iterations, complex coord, complex offset, bool julia, bool perturb, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
 #define GLSL_MAIN 
 #define OPENCL_MAIN CALCPIXEL {
 
@@ -54,6 +54,7 @@ typedef struct __attribute__ ((packed)) Input
   uchar julia;
   uchar perturb;
 
+  int iterations;
   int width;
   int height;
 } Input;
@@ -92,7 +93,7 @@ __kernel void sample(__global struct Input* input, read_only image2d_t palette, 
   complex coord = input->origin + convert(pos, size, input->zoom, input->rotation);
 
   complex offset = (complex)((real)j/(real)input->antialias-0.5, (real)k/(real)input->antialias-0.5);
-  rgba pixel = calcpixel(coord, offset, input->julia, input->perturb, input->pixelsize, 
+  rgba pixel = calcpixel(input->iterations, coord, offset, input->julia, input->perturb, input->pixelsize, 
                      dims, input->origin, input->selected, palette, input->background);
 
   if (j==0 && k==0) temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] = (rgba)(0);
