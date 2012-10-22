@@ -24,14 +24,15 @@
   $mysqldate = date("Y-m-d H:i:s");
 
   //Compress session text
-  if (strlen($data) > 1000)
-    $data = addslashes(gzdeflate($data, 9));
+  $size = strlen($data);
+  if (size > 1000)
+    $data = addslashes(gzencode($data, 9));
   else
     $data = mysql_real_escape_string($data);
 
   if (!$sessid)
   {
-    $query = "INSERT INTO session (user_id, date, description, data) values('$user', '$mysqldate', '$desc', '$data');";
+    $query = "INSERT INTO session (user_id, date, description, data, size) values('$user', '$mysqldate', '$desc', '$data', '$size');";
     $result = mysql_query($query);
 
     if (!$result) die('Invalid query: ' . mysql_error());
@@ -41,7 +42,7 @@
   }
   else
   {
-    $query = "UPDATE session SET data = '$data' WHERE id = '$sessid' AND user_id = '$user';";
+    $query = "UPDATE session SET date = '$mysqldate', data = '$data', size = '$size' WHERE id = '$sessid' AND user_id = '$user';";
     $result = mysql_query($query);
     if (!$result) die('Invalid query: ' . mysql_error());
   }

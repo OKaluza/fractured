@@ -26,9 +26,27 @@
         $row = mysql_fetch_assoc($result);
         $data = $row["data"];
         //Return the first row result JSON (should only be one)
+        // serve it as javascript
+        header("Content-Type: application/json");
+        // you don't want it reloading the js every time because the
+        // auto generated content always has a new date stamp
+        //header("Cache-Control: max-age=604800");
+        //header("Last-Modified: Mon, 22 Oct 2012 00:00:00 GMT");
+        $size = $row["size"];
+        //Temporary fix for empty size:
+        if ($size == 0 && $data[0] != '{') {$data = gzinflate($data); $size = strlen($data);}
+        header("Content-Length: ".$size); //set header length - original size
+        //Gzipped?
         if ($data[0] != '{')
-          $data = gzinflate($data);
-        header("Content-Length: ".strlen($data)); //set header length
+        {
+          if (stripos($_SERVER["HTTP_ACCEPT_ENCODING"], 'gzip') !== false)
+            header('Content-Encoding: gzip');
+          else
+            // client does not accept gzipped data
+            //Need to strip header because we used gzencode()
+            $data = gzinflate(substr($data,10,-8));
+        }
+          
         echo $data;
       }
     } else {
