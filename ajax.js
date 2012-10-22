@@ -13,6 +13,7 @@ function ajaxReadFile(filename, callback, nocache, progress)
   http.onreadystatechange = function()
   {
     if (total > 0 && http.readyState > 2) {
+      //Passed size progress
       var recvd = parseInt(http.responseText.length);
       //total = parseInt(http.getResponseHeader('Content-length'))
       setProgress(recvd / total * 100);
@@ -64,12 +65,9 @@ function updateProgress(evt)
 {
   //evt.loaded: bytes browser received/sent
   //evt.total: total bytes set in header by server (for download) or from client (upload)
-  var total;
-  if (evt.lengthComputable) 
-    total = evt.total;
-  if (total) {
+  if (evt.lengthComputable) {
     setProgress(evt.loaded / evt.total * 100);
-    //consoleWrite(evt.loaded + " / " + total);
+    //consoleWrite(evt.loaded + " / " + evt.total);
   }
 } 
 
