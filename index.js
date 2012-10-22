@@ -1,7 +1,6 @@
 //TODO:
-//Load formulae, need to update parameters on selected tab (showPanel)
 //Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
-//Fixed size images revert to window size
+//Fixed size images revert to window size?
 //Sometimes loaded palette is not drawn
 
 //Globals
@@ -163,7 +162,6 @@ var rztimeout = undefined;
     source = fractal.toStringMinimal();
     fractal = new Fractal('main', mode, fractal.antialias);
     fractal.load(source);
-    fractal.name = localStorage["fractured.name"];
   }
 
   function handleKey(event) {
@@ -290,8 +288,7 @@ var rztimeout = undefined;
       fractal.applyChanges();
     } else {
       fractal.load(data);
-      fractal.name = name;
-      $('nameInput').value = fractal.name;
+      $('name').value = name;
     }
   }
 
@@ -417,7 +414,7 @@ var rztimeout = undefined;
         var i = index + 1;
         if (localStorage["fractured.fractal." + i]) {
           fractal.load(localStorage["fractured.fractal." + i], true);
-          $("widthInput").value = $("heightInput").value = 32;
+          $("width").value = $("height").value = 32;
           document["inputs"].elements["autosize"].checked = false;
           fractal.applyChanges(6);
           var result = $('fractal-canvas').toDataURL("image/jpeg")
@@ -455,8 +452,7 @@ var rztimeout = undefined;
     hideGallery();
     current.selectFractal(idx);
     fractal.load(localStorage["fractured.fractal." + idx]);
-    fractal.name = localStorage["fractured.names." + idx];
-    $('nameInput').value = fractal.name;
+    $('name').value = localStorage["fractured.names." + idx];
     //Generate thumbnails on select!
     if (!current.thumbnails[idx])
       current.thumbnails[idx] = thumbnail();
@@ -481,11 +477,11 @@ var rztimeout = undefined;
     if (current.fractal >= 0) {
       //Save existing
       var name = localStorage["fractured.names." + current.fractal];
-      if (name == fractal.name) {
+      if (name == $('name').value) {
         if (confirm('Overwrite "' + name + '"?')) {
           var idx = current.fractal;
           try {
-            localStorage["fractured.names." + idx] = fractal.name; //namestr;
+            localStorage["fractured.names." + idx] = $('name').value;
             localStorage["fractured.fractal." + idx] = source;
             current.thumbnails[idx] = thumbnail();
             populateFractals();
@@ -501,7 +497,7 @@ var rztimeout = undefined;
     var idx_str = localStorage["fractured.fractals"];
     var idx = (idx_str ? parseInt(idx_str) : 0);
     //Get name and check list for dupes
-    var namestr = fractal.name;
+    var namestr = $('name').value;
     if (!namestr) namestr = "unnamed";
     var add = 0;
     var checkstr = namestr;
@@ -524,7 +520,7 @@ var rztimeout = undefined;
       current.thumbnails[idx] = thumbnail();
       localStorage["fractured.fractals"] = idx;
       current.selectFractal(idx);
-      $('nameInput').value = namestr;
+      $('name').value = namestr;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Storage error! ' + e);
@@ -719,7 +715,7 @@ var rztimeout = undefined;
     formdata.append("public", Number(pub));
     formdata.append("type", 0);
     if (current.locator && confirm("Overwrite existing fractal on server? (Only works if you created the original)")) formdata.append("locator", current.locator);
-    formdata.append("description", $('nameInput').value);
+    formdata.append("description", $('name').value);
     formdata.append("thumbnail", thumbnail("jpeg", 150).substring(23));
     /*
       if (current.locator)  //TEMPORARY - demo fractals, don't save formulae + palette
@@ -744,7 +740,7 @@ var rztimeout = undefined;
 
   function packFractal() {
     fractal.applyChanges();
-    var data = window.btoa($('nameInput').value + "\n" + fractal.toString());
+    var data = window.btoa($('name').value + "\n" + fractal.toString());
     packURL(data);
   }
 
@@ -803,7 +799,7 @@ var rztimeout = undefined;
   function exportFractalFile() {
     fractal.applyChanges();
     source = fractal.toString();
-    exportFile(fractal.name + ".fractal", "text/fractal-source", source);
+    exportFile($('name').value + ".fractal", "text/fractal-source", source);
   }
 
   function exportFormulaFile(filename, type, source) {
@@ -816,7 +812,7 @@ var rztimeout = undefined;
 
   function exportPaletteFile() {
     source = colours.palette + "";
-    exportFile(fractal.name + ".palette", "text/palette", source);
+    exportFile($('name').value + ".palette", "text/palette", source);
   }
 
   function exportImage(type) {
@@ -890,9 +886,9 @@ var rztimeout = undefined;
    
     var fd = new FormData();
     fd.append("image", data);
-    fd.append("title", fractal.name);
+    fd.append("title", $('name').value);
     fd.append("caption", "Created using Fractured Studio http://fractured.ozone.id.au");
-    fd.append("name", fractal.name + ".jpg");
+    fd.append("name", $('name').value + ".jpg");
     fd.append("key", "70f934afb26ec9a9b9dc50ac1df2b40f");
    
     var onload = function(response) {
@@ -910,7 +906,7 @@ var rztimeout = undefined;
       //...save in our db
       var formdata = new FormData();
       formdata.append("url", 'http://imgur.com/' + data.upload.image.hash + '.jpg');
-      formdata.append("description", $('nameInput').value);
+      formdata.append("description", $('name').value);
       formdata.append("thumbnail", 'http://imgur.com/' + data.upload.image.hash + 's.jpg');
       formdata.append("info", response);
       ajaxPost("ss/image_save.php", formdata);
@@ -935,9 +931,9 @@ var rztimeout = undefined;
    
     var fd = new FormData();
     fd.append("photo", data);
-    fd.append("title", fractal.name);
+    fd.append("title", $('name').value);
     fd.append("description", 'Created using <a href="http://fractured.ozone.id.au">Fractured Studio http://fractured.ozone.id.au</a>');
-    fd.append("tags", fractal.name);
+    fd.append("tags", $('name').value);
     fd.append("public", 1);
     fd.append("friend", 1);
     fd.append("family", 1);
@@ -956,7 +952,7 @@ var rztimeout = undefined;
       //...save in our db
       var formdata = new FormData();
       formdata.append("url", data.url);
-      formdata.append("description", $('nameInput').value);
+      formdata.append("description", $('name').value);
       formdata.append("thumbnail", data.thumb);
       formdata.append("info", response);
       ajaxPost("ss/image_save.php", formdata);
@@ -1056,7 +1052,7 @@ var rztimeout = undefined;
     current.empty();  //Clear local storage settings
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
-      localStorage["fractured.name"] = fractal.name;
+      localStorage["fractured.name"] = $('name').value;
     var source = JSON.stringify(localStorage);
     current.save(); //Restore settings
     return source;
@@ -1128,8 +1124,7 @@ var rztimeout = undefined;
     var source = localStorage["fractured.active"];
     if (source) {
       fractal.load(source, true); //Don't display immediately
-      fractal.name = localStorage["fractured.name"];
-      $('nameInput').value = fractal.name;
+      $('name').value = localStorage["fractured.name"];
     } else {
       //Load & draw default palettes
       loadPalette(0);
@@ -1146,7 +1141,7 @@ var rztimeout = undefined;
       localStorage["include/script.js"] = sources["include/script.js"];
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
-      localStorage["fractured.name"] = fractal.name;
+      localStorage["fractured.name"] = $('name').value;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Quota exceeded! ' + e);
@@ -1361,32 +1356,42 @@ var editorFilename;
       if (event.target.type == 'range') {
         //Adjust by step
         field.value = parseReal(field.value) + parseReal(field.step) * event.spin;
-      } else if (event.shiftKey || event.altKey || event.ctrlKey) {
-        //Get mouse position relative to field
-        var coord = mousePageCoord(event);
-        elementRelativeCoord(field, coord)
-        //Calculate the digit position the mouse is above
-        //...for each digit in field
-        var pos = field.value.length;
-        for (var i=1; i<=field.value.length; i++) {
-          var txt=field.value.substr(0,i);
-var test = $("fonttest");
-test.innerHTML = txt;
-var width = (test.clientWidth + 1);
-          
-          var digit = field.value.substr(i-1, 1);
-          //print(i + " : (" + txt + ") " + width);
-          //Mouse over and is digit?
-          if (coord[0] < width && /[0-9]/.test(digit)) {
-            pos = i;
-            field.style.cursor = "none";  //Hide cursor so can see digit below
-            break;
+        field.onchange();
+      } else  {
+        var pos;
+        var dpt = field.value.indexOf(".");
+        if (event.shiftKey || event.altKey || event.ctrlKey) {
+          //Get mouse position relative to field
+          var coord = mousePageCoord(event);
+          elementRelativeCoord(field, coord)
+          //Calculate the digit position the mouse is above
+          //...for each digit in field
+          pos = field.value.length;
+          for (var i=1; i<=field.value.length; i++) {
+            var txt=field.value.substr(0,i);
+            var test = $("fonttest");
+            test.innerHTML = txt;
+            var width = (test.clientWidth + 1);
+            var digit = field.value.substr(i-1, 1);
+            //print(i + " : (" + txt + ") " + width);
+            //Mouse over and is digit?
+            if (coord[0] < width && /[0-9]/.test(digit)) {
+              pos = i;
+              field.style.cursor = "none";  //Hide cursor so can see digit below
+              break;
+            }
           }
+          //print("Mouse: " + coord[0] + " digit: " + pos);
+        } else {
+          //Always scroll units when no modifiers pressed
+          dpt = field.value.indexOf(".");
+          if (dpt > 0)
+            pos = dpt; //Place before decimal
+          else
+            pos = field.value.length; //Last digit
         }
-        //print("Mouse: " + coord[0] + " digit: " + pos);
 
         //Find decimal point and calculate decimal places
-        var dpt = field.value.indexOf(".");
         var places = 0;
         if (dpt >= 0) places = field.value.length - dpt - 1;
 
@@ -1398,14 +1403,7 @@ var width = (test.clientWidth + 1);
         if (val < 0) spin = -spin;  //Reverse direction
         //Add increment value to existing value, ensure same decimal places
         field.value = (spin + val).toFixed(places);
-
-      } else {
-        var pos = field.value.indexOf(".");
-        var frac = "";
-        if (pos >= 0) frac = field.value.substr(pos); else pos = field.value.length;
-        var val = parseReal(field.value.substr(0, pos), 1);
-        field.value = ((val | 0) + event.spin) + frac;
-      }
+      } 
 
       field.timer = setTimeout('fractal.applyChanges(); $S("' + field.id + '").cursor = "text";', 150);
       //field.timer = setTimeout('fractal.applyChanges();', 150);
@@ -1476,8 +1474,7 @@ var width = (test.clientWidth + 1);
           fractal.load(source);
         }
         //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
-        fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
-        $('nameInput').value = fractal.name;
+        $('name').value = filename.substr(0, filename.lastIndexOf('.')) || filename;
       } else if (source.indexOf('Background=') == 0) {
         //Palette
         debug("Import: PALETTE");

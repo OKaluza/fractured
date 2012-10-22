@@ -1,6 +1,5 @@
 /* Main Stylesheet */
 body {
-  font-family: 'Droid Sans',helvetica,arial,serif;
   font-size: 10pt;
   background: white;
 }
@@ -45,7 +44,10 @@ input[type="checkbox"] {margin: 4px;}
 select {width: 150px; max-width: 190px; border: 1px solid #998; border-radius: 3px; background: #fff;}
 select.formula {width: 190px;}
 textarea {border: 1px solid #998; border-radius: 3px; min-height: 20px;}
-/*div.row input {font-family: 'Droid Sans',helvetica,arial,serif; font-size: 10pt;}*/
+
+/* Disable spin buttons in webkit */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}
 
 div.row textarea {min-width: 206px; max-width: 206px;}
 div.row input[type="number"] {width: 100px;}
@@ -68,7 +70,7 @@ div.info {
   border-radius: 5px;
 overflow:auto;
 }
-.message {font-family: monospace; font-size: 8pt;}
+.message {font-family: 'Droid Sans Mono'; font-size: 8pt;}
 
 p {margin: 0px 2px; }
 

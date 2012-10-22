@@ -1044,8 +1044,8 @@
       this.julia = true;
       this.selected.re = this.origin.re + point.re;
       this.selected.im = this.origin.im + point.im;
-      $("xSelInput").value = this.origin.re + point.re;
-      $("ySelInput").value = this.origin.im + point.im;
+      $("xSelect").value = this.origin.re + point.re;
+      $("ySelect").value = this.origin.im + point.im;
     } else {
       this.julia = false;
     }
@@ -1066,7 +1066,7 @@
   Fractal.prototype.resetDefaults = function() {
     //debug("resetDefaults<hr>");
     //Default aspect & parameters
-    this.name = "unnamed"
+    $('name').value = "unnamed"
     this.width = 0;
     this.height = 0;
     this.origin = new Aspect(0.0, 0, 0, 0.5); 
@@ -1795,8 +1795,8 @@
       this.canvas.style.height = "100%";
       width = this.canvas.clientWidth;
       height = this.canvas.clientHeight;
-      $("widthInput").value = width;
-      $("heightInput").value = height;
+      $("width").value = width;
+      $("height").value = height;
       //Disable scrollbars when using autosize
     } else { //Enable scrollbars
       document.documentElement.style.overflow = "auto";
@@ -1835,19 +1835,19 @@
       this.height = 0;
     } else {
       //Use size from form
-      this.width = parseInt($("widthInput").value);
-      this.height = parseInt($("heightInput").value);
+      this.width = parseInt($("width").value);
+      this.height = parseInt($("height").value);
     }
 
     this.iterations = parseReal($("iterations").value);
     this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
     this.perturb = document["inputs"].elements["perturb"].checked ? 1 : 0;
     this.origin.rotate = parseReal($("rotate").value);
-    this.origin.re = parseReal($("xPosInput").value);
-    this.origin.im = parseReal($("yPosInput").value);
-    this.selected.re = parseReal($("xSelInput").value);
-    this.selected.im = parseReal($("ySelInput").value);
-    this.origin.zoom = parseReal($("zoomLevel").value);
+    this.origin.re = parseReal($("xOrigin").value);
+    this.origin.im = parseReal($("yOrigin").value);
+    this.selected.re = parseReal($("xSelect").value);
+    this.selected.im = parseReal($("ySelect").value);
+    this.origin.zoom = parseReal($("zoom").value);
 
     //Limit rotate to range [0-360)
     if (this.origin.rotate < 0) this.origin.rotate += 360;
@@ -1870,14 +1870,13 @@
   //Update form controls with fractal data
   Fractal.prototype.copyToForm = function() {
     //debug("copyToForm<hr>");
-    document["inputs"].elements["nameInput"].value = this.name;
-    document["inputs"].elements["widthInput"].value = this.width;
-    document["inputs"].elements["heightInput"].value = this.height;
-    document["inputs"].elements["xPosInput"].value = this.origin.re;
-    document["inputs"].elements["yPosInput"].value = this.origin.im;
-    document["inputs"].elements["xSelInput"].value = this.selected.re;
-    document["inputs"].elements["ySelInput"].value = this.selected.im;
-    document["inputs"].elements["zoomLevel"].value = this.origin.zoom;
+    document["inputs"].elements["width"].value = this.width;
+    document["inputs"].elements["height"].value = this.height;
+    document["inputs"].elements["xOrigin"].value = this.origin.re;
+    document["inputs"].elements["yOrigin"].value = this.origin.im;
+    document["inputs"].elements["xSelect"].value = this.selected.re;
+    document["inputs"].elements["ySelect"].value = this.selected.im;
+    document["inputs"].elements["zoom"].value = this.origin.zoom;
     document["inputs"].elements["rotate"].value = this.origin.rotate;
     document["inputs"].elements["julia"].checked = this.julia;
     document["inputs"].elements["perturb"].checked = this.perturb;
