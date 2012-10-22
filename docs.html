@@ -347,13 +347,12 @@ ul.auto-toc {
 </div>
 <div class="section" id="introduction">
 <h1><a class="toc-backref" href="#id3">Introduction</a></h1>
-<p>Fractured is a fast fractal renderer written in Javascript and WebGL / WebCL.</p>
-<p>I started it as a spare-time project to get my old fractal software running cross-platform and to render fractals on the GPU.
-There are many great fractal programs around, but, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself. I also really liked the idea of a GPU accelerated studio workspace to store my work on a server and access it anywhere.</p>
-<p>It started in Java and JOGL, then I heard about WebGL, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken.</p>
-<p>Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, so here it is - maybe someone else will find it useful.</p>
-<p>If you have any feedback email me at: owen (at) ozone.id.au</p>
-<p><em>(NOTE: Apologies as this documentation file is still a work in progress)</em></p>
+<p>Fractured is a fractal exploration application written in Javascript and WebGL / WebCL.</p>
+<p>It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae. Despite there being a proliferation of great fractal programs around, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself.
+I also wanted to render complex fractals faster on the GPU with GLSL which was not being done at the time I started except a few proof of concept demos.</p>
+<p>First attempt was in Java and JOGL, then I heard about WebGL which seemed the perfect framework for it, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken and I got attached to the idea of creating an online studio workspace to store my work on a server and access it anywhere allowing sharing fractal images, formulae and parameters. Also I began to enjoy writing Javascript, possibly a case of stockholm syndrome.</p>
+<p>Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, it does what I need and maybe someone else will find it useful.</p>
+<p><em>(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)</em></p>
 <div class="section" id="acknowledgments">
 <h2><a class="toc-backref" href="#id4">Acknowledgments</a></h2>
 <ul class="simple">
@@ -369,11 +368,13 @@ There are many great fractal programs around, but, from my deranged perspective,
 <div class="section" id="requirements">
 <h2><a class="toc-backref" href="#id5">Requirements</a></h2>
 <ul class="simple">
-<li>A modern browser supporting WebGL (Only confirmed working with Firefox, Chrome &amp; Safari at this stage, Opera's WebGL implementation is still causing me some problems)</li>
+<li>A modern browser supporting WebGL, confirmed working with Firefox, Chrome &amp; Safari.</li>
 <li>A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.</li>
 <li>Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: <a class="reference external" href="http://webcl.nokiaresearch.com/">http://webcl.nokiaresearch.com/</a></li>
 <li><em>Note</em> My development platform is Linux, Firefox, NVidia. Other platforms have not all been well tested yet. Everything should work fine though (in theory).</li>
-<li><em>Note 2</em> On Windows, browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this &quot;feature&quot; is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in <a class="reference external" href="about:config">about:config</a>, in Chrome: run with arguments: –use-gl=desktop).</li>
+<li><strong>Note: Windows</strong> windows browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this &quot;feature&quot; is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in <a class="reference external" href="about:config">about:config</a>, in Chrome: run with arguments: –use-gl=desktop).</li>
+<li><strong>Note: Safari</strong> if not enabled, WebGL can be switched on  by going into preferences -&gt; advanced, show develop menu. Then select Enable WebGL on the Develop menu.</li>
+<li><strong>Note: Opera</strong> Opera's WebGL implementation is still causing me some problems, hope to support it in the future.</li>
 </ul>
 </div>
 </div>
@@ -415,12 +416,11 @@ This area of the screen is responsive to various mouse actions, many of which ca
 <li><em>Mouse scroll over fractal</em> zoom in and out</li>
 <li><em>Left-click</em> centre fractal on coordinate clicked on</li>
 <li><em>Left-click and drag</em> Select an area of the fractal to zoom in on</li>
-<li><em>Right click (or control-click on a Mac)</em> switch between Mandelbrot set and Julia set at selected coordinate (at mouse pointer)</li>
+<li><em>Right click</em> switch between Mandelbrot set and Julia set at selected coordinate (at mouse pointer)</li>
 <li><em>Right-click and drag</em> scroll fractal (if larger than display window)</li>
 <li><em>Shift + scroll</em> Rotate in 10 degree increments</li>
-<li><em>Alt + scroll</em> Rotate in 1 degree increments</li>
 </ul>
-<p>Julia set preview mode: to display a Julia set preview as you move the mouse around a Mandelbrot set hit the back-tick [`] key (the one above TAB and below ESC on most keyboards)</p>
+<p>Julia set preview mode: to display a Julia set preview as you move the mouse around a Mandelbrot set hit the [ESC] or back-tick [`] key. Hit the key again to turn the preview off.</p>
 </div>
 </div>
 <div class="section" id="coordinates">
@@ -454,6 +454,9 @@ When the mouse pointer is over the palette, sliders controls appear.</p>
 <div class="section" id="tools">
 <h2><a class="toc-backref" href="#id13">Tools</a></h2>
 <p>The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the &quot;Tools&quot; area.</p>
+<p>Many of the parameters in this area can be adjusted using the mouse scroll wheel.
+Scrolling over a numeric parameter will update the value in increments of 1 and redraw the fractal.
+Finer adjustment can be achieved by holding [SHIFT] while scrolling, then only the digit under the mouse pointer will be updated. (If the mouse is not over a digit then the last digit will be updated instead). This is very handy to interactively adjust parameters and instantly see the effect on the fractal rendering.</p>
 <div class="section" id="parameters">
 <h3><a class="toc-backref" href="#id14">Parameters</a></h3>
 <p>The first is the Parameters tab. This shows basic details of the fractal display, common to all fractal renderings regardless of chosen formula. All of these fields can be edited and changing most of them will modify the way the fractal is rendered. To redraw the fractal after changing a value, press the [Draw] button on the Top Menu.
@@ -509,12 +512,13 @@ When supported you can use them to switch between the following renderers:</p>
 <li><strong>WebCL</strong> fractals are computed in an OpenCL kernel and then drawn to a 2D canvas, single precision.</li>
 <li><strong>WebCL fp64</strong> as WebCL but utilising the 64-bit floating point extensions when available for double precision fractal computation.</li>
 </ul>
-<p>...and the help file... you're reading it.</p>
+<p>...followed by the documentation file you're now reading.</p>
 </div>
 <div class="section" id="log">
 <h3><a class="toc-backref" href="#id18">Log</a></h3>
 <p>This tab shows a log of status information and sometimes error messages from the fractal renderer.</p>
 <p>The [Clear Log] button clears all messages from the display.</p>
+<p>Some log entries will have a &quot;&#64;&quot; symbol before them, this can be clicked to restore the view to the previous logged state.</p>
 </div>
 </div>
 <div class="section" id="top-menu">
@@ -533,7 +537,6 @@ Some of the items are also only visible when logged in.</p>
 <ul class="simple">
 <li><em>Anti-aliasing</em> select the anti-aliasing quality to use when rendering fractals.</li>
 <li><em>Script Editor</em> an experimental feature allowing you to write a javascript that controls the fractal display.</li>
-<li><em>Clear Actions</em> clears any saved custom mouse actions from storage.</li>
 <li><em>Show Preview</em> enables or disables the Julia set preview window.</li>
 <li><em>Hide/Show Tools</em> hides or shows the <em>tools</em> area from the window, allowing more room for the fractal display.</li>
 <li><em>Full Screen</em> enter full screen mode.</li>
@@ -812,7 +815,7 @@ complex :x = (4,5);
 <li>catan csinh ccosh ctanh casinh</li>
 <li>cacosh catanh csqrt csqrt2 equals</li>
 </ul>
-<p><strong>TODO: Further document maths library functions, custom mouse actions, scripting, default formulae</strong></p>
+<p><strong>TODO: Further document maths library functions, scripting, default formulae</strong></p>
 </div>
 </div>
 </div>

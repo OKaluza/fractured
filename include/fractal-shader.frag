@@ -43,23 +43,26 @@ GLSL_MAIN
 
   //Iterate the fractal formula
   //(Loop counter can only be compared to constant in GL ES 2.0)
-  for (int i=0; i < iterations; i++)
+  for (int i=0; i < MAXITER; i++)
   {
     //Second iterations check: "limit" can be overridden to cut short iterations,
     //"iterations" must be a constant because of lame OpenGL ES 2.0 limitations on loops
     if (i == limit) break;
+    if (i == iterations) break; //
 
     //Update z(n-2)
     z_2 = z_1;
     //Save current z value for z(n-1)
     z_1 = z;
 
-    //Run next calc step
-    count = i+1;  //Current step count
     {
       ---PRE_TRANSFORM---
     }
+
+    //Run next calc step
+    count = i+1;  //Current step count
     ---ZNEXT---
+
     {
       ---POST_TRANSFORM---
     }
@@ -92,16 +95,12 @@ GLSL_MAIN
 
   //Combine with global alpha from background colour
   float alpha = colour.w + background.w;
-  //Brightness adjust
-  colour.xyz += brightness;
-  //Saturation & Contrast adjust
-  const rgba LumCoeff = rgba(0.2125, 0.7154, 0.0721, 0);
-  rgba AvgLumin = rgba(0.5, 0.5, 0.5, 0.0);
-  rgba intensity = rgba(dot(colour, LumCoeff));
-  colour = mix(intensity, colour, saturation);
-  colour = mix(AvgLumin, colour, contrast);
+
+  ---FILTER---
+
   //Set alpha
   colour.w = alpha;
+  //Set final colour
   set_result(colour);
 }
 

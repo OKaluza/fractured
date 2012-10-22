@@ -14,7 +14,8 @@ var y = Math.cos(angle)-1.0;
 //Rotate
 fractal.origin.rotate = angle*180.0/Math.PI;
 //Increase iterations
-this.base["iterations"]++;
+fractal.iterations++;
+//this.fractal["param"] = val
 //Update parameter changes to form
 this.update();
 //Cycle the palette

@@ -60,17 +60,9 @@
   Mouse.prototype.update = function(e) {
     // Get the mouse position relative to the document.
     if (!e) var e = window.event;
-    if (e.pageX || e.pageY) {
-      this.x = e.pageX;
-      this.y = e.pageY;
-    }
-    else {
-      this.x = e.clientX + document.body.scrollLeft +
-               document.documentElement.scrollLeft;
-      this.y = e.clientY + document.body.scrollTop +
-               document.documentElement.scrollTop;
-    }
-    //Note: screen relative coords are only that are consistent (e.screenX/Y)
+    var coord = mousePageCoord(e);
+    this.x = coord[0];
+    this.y = coord[1];
 
     //Save doc relative coords
     this.absoluteX = this.x;
@@ -84,6 +76,29 @@
     this.clientx = e.clientX - offset[0];
     this.clienty = e.clientY - offset[1];
   }
+
+  function mousePageCoord(event) {
+    //Note: screen relative coords are only that are consistent (e.screenX/Y)
+    var x,y;
+    if (event.pageX || event.pageY) {
+      x = event.pageX;
+      y = event.pageY;
+    }
+    else {
+      x = event.clientX + document.body.scrollLeft +
+               document.documentElement.scrollLeft;
+      y = event.clientY + document.body.scrollTop +
+               document.documentElement.scrollTop;
+    }
+    return [x,y];
+  }
+
+  function elementRelativeCoord(element, coord) {
+    var offset = findElementPos(element);
+    coord[0] -= offset[0];
+    coord[1] -= offset[1];
+  }
+
 
   // Get offset of element
   function findElementPos(obj) {
@@ -186,12 +201,7 @@
     event.returnValue = action;
   }
  
-  function handleMouseWheel(event) {
-    var mouse = getMouse(event);
-    if (!mouse || mouse.disabled) return true;
-    mouse.update(event);
-    var nDelta = 0;
-    var action = false; //Default action disabled
+  function wheelSpin(event) {
     if (!event) event = window.event; // For IE, access the global (window) event object
     // cross-bowser handling of eventdata 
     if (event.wheelDelta) // IE and Opera
@@ -200,6 +210,16 @@
       nDelta= -event.detail; // Mozilla FireFox
 
     event.spin = nDelta > 0 ? 1 : -1;
+
+  }
+
+  function handleMouseWheel(event) {
+    var mouse = getMouse(event);
+    if (!mouse || mouse.disabled) return true;
+    mouse.update(event);
+    var nDelta = 0;
+    var action = false; //Default action disabled
+    wheelSpin(event);
     mouse.spin += event.spin;
 
     if (mouse.handler.wheel) action = mouse.handler.wheel(event, mouse);

@@ -10,7 +10,7 @@ RSTFLAGS = --stylesheet-path=docs/docstyle.css
 
 # --js=sha256.js --js=colourPicker.js --js=index.js --js=utils.js --js=ajax.js --js=mouse.js --js=parser.js --js=fractal.js --js=colour.js --js=gl-matrix.js --js=webgl.js --js_output_file=fractured-compressed.js #--compilation_level ADVANCED_OPTIMIZATIONS 
 
-all: fractured-compressed.js codemirror-compressed.js docs/docs.html json
+all: fractured-compressed.js codemirror-compressed.js docs.html json
 
 fractured-compressed.js: $(SCRIPTS)
 	cat $(SCRIPTS) > fractured-index.js
@@ -22,9 +22,8 @@ codemirror-compressed.js: $(CMSCRIPTS)
 	$(COMP)codemirror-index.js $(FLAGS)$(CM)codemirror-compressed.js
 	cat $(CM)LICENSE $(CM)codemirror-compressed.js > codemirror-compressed.js
 
-docs/docs.html: docs/docs.rst
+docs.html: docs/docs.rst
 	rst2html	$(RSTFLAGS)	$<	$@
-	cp docs/docs.html ./docs.html
 
 .PHONY: json
 json:
