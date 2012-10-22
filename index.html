@@ -213,7 +213,7 @@
         <form id="param_inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
           <div class="row">
             <label>Name</label>
-            <span class="field"><input type="text" id="nameInput" name="description" value="unnamed" style="width: 160px" onchange="fractal.name = this.value;">
+            <span class="field"><input type="text" id="name" name="description" value="unnamed" style="width: 160px">
             </span>
           </div>
           <div class="row">
@@ -222,12 +222,12 @@
           </div>
           <div class="row">
             <label>Size</label>
-            <span class="field"><input type="number" id="widthInput" value="600"></span><span class="field"><input type="number" id="heightInput" value="600"></span>
+            <span class="field"><input type="number" id="width" value="600"></span><span class="field"><input type="number" id="height" value="600"></span>
           </div>
 
           <div class="row">
             <label>Zoom</label>
-            <span class="field"><input type="number" id="zoomLevel" value="0.5" step="0.01" min="0.00000000001"></span>
+            <span class="field"><input type="number" id="zoom" value="0.5" step="0.01" min="0.00000000001"></span>
             <input type="button" value="Reset" onclick="fractal.resetZoom()">
           </div>
           <div class="row">
@@ -235,10 +235,10 @@
             <span class="field"><input type="number" id="rotate" value="0.0" min="0" max="360"></span>
           </div>
           <div class="row">
-            <label>Origin</label><span class="field"><input type="number" id="xPosInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="yPosInput" value="0.0" step="0.1"></span>
+            <label>Origin</label><span class="field"><input type="number" id="xOrigin" value="0.0" step="0.1"></span><span class="field"><input type="number" id="yOrigin" value="0.0" step="0.1"></span>
           </div>
           <div class="row">
-            <label>Selected</label><span class="field"><input type="number" id="xSelInput" value="0.0" step="0.1"></span><span class="field"><input type="number" id="ySelInput" value="0.0" step="0.1"></span>
+            <label>Selected</label><span class="field"><input type="number" id="xSelect" value="0.0" step="0.1"></span><span class="field"><input type="number" id="ySelect" value="0.0" step="0.1"></span>
           </div>
           <div class="row">
             <label for="julia">Julia</label>
@@ -258,7 +258,8 @@
           <div class="gap"></div>
         <div class="mouse" style="padding: 5px; margin: 5px 10px 0px 5px; border: 1px solid #999; border-radius: 3px; font-size: 9pt;">
           <div id="actionlist">
-            <img src='media/mouse.png' class='right'><p style="color: #887; font-weight:bold;">Mouse &amp; Keyboard Quick Reference</p>
+            <img src='media/mouse.png' class='right'>
+            <b style="color: #887;">Mouse &amp; Keyboard Quick Reference</b><br>
             <b>Left-click</b>
             <ul><li>Set Origin</li>
             <li>Drag: Select region</li></ul>
