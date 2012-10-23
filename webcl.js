@@ -47,8 +47,8 @@
 
   WebCL_.prototype.setPrecision = function(fp64) {
     this.fp64 = (fp64 == true);
-    this.inBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
-    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3 + 2*4);
+    this.floatBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
+    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3*4 + 3);
   }
 
   WebCL_.prototype.buildProgram = function(kernelSrc) {
@@ -122,13 +122,17 @@
       this.inBuffer[6] = fractal.selected.im;
 
       var inBuffer2 = new Int8Array([antialias, fractal.julia, fractal.perturb]);
-      var inBuffer3 = new Int32Array([this.viewport.width, this.viewport.height]);
+      var inBuffer3 = new Int32Array([fractal.iterations, this.viewport.width, this.viewport.height]);
 
       var size = this.inBuffer.byteLength;
-      this.queue.enqueueWriteBuffer(this.input, false, 0,          size, this.inBuffer, []);    
-      this.queue.enqueueWriteBuffer(this.input, false, size,       4*4,  background.rgbaGL(), []);    
-      this.queue.enqueueWriteBuffer(this.input, false, size+4*4,   3,    inBuffer2, []);    
-      this.queue.enqueueWriteBuffer(this.input, false, size+4*4+3, 2*4,  inBuffer3, []);    
+      var offset = 0;
+      this.queue.enqueueWriteBuffer(this.input, false, offset, size, this.inBuffer, []);
+      offset += size; size = 4*4;  //4*rgba
+      this.queue.enqueueWriteBuffer(this.input, false, offset, size, background.rgbaGL(), []);    
+      offset += size; size = inBuffer2.byteLength;
+      this.queue.enqueueWriteBuffer(this.input, false, offset, size, inBuffer2, []);    
+      offset += size; size = inBuffer3.byteLength;
+      this.queue.enqueueWriteBuffer(this.input, false, offset, size, inBuffer3, []);    
 
       this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], gradient.width*4, 0, gradient.data, []);
 

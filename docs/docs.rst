@@ -17,11 +17,13 @@ http://fractured.ozone.id.au/docs.html
 Introduction
 ============
 Fractured is a fractal exploration application written in Javascript and WebGL / WebCL.
+The main functionality works stand-alone as an offline app, there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
 
-It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae. Despite there being a proliferation of great fractal programs around, from my deranged perspective, I'd miss out on most of the fun if I didn't write it myself.
-I also wanted to render complex fractals faster on the GPU with GLSL which was not being done at the time I started except a few proof of concept demos. 
+It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae (despite there being loads of great fractal programs around). From my deranged perspective, I'd miss out on most of the fun if I didn't write it myself.
+I was also excited by the possibility of rendering complex fractals a hell of a lot faster on the GPU with GLSL which was not being done at the time I started except for a few proof of concept demos.
 
-First attempt was in Java and JOGL, then I heard about WebGL which seemed the perfect framework for it, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way. The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far the idea of a standalone desktop style app running in a web browser could be taken and I got attached to the idea of creating an online studio workspace to store my work on a server and access it anywhere allowing sharing fractal images, formulae and parameters. Also I began to enjoy writing Javascript, possibly a case of stockholm syndrome.
+First attempts were in Java with JOGL, then I heard about WebGL which seemed the perfect framework for it, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way.
+The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far I could take the single-page web-browser app, of course there was always just one more feature I wanted to implement.
   
 Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, it does what I need and maybe someone else will find it useful.
 
