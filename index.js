@@ -348,10 +348,8 @@ var rztimeout = undefined;
       menu.insertBefore(entry, menu.firstChild);
     else
       menu.appendChild(entry);
-    if (selected) {
-      entry.className = "selected_item";
-      if (ondelete) addMenuDelete(span, ondelete);
-    }
+    if (ondelete && selected != false) addMenuDelete(span, ondelete);
+    if (selected) entry.className = "selected_item";
     //Return span so any additional controls can be added
     return span;
   }
@@ -623,6 +621,35 @@ var rztimeout = undefined;
   function packPalette() {
     var data = window.btoa("[Palette]" + "\n" + colours.palette.toString());
     packURL(data);
+  }
+
+  function populateScripts() {
+    //Clear & repopulate list
+    var menu = $('scripts');
+    removeChildren(menu);
+    for (var key in localStorage) {
+      if (key.indexOf("scripts/") != 0) continue;
+      var onclick = "editScript('" + key + "');";
+      var ondelete = "delete localStorage['" + key + "']; populateScripts();";
+      var span = addMenuItem(menu, key.substr(8), onclick, ondelete, null, false);
+    }
+    checkMenuHasItems(menu);
+  }
+
+  function editScript(key) {
+    try {
+      if (!key) {
+        key = prompt("Enter script name:");
+        if (!key) return;
+        if (key.indexOf(".js") < 0) key += ".js";
+        key = 'scripts/' + key;
+        localStorage[key] = "";
+        populateScripts();
+      }
+      openEditor(key);
+    } catch(e) {
+      alert('Storage access error! ' + e);
+    }
   }
 
   function thumbnail(type, size) {
@@ -1111,6 +1138,7 @@ var rztimeout = undefined;
 
     populateFractals();
     populatePalettes();
+    populateScripts();
 
     //Show an indicator, assumes 5mb of local storage
     var size = JSON.stringify(localStorage).length;
@@ -1137,8 +1165,6 @@ var rztimeout = undefined;
     try {
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formula_list);
-      //Save script
-      localStorage["include/script.js"] = sources["include/script.js"];
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = $('name').value;
@@ -1645,9 +1671,9 @@ var editorFilename;
     this.filter.update();
   }
 
-  function runScript() {
+  function runScript(filename) {
     //Run an animation script
-    var script = new Script(sources["include/script.js"])
+    var script = new Script(localStorage[filename])
 
     function next() {
       script.step();

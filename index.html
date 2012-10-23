@@ -170,7 +170,11 @@
                 <li><span onclick="switchMode(WEBCL64);">WebCL fp64</span></li>
               </ul>
             </li>
-            <li><span onclick="openEditor('include/script.js')">Script Editor</span></li>
+            <li><span onclick="editScript()">New Script</span></li>
+            <li><span class="fly" tabindex="1">Scripts</span>
+              <ul class="dd selectlist" id="scripts">
+              </ul>
+            </li>
             <li class="render"><span id="previewbtn" onclick="togglePreview();">Show Preview</span></li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
             <li class="render"><span onclick="toggleFullscreen(true);">Full Screen</span></li>

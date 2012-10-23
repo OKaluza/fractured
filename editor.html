@@ -71,24 +71,27 @@ var formula;
 
   saveEditor = function() {
     editor.save();  //Updates textarea content
+
+    //JS Script?
+    if (filename.indexOf(".js") >= 0) {
+      localStorage[filename] = code.value
+      window.opener.runScript(filename)
+      return;
+    }
+
     if (type)
        window.opener.formula_list[filename].source = code.value;
     else
       window.opener.sources[filename] = code.value;
 
-    //JS Script?
-    if (filename.indexOf(".js") < 0) {
-      //Editing compiled shader source?
-      if (filename == "generated.shader")
-        window.opener.fractal.updateShader(code.value);
-      else {
-        if (type) window.opener.fractal[type].select();
-        window.opener.fractal.writeShader();
-      }
-      window.opener.fractal.draw();
-    } else {
-      window.opener.runScript()
+    //Editing compiled shader source?
+    if (filename == "generated.shader")
+      window.opener.fractal.updateShader(code.value);
+    else {
+      if (type) window.opener.fractal[type].select();
+      window.opener.fractal.writeShader();
     }
+    window.opener.fractal.draw();
   }
 
   loadEditor = function() {
@@ -108,9 +111,12 @@ var formula;
       filename = param.substr(0, pos);
       type = param.substr(pos+1);
       code.value = window.opener.formula_list[filename].source;
-    } else
-      code.value = window.opener.sources[filename];
-
+    } else {
+      if (window.opener.sources[filename])
+        code.value = window.opener.sources[filename];
+      else
+        code.value = localStorage[filename];
+    }
 
     sel = document.getElementById('theme');
 
