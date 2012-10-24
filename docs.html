@@ -728,10 +728,10 @@ z = z + 1.0;          -- incorrect, adds 1.0 to both components of z
 <p>The expression parser allows you to enter mathematical expressions using any combination of complex and real numbers using the * (multiply) / (divide) and ^ (raise to power) symbols. Behind the scenes it will convert the expression to the formula code necessary to evaluate the expression correctly. This allows entering formulae in much clearer mathematical notation than would be possible using raw GLSL code as noted previously.</p>
 <p>There are two ways of using this feature:</p>
 <p>The <strong>expression</strong> parameter type creates an editable parameter where a formula expression can be entered, this has the additional bonus that the expression contents can be easily edited in the tools panel while working with a fractal without having to open the formula editor.</p>
-<p>In the formula editor code sections, any text surrounded by forward-slash &quot;/&quot; characters will also be processed by the expression parser.</p>
+<p>In the formula editor code sections, any text surrounded by back-slash &quot;\&quot; characters will also be processed by the expression parser.</p>
 <p>For example, entering:</p>
 <pre class="literal-block">
-z = /z^2 + c/;
+z = \z^2 + c\;
 </pre>
 <p>will be translated internally to:</p>
 <pre class="literal-block">

@@ -408,11 +408,11 @@ There are two ways of using this feature:
 
 The **expression** parameter type creates an editable parameter where a formula expression can be entered, this has the additional bonus that the expression contents can be easily edited in the tools panel while working with a fractal without having to open the formula editor.
 
-In the formula editor code sections, any text surrounded by forward-slash "/" characters will also be processed by the expression parser.
+In the formula editor code sections, any text surrounded by back-slash "\\" characters will also be processed by the expression parser.
 
 For example, entering::
 
-  z = /z^2 + c/;
+  z = \z^2 + c\;
 
 will be translated internally to::
 
