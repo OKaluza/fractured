@@ -113,10 +113,14 @@
         echo '<a href="javascript:loadGallery(' . $pageoffset . ');">' . $page . "</a>\n";
     }
   }
-  echo ' ... Images ';
-  $last = $offset + $imgpage;
-  if ($last > $totimg) {$last = $totimg;}
-  echo $offset + 1 . " to $last  of $totimg"; 
+
+  if ($totimg > 0) 
+  {
+    echo ' ... Images ';
+    $last = $offset + $imgpage;
+    if ($last > $totimg) {$last = $totimg;}
+    echo $offset + 1 . " to $last  of $totimg"; 
+  }
   echo '</div>';
 
 ?>

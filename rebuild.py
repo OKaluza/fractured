@@ -18,7 +18,6 @@ inc = {
 "include/fractal-shader.frag" : "",
 "include/complex-math.frag" : "",
 "include/shader2d.vert" : "",
-"include/script.js" : "",
 "generated.shader" : ""
 }
 
@@ -36,7 +35,7 @@ p = re.compile('[^\w()]+')
 
 process("fractal", ["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Cactus","Phoenix"])
 process("transform", ["Inverse","Functions"])
-process("colour", ["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"])
+process("colour", ["Default","Smooth","Exponential Smoothing","Triangle","Orbit Traps","Gaussian Integers","Hot and Cold"])
 process("filter", ["Colour Adjustment"])
 
 f = open('defaultformulae.json', 'w')

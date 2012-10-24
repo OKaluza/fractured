@@ -4,7 +4,7 @@
 //Radius
 @:radius = real(1);
 
-#define invert(P) P = @:center + div(@:radius, (P - @:center))
+#define invert(P) P = \@:center + @:radius / (P - @:center)\
 
 //Init, called before setting initial conditions
 init:

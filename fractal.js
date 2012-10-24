@@ -123,7 +123,7 @@
 
   function parseExpressions(code) {
     //Parse all \...\ enclosed sections as expressions
-    var reg = /\\([\s\S]*)\\/gm;
+    var reg = /\\([\s\S]*?)\\/gm;
     var match;
     while (match = reg.exec(code)) {
       //Replace the matched expression with parser result
@@ -1298,6 +1298,9 @@
 
       if (!line) continue;
 
+      ///Remove this later
+      if (section == "params.base") section = "fractal";  //Base params fix temporary hack
+
       if (section == "fractal") {
         //parse into attrib=value pairs
         var pair = line.split("=");
@@ -1311,9 +1314,13 @@
           var c = parseComplex(pair[1]);
           this[pair[0]].re = c.re;
           this[pair[0]].im = c.im;
-        } else if (pair[0] == "julia" || pair[0] == "perturb") {
+        } else if (pair[0] == "julia" || pair[0] == "perturb")
           this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
-        } else {
+        else if (pair[0] == "inrepeat") //Moved to colour, hack to transfer param from old saves
+          saved["inrepeat"] = pair[1];
+        else if (pair[0] == "outrepeat") //Moved to colour, hack to transfer param from old saves
+          saved["outrepeat"] = pair[1];
+        else {
           //Old formulae, swap transform with post_transform
           if (pair[0] == "transform") pair[0] = "post_transform";
           //Old formulae - replace in lines
@@ -1329,6 +1336,7 @@
           //Formula name, create entry if none
           var name = pair[1];
           var category = pair[0];
+          if (categories.indexOf(category) < 0) {print("INVALID CATEGORY: " + category); continue;} //TEMP 
           var key = formulaKey(category, name, false);   //3rd param, check flag: Don't check exists because might not yet!
           if (key) {
             //Read ahead to get formula definition!
@@ -1376,7 +1384,6 @@
             }
           }
 
-          if (category != "base") //TEMP 
           this[category].select(name);
           //alert("formulas[" + pair[1] + "] = " + pair[0]);
           //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
@@ -1385,25 +1392,11 @@
       } else if (section.slice(0, 7) == "params.") {
         var pair1 = section.split(".");
         var category = pair1[1];
-          if (category == "base") { //TEMP 
-            var pair = line.split("=");
-            this.iterations = parseInt(pair[1]);
-            continue;
-          }
         var formula = this[category].selected;
         //Old style params.transform, add ":" to params
         if (category == "post_transform" && line.indexOf(":") < 0) {
           line = ":" + line;
         }
-        //Check if using old style [params.formula] instead of [params.category]
-        //if (category != "base" && category in formulas) {
-        //  category = formula;
-        //  if (category.indexOf('colour') > 0) {
-        //    line = line.replace(/_in_/g, "_");
-        //    line = line.replace(/_out_/g, "_");
-        //    line = line.replace(pair1[1], category);
-        //  }
-        //}
         if (curparam && line.indexOf("=") < 0 && line.length > 0) {
           //Multi-line value (ok for expressions)
           curparam.value += "\n" + lines[i];
@@ -1418,12 +1411,6 @@
                 this["post_transform"].select("fractured");
                 saved["vary"] = pair2[1];
               }
-            } else if (pair2[0] == "inrepeat") { //Moved to colour, hack to transfer param from old saves
-              if (parseReal(pair2[1]) != 1)
-                saved["inrepeat"] = pair2[1];
-            } else if (pair2[0] == "outrepeat") { //Moved to colour, hack to transfer param from old saves
-              if (parseReal(pair2[1]) != 1)
-                saved["outrepeat"] = pair2[1];
             } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
               print("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
           }

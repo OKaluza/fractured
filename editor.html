@@ -69,13 +69,17 @@ var filename;
 var type;
 var formula;
 
+  runScript = function() {
+    saveEditor();
+    window.opener.runScript(filename)
+  }
+
   saveEditor = function() {
     editor.save();  //Updates textarea content
 
     //JS Script?
     if (filename.indexOf(".js") >= 0) {
       localStorage[filename] = code.value
-      window.opener.runScript(filename)
       return;
     }
 
@@ -123,8 +127,8 @@ var formula;
     if (filename.indexOf(".js") >= 0) {
       editmode = "text/javascript";
       edittheme = window.opener.localStorageDefault("fractured.scriptTheme", "monokai");
-      var btn = document.getElementById('savebtn');
-      btn.value = "Run";
+      var btn = document.getElementById('runbtn');
+      btn.style.display = "block";
       sel.options[sel.length] = new Option("cobalt");
       sel.options[sel.length] = new Option("eclipse");
       sel.options[sel.length] = new Option("elegant");
@@ -178,6 +182,7 @@ function replace() {
 <body onload="loadEditor()">
 
 <div id="buttons">
+  <input type="button" id="runbtn" value="Run" style="display:none" onclick="runScript()">
   <input type="button" id="savebtn" value="Save" onclick="saveEditor()">
   <input type="button" value="Export" onclick="window.opener.exportFormulaFile(filename, window.type, code.value)">
   <input type="button" value="Find" onclick="search()">
