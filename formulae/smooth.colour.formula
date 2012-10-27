@@ -14,5 +14,6 @@ real :lp = :lfn(:lfn(@:bailout));
 
 result:
   real mu = real(count) + (:lp - :lfn(:lfn(cabs(z)))) * :il;
+  //Colour from gradient 
   colour = gradient(:repeat * mu / real(limit));
 
