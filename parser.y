@@ -15,6 +15,7 @@
 "^"                    return '^'
 "("                    return '('
 ")"                    return ')'
+"||"                   return '$'
 "|"                    return '|'
 ","                    return ','
 "=="                   return '=='
@@ -106,8 +107,10 @@ e
     | e '<' e  -> $e1 + " < " + $e2
     | e '>' e  -> $e1 + " > " + $e2
     | '!' e %prec UNOT   -> "!" + $e
+    | '-' e %prec UMINUS -> "-" + $e
     | '(' e ')' -> "(" + $e + ")"
-    | '|' e '|' %prec NORM -> "norm(" + $e + ")"
+    | '|' e '|' %prec NORM -> "cabs(" + $e + ")"
+    | '$' e '$' %prec NORM -> "norm(" + $e + ")"
     | '(' e ')' '(' e ')' -> "mul((" + $e1 + "),(" + $e2 + "))"
     | constant '(' e ')' -> "mul(" + $constant + ",(" + $e + "))"
     | constant
@@ -117,16 +120,11 @@ e
     | call
     ;
 
-number
+constant
     : INTEGER  -> $1 + ".0"
     | REAL
     | E
     | PI
-    ;
-
-constant
-    : number
-    | '-' number -> "-" + $number
     ;
 
 call

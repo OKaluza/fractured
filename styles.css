@@ -258,7 +258,7 @@ nav#menu {float: left;}
 #nav ul.login li img {padding: 0px 15px;}
 
 /* Dividers */
-#nav ul li hr {margin: 2px 0px; width:125px; }
+#nav ul li hr {margin: 2px 0px; min-width:125px; width:100%; }
 
 /* Top level items only */
 #nav > li > span {
@@ -266,6 +266,7 @@ nav#menu {float: left;}
     overflow:hidden;
   border: 1px solid #444;
   color:#bbb;
+    max-height: 19px;
 }
 #nav li span.fly {
     background:#2f2c2a url(media/arrow.gif) no-repeat right center;
@@ -292,11 +293,13 @@ nav#menu {float: left;}
   { left:129px; top:-3px; display: block }
 
 /* Menu lists */
-.selected_item {border: 1px solid #777;}
-.selectlist {overflow-y:auto; overflow-x: hidden; max-height: 300px;}
-.selectlist li {width: 200px;}
-.selectlist span {min-width: 194px; display: inline-block; float: left;}
+.selected_item {border: 1px dotted #777;}
+.selectlist {width: 202px; overflow-y:auto; overflow-x: hidden; max-height: 300px;; margin:0px; padding: 0px;}
+.listmenu li {width: 200px;}
+.listmenu span {min-width: 194px; display: inline-block; float: left}
 #palettes li {border: none;}
+#palettes li img {position: absolute; left: 2px; top: 2px;
+                  height: 18px; width: 150px; margin: 0px; padding: 0px;}
 
 .thumb {margin: 0px; padding-right: 3px; display: inline-block; float: left;}
 

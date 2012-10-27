@@ -9,7 +9,7 @@
   if (!$desc) $desc = '';
 
   if ($user <= 0) {
-    header("Location: {$goto}");
+    echo "NOT LOGGED IN";
     exit();
   }
 
@@ -42,7 +42,7 @@
   }
   else
   {
-    $query = "UPDATE session SET data = '$data', size = '$size' WHERE id = '$sessid' AND user_id = '$user';";
+    $query = "UPDATE session SET date = '$mysqldate', data = '$data', size = '$size' WHERE id = '$sessid' AND user_id = '$user';";
     $result = mysql_query($query);
     if (!$result) die('Invalid query: ' . mysql_error());
   }

@@ -94,7 +94,7 @@
     //Slider image not yet loaded?
     if (!this.slider.width) {
       var _this = this;
-      setTimeout(function() { _this.draw(canvas, ui); }, 250);
+      setTimeout(function() { _this.draw(canvas, ui); }, 150);
       return;
     }
     

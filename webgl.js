@@ -214,6 +214,9 @@
       this.gl.useProgram(this.program.program);
   }
 
+  /**
+   * @constructor
+   */
   //Program object
   function WebGLProgram(gl, vs, fs) {
     //Can be passed source directly or script tag

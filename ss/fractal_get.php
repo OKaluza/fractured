@@ -2,9 +2,7 @@
   include("session.php");
   include("connect.php");
 
-  $locator =$_GET['id'];
-
-  $query = "SELECT * FROM fractal WHERE locator = '$locator';";
+  $query = "SELECT * FROM fractal WHERE locator = '{$_GET['id']}';";
   $result = mysql_query( $query );
   if( mysql_num_rows( $result ))
   {

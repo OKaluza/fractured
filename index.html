@@ -49,12 +49,11 @@
         <li><span class="fly" tabindex="1">Studio</span>
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
-              <ul class="dd">
-                <li><span class="fly" tabindex="1">Edit</span>
-                  <ul id="debugedit" class="selectlist">
-                  </ul>
-                </li>
+              <ul class="dd listmenu">
                 <li><span onclick="current.debugOff();">Disable Debug</span></li>
+                <li><hr></li>
+                <div id="debugedit" class="selectlist">
+                </div>
               </ul>
             </li>
             <li><span onclick="resetState();">New</span></li>
@@ -64,7 +63,7 @@
               <li><span onclick="$('fileupload').click();">Import</span></li>
               <li><hr></li>
               <li><span class="fly" tabindex="1">Saved Sessions</span>
-                <ul id="sessions" class="selectlist">
+                <ul id="sessions" class="selectlist listmenu">
                 </ul>
               </li>
               <li><hr></li>
@@ -98,34 +97,28 @@
             </div>
           </ul>
         </li>
-        <li><span class="fly" tabindex="1">Fractal</span>
-          <ul class="dd">
+        <!--li><span class="fly" tabindex="1">Fractal</span-->
+        <li><span class="fly" tabindex="1" style="padding: 1px 11px 1px 0px;"><img src="media/fractal.png" ></span>
+          <ul class="dd listmenu">
             <li><span onclick="newFractal();">New</span></li>
             <li class="render"><span onclick="storeFractal();">Store</span></li>
-            <li class="loggedin render"><span onclick="uploadFractalFile(0);">Upload</span></li>
-            <li class="loggedin render"><span onclick="uploadFractalFile(1);">Share</span></li>
-            <li><hr></li>
-            <li><span class="fly" tabindex="1">Stored Fractals</span>
-              <ul id="fractals" class="selectlist">
-              </ul>
-            </li>
-            <li class="render"><hr></li>
-            <li class="render"><span class="fly" tabindex="1">Save As</span>
-              <ul>
-                <li><span onclick="exportFractalFile();">Fractal File</span></li>
-                <li><span onclick="packFractal();">Fractal URL</span></li>
-              </ul>
+            <li class="loggedin render"><span onclick="uploadFractalFile();">Upload</span></li>
+            <li class="render"><span onclick="exportFractalFile();">Export</span></li>
+            <!--li class="render"><span onclick="packFractal();">Save As URL</span></li-->
+            <li><hr>
+              <div id="fractals" class="selectlist">
+              </div>
             </li>
           </ul>
         </li>
         <li><span class="fly" tabindex="1" style="padding: 2px 12px 0px 2px;"><img src="media/formula.png" ></span>
           <ul class="dd">
             <li><span class="fly" tabindex="1">Public Formulae</span>
-              <ul id="formulae-public" class="selectlist">
+              <ul id="formulae-public" class="selectlist listmenu">
               </ul>
             </li>
             <li class="loggedin"><span class="fly" tabindex="1">My Formulae</span>
-              <ul id="formulae-private" class="selectlist">
+              <ul id="formulae-private" class="selectlist listmenu">
               </ul>
             </li>
             <li><span onclick="uploadFormulaSet(1);">Publish</span></li>
@@ -142,7 +135,14 @@
           </ul>
         </li>
         <li><span class="fly" tabindex="1" style="padding: 1px 12px 1px 1px;"><img src="media/palette.png" ></span>
-          <ul class="dd selectlist" id="palettes">
+          <ul class="dd listmenu">
+            <li><span onclick="savePalette();">Store Palette</span></li>
+            <li><span onclick="exportPaletteFile();">Export Palette</span></li>
+            <!--li><span onclick="packPalette();">Palette to URL</span></li-->
+            <li><hr>
+              <div id="palettes" class="selectlist">
+              </div>
+            </li>
           </ul>
         </li>
         <li><span class="fly" tabindex="1" style="padding: 2px 12px 0px 2px;"><img src="media/settings.png" ></span>
@@ -170,9 +170,12 @@
                 <li><span onclick="switchMode(WEBCL64);">WebCL fp64</span></li>
               </ul>
             </li>
-            <li><span onclick="editScript()">New Script</span></li>
             <li><span class="fly" tabindex="1">Scripts</span>
-              <ul class="dd selectlist" id="scripts">
+              <ul class="dd listmenu">
+                <li><span onclick="editScript()">New Script</span></li>
+                <li><hr>
+                <div id="scripts" class="selectlist">
+                </div>
               </ul>
             </li>
             <li class="render"><span id="previewbtn" onclick="togglePreview();">Show Preview</span></li>
@@ -182,7 +185,7 @@
         </li>
 
 
-        <li><span onclick="hideGallery(); fractal.applyChanges();">Draw</span></li>
+        <li><span onclick="hideGallery(); fractal.applyChanges();" style="padding: 2px 4px 2px 1px;"><img style="float:left" src="media/draw.png" >Draw</span></li>
 
       </ul>
 

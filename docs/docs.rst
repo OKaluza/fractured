@@ -1,8 +1,10 @@
 .. |copy| unicode:: 0xA9 .. copyright sign
+.. |fractal| image:: media/fractal.png
 .. |formula| image:: media/formula.png
 .. |image| image:: media/camerai.png
 .. |palette| image:: media/palette.png
 .. |settings| image:: media/settingsi.png
+.. |draw| image:: media/draw.png
 
 ======================
 Fractured - User Guide
@@ -54,7 +56,7 @@ Workspace
 =========
 On first loading the app you should be presented with a workspace showing a selection of example fractals and the following user interface elements:
 
-- *Top Menu* containing the [Studio], [Fractal], |formula| Formula, |image| Image, |palette| Palette and |settings| Settings menus and the [Draw] button
+- *Top Menu* containing the [Studio], |fractal| Fractal, |formula| Formula, |image| Image, |palette| Palette and |settings| Settings menus and the [|draw| Draw] button
 - *Palette* an editable gradient colour palette and background colour selection
 - *Tools* the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Log]
 - *Main Display* occupies the rest of the available browser window, initially showing an image gallery, switching to display the rendered fractal image (when in rendering mode).
@@ -130,8 +132,9 @@ Tools
 The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the "Tools" area.
 
 Many of the parameters in this area can be adjusted using the mouse scroll wheel.
-Scrolling over a numeric parameter will update the value in increments of 1 and redraw the fractal.
-Finer adjustment can be achieved by holding [SHIFT] while scrolling, then only the digit under the mouse pointer will be updated. (If the mouse is not over a digit then the last digit will be updated instead). This is very handy to interactively adjust parameters and instantly see the effect on the fractal rendering.
+
+- Scrolling over a numeric parameter will update the value in increments of 1 and redraw the fractal.
+- Finer adjustment can be achieved by holding [SHIFT] while scrolling, then only the digit under the mouse pointer will be updated. (If the mouse is not over a digit then the last digit will be updated instead). This is very handy to interactively adjust parameters and instantly see the effect on the fractal rendering.
 
 Parameters
 ~~~~~~~~~~
@@ -212,14 +215,14 @@ Going from right to left we have:
 
 Draw
 ~~~~
-This button redraws the current fractal, changes to fractal parameters in the *tools* area are not usually applied instantly and you must press this button to redraw the fractal display.
+|draw| This button redraws the current fractal, changes to fractal parameters in the *tools* area are not usually applied instantly and you must press this button to redraw the fractal display.
 
 Settings
 ~~~~~~~~
 |settings| Application preferences and utilities:
 
 - *Anti-aliasing* select the anti-aliasing quality to use when rendering fractals.
-- *Script Editor* an experimental feature allowing you to write a javascript that controls the fractal display.
+- *Scripts* (experimental feature, not yet properly documented) allows you to write scripts that control the fractal display. New Script creates a new script entry in the list and opens the editor. Pressing the [Run] button in the editor window runs the script.
 - *Show Preview* enables or disables the Julia set preview window.
 - *Hide/Show Tools* hides or shows the *tools* area from the window, allowing more room for the fractal display.
 - *Full Screen* enter full screen mode.
@@ -228,9 +231,8 @@ Palette
 ~~~~~~~
 |palette| This menu displays all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Above the list of saved palettes the other functions are:
 
-- *Save Palette* stores the current palette in the list.
-- *Export Palette* download active palette as a file.
-- *Palette to URL* writes the active palette into a url link that can be used to load that palette, useful to share a palette with someone else.
+- *Store Palette* stores the current palette in the list.
+- *Export Palette* download active palette as a file, this can be loaded later using the *Import* option in the [Studio] menu.
 
 Image
 ~~~~~
@@ -257,16 +259,13 @@ Once you have loaded a formula set from the server it will be highlighted in the
 
 Fractal
 ~~~~~~~
-This menu contains features relating to the current fractal display.
+|fractal| This menu contains features relating to the current fractal display.
 
 - *New* Create a new fractal and reset all fractal settings to defaults.
 - *Store* stores the current fractal in local storage using the name entered in the *parameters* tab. If the name is already used you will be asked if you'd like to overwrite the existing entry (This will be cleared if you clear your browsing history! To save permanently you must save your session to the server or export).
-- *Upload* Upload a fractal to the server. Responds with a unique URL that can be used to load this fractal.
-- *Share* Publish a fractal to the server (will be displayed in the shared fractals list). Responds with a unique URL that can be used to load this fractal.
-- *Stored Fractals* displays a sub-menu of all the fractals in local storage, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.
-- *Save As...*
-  - *Fractal File* export and download the current fractal parameters and formula as a fractal data text file.
-  - *Fractal URL* export and download the current fractal parameters and formula as self-contained URL with all the information necessary to display the fractal.
+- *Upload* a fractal to the server. Responds with a unique URL that can be used to load this fractal. You will be prompted if you wish to share the uploaded fractal publicly (displayed in the shared fractals list), if you choose not to then only you or anyone you provide the URL link to will be able to see it.
+- *Export* download the current fractal parameters and formula as a fractal data text file, this can be loaded later using the *Import* option in the [Studio] menu.
+- *Stored Fractals* finally a list of all the fractals in local storage is shown, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.
 
 Studio
 ~~~~~~

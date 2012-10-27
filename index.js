@@ -214,7 +214,7 @@ var rztimeout = undefined;
     $S('gallery').display = "block";
       setAll('none', 'render');  //hide render mode menu options
     $S('fractal-canvas').display = "none";
-    if (offset == undefined) offset = this.lastoffset || 0;
+    if (offset == undefined) offset = lastoffset || 0;
     var w = $('gallery').clientWidth; //window.innerWidth - 334;
     var h = $('gallery').clientHeight; //window.innerHeight - 27;
     //$S('gallery').width = w + "px";
@@ -222,7 +222,7 @@ var rztimeout = undefined;
 
     type = current.gallery.substr(1);
     $('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
-    this.lastoffset = offset;
+    lastoffset = offset;
   }
 
   function hideGallery() {
@@ -527,6 +527,9 @@ var rztimeout = undefined;
     populateFractals();
   }
 
+  /**
+   * @constructor
+   */
   function PaletteEntry(source, thumb) {
     this.data = source;
     this.thumb = thumb;
@@ -554,9 +557,6 @@ var rztimeout = undefined;
     //Clear & repopulate list
     var menu = $('palettes');
     removeChildren(menu);
-    addMenuItem(menu, "Save Palette", "savePalette();", null, false, false);
-    addMenuItem(menu, "Export Palette", "exportPaletteFile();", null, false, false);
-    addMenuItem(menu, "Palette to URL", "packPalette();", null, false, false);
     var palettes;
     if (!localStorage["fractured.palettes"])
       //Default palettes
@@ -576,12 +576,6 @@ var rztimeout = undefined;
 
       var palimg = new Image;
       palimg.src = palettes[i].thumb;
-      palimg.style.height = "18px";
-      palimg.style.width = "150px";
-      palimg.style.margin = "0px";
-      palimg.style.padding = "0px";
-      span.style.padding = "2px 2px 0px";
-      span.style.height = "20px";
       span.appendChild(palimg);
     }
 
@@ -592,29 +586,21 @@ var rztimeout = undefined;
   }
 
   function loadPalette(idx) {
-    try {
-      var pstr = localStorage["fractured.palettes"];
-      if (pstr) {
-        var palettes = JSON.parse(pstr);
-        colours.read(palettes[idx].data);
-        fractal.applyChanges();
-      }
-    } catch(e) {
-      alert('Storage access error! ' + e);
+    var pstr = localStorage["fractured.palettes"];
+    if (pstr) {
+      var palettes = JSON.parse(pstr);
+      colours.read(palettes[idx].data);
+      fractal.applyChanges();
     }
   }
 
   function deletePalette(idx) {
-    try {
-      var pstr = localStorage["fractured.palettes"];
-      if (pstr) {
-        var palettes = JSON.parse(pstr);
-        palettes.splice(idx,1);
-        localStorage["fractured.palettes"] = JSON.stringify(palettes);
-        populatePalettes();
-      }
-    } catch(e) {
-      alert('Storage delete error! ' + e);
+    var pstr = localStorage["fractured.palettes"];
+    if (pstr) {
+      var palettes = JSON.parse(pstr);
+      palettes.splice(idx,1);
+      localStorage["fractured.palettes"] = JSON.stringify(palettes);
+      populatePalettes();
     }
   }
 
@@ -637,19 +623,15 @@ var rztimeout = undefined;
   }
 
   function editScript(key) {
-    try {
-      if (!key) {
-        key = prompt("Enter script name:");
-        if (!key) return;
-        if (key.indexOf(".js") < 0) key += ".js";
-        key = 'scripts/' + key;
-        localStorage[key] = "";
-        populateScripts();
-      }
-      openEditor(key);
-    } catch(e) {
-      alert('Storage access error! ' + e);
+    if (!key) {
+      key = prompt("Enter script name:");
+      if (!key) return;
+      if (key.indexOf(".js") < 0) key += ".js";
+      key = 'scripts/' + key;
+      localStorage[key] = "";
+      populateScripts();
     }
+    openEditor(key);
   }
 
   function thumbnail(type, size) {
@@ -739,9 +721,13 @@ var rztimeout = undefined;
   function uploadFractalFile(pub) {
     fractal.applyChanges();
     var formdata = new FormData();
-    formdata.append("public", Number(pub));
     formdata.append("type", 0);
-    if (current.locator && confirm("Overwrite existing fractal on server? (Only works if you created the original)")) formdata.append("locator", current.locator);
+    if (current.locator && 
+        confirm("Overwrite existing fractal on server? (Only works if you created the original)")) {
+      formdata.append("locator", current.locator);
+    }
+    if (pub == undefined) pub = confirm("Share this fractal publicly after uploading?");
+    formdata.append("public", Number(pub));
     formdata.append("description", $('name').value);
     formdata.append("thumbnail", thumbnail("jpeg", 150).substring(23));
     /*
@@ -845,7 +831,10 @@ var rztimeout = undefined;
   function exportImage(type) {
     //Export using blob, no way to set filename yet
     window.URL = window.URL || window.webkitURL;
-    window.open(window.URL.createObjectURL(imageToBlob(type)));
+    if (window.URL)
+      window.open(window.URL.createObjectURL(imageToBlob(type)));
+    else
+      window.open($("fractal-canvas").toDataURL(type));
   }
 
   function exportFile(filename, content, data) {
@@ -890,7 +879,6 @@ var rztimeout = undefined;
 
   function imageToBlob(type) {
     //Export using blob, no way to set filename yet
-    var canvas = $("fractal-canvas");
     var data = convertToBinary(imageBase64(type));
     var blob;
     try {
@@ -1629,6 +1617,9 @@ var editorFilename;
     debug("Request sent");
   }
 
+  /**
+   * @constructor
+   */
   //Save values of all selected parameters for use in scripting
   function ParamVals(paramset) {
     this.set = paramset;
@@ -1649,6 +1640,9 @@ var editorFilename;
     fractal.copyToForm();
   }
 
+  /**
+   * @constructor
+   */
   //Script object, passed source code inserted at the step() function
   function Script(source) {
     this.count = 1;

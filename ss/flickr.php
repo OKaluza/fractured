@@ -60,15 +60,15 @@ elseif (isset($_GET['oauth_token']))
 {
   //echo "Access token: " . $_GET['oauth_token'];
   if (!$f->getAccessToken())
-    echo "FAILED";
+    echo "Flickr Authentication Failed: invalid token";
   else
   {
     $_SESSION['OauthToken'] = $f->getOauthToken();  
     $_SESSION['OauthSecretToken'] = $f->getOauthSecretToken(); 
     //echo "Authenticated: $OauthToken $OauthSecretToken";
+    header('Location: /');
   }
-  header('Location: /');
 }
 else
-  echo "Something went wrong?"
+  echo "Flickr Authentication Failed: Unknown error";
 ?>

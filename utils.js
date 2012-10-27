@@ -24,8 +24,8 @@ function varDefault(variable, def) {
 
 function removeChildren(element) {
   if (element.hasChildNodes()) {
-    while (element.childNodes.length > 0 )
-    element.removeChild(element.firstChild);
+    while (element.childNodes.length > 0)
+      element.removeChild(element.firstChild);
   }
 }
 
@@ -104,7 +104,8 @@ if (!String.prototype.hashCode) {
 
 if (!String.prototype.strip) {
   String.prototype.strip = function () {
-    return this.replace(/(\r\n|\n|\r)/gm, "");
+    //return this.replace(/(\r\n|\n|\r)/gm, "");
+    return this.replace(/(\s)/gm, "");
   };
 }
 

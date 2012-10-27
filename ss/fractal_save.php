@@ -48,9 +48,8 @@
   }
 
   $user = $_SESSION["user_id"];
-  $desc = $_POST["description"];
-  $public = $_POST["public"];
-  if (!$desc) $desc = '';
+  $desc = isset($_POST["description"]) ? $_POST["description"] : '';
+  $public = isset($_POST["public"]) ? $_POST["public"] : 0;
 
   //Allow no logged in user only
   if ($user <= 0) exit();
@@ -94,8 +93,7 @@
     else if (isset($_POST['locator']))
     {
       //Update allowed if locator set and user_id matches
-      $query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator' AND user_id = '$user';";
-      //$query = "UPDATE fractal SET source = '$data' WHERE locator = '$locator';";
+      $query = "UPDATE fractal SET date = '$mysqldate', name = '$desc', source = '$data', public = '$public' WHERE locator = '$locator' AND user_id = '$user';";
       $result = mysql_query($query);
       if (!$result) die('Invalid query: ' . mysql_error());
       writeThumb($public, $locator, $thumb);
