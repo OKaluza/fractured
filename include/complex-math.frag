@@ -1,10 +1,13 @@
 //Maths function library
-#define ident(args) args
 #define zero(args) 0
 #define czero(args) complex(0.0,0.0)
 
 #define PI  real(3.141592654)
 #define E   real(2.718281828)
+
+//Opera hack, doesn't like #define ident(args) args
+real _call_ ident(in real a)  {return a;}
+complex _call_ ident(in complex a)  {return a;}
 
 real _call_ inv(in real r)  {return 1.0/r;}
 real _call_ neg(in real x)  {return -x;}
@@ -23,6 +26,7 @@ real _call_ manhattan(in complex z)
 
 real _call_ norm(in complex z)
 {
+  //Norm squared
   return dot(z,z);
 }
 
@@ -183,12 +187,14 @@ real _call_ lnr(in real r)
   return log(abs(r));
 }
 
+//Another opera hack
+#define RLN(x) log(abs(r))
 complex _call_ ln(in real r)
 {
   if (r < 0.0)
-    return complex(lnr(r), PI);
+    return complex(RLN(r), PI);
   else
-    return complex(lnr(r), 0.0);
+    return complex(RLN(r), 0.0);
 }
 
 real _call_ lnr(in complex z)

@@ -5,16 +5,20 @@
 @:diverge = bool(true);
 //Convergent
 @:converge = bool(false);
+//Diverge sum
+@:dexp = expression(exp(-|z|));
+//Converge sum
+@:cexp = expression(exp(-1/|z-z_1|));
 
 real :sum = 0.0;
 real :csum = 0.0;
 
 calc:
   if (:diverge)
-    :sum += exp(-cabs(z));
+    :sum += :dexp;
 
   if (:converge)
-    :csum += exp(-1.0/cabs(z_1 - z));  
+    :csum += :cexp;
 
 result:
   real mu = :sum;
