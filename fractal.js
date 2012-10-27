@@ -397,8 +397,6 @@
         this.input[0].value = this.value.re;
         this.input[1].value = this.value.im;
         break;
-        this.value = this.input.value.trim();
-        break;
       case 6: //Expression
         if (this.input.editor)
           this.input.editor.setValue(this.value);
@@ -986,6 +984,7 @@
         this.webgl = new WebGL(this.canvas);
         if (this.webgl.errors) {
           popup("Error initialising WebGL (" + this.webgl.errors + "), try <a href='http://get.webgl.org/troubleshooting'>http://get.webgl.org/troubleshooting</a> for more information");
+          this.webgl = null;
         } else {
           this.gl = this.webgl.gl;
           this.webgl.init2dBuffers();

@@ -4,7 +4,6 @@
 
   //Always filter by session user id, so can't access another users data with GET url alone
   $user = $_SESSION["user_id"];
-  $session = $_GET['id'];
 
   //Check the user agent, when changes the session is invalidated
   //(Helps protect against session hijack)
@@ -17,9 +16,9 @@
   if ($user > 0)
   {
     //Retrieve specific ID or list?
-    if (isset($session))
+    if (isset($_GET['id']))
     {
-      $query = "SELECT * FROM session WHERE user_id = '$user' AND id = '$session';";
+      $query = "SELECT * FROM session WHERE user_id = '$user' AND id = '{$_GET['id']}';";
       $result = mysql_query( $query );
       if( mysql_num_rows( $result ))
       {

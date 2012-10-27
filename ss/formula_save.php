@@ -35,7 +35,7 @@
   }
   else
   {
-    $query = "UPDATE formula SET data = '$data' WHERE id = '$fid' AND user_id = '$user';";
+    $query = "UPDATE formula SET date = '$mysqldate', data = '$data', public = '$public' WHERE id = '$fid' AND user_id = '$user';";
     $result = mysql_query($query);
     if (!$result) die('Invalid query: ' . mysql_error());
   }

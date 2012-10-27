@@ -384,7 +384,7 @@ The formula editor and renderer was finished early last year and it probably sho
 <h1><a class="toc-backref" href="#id6">Workspace</a></h1>
 <p>On first loading the app you should be presented with a workspace showing a selection of example fractals and the following user interface elements:</p>
 <ul class="simple">
-<li><em>Top Menu</em> containing the [Studio], [Fractal], <img alt="formula" src="media/formula.png" /> Formula, <img alt="image" src="media/camerai.png" /> Image, <img alt="palette" src="media/palette.png" /> Palette and <img alt="settings" src="media/settingsi.png" /> Settings menus and the [Draw] button</li>
+<li><em>Top Menu</em> containing the [Studio], <img alt="fractal" src="media/fractal.png" /> Fractal, <img alt="formula" src="media/formula.png" /> Formula, <img alt="image" src="media/camerai.png" /> Image, <img alt="palette" src="media/palette.png" /> Palette and <img alt="settings" src="media/settingsi.png" /> Settings menus and the [<img alt="draw" src="media/draw.png" /> Draw] button</li>
 <li><em>Palette</em> an editable gradient colour palette and background colour selection</li>
 <li><em>Tools</em> the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Log]</li>
 <li><em>Main Display</em> occupies the rest of the available browser window, initially showing an image gallery, switching to display the rendered fractal image (when in rendering mode).</li>
@@ -456,9 +456,11 @@ When the mouse pointer is over the palette, sliders controls appear.</p>
 <div class="section" id="tools">
 <h2><a class="toc-backref" href="#id13">Tools</a></h2>
 <p>The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the &quot;Tools&quot; area.</p>
-<p>Many of the parameters in this area can be adjusted using the mouse scroll wheel.
-Scrolling over a numeric parameter will update the value in increments of 1 and redraw the fractal.
-Finer adjustment can be achieved by holding [SHIFT] while scrolling, then only the digit under the mouse pointer will be updated. (If the mouse is not over a digit then the last digit will be updated instead). This is very handy to interactively adjust parameters and instantly see the effect on the fractal rendering.</p>
+<p>Many of the parameters in this area can be adjusted using the mouse scroll wheel.</p>
+<ul class="simple">
+<li>Scrolling over a numeric parameter will update the value in increments of 1 and redraw the fractal.</li>
+<li>Finer adjustment can be achieved by holding [SHIFT] while scrolling, then only the digit under the mouse pointer will be updated. (If the mouse is not over a digit then the last digit will be updated instead). This is very handy to interactively adjust parameters and instantly see the effect on the fractal rendering.</li>
+</ul>
 <div class="section" id="parameters">
 <h3><a class="toc-backref" href="#id14">Parameters</a></h3>
 <p>The first is the Parameters tab. This shows basic details of the fractal display, common to all fractal renderings regardless of chosen formula. All of these fields can be edited and changing most of them will modify the way the fractal is rendered. To redraw the fractal after changing a value, press the [Draw] button on the Top Menu.
@@ -531,14 +533,14 @@ Some of the items are also only visible when logged in.</p>
 <p>Going from right to left we have:</p>
 <div class="section" id="draw">
 <h3><a class="toc-backref" href="#id20">Draw</a></h3>
-<p>This button redraws the current fractal, changes to fractal parameters in the <em>tools</em> area are not usually applied instantly and you must press this button to redraw the fractal display.</p>
+<p><img alt="draw" src="media/draw.png" /> This button redraws the current fractal, changes to fractal parameters in the <em>tools</em> area are not usually applied instantly and you must press this button to redraw the fractal display.</p>
 </div>
 <div class="section" id="settings">
 <h3><a class="toc-backref" href="#id21">Settings</a></h3>
 <p><img alt="settings" src="media/settingsi.png" /> Application preferences and utilities:</p>
 <ul class="simple">
 <li><em>Anti-aliasing</em> select the anti-aliasing quality to use when rendering fractals.</li>
-<li><em>Script Editor</em> an experimental feature allowing you to write a javascript that controls the fractal display.</li>
+<li><em>Scripts</em> (experimental feature, not yet properly documented) allows you to write scripts that control the fractal display. New Script creates a new script entry in the list and opens the editor. Pressing the [Run] button in the editor window runs the script.</li>
 <li><em>Show Preview</em> enables or disables the Julia set preview window.</li>
 <li><em>Hide/Show Tools</em> hides or shows the <em>tools</em> area from the window, allowing more room for the fractal display.</li>
 <li><em>Full Screen</em> enter full screen mode.</li>
@@ -548,9 +550,8 @@ Some of the items are also only visible when logged in.</p>
 <h3><a class="toc-backref" href="#id22">Palette</a></h3>
 <p><img alt="palette" src="media/palette.png" /> This menu displays all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Above the list of saved palettes the other functions are:</p>
 <ul class="simple">
-<li><em>Save Palette</em> stores the current palette in the list.</li>
-<li><em>Export Palette</em> download active palette as a file.</li>
-<li><em>Palette to URL</em> writes the active palette into a url link that can be used to load that palette, useful to share a palette with someone else.</li>
+<li><em>Store Palette</em> stores the current palette in the list.</li>
+<li><em>Export Palette</em> download active palette as a file, this can be loaded later using the <em>Import</em> option in the [Studio] menu.</li>
 </ul>
 </div>
 <div class="section" id="image">
@@ -580,16 +581,13 @@ Once you have loaded a formula set from the server it will be highlighted in the
 </div>
 <div class="section" id="fractal">
 <h3><a class="toc-backref" href="#id25">Fractal</a></h3>
-<p>This menu contains features relating to the current fractal display.</p>
+<p><img alt="fractal" src="media/fractal.png" /> This menu contains features relating to the current fractal display.</p>
 <ul class="simple">
 <li><em>New</em> Create a new fractal and reset all fractal settings to defaults.</li>
 <li><em>Store</em> stores the current fractal in local storage using the name entered in the <em>parameters</em> tab. If the name is already used you will be asked if you'd like to overwrite the existing entry (This will be cleared if you clear your browsing history! To save permanently you must save your session to the server or export).</li>
-<li><em>Upload</em> Upload a fractal to the server. Responds with a unique URL that can be used to load this fractal.</li>
-<li><em>Share</em> Publish a fractal to the server (will be displayed in the shared fractals list). Responds with a unique URL that can be used to load this fractal.</li>
-<li><em>Stored Fractals</em> displays a sub-menu of all the fractals in local storage, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.</li>
-<li><em>Save As...</em>
-- <em>Fractal File</em> export and download the current fractal parameters and formula as a fractal data text file.
-- <em>Fractal URL</em> export and download the current fractal parameters and formula as self-contained URL with all the information necessary to display the fractal.</li>
+<li><em>Upload</em> a fractal to the server. Responds with a unique URL that can be used to load this fractal. You will be prompted if you wish to share the uploaded fractal publicly (displayed in the shared fractals list), if you choose not to then only you or anyone you provide the URL link to will be able to see it.</li>
+<li><em>Export</em> download the current fractal parameters and formula as a fractal data text file, this can be loaded later using the <em>Import</em> option in the [Studio] menu.</li>
+<li><em>Stored Fractals</em> finally a list of all the fractals in local storage is shown, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.</li>
 </ul>
 </div>
 <div class="section" id="studio">

@@ -47,7 +47,7 @@
 
   WebCL_.prototype.setPrecision = function(fp64) {
     this.fp64 = (fp64 == true);
-    this.floatBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
+    this.inBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
     this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3*4 + 3);
   }
 
