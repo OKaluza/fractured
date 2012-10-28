@@ -1,9 +1,9 @@
 //Magnet 2: z = ((z^3 + 3z(c-1) + (c-1)(c-2)) / (3*z^2 + 3z(c-2) + (c-1)(c-2)))^a
 //z(n+1) =
-@znext = expression(((z^3 + 3(c-1).z + 
+@znext = expression(((z^3 + 3z(c-1) + 
  (c-1)(c-2))
  /
- (3.z^2 + 3(c-2).z + 
+ (3*z^2 + 3z(c-2) + 
  (c-1)(c-2) + 1)
 ) ^ p);
 //Power (p)

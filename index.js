@@ -8,6 +8,7 @@ var current;  //Status
 var sources;  //Source files
 var fractal;  //Fractal renderer
 var colours;  //Gradient
+var thumbnails;  //Thumbs
 
 //Timers
 var rztimeout = undefined;
@@ -132,7 +133,7 @@ var rztimeout = undefined;
       hideGallery();
       fractal.applyChanges();
     } else {
-      setGallery(location.hash);
+      showGallery(location.hash);
     }
 
     ajaxReadFile('docs.html', insertHelp);
@@ -195,10 +196,10 @@ var rztimeout = undefined;
   }
 
   function hashChanged() {
-    if ($(location.hash)) setGallery(location.hash);
+    if ($(location.hash)) showGallery(location.hash);
   }
 
-  function setGallery(id) {
+  function showGallery(id) {
     if (!id) id = "#examples";
     if (current.gallery) {
       $(current.gallery).className = '';
@@ -381,7 +382,7 @@ var rztimeout = undefined;
         var j = Math.min(pos + numToProcess, number);
         // Start at current position and loop to last position.
         for (var i = pos; i < j; i++) {
-            processItem(i);
+          processItem(i);
         }
         // Increment current position.
         pos += numToProcess;
@@ -392,7 +393,10 @@ var rztimeout = undefined;
         else {
           //Finished
           progress();
-          current.save(); //Save in local storage
+          //current.save(); //Save in local storage
+          var elapsed = new Date().getTime() - current.timer;
+          current.output = true;
+          print("Generate thumbnails took: " + (elapsed / 1000) + " seconds");
           populateFractals();
           loadLastFractal();
           hideGallery();
@@ -404,19 +408,21 @@ var rztimeout = undefined;
 
   function regenerateThumbs() {
     //Recreate all thumbnail images
-    var idx = parseInt(localStorage["fractured.fractals"]);
-    current.thumbnails = [];  //Clear existing
-    current.save(); //Save in local storage
-    performTask(idx, Math.ceil(idx/10), 
+    current.output = false;
+    var count = parseInt(localStorage["fractured.fractals"]);
+    thumbnails = [];  //Clear existing
+    current.timer = new Date().getTime();
+    var step = Math.ceil(count/25);
+    performTask(count, step,
       function (index) {
         var i = index + 1;
         if (localStorage["fractured.fractal." + i]) {
           fractal.load(localStorage["fractured.fractal." + i], true);
           $("width").value = $("height").value = 32;
           document["inputs"].elements["autosize"].checked = false;
-          fractal.applyChanges(6);
+          fractal.applyChanges(4, true);
           var result = $('fractal-canvas').toDataURL("image/jpeg")
-          current.thumbnails[i] = result;
+          thumbnails[i] = result;
         }
       });
   }
@@ -435,9 +441,9 @@ var rztimeout = undefined;
         var onclick = "selectedFractal(" + i + ")";
         var ondelete = "deleteFractal(" + i + ");";
         var span = addMenuItem(menu, namestr, onclick, ondelete, current.fractal == i, true);
-        if (current.thumbnails[i]) {
+        if (thumbnails[i]) {
           var img = new Image;
-          img.src = current.thumbnails[i];
+          img.src = thumbnails[i];
           img.className = "thumb";
           span.appendChild(img);
         }
@@ -452,8 +458,8 @@ var rztimeout = undefined;
     fractal.load(localStorage["fractured.fractal." + idx]);
     $('name').value = localStorage["fractured.names." + idx];
     //Generate thumbnails on select!
-    if (!current.thumbnails[idx])
-      current.thumbnails[idx] = thumbnail();
+    if (!thumbnails[idx])
+      thumbnails[idx] = thumbnail();
     populateFractals();
   }
 
@@ -481,7 +487,7 @@ var rztimeout = undefined;
           try {
             localStorage["fractured.names." + idx] = $('name').value;
             localStorage["fractured.fractal." + idx] = source;
-            current.thumbnails[idx] = thumbnail();
+            thumbnails[idx] = thumbnail();
             populateFractals();
           } catch(e) {
             alert('Storage error! ' + e);
@@ -515,7 +521,7 @@ var rztimeout = undefined;
     try {
       localStorage["fractured.names." + idx] = namestr;
       localStorage["fractured.fractal." + idx] = source;
-      current.thumbnails[idx] = thumbnail();
+      thumbnails[idx] = thumbnail();
       localStorage["fractured.fractals"] = idx;
       current.selectFractal(idx);
       $('name').value = namestr;
@@ -643,7 +649,7 @@ var rztimeout = undefined;
        oldh = fractal.height,
        oldw = fractal.width;
    fractal.width = fractal.height = size;
-   fractal.draw(6);
+   fractal.draw(4);
 
    var result = canvas.toDataURL("image/" + type)
 
@@ -711,7 +717,6 @@ var rztimeout = undefined;
   }
 
   function sessionSaved(data) {
-    //localStorage['fractured.current.session'] = data;
     current.session = data;
     current.save();
     sessionGet(readURL('ss/session_get.php')); //Get updated list...
@@ -1063,7 +1068,7 @@ var rztimeout = undefined;
   }
 
   function getState() {
-    //Get current state in local storage minus session/login details and thumbnails
+    //Get current state in local storage minus session/login details
     current.empty();  //Clear local storage settings
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
@@ -1077,10 +1082,11 @@ var rztimeout = undefined;
     try {
       var parsed = JSON.parse(source);
       if (!parsed) return;
-      importParsedState(parsed);
     } catch(e) {
       alert('ImportState: Error! ' + e);
+      return;
     }
+    importParsedState(parsed);
   }
 
   function importParsedState(data) {
@@ -1088,15 +1094,15 @@ var rztimeout = undefined;
       localStorage.clear(); //clear the entire database
       for (key in data)
         localStorage[key] = data[key];
-      //Replace session id, not saved in state data
-      current.save();
-      sessionGet(readURL('ss/session_get.php')); //Get updated list...
-      loadState();  //load the state data
-      progress();
-      regenerateThumbs();
     } catch(e) {
       alert('ImportParsedState: Error! ' + e);
+      return;
     }
+    //Replace session id, not saved in state data
+    current.save();
+    sessionGet(readURL('ss/session_get.php')); //Get updated list...
+    loadState();  //load the state data
+    progress();
   }
 
 
@@ -1120,6 +1126,11 @@ var rztimeout = undefined;
     var f_source = localStorage["fractured.formulae"];
     if (f_source) formula_list = JSON.parse(f_source);
     if (!formula_list) formula_list = JSON.parse(readURL('/defaultformulae.json', true));
+
+    //Cached thumbnails
+    thumbnails = [];
+    var t_source = localStorage["fractured.thumbnails"];
+    if (t_source) thumbnails = JSON.parse(t_source);
 
     //Create formula entries in drop-downs (and any saved load sources)
     updateFormulaLists();
@@ -1147,18 +1158,20 @@ var rztimeout = undefined;
     }
   }
 
-  function saveState(thumbs) {
+  function saveState() {
     //Read the lists
     if (!fractal) return;
     try {
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formula_list);
+      //Thumbnails
+      localStorage["fractured.thumbnails"] = JSON.stringify(thumbnails);
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = $('name').value;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
-      alert('Quota exceeded! ' + e);
+      alert('Storage error: ' + e);
     }
   }
 
@@ -1513,6 +1526,7 @@ var editorFilename;
     this.recording = false;
     this.baseurl = "";
     this.locator = null;
+    this.output = true;
 
     //Persistent settings:
     var source = localStorage["fractured.current"];
@@ -1523,7 +1537,6 @@ var editorFilename;
       this.formulae = data.formulae;
       this.antialias = data.antialias;
       this.debug = data.debug;
-      this.thumbnails = data.thumbnails;
       if (this.debug) this.debugOn();
     } else {
       this.fractal = -1;
@@ -1531,7 +1544,6 @@ var editorFilename;
       this.formulae = 0;
       this.antialias = 2;
       this.debug = false;
-      this.thumbnails = [];
     }
   }
 
@@ -1558,7 +1570,6 @@ var editorFilename;
     data.formulae = this.formulae;
     data.antialias = this.antialias;
     data.debug = this.debug;
-    data.thumbnails = this.thumbnails;
     localStorage["fractured.current"] = JSON.stringify(data);
   }
 
@@ -1575,14 +1586,14 @@ var editorFilename;
     $S('recordmenu').display = 'none';
   }
 
-
-
   function debug(str) {
+    if (!current.output) return;
     if (current.debug) print(str);
     //alert(" called by: " + arguments.callee.caller);
   }
 
   function print(str) {
+    if (!current.output) return;
     var console = $('console');
     console.innerHTML += "<div class='message'>" + str + "</div>";
     $('panel_log').scrollTop = console.clientHeight - $('panel_log').clientHeight + $('panel_log').offsetHeight;
@@ -1667,6 +1678,7 @@ var editorFilename;
 
   function runScript(filename) {
     //Run an animation script
+    current.output = false;
     var script = new Script(localStorage[filename])
 
     function next() {
@@ -1677,6 +1689,9 @@ var editorFilename;
           window.requestAnimationFrame(next);
         else
           next();
+      } else {
+        current.output = false;
+        print("Script finished");
       }
     }
 

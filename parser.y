@@ -8,7 +8,6 @@
 [0-9]+("."[0-9]+)\b    return 'REAL'
 [0-9]+                 return 'INTEGER'
 "*"                    return '*'
-"."                    return '*'
 "/"                    return '/'
 "-"                    return '-'
 "+"                    return '+'
@@ -30,7 +29,7 @@
 "pi"                   return 'PI'
 "e"                    return 'E'
 <<EOF>>                return 'EOF'
-[@:]*[_a-zA-Z][_a-zA-Z0-9]* return 'IDENTIFIER';
+[@:]*[_a-zA-Z][_a-zA-Z0-9]*("."[w-z])? return 'IDENTIFIER';
 .                      return 'INVALID'
 
 /lex
@@ -108,19 +107,27 @@ e
     | e '>' e  -> $e1 + " > " + $e2
     | '!' e %prec UNOT   -> "!" + $e
     | '-' e %prec UMINUS -> "-" + $e
-    | '(' e ')' -> "(" + $e + ")"
     | '|' e '|' %prec NORM -> "cabs(" + $e + ")"
     | '$' e '$' %prec NORM -> "norm(" + $e + ")"
-    | '(' e ')' '(' e ')' -> "mul((" + $e1 + "),(" + $e2 + "))"
-    | constant '(' e ')' -> "mul(" + $constant + ",(" + $e + "))"
-    | constant
+    | p p -> "mul(" + $p1 + "," + $p2 + ")"
+    | const p -> "mul(" + $const + "," + $p + ")"
+    | const p IDENTIFIER -> "mul(mul(" + $const + "," + $p + ")" + "," + $3 + ")"
+    | const IDENTIFIER p -> "mul(mul(" + $const + "," + $2 + ")" + "," + $p + ")"
+
+    | p IDENTIFIER -> "mul(" + $p + "," + $IDENTIFIER + ")"
+    | const
     | '(' e ',' e ')' %prec CPLX
         {$$ = "complex(" + $e1 + "," + $e2 + ")";}
     | IDENTIFIER
+    | p
     | call
     ;
 
-constant
+p
+    : '(' e ')' -> "(" + $e + ")" 
+    ;
+
+const
     : INTEGER  -> $1 + ".0"
     | REAL
     | E
@@ -128,7 +135,7 @@ constant
     ;
 
 call
-    : IDENTIFIER '(' e ')' -> $1 + "(" + $e + ")"
+    : IDENTIFIER p -> $1 + $p
     ;
 
 
