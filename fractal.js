@@ -755,6 +755,8 @@
     if (sel) {
       if (idx != undefined)
         sel.selectedIndex = idx;
+      //TODO: BETTER ERROR HANDLING: This means a formula that is no longer present was selected
+      if (sel.selectedIndex < 0) {alert(this.category + " : Invalid selection!"); return;}
       name = sel.options[sel.selectedIndex].value;
     }
     this.select(name);
@@ -1808,7 +1810,7 @@
   }
 
   //Apply any changes to parameters or formula selections and redraw
-  Fractal.prototype.applyChanges = function(antialias) {
+  Fractal.prototype.applyChanges = function(antialias, notime) {
     //Update palette
     var canvas = $('gradient');
     colours.get(canvas);
@@ -1849,8 +1851,8 @@
     this["filter"].currentParams.setFromForm();
 
     //Update shader code & redraw
-    this.writeShader();
-    this.draw(antialias);
+    this.writeShader(notime);
+    this.draw(antialias, notime);
   }
 
   //Update form controls with fractal data
@@ -1977,16 +1979,16 @@
   }
 
   //Build and redraw shader
-  Fractal.prototype.writeShader = function() {
+  Fractal.prototype.writeShader = function(notime) {
     var source;
     if (this.webgl) {
       //Create the GLSL shader
-      var source = this.generateShader("include/glsl-header.frag");
+      source = this.generateShader("include/glsl-header.frag");
     } else {
       //Build OpenCL kernel
       source = this.generateShader("include/opencl-header.cl");
 
-      var native_fn = /(cos|exp|log|log2|log10|sin|sqrt|tan)\(/g;
+      //var native_fn = /(cos|exp|log|log2|log10|sin|sqrt|tan)\(/g;
       //source = source.replace(native_fn, "native_$1(");
 
       //Switch to C-style casts
@@ -1999,14 +2001,14 @@
     }
     //Only recompile if data has changed!
     if (sources["generated.shader"] != source)
-      this.updateShader(source);
+      this.updateShader(source, notime);
     else
       debug("Shader build skipped, no changes");
   }
 
-  Fractal.prototype.updateShader = function(source) {
+  Fractal.prototype.updateShader = function(source, notime) {
     //Save for debugging
-    this.timeAction("Compile");
+    if (!notime) this.timeAction("Compile");
     sources["generated.shader"] = source;
     print("Rebuilding fractal shader using:");
     print("formula: " + this["fractal"].selected);
@@ -2083,8 +2085,8 @@
     window.requestAnimationFrame(logTime);
   }
 
-  Fractal.prototype.draw = function(antialias) {
-    this.timeAction("Draw");
+  Fractal.prototype.draw = function(antialias, notime) {
+    if (!notime) this.timeAction("Draw");
     if (antialias == undefined) antialias = this.antialias;
 
     //Set canvas size
@@ -2095,9 +2097,6 @@
       this.webcl.draw(this, antialias);
     } else
       this.renderWebGL(antialias);
-
-    //Save frame image (used for julia preview background)
-    this.imagedata = this.canvas.toDataURL("image/png");
   }
 
   Fractal.prototype.renderViewport = function(x, y, w, h) {
@@ -2406,6 +2405,8 @@
   }
 
   function showPreviewJulia() {
+    //Save frame image (used for julia preview background)
+    fractal.imagedata = fractal.canvas.toDataURL("image/png");
     fractal.preview = {};
     //WebGL implicitly clears the canvas, unless preserveDrawingBuffer requested 
     //(which apparently is a performance problem on some platforms) so copy fractal
