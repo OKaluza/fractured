@@ -321,10 +321,8 @@
     else if (this.typeid == 5) //'rgba'
       return this.value.rgbaGLSL();
     else if (this.typeid == 6) //expression
-    {
       //Use expression parser
       return parseExpression(this.value);
-    }
     else
       return "" + this.value;
   }
@@ -2000,7 +1998,7 @@
 
       //Switch to C-style casts
       source = source.replace(/complex\(/g, "(complex)(");
-      source = source.replace(/real\(/g, "(real)(");
+      source = source.replace(/real\(/g, "to_real_("); //Modified to allow convert from complex
       source = source.replace(/float\(/g, "(float)(");
       source = source.replace(/int\(/g, "(int)(");
       source = source.replace(/rgba\(/g, "(rgba)(");
@@ -2416,6 +2414,7 @@
     document.mouse.moveUpdate = false;
       $S("fractal-canvas").backgroundImage = "url('media/bg.png')";
       $S("background").display = "none";
+    $("background").src = "";
     fractal.preview = null;
     if (fractal.webcl) fractal.webcl.setViewport(0, 0, canvas.width, canvas.height);
     fractal.draw();

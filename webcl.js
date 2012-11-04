@@ -103,6 +103,7 @@
   }
 
   WebCL_.prototype.draw = function(fractal, antialias) {
+    if (!this.k_sample) return; //Sanity check
     if (antialias == undefined) antialias = 1;
     if (antialias > 4) antialias = 4; //Temporary fix, webgl antialias is not as effective, requires higher numbers
     if (!this.queue) return;

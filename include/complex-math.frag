@@ -2,9 +2,6 @@
 #define zero(args) 0
 #define czero(args) complex(0.0,0.0)
 
-#define PI  real(3.141592654)
-#define E   real(2.718281828)
-
 //Opera hack, doesn't like #define ident(args) args
 real _call_ ident(in real a)  {return a;}
 complex _call_ ident(in complex a)  {return a;}
@@ -54,6 +51,9 @@ complex _call_ conj(in complex z)
 
 #ifdef GLSL
 //Functions only required for GLSL, predefined in OpenCL
+#define PI  real(3.141592654)
+#define E   real(2.718281828)
+
 real _call_ log10(in real r)
 {
   return log(r) / log(10.0);
@@ -124,6 +124,17 @@ real _call_ atanh(in real x)
 {
   return (log(1.0+x) - log(1.0-x)) / 2.0;
 }
+#else
+//OpenCL only
+#define PI  M_PI_F
+#define E   M_E_F
+
+real _call_ to_real_(in complex z) { return z.x; }
+real _call_ to_real_(in real x) { return x; }
+real _call_ to_real_(in int x) { return (real)x; }
+real _call_ to_real_(in uint x) { return (real)x; }
+real _call_ to_real_(in bool x) { return (real)x; }
+
 #endif
 
 complex _call_ add(in complex a, in complex b) {return a + b;}
