@@ -15,10 +15,10 @@ real @csum = 0.0;
 
 calc:
   if (@diverge)
-    @sum += @dexp;
+    @sum += real(@dexp);
 
   if (@converge)
-    @csum += @cexp;
+    @csum += real(@cexp);
 
 result:
   real mu = @sum;

@@ -27,7 +27,9 @@
     this.errors = false;
 
     try {
-      this.gl = canvas.getContext("experimental-webgl", { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true} );
+      var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+      // Try to grab the standard context. If it fails, fallback to experimental.
+      this.gl = canvas.getContext("webgl", options) || canvas.getContext("experimental-webgl", options);
       this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     } catch(e) {
       this.errors = e;
