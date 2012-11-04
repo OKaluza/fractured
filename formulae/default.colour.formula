@@ -3,7 +3,7 @@
 //  to get a colour from the gradient palette
 
 //Palette repeat
-@:repeat = real(1);
+@repeat = real(1);
 
 result:
-  colour = gradient(:repeat * real(count) / real(limit));
+  colour = gradient(@repeat * real(count) / real(limit));

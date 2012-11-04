@@ -87,13 +87,14 @@
     else 
     {
       $filename = "/thumbs/" . $links[$x] . ".jpg";
-      $url = '/' . $links[$x];
+      //$url = '/' . $links[$x];
+      $url = "javascript:loadUrl('" . $links[$x] . "')";
       if (!file_exists(".." . $filename))
         $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
     }
     echo '<div class="float">';
     echo '<a href="'.$url.'">';
-	  echo '<img src="' . $filename . '" /></a>';
+	  echo '<img src="' . $filename . '" />';
     echo "</a></div>\n";
   }
 

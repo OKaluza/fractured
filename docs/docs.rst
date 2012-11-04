@@ -19,12 +19,12 @@ http://fractured.ozone.id.au/docs.html
 Introduction
 ============
 Fractured is a fractal exploration application written in Javascript and WebGL / WebCL.
-The main functionality works stand-alone as an offline app, there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
+It is designed to work as a stand-alone app, but there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
 
 It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae (despite there being loads of great fractal programs around). From my deranged perspective, I'd miss out on most of the fun if I didn't write it myself.
-I was also excited by the possibility of rendering complex fractals a hell of a lot faster on the GPU with GLSL which was not being done at the time I started except for a few proof of concept demos.
+I was also interested in rendering complex fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
 
-First attempts were in Java with JOGL, then I heard about WebGL which seemed the perfect framework for it, got motivated again, and ported the progress so far to HTML5, learning Javascript along the way.
+First attempts were in Java with JOGL, then I heard about WebGL which seemed the perfect technology for this project (although it turned out to be limited in several really annoying ways), so I got motivated again, and ported the progress so far to HTML5, learning Javascript along the way.
 The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far I could take the single-page web-browser app, of course there was always just one more feature I wanted to implement.
   
 Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, it does what I need and maybe someone else will find it useful.
@@ -223,6 +223,7 @@ Settings
 
 - *Anti-aliasing* select the anti-aliasing quality to use when rendering fractals.
 - *Scripts* (experimental feature, not yet properly documented) allows you to write scripts that control the fractal display. New Script creates a new script entry in the list and opens the editor. Pressing the [Run] button in the editor window runs the script.
+- *Rebuild Thumbnails* redraw and save all stored fractal thumbnail images.
 - *Show Preview* enables or disables the Julia set preview window.
 - *Hide/Show Tools* hides or shows the *tools* area from the window, allowing more room for the fractal display.
 - *Full Screen* enter full screen mode.
@@ -419,44 +420,42 @@ will be translated internally to::
 
 Some other forms the parser will recognise:
 
-A period can be used instead of * for multiplication as long as it is not between two digits:
+Two bracketed expressions without an operator between them will be implicitly multiplied::
 
-3.z ==> 3*z
+  (z + 1)(z - 1) ==> (z + 1) * (z - 1)
 
-Two bracketed expressions without an operator between them will be implicitly multiplied:
+A numeric constant immediately before a set of brackets will be be an implicit multiplication, the numeric constant can also be followed by a single variable, eg::
 
-(z + 1)(z - 1) ==> (z + 1) * (z - 1)
+  3(z + 1) ==> 3 * (z + 1)
+  3x(z + 1) ==> 3 * x * (z + 1)
 
-A numeric constant immediately before a set of brackets will be be an implicit multiplication:
+This does not work with variables alone, eg: x(z + 1) as it is indistinguishable from a function call to the parser.
 
-3(z + 1) ==> 3 * (z + 1)
+For a single variable, you can follow it after the bracketed expression though, eg::
 
-This does not work with variables, eg: x(z + 1) as it is indistinguishable from a function call to the parser.
+  (z + 1)x ==> (z + 1) * x
 
 No other forms of implicit multiplication are recognised, elsewhere you must insert a multiplication symbol.
 
-A set of brackets with a comma implies a complex number, in parsed expressions the components of the complex number can contain any expression:
+A set of brackets with a comma implies a complex number, in parsed expressions the components of the complex number can contain any expression::
 
-(sin(x), y^2) ==> complex(sin(x), y^2)
+  (sin(x), y^2) ==> complex(sin(x), y^2)
 
 In base formula code you are limited to single constants or variables as the real and imaginary components of complex number initialisations.
 
 Expressions can also be entered over multiple lines and semi-colons are not required at the end of lines.
 
 **Note: Colour and Transform formulae**
-As the same colour and transform formula can be selected twice in different categories, variables and parameters declared in these formulae can cause conflicts (attempting to declare a variable or parameter of the same name twice).
+As the same colour and transform formula can be selected twice in different categories, variables declared in these formulae can cause conflicts (attempting to declare a variable or parameter of the same name twice).
 
-To get around this you can use the colon ":" character at the start of any variable or after the @ in a parameter name. When the formula code is translated to shader code the ":" will be replaced with the formula type, preventing "redefinition" errors, eg::
+To get around this you can use the at "@" character at the start of any variable as in a parameter name. When the formula code is translated to shader code the "@" will be replaced with the formula type, preventing "redefinition" errors, eg::
 
-  eg: @myparam = real(1);
-  or: complex x = (4,5);
-  can be replaced respectively by
-  @:myparam = real(1);
-  complex :x = (4,5);
+  complex x = (4,5);
+  ... can be replaced by ...
+  complex @x = (4,5);
 
-If the above is not followed in a colour formula, for example, and this colour formula is selected for both inside and outside colouring, you will get errors of the form::
+If the above is not followed and a colour formula is selected for both inside and outside colouring, you will get errors of the form::
 
-  (ERROR: 0:180: 'myparam' : redefinition).
   (ERROR: 0:182: 'x' : redefinition).
 
 Built in variables

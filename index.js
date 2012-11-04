@@ -124,12 +124,10 @@ var rztimeout = undefined;
     //Draw & update
     loadLastFractal();  //Restore last if any
     if (restored.length > 0) {
-      current.gallery = 1;
       hideGallery();
       restoreFractal(restored);   //Restore from URL
     } else if (flickr) {
       //Return to last drawn fractal
-      current.gallery = 1;
       hideGallery();
       fractal.applyChanges();
     } else {
@@ -138,6 +136,20 @@ var rztimeout = undefined;
 
     ajaxReadFile('docs.html', insertHelp);
     loadScript("/codemirror-compressed.js", "");
+  }
+
+  //Load from a locator hash
+  function loadUrl(locator) {
+    current.locator = locator;
+    hideGallery();
+    fractal.clear();
+    ajaxReadFile('ss/fractal_get.php?id=' + current.locator, loadedUrl, false, updateProgress);
+    //Set address
+    window.history.pushState("", "", current.baseurl + "/" + current.locator);
+  }
+
+  function loadedUrl(data) {
+    restoreFractal(data);   //Restore from URL
   }
 
   function loadScript(filename, onload){
@@ -200,7 +212,12 @@ var rztimeout = undefined;
   }
 
   function showGallery(id) {
-    if (!id) id = "#examples";
+    if (!id) {
+      id = current.gallery ? current.gallery : "#examples";
+      window.history.pushState("", "", current.baseurl);
+    } else  {
+      current.offset = 0;
+    }
     if (current.gallery) {
       $(current.gallery).className = '';
       $S('note' + current.gallery).display = 'none';
@@ -208,14 +225,15 @@ var rztimeout = undefined;
     $(id).className = 'selected';
     $S('note' + id).display = 'block';
     current.gallery = id;
-    loadGallery(0);
+    current.mode = 0;
+    loadGallery();
   }
 
   function loadGallery(offset) {
     $S('gallery').display = "block";
       setAll('none', 'render');  //hide render mode menu options
     $S('fractal-canvas').display = "none";
-    if (offset == undefined) offset = lastoffset || 0;
+    if (offset == undefined) offset = current.offset;
     var w = $('gallery').clientWidth; //window.innerWidth - 334;
     var h = $('gallery').clientHeight; //window.innerHeight - 27;
     //$S('gallery').width = w + "px";
@@ -223,18 +241,18 @@ var rztimeout = undefined;
 
     type = current.gallery.substr(1);
     $('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
-    lastoffset = offset;
+    current.offset = offset;
   }
 
   function hideGallery() {
     //Hide gallery, show fractal
     $S('gallery').display = "none";
     $S('fractal-canvas').display = "block";
-      setAll('block', 'render');  //Unhide render mode menu options
-      setAll(current.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
+    setAll('block', 'render');  //Unhide render mode menu options
+    setAll(current.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
     //Switch to parameters
-    if (current.gallery && selectedTab == $('tab_info')) showPanel('params');;
-    current.gallery = null;
+    if (current.mode == 0 && selectedTab == $('tab_info')) showPanel('params');;
+    current.mode = 1;
   }
 
   //session JSON received
@@ -776,7 +794,7 @@ var rztimeout = undefined;
     var formdata = new FormData();
     formdata.append("public", shared);
     //If selected, give option to update existing
-    if (shared == 0 && current.formulae > 0 && confirm('Save changes to this formula set on server?'))
+    if (current.formulae > 0 && confirm('Save changes to this formula set on server?'))
       formdata.append("formulae", current.formulae);
     else {
       var name = prompt("Enter name for new formula set");
@@ -1299,7 +1317,7 @@ var rztimeout = undefined;
     if (rztimeout) clearTimeout(rztimeout);
 
     function doResize() {
-      if (current.gallery)
+      if (current.mode == 0)
         loadGallery();
       else
         fractal.applyChanges();
@@ -1522,7 +1540,9 @@ var editorFilename;
   function Status() {
     this.loggedin = false;
     this.offline = null;
-    this.gallery = null;
+    this.gallery = "#examples";
+    this.mode = 0;
+    this.offset = 0;
     this.recording = false;
     this.baseurl = "";
     this.locator = null;

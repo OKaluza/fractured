@@ -11,7 +11,5 @@
 @escape = real(100);
 //Converge
 @converge = real(0.00005);
-
-converged:
-  //Converge test
-  converged = (bailtest(z-(1,0)) < converge);
+//Converged
+@converged = expression(||z-1|| < converge);
