@@ -359,13 +359,10 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     hooks: {
       "#": cppHook,
       "@": function(stream, state) {
+        if (!state.startOfLine || state.indented) return false;
         stream.eatWhile(/[\w\$_:]/);
         return "param";
-      }/*,
-      ":": function(stream, state) {
-        stream.eatWhile(/[\w\$_@]/);
-        return "local";
-      }*/
+      }
     }
   });
 }());

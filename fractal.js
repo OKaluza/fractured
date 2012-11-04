@@ -21,6 +21,7 @@
   var sectionnames = {"fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour", "filter" : "Filter"}
 
   var savevars = {};
+  var fractal_savevars = {};
 
   /**
    * @constructor
@@ -143,11 +144,14 @@
     var reg = /@?:?([_a-zA-Z][_a-zA-Z0-9]*)/g;
     var match;
     while (match = reg.exec(expr)) {
-      if (savevars[match[1]]) {
+      var key = match[1];
+      var found = savevars[key];
+      if (found == undefined) found = fractal_savevars[key];
+      if (found != undefined) {
         //Replace the matched param with value
         var newval = expr.slice(0, reg.lastIndex - match[0].length);
-        expr = newval + savevars[match[1]] + expr.slice(reg.lastIndex, expr.length);
-        reg.lastIndex += (savevars[match[1]] - match[0].length); //Adjust search position
+        expr = newval + found + expr.slice(reg.lastIndex, expr.length);
+        reg.lastIndex += (found - match[0].length); //Adjust search position
       }
     }
 
@@ -328,6 +332,7 @@
   Param.prototype.declare = function(key) {
     //Return GLSL const/uniform declaration for this parameter
     var comment = this.label ? "//" + this.label + "\n" : "";
+    key = '@' + key;
     type = this.type;
     if (type == 'list') type = 'int';
     if (type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
@@ -492,7 +497,7 @@
     while (match = paramreg.exec(source)) {
       //Label/comment (optional)
       //@name = type(value);
-      var label = match[2];
+      var label = match[2] ? match[2] : match[4];
       var uniform = match[3].length == 2; //@@ == uniform param
       var name = match[4];
       var type = match[5];
@@ -833,13 +838,6 @@
 
     this.lineoffsets = {};
 
-//////////////////////////////////
-    //Replace remaining : symbols with formula type and "_"
-    //(to prevent namespace clashes in globals/function names/params)
-    //(: is used only for tenary operator ?: in glsl)
-    code = code.replace(/:([a-zA-Z_])/g, this.category + "_$1");
-//////////////////////////////////
-
     //Get section blocks by finding start labels:
     while (match = reg.exec(code)) {
       //Save the previous section
@@ -857,38 +855,47 @@
       //If use znext expression if found, otherwise use function, define default if not found
       if (sections["znext"].length == 0) {
         if (this.currentParams["znext"])
-          sections["znext"] = "\n  z = znext;\n";
+          sections["znext"] = "\n  z = @znext;\n";
         else
           sections["znext"] = "\n  z = sqr(z)+c;\n";
       }
 
       var converged_defined = true;
+      //Converged flag for use in code
       if (sections["converged"].length == 0) {
-        if (!this.currentParams["converge"]) {
-          //No converged test defined
+        //No converged: section defined
+        if (this.currentParams["converged"]) {
+          //Have a converged parameter
+          sections["converged"] += "\nconverged = (@converged);\n";
+        } else if (!this.currentParams["converge"]) {
+          //No converge limit defined
           converged_defined = false;
-        } else if (this.currentParams["converge"].type == 'expression')
-          //Expression converge param, insert the break test
-          sections["converged"] = "\n  converged = (converge);\n";
-        else
-          //Numeric converge param, insert default test
-          sections["converged"] = "\n  converged = (bailtest(z) < converge);\n";
+        } else {
+          //Numeric converge param only, insert default test
+          sections["converged"] += "\nconverged = (@bailtest(z) < @converge);\n";
+        }
       }
 
+      //Escaped flag for use in code
       if (sections["escaped"].length == 0) {
-        //No escaped test defined
-        if (!this.currentParams["escape"] || this.currentParams["escape"].type != 'expression') {
-          //If no converged test either create a default bailout
-          if (!converged_defined || this.currentParams["escape"]) {
-            sections["escaped"] = "\n  escaped = (bailtest(z) > escape);\n";
+        //No escaped: section defined
+        if (this.currentParams["escaped"]) {
+          //Have an escaped parameter
+          sections["escaped"] += "\nescaped = (@escaped);\n";
+        } else if (!this.currentParams["escape"]) {
+          //No escape limit defined, if no converge defined either, create a default bailout
+          if (!converged_defined) {
+            sections["escaped"] += "\nescaped = (@bailtest(z) > escape);\n";
           }
-        } else
-          //Expression escape param, insert break test
-          sections["escaped"] = "\n  escaped = (escape);\n";
+        } else {
+          //Numeric escape param only, insert default test
+          sections["escaped"] += "\nescaped = (@bailtest(z) > @escape);\n";
+        }
       }
 
+      //Append extra data definitions
       if (!this.currentParams["escape"]) sections["data"] += "\n#define escape 4.0\n";
-      if (!this.currentParams["bailtest"]) sections["data"] += "\n#define bailtest norm\n";
+      if (!this.currentParams["bailtest"]) sections["data"] += "\n#define @bailtest norm\n";
 
     } else if (this.category.indexOf("colour") > -1) {
       //Default colour result
@@ -920,6 +927,7 @@
     //Get the parameter declaration code
     //(This also saves values of parameters in savevars[] array)
     var params = this.currentParams.toCode();
+    if (this.category == "fractal") fractal_savevars = savevars;
 
     //Strip out param definitions, replace with declarations
     var head = firstIdx >= 0 ? data.slice(0, firstIdx) : "";
@@ -927,14 +935,15 @@
     //alert(this.catageory + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
     data = head + params.slice(0, params.length-1) + body;
 
-    //Replace remaining : symbols with formula type and "_"
+    //Parse any /expression/s and @params
+    //Replace @ symbols with formula type and "_"
     //(to prevent namespace clashes in globals/function names/params)
-    //(: is used only for tenary operator ?: in glsl)
-    sections["data"] = data.replace(/:([a-zA-Z_])/g, this.category + "_$1");
-
-    //Parse any /expression/s 
-    for (key in sections)
+    sections["data"] = data.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
+    for (key in sections) {
+      //sections[key] = sections[key].replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
       sections[key] = parseExpressions(sections[key]);
+      sections[key] = sections[key].replace(/@([a-zA-Z_])/g, this.category + "_$1");
+    }
 
     //return code;
     return sections;
@@ -1258,7 +1267,7 @@
     //3. Load code for each selected formula
     //4. For each formula, load formula params into params[formula]
     //5. Load palette
-    //Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
+    /*/Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
     source = source.replace(/_primes/g, "_integers");
     source = source.replace(/exp_smooth/g, "exponential_smoothing");
     source = source.replace(/magnet(\d)/g, "magnet_$1");
@@ -1270,8 +1279,10 @@
       source = source.replace(/^bailout=/gm, "converge=");
     else
       source = source.replace(/^bailout=/gm, "escape=");
-    source = source.replace(/^bailoutc=/gm, "converge=");
+    source = source.replace(/^bailoutc=/gm, "converge=");*/
       var saved = {}; //Another patch addition, remove once all converted
+        //Strip leading : from old data
+            source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
 
     var lines = source.split("\n"); // split on newlines
     var section = "";
@@ -1394,10 +1405,6 @@
         var pair1 = section.split(".");
         var category = pair1[1];
         var formula = this[category].selected;
-        //Old style params.transform, add ":" to params
-        if (category == "post_transform" && line.indexOf(":") < 0) {
-          line = ":" + line;
-        }
         if (curparam && line.indexOf("=") < 0 && line.length > 0) {
           //Multi-line value (ok for expressions)
           curparam.value += "\n" + lines[i];
@@ -1412,8 +1419,9 @@
                 this["post_transform"].select("fractured");
                 saved["vary"] = pair2[1];
               }
-            } else if (pair2[0] != "antialias") //Ignored, now a global renderer setting
+            } else if (pair2[0] != "antialias") { //Ignored, now a global renderer setting
               print("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+            }
           }
         }
       }
@@ -1425,17 +1433,17 @@
     //Amend changed params, remove this when saved fractals updated
     var reup = false;
     if (saved["vary"]) {
-      this["post_transform"].currentParams[":vary"].parse(saved["vary"]); 
-      this["post_transform"].currentParams[":miniter"].value = this.iterations; 
+      this["post_transform"].currentParams["vary"].parse(saved["vary"]); 
+      this["post_transform"].currentParams["miniter"].value = this.iterations; 
       reup  = true;
       this.iterations *= 2;
     }
-    if (saved["inrepeat"] && this["inside_colour"].currentParams[":repeat"] != undefined) {
-      this["inside_colour"].currentParams[":repeat"].parse(saved["inrepeat"]);
+    if (saved["inrepeat"] && this["inside_colour"].currentParams["repeat"] != undefined) {
+      this["inside_colour"].currentParams["repeat"].parse(saved["inrepeat"]);
       reup  = true;
     }
-    if (saved["outrepeat"] && this["outside_colour"].currentParams[":repeat"] != undefined) {
-      this["outside_colour"].currentParams[":repeat"].parse(saved["outrepeat"]);
+    if (saved["outrepeat"] && this["outside_colour"].currentParams["repeat"] != undefined) {
+      this["outside_colour"].currentParams["repeat"].parse(saved["outrepeat"]);
       reup  = true;
     }
     if (reup) this.loadParams();
@@ -1555,8 +1563,8 @@
         else if (pair[0] == "VariableIterations") {
           if (parseReal(pair[1]) > 0) {
             this["post_transform"].select("fractured");
-            this["post_transform"].currentParams[":vary"].parse(pair[1]);
-            this["post_transform"].currentParams[":miniter"].value = this.iterations; 
+            this["post_transform"].currentParams["vary"].parse(pair[1]);
+            this["post_transform"].currentParams["miniter"].value = this.iterations; 
             this.iterations *= 2;
           }
         }
@@ -1677,26 +1685,26 @@
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
       var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
 
-      this['post_transform'].currentParams[":re_fn"].parse(fns[parseInt(saved["re_fn"])]);
-      this['post_transform'].currentParams[":im_fn"].parse(fns[parseInt(saved["im_fn"])]);
+      this['post_transform'].currentParams["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
+      this['post_transform'].currentParams["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
-        this['post_transform'].currentParams[":induct"].parse([saved["induct"].re, saved["induct"].im]);
+        this['post_transform'].currentParams["induct"].parse([saved["induct"].re, saved["induct"].im]);
       else if (saved["param1"])
-        this['post_transform'].currentParams[":induct"].parse([saved["param1"].re, saved["param1"].im]);
+        this['post_transform'].currentParams["induct"].parse([saved["param1"].re, saved["param1"].im]);
 
-      this['post_transform'].currentParams[":induct_on"].value = saved["inductop"];
-      if (this['post_transform'].currentParams[":induct_on"].value >= 10) {
+      this['post_transform'].currentParams["induct_on"].value = saved["inductop"];
+      if (this['post_transform'].currentParams["induct_on"].value >= 10) {
         //Double induct, same effect as induct*2
-        this['post_transform'].currentParams[":induct_on"].value -= 10;
-        this['post_transform'].currentParams[":induct"].value.re *= 2.0;
-        this['post_transform'].currentParams[":induct"].value.im *= 2.0;
+        this['post_transform'].currentParams["induct_on"].value -= 10;
+        this['post_transform'].currentParams["induct"].value.re *= 2.0;
+        this['post_transform'].currentParams["induct"].value.im *= 2.0;
       }
-      if (this['post_transform'].currentParams[":induct_on"].value == 1)
-        this['post_transform'].currentParams[":induct_on"].value = 2;
-      if (this['post_transform'].currentParams[":induct_on"].value > 1)
-        this['post_transform'].currentParams[":induct_on"].value = 1;
+      if (this['post_transform'].currentParams["induct_on"].value == 1)
+        this['post_transform'].currentParams["induct_on"].value = 2;
+      if (this['post_transform'].currentParams["induct_on"].value > 1)
+        this['post_transform'].currentParams["induct_on"].value = 1;
     }
 
     //Colour formula param conversion
@@ -1936,8 +1944,7 @@
     var creg = /([^a-zA-Z0-9_\)])\(([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\)/g
     shader = shader.replace(creg, "$1complex($2,$5)");
 
-    //Finally, replace any @ symbols used to reference params in code
-    return shader.replace(/@/g, "");
+    return shader;
   }
 
   Fractal.prototype.templateInsert = function(shader, selections, marker, section, sourcelist, indent) {
@@ -2099,6 +2106,16 @@
       this.renderWebGL(antialias);
   }
 
+  Fractal.prototype.clear = function() {
+    //Set canvas size
+    this.sizeCanvas();
+    //WebCL mode
+    if (this.webcl) {
+      this.canvas.width = this.canvas.width;  //Clears 2d canvas
+    } else
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+  }
+
   Fractal.prototype.renderViewport = function(x, y, w, h) {
     var alpha = colours.palette.background.alpha; //Save bg alpha
     colours.palette.background.alpha = 1.0;
@@ -2225,7 +2242,7 @@
   Fractal.prototype.move = function(event, mouse) {
     //Mouseover processing
       mouse.point = new Aspect(0, 0, 0, 0);
-    if (!fractal || current.gallery) return true;
+    if (!fractal || current.mode == 0) return true;
     if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
     {
       //Convert mouse coords into fractal coords

@@ -9,9 +9,8 @@
 @bailtest = bailout_function(norm);
 //Converge
 @converge = real(0.00001);
-
-converged:
-  converged = (bailtest(z-z_1) < converge);
+//Converged
+@converged = expression(||z-z_1|| < converge);
 
 //Reset, called immediately before iterating
 reset:

@@ -4,28 +4,28 @@
 // over all iterations 
 
 //Bailout
-@:bailout = real(4);
+@bailout = real(4);
 //Far distance
-@:fardist = real(1.5);
+@fardist = real(1.5);
 //Close distance
-@:closedist = real(1.0);
+@closedist = real(1.0);
 //Hot colour
-@:hotcolour = rgba(255, 120, 5, 1.0);
+@hotcolour = rgba(255, 120, 5, 1.0);
 //Cold colour
-@:coldcolour = rgba(127, 200, 250, 1.0);
+@coldcolour = rgba(127, 200, 250, 1.0);
 
-int :closecalls = 0;
-int :farcalls = 0;
+int @closecalls = 0;
+int @farcalls = 0;
 
 calc:
   real dist = norm(z);
-  if (dist < @:closedist)
-    :closecalls++;
-  else if (@:bailout - dist < @:fardist)
-    :farcalls++;
+  if (dist < @closedist)
+    @closecalls++;
+  else if (@bailout - dist < @fardist)
+    @farcalls++;
 
 result:
-  //return gradient(repeat * real(:closecalls) / real(count));
-  rgba hcolour = @:hotcolour * (real(:closecalls)/real(count));
-  rgba ccolour = @:coldcolour * (real(:farcalls)/real(count));
+  //return gradient(repeat * real(@closecalls) / real(count));
+  rgba hcolour = @hotcolour * (real(@closecalls)/real(count));
+  rgba ccolour = @coldcolour * (real(@farcalls)/real(count));
   colour = hcolour + ccolour;

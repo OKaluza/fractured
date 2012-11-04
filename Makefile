@@ -2,7 +2,7 @@
 #FLAGS = -o
 COMP = java -jar compiler-latest/compiler.jar --js=
 FLAGS = --js_output_file=
-SCRIPTS = exports.js colourPicker.js gradient.js formulae.js index.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js #gl-matrix.js 
+SCRIPTS = colourPicker.js gradient.js formulae.js index.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js #gl-matrix.js 
 CM = codemirror/
 CMSCRIPTS = $(CM)lib/codemirror.js $(wildcard $(CM)lib/util/*.js) $(CM)mode/clike/clike.js $(CM)mode/javascript/javascript.js
 # Flags to pass to rst2html

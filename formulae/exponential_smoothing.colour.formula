@@ -1,29 +1,28 @@
 //Exponential smoothing
 //Palette repeat
-@:repeat = real(1);
+@repeat = real(1);
 //Divergent
-@:diverge = bool(true);
+@diverge = bool(true);
 //Convergent
-@:converge = bool(false);
+@converge = bool(false);
 //Diverge sum
-@:dexp = expression(exp(-|z|));
+@dexp = expression(exp(-|z|));
 //Converge sum
-@:cexp = expression(exp(-1/|z-z_1|));
+@cexp = expression(exp(-1/|z-z_1|));
 
-real :sum = 0.0;
-real :csum = 0.0;
+real @sum = 0.0;
+real @csum = 0.0;
 
 calc:
-  if (:diverge)
-    :sum += :dexp;
+  if (@diverge)
+    @sum += @dexp;
 
-  if (:converge)
-    :csum += :cexp;
+  if (@converge)
+    @csum += @cexp;
 
 result:
-  real mu = :sum;
-  if (!:diverge || :converge && converged)
-    mu =  :csum;
+  real mu = @sum;
+  if (!@diverge || @converge && converged)
+    mu =  @csum;
     
-  colour = gradient(:repeat * mu / real(limit));
-
+  colour = gradient(@repeat * mu / real(limit));
