@@ -10,9 +10,9 @@
   var complexreg = /\(?([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\s*,\s*([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\)?/;
 
   //Take real, return real
-  var realfunctions = ["abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "ident", "log", "log10", "lnr", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
+  var realfunctions = ["", "abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "log", "log10", "lnr", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
   //Take complex, return complex (including real functions that work component-wise)
-  var complexfunctions = ["abs", "acos", "cacos", "cacosh", "asin", "casin", "casinh", "atan", "catan", "catanh", "ceil", "conj", "cos", "ccos", "ccosh", "exp", "cexp", "flip", "floor", "ident", "log", "ln", "neg", "inv", "round", "sin", "csin", "csinh", "sqr", "sqrt", "tan", "ctan", "ctanh", "trunc", "czero"];
+  var complexfunctions = ["", "abs", "acos", "cacos", "cacosh", "asin", "casin", "casinh", "atan", "catan", "catanh", "ceil", "conj", "cos", "ccos", "ccosh", "exp", "cexp", "flip", "floor", "log", "ln", "neg", "inv", "round", "sin", "csin", "csinh", "sqr", "sqrt", "tan", "ctan", "ctanh", "trunc", "czero"];
   //Take complex, return real
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=ln, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
@@ -2191,23 +2191,19 @@
     //Convert mouse coords into fractal coords
     var point = this.origin.convert(mouse.x, mouse.y, mouse.element);
 
-    //Selection box?
-    if (select.style.display == 'block') {
-
-      //Ignore if too small a region selected
-      if (select.w > 5 && select.h > 5) {
-        //Get element offset in document
-        //var offset = findElementPos(mouse.element);
-        //Convert coords to position relative to element
-        //select.x -= offset[0];
-        //select.y -= offset[1];
-        //Get centre of selection in fractal coords
-        var centre = this.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
-        //Adjust centre position to match mouse left click
-        this.setOrigin(centre);
-        //Adjust zoom by factor of element width to selection
-        this.applyZoom(mouse.element.width / select.w);
-      }
+    //Selection box? Ignore if too small a region selected
+    if (select.style.display == 'block' && select.w > 5 && select.h > 5) {
+      //Get element offset in document
+      //var offset = findElementPos(mouse.element);
+      //Convert coords to position relative to element
+      //select.x -= offset[0];
+      //select.y -= offset[1];
+      //Get centre of selection in fractal coords
+      var centre = this.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
+      //Adjust centre position to match mouse left click
+      this.setOrigin(centre);
+      //Adjust zoom by factor of element width to selection
+      this.applyZoom(mouse.element.width / select.w);
     } else if (event.button == 0) {
       //Adjust centre position to match mouse left click
       this.setOrigin(point);

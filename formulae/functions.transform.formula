@@ -1,6 +1,12 @@
 //Simple transform that applies a function to z
+// and/or to real / imaginary parts of z
 //Function
-@fn = complex_function(abs);
+@fn = complex_function();
+//Real function
+@re_fn = real_function();
+//Imag function
+@im_fn = real_function();
 
 transform:
   z = @fn(z);
+  z = complex(@re_fn(z.x), @im_fn(z.y));
