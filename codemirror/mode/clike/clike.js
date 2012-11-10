@@ -324,7 +324,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       "texture2DProj texture2DProjLod texture3D texture3DLod " +
       "texture3DProj texture3DProjLod textureCube textureCubeLod " +
       //Fractal addons...
-      "ident zero czero gradient mul div add sub inv sqr cube cpow " + 
+      "zero czero gradient mul div add sub inv sqr cube cpow " + 
       "ln lnr log10 manhattan norm cabs arg neg conj polar " + 
       "cosh tanh sinh acosh atanh asinh cexp csin ccos ctan casin cacos " + 
       "catan csinh ccosh ctanh casinh cacosh catanh csqrt csqrt2 equals " + 
