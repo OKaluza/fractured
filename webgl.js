@@ -28,6 +28,7 @@
 
     try {
       var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+      if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
       // Try to grab the standard context. If it fails, fallback to experimental.
       this.gl = canvas.getContext("webgl", options) || canvas.getContext("experimental-webgl", options);
       this.viewport = new Viewport(0, 0, canvas.width, canvas.height);

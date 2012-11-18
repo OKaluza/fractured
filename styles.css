@@ -37,7 +37,7 @@ input[type=file] {height:0; width:0;}  /* Hidden uploads, triggered by buttons *
 
 /* Attempt to style inputs cleanly */
 input[type="text"] {border: 1px solid #998; border-radius: 3px;}
-input[type="number"] {border: 1px solid #998; border-radius: 3px;}
+input[type="number"] {border: 1px solid #998; border-radius: 3px; text-align: left;}
 input[type="range"] {border: 1px solid #998; border-radius: 3px; width: 150px;}
 input[type="button"] {height: 23px; font-size: 8pt; padding: 3px; min-width: 30px; border: 1px solid #998; border-radius: 3px; background: #eed;}
 input[type="checkbox"] {margin: 4px;}
