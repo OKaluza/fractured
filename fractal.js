@@ -2005,9 +2005,11 @@
 
     }
     //Only recompile if data has changed!
-    if (sources["generated.shader"] != source)
+    if (sources["generated.shader"] != source) {
       this.updateShader(source, notime);
-    else
+      //Opera doesn't support onbeforeunload, so save state now
+      if (window.opera) saveState();
+    } else
       debug("Shader build skipped, no changes");
   }
 

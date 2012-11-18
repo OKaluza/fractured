@@ -109,6 +109,7 @@ var rztimeout = undefined;
     window.onhashchange = hashChanged;
     window.onmozfullscreenchange = toggleFullscreen
     $('main').onwebkitfullscreenchange = toggleFullscreen;
+    if (window.opera) window.onunload = beforeUnload;
     window.onbeforeunload = beforeUnload;
 
     //Form mouse wheel
@@ -712,7 +713,6 @@ var rztimeout = undefined;
       loadPalette(0); //Palette reset
       newFractal();
       current.clear();
-      window.onbeforeunload = null;
     }
   }
 
@@ -949,9 +949,6 @@ var rztimeout = undefined;
       formdata.append("info", response);
       ajaxPost("ss/image_save.php", formdata);
     }
-    // Create the XHR (Cross-Domain XHR FTW!!!)
-    var xhr = new XMLHttpRequest();
-
     progress("Uploading image to Imgur...");
     ajaxPost("http://api.imgur.com/2/upload.json", fd, onload, updateProgress);
   }
@@ -995,9 +992,6 @@ var rztimeout = undefined;
       formdata.append("info", response);
       ajaxPost("ss/image_save.php", formdata);
     }
-    // Create the XHR (Cross-Domain XHR FTW!!!)
-    var xhr = new XMLHttpRequest();
-
     progress("Uploading image to Flickr...");
     ajaxPost("ss/flickr.php?upload", fd, onload, updateProgress);
   }
@@ -1638,9 +1632,10 @@ var editorFilename;
 
   function outputFrame() {
     var canvas = $("fractal-canvas");
-    var data = imageBase64("image/png");
-    document.body.style.cursor = "wait";
-    ajaxPost("http://localhost:8080/frame", data, frameDone);
+    var data = imageToBlob("image/jpeg");
+    var fd = new FormData();
+    fd.append("image", data);
+    ajaxPost("http://localhost:8080/frame?name=" + labelToName($('name').value), fd, frameDone);
   }
 
   function frameDone(response) {
