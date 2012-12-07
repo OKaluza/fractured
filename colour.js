@@ -92,7 +92,7 @@
   //Palette draw to canvas
   Palette.prototype.draw = function(canvas, ui) {
     //Slider image not yet loaded?
-    if (!this.slider.width) {
+    if (!this.slider.width && ui) {
       var _this = this;
       setTimeout(function() { _this.draw(canvas, ui); }, 150);
       return;

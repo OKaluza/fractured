@@ -52,6 +52,8 @@
     {
       $w = floor(($_GET['width']-10) / $thumb);
       $h = floor(($_GET['height']-110) / $thumb);
+      if ($w < 1) $w = 1;
+      if ($h < 1) $h = 1;
       $imgpage = $w * $h;
     }
   }
@@ -87,7 +89,6 @@
     else 
     {
       $filename = "/thumbs/" . $links[$x] . ".jpg";
-      //$url = '/' . $links[$x];
       $url = "javascript:loadUrl('" . $links[$x] . "')";
       if (!file_exists(".." . $filename))
         $filename = "/thumbs/" . md5($links[$x]) . ".jpg";

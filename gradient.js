@@ -28,15 +28,15 @@ GradientEditor.prototype.read = function(source) {
   //Read a new palette from source data
   this.palette = new Palette(source);
   this.reset();
-  this.update();
+  this.update(true);
 }
 
-GradientEditor.prototype.update = function(source) {
+GradientEditor.prototype.update = function(nocallback) {
   //Redraw and flag change
   this.changed = true;
   this.palette.draw(this.canvas, true);
   //Trigger callback if any
-  if (this.callback) this.callback(this);
+  if (!nocallback && this.callback) this.callback(this);
 }
 
 //Draw gradient to passed canvas if data has changed
@@ -185,7 +185,7 @@ GradientEditor.prototype.move = function(event, mouse) {
     if (mouse.x > this.canvas.width-1) mouse.x = this.canvas.width-1;
     //Move to adjusted position and redraw
     this.palette.colours[mouse.slider].position = mouse.x / this.canvas.width;
-    this.update();
+    this.update(true);
   }
 }
 

@@ -24,7 +24,7 @@
 #define atan(a,b) atan2(a,b)
 
 //Palette lookup mu = [0,1]
-__constant const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;
+__constant sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;
 #define gradient(mu) read_palette(palette, mu)
 rgba read_palette(image2d_t palette, float mu)
 {

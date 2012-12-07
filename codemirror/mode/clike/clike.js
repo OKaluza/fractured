@@ -360,7 +360,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       "#": cppHook,
       "@": function(stream, state) {
         if (!state.startOfLine || state.indented) return false;
-        stream.eatWhile(/[\w\$_:]/);
+        stream.eatWhile(/[\w\$_@]/);
         return "param";
       }
     }

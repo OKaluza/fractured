@@ -128,7 +128,7 @@
         </li>
         <li class="render"><span class="fly" tabindex="1" style="padding: 2px 12px 0px 2px;"><img src="media/camera.png" ></span>
           <ul class="dd">
-            <li><span onclick="exportImage('image/jpeg');">Save JPEG Image</span></li>
+            <li><span onclick="exportImage('image/jpeg', 0.95);">Save JPEG Image</span></li>
             <li><span onclick="exportImage('image/png');">Save PNG Image</span></li>
             <li><span onclick="uploadImgur();">Share on Imgur</span></li>
             <li><span onclick="uploadFlickr();">Share on Flickr</span></li>
@@ -208,13 +208,26 @@
 
       <nav id="tabs">
         <ul>
-          <li onmousedown="showPanel('params');" id="tab_params" class="selected">Parameters</li>
+          <li onmousedown="showPanel('info');" id="tab_info" class="selected">Info</li>
+          <li onmousedown="showPanel('params');" id="tab_params" class="unselected">Parameters</li>
           <li onmousedown="showPanel('formula');" id="tab_formula" class="unselected">Formula</li>
           <li onmousedown="showPanel('colour');" id="tab_colour" class="unselected">Colour</li>
-          <li onmousedown="showPanel('info');" id="tab_info" class="unselected">Info</li>
           <li onmousedown="showPanel('log');" id="tab_log" class="unselected">Log</li>
         </ul>
       </nav>
+
+      <div class="panel scroll" id="panel_info" style="display: block">
+        <p>Local storage usage:</p>
+        <div id="indicatorbg"><div id="indicator"></div></div>
+        <p>Renderer:</p>
+        <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
+        <input type="button" id="webcl" value="WebCL" onClick="switchMode(WEBCL);">
+        <input type="button" id="fp64" value="WebCL fp64" onClick="switchMode(WEBCL64);">
+        <hr>
+        <div id="help">
+        Help file not loaded
+        </div>
+      </div>
 
       <div class="panel" id="panel_params" style="display: none">
 
@@ -297,7 +310,7 @@
         <form id="fractal_inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
         <p>Fractal</p>
         <div class="field">
-          <select id="fractal_formula" class="formula" onchange="fractal['fractal'].select(this.value)">
+          <select id="fractal_formula" class="formula" onchange="fractal.choices['fractal'].select(this.value)">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('fractal');">
@@ -308,7 +321,7 @@
 
         <p>Pre-Transform</p>
         <div class="field">
-          <select id="pre_transform_formula" class="formula" onchange="fractal['pre_transform'].select(this.value)">
+          <select id="pre_transform_formula" class="formula" onchange="fractal.choices['pre_transform'].select(this.value)">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -320,7 +333,7 @@
 
         <p>Post-Transform</p>
         <div class="field">
-          <select id="post_transform_formula" class="formula" onchange="fractal['post_transform'].select(this.value)">
+          <select id="post_transform_formula" class="formula" onchange="fractal.choices['post_transform'].select(this.value)">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -341,7 +354,7 @@
         <form id="colour_inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
         <p>Outside Colour</p>
         <div class="field">
-          <select id="outside_colour_formula" class="formula" onchange="fractal['outside_colour'].select(this.value)">
+          <select id="outside_colour_formula" class="formula" onchange="fractal.choices['outside_colour'].select(this.value)">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
@@ -351,7 +364,7 @@
         </div>
         <p>Inside Colour</p>
         <div class="field">
-          <select id="inside_colour_formula" class="formula" onchange="fractal['inside_colour'].select(this.value)">
+          <select id="inside_colour_formula" class="formula" onchange="fractal.choices['inside_colour'].select(this.value)">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
@@ -362,7 +375,7 @@
 
         <p>Filter</p>
         <div class="field">
-          <select id="filter_formula" class="formula" onchange="fractal['filter'].select(this.value)">
+          <select id="filter_formula" class="formula" onchange="fractal.choices['filter'].select(this.value)">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -378,19 +391,6 @@
           <div id="inside_colour_params" width="100%"></div>
           <div id="filter_params" width="100%"></div>
         </form>
-      </div>
-
-      <div class="panel scroll" id="panel_info" style="display: none">
-        <p>Local storage usage:</p>
-        <div id="indicatorbg"><div id="indicator"></div></div>
-        <p>Renderer:</p>
-        <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
-        <input type="button" id="webcl" value="WebCL" onClick="switchMode(WEBCL);">
-        <input type="button" id="fp64" value="WebCL fp64" onClick="switchMode(WEBCL64);">
-        <hr>
-        <div id="help">
-        Help file not loaded
-        </div>
       </div>
 
       <div class="panel scroll" id="panel_log" style="display: none">
