@@ -17,7 +17,6 @@
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=ln, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
-  var categories = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour", "filter"];
   var sectionnames = {"fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour", "filter" : "Filter"}
 
   var savevars = {};
@@ -711,13 +710,13 @@
   }
 
   //Set field values as uniforms
-  ParameterSet.prototype.setUniforms = function(gl, program) {
+  ParameterSet.prototype.setUniforms = function(gl, program, category) {
     for (key in this)
     {
       if (typeof(this[key]) != 'object') continue;
       if (!this[key].uniform) continue;
 
-      var uniform = gl.getUniformLocation(program, key);
+      var uniform = gl.getUniformLocation(program, category + "_" + key);
 
       switch (this[key].typeid)
       {
@@ -1084,27 +1083,22 @@
     this.perturb = false;
     this.iterations = 100;
 
+    this.choices = {"fractal" : null, "pre_transform" : null, "post_transform" : null, "outside_colour" : null, "inside_colour" : null, "filter" : null};
+
     //Reset default params
-    this["fractal"] = new Formula("fractal");
-    this["pre_transform"] = new Formula("pre_transform");
-    this["post_transform"] = new Formula("post_transform");
-    this["inside_colour"] = new Formula("inside_colour");
-    this["outside_colour"] = new Formula("outside_colour");
-    this["filter"] = new Formula("filter");
+    for (category in this.choices)
+      this.choices[category] = new Formula(category);
   }
 
   Fractal.prototype.formulaDefaults = function() {
-    this["fractal"].reselect(0);
-    this["pre_transform"].reselect(0);
-    this["post_transform"].reselect(0);
-    this["outside_colour"].reselect(1);
-    this["inside_colour"].reselect(0);
-    this["filter"].reselect(0);
+    for (category in this.choices)
+      this.choices[category].reselect(0);
+    this.choices['outside_colour'].reselect(1); //Exception for default!
   }
 
   Fractal.prototype.editFormula = function(category) {
-    if (this[category].selected != "none")
-      openEditor(this[category].getkey() + "#" + category);
+    if (this.choices[category].selected != "none")
+      openEditor(this.choices[category].getkey() + "#" + category);
   }
 
   Fractal.prototype.newFormula = function(select) {
@@ -1113,14 +1107,14 @@
     if (!label) return;
 
     //Add the formula
-    var key = this[select].getkey();
+    var key = this.choices[select].getkey();
     var source = null;
     if (formula_list[key])
        source = formula_list[key].source;
     var f = new FormulaEntry(type, label, source);
     if (!f) return;
 
-    this[select].select(f.name); //Set selected
+    this.choices[select].select(f.name); //Set selected
     $(select + '_formula').value = f.name;
     this.editFormula(select);
   }
@@ -1160,12 +1154,8 @@
   }
 
   Fractal.prototype.reselectAll = function() {
-    this["fractal"].reselect();
-    this["pre_transform"].reselect();
-    this["post_transform"].reselect();
-    this["outside_colour"].reselect();
-    this["inside_colour"].reselect();
-    this["filter"].reselect();
+    for (category in this.choices)
+      this.choices[category].reselect();
   }
 
   //Save fractal (write param/source file)
@@ -1196,24 +1186,22 @@
             "selected=" + this.selected + "\n" +
             "julia=" + this.julia + "\n" +
             "perturb=" + this.perturb + "\n" +
-            "iterations=" + this.iterations + "\n" +
-            "fractal=" + this["fractal"].selected + "\n" +
-            "pre_transform=" + this["pre_transform"].selected + "\n" +
-            "post_transform=" + this["post_transform"].selected + "\n" +
-            "outside_colour=" + this["outside_colour"].selected + "\n" +
-            "inside_colour=" + this["inside_colour"].selected + "\n" +
-            "filter=" + this["filter"].selected + "\n";
+            "iterations=" + this.iterations + "\n";
+
+    //Formula selections
+    for (category in this.choices)
+      code += category + "=" + this.choices[category].selected + "\n";
+
     return code;
   }
 
   Fractal.prototype.formulaParamString = function() {
     //Return selected formula parameters as a string
     var code = "";
-    for (t in categories) {
+    for (category in this.choices) {
       //Parameter values
-      var category = categories[t];
-      if (this[category].selected != "none" && this[category].currentParams.count() > 0)
-          code += "\n[params." + category + "]\n" + this[category].currentParams;
+      if (this.choices[category].selected != "none" && this.choices[category].currentParams.count() > 0)
+          code += "\n[params." + category + "]\n" + this.choices[category].currentParams;
     }
     return code;
   }
@@ -1221,14 +1209,13 @@
   Fractal.prototype.formulaSourceString = function() {
     //Return selected formula definitions as a string
     var code = "";
-    for (t in categories) {
+    for (category in this.choices) {
       //Formula code (###)
-      var category = categories[t];
-      if (this[category].selected != "none") {
+      if (this.choices[category].selected != "none") {
         //Don't save formula source twice if same used
-        if (category=="post_transform" && this["post_transform"].selected == this["pre_transform"].selected) continue;
-        if (category=="inside_colour" && this["outside_colour"].selected == this["inside_colour"].selected) break;
-        code += "\n[formula." + category + "]\n" + this[category].getSource();
+        if (category=="post_transform" && this.choices["post_transform"].selected == this.choices["pre_transform"].selected) continue;
+        if (category=="inside_colour" && this.choices["outside_colour"].selected == this.choices["inside_colour"].selected) break;
+        code += "\n[formula." + category + "]\n" + this.choices[category].getSource();
       }
     }
     return code;
@@ -1346,7 +1333,7 @@
           //Formula name, create entry if none
           var name = pair[1];
           var category = pair[0];
-          if (categories.indexOf(category) < 0) {print("INVALID CATEGORY: " + category); continue;} //TEMP 
+          if (!this.choices[category]) {print("INVALID CATEGORY: " + category); continue;} //TEMP 
           var key = formulaKey(category, name, false);   //3rd param, check flag: Don't check exists because might not yet!
           if (key) {
             //Read ahead to get formula definition!
@@ -1394,7 +1381,7 @@
             }
           }
 
-          this[category].select(name);
+          this.choices[category].select(name);
           //alert("formulas[" + pair[1] + "] = " + pair[0]);
           //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
           //alert(pair[0] + " == " + formulas[pair[0]]);
@@ -1402,23 +1389,23 @@
       } else if (section.slice(0, 7) == "params.") {
         var pair1 = section.split(".");
         var category = pair1[1];
-        var formula = this[category].selected;
+        var formula = this.choices[category].selected;
         if (curparam && line.indexOf("=") < 0 && line.length > 0) {
           //Multi-line value (ok for expressions)
           curparam.value += "\n" + lines[i];
         } else {
           var pair2 = line.split("=");
-          if (this[category].currentParams[pair2[0]]) {
-            curparam = this[category].currentParams[pair2[0]];
+          if (this.choices[category].currentParams[pair2[0]]) {
+            curparam = this.choices[category].currentParams[pair2[0]];
             curparam.parse(pair2[1]);
           } else { //Not defined in formula, skip
             if (pair2[0] == "vary") { //Moved to fractured transform, hack to transfer param from old saves
               if (parseReal(pair2[1]) > 0) {
-                this["post_transform"].select("fractured");
+                this.choices["post_transform"].select("fractured");
                 saved["vary"] = pair2[1];
               }
             } else if (pair2[0] != "antialias") { //Ignored, now a global renderer setting
-              print("Skipped param, not declared: " + section + "--- this[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+              print("Skipped param, not declared: " + section + "--- this.choices[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
             }
           }
         }
@@ -1431,17 +1418,17 @@
     //Amend changed params, remove this when saved fractals updated
     var reup = false;
     if (saved["vary"]) {
-      this["post_transform"].currentParams["vary"].parse(saved["vary"]); 
-      this["post_transform"].currentParams["miniter"].value = this.iterations; 
+      this.choices["post_transform"].currentParams["vary"].parse(saved["vary"]); 
+      this.choices["post_transform"].currentParams["miniter"].value = this.iterations; 
       reup  = true;
       this.iterations *= 2;
     }
-    if (saved["inrepeat"] && this["inside_colour"].currentParams["repeat"] != undefined) {
-      this["inside_colour"].currentParams["repeat"].parse(saved["inrepeat"]);
+    if (saved["inrepeat"] && this.choices["inside_colour"].currentParams["repeat"] != undefined) {
+      this.choices["inside_colour"].currentParams["repeat"].parse(saved["inrepeat"]);
       reup  = true;
     }
-    if (saved["outrepeat"] && this["outside_colour"].currentParams["repeat"] != undefined) {
-      this["outside_colour"].currentParams["repeat"].parse(saved["outrepeat"]);
+    if (saved["outrepeat"] && this.choices["outside_colour"].currentParams["repeat"] != undefined) {
+      this.choices["outside_colour"].currentParams["repeat"].parse(saved["outrepeat"]);
       reup  = true;
     }
     if (reup) this.loadParams();
@@ -1454,7 +1441,7 @@
     this.resetDefaults();
     this.formulaDefaults();
     var saved = {};
-    this["post_transform"].select("fractured");
+    this.choices["post_transform"].select("fractured");
 
     function convertFormulaName(name) {
       //Conversion for my old fractal ini formula descriptors
@@ -1501,7 +1488,7 @@
 
         //Process ini format params
         if (pair[0] == "Formula" || pair[0] == "Type" || pair[0] == "OperationType") {
-          this["fractal"].select(convertFormulaName(pair[1]));
+          this.choices["fractal"].select(convertFormulaName(pair[1]));
         } else if (pair[0] == "JuliaFlag")
           this.julia = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "PerturbFlag" || pair[0] == "zFlag")
@@ -1552,17 +1539,17 @@
           saved["inrepeat"] = parseReal(pair[1]);
         else if (pair[0] == "Outside") {
           saved["outside"] = pair[1];
-          this['outside_colour'].select(convertFormulaName(pair[1]));
+          this.choices['outside_colour'].select(convertFormulaName(pair[1]));
         }
         else if (pair[0] == "Inside") {
           saved["inside"] = pair[1];
-          this['inside_colour'].select(convertFormulaName(pair[1]));
+          this.choices['inside_colour'].select(convertFormulaName(pair[1]));
         }
         else if (pair[0] == "VariableIterations") {
           if (parseReal(pair[1]) > 0) {
-            this["post_transform"].select("fractured");
-            this["post_transform"].currentParams["vary"].parse(pair[1]);
-            this["post_transform"].currentParams["miniter"].value = this.iterations; 
+            this.choices["post_transform"].select("fractured");
+            this.choices["post_transform"].currentParams["vary"].parse(pair[1]);
+            this.choices["post_transform"].currentParams["miniter"].value = this.iterations; 
             this.iterations *= 2;
           }
         }
@@ -1616,93 +1603,93 @@
     if (saved["smooth"]) {
       //Really old
       if (parseInt(saved["smooth"]) == 1)
-        this["outside_colour"].select("smooth");
+        this.choices["outside_colour"].select("smooth");
       else
-        this["outside_colour"].select("default");
+        this.choices["outside_colour"].select("default");
     }
 
     // Load formulae
     //this.loadParams();
 
     //Bailout and power
-    if (saved["bailout"] && this["fractal"].selected.indexOf("nova") < 0)
-      this["fractal"].currentParams["escape"].parse(saved["bailout"]);
+    if (saved["bailout"] && this.choices["fractal"].selected.indexOf("nova") < 0)
+      this.choices["fractal"].currentParams["escape"].parse(saved["bailout"]);
     if (saved["power"] != undefined)
-      this["fractal"].currentParams["p"].parse(saved["power"]);
+      this.choices["fractal"].currentParams["p"].parse(saved["power"]);
     //Correct error where possible, may require further param adjust
-    if (this["fractal"].currentParams["p"].value <= 0) {
+    if (this.choices["fractal"].currentParams["p"].value <= 0) {
       alert("NOTE: power <= 0");
-      this["fractal"].currentParams["p"].value = 1;
+      this.choices["fractal"].currentParams["p"].value = 1;
     }
 
     //Formula specific param parsing
-    if (this["fractal"].selected == "magnet_1") {
+    if (this.choices["fractal"].selected == "magnet_1") {
       if (saved["power2"])
-        this['fractal'].currentParams["q"].parse(saved["power2"]);
+        this.choices['fractal'].currentParams["q"].parse(saved["power2"]);
     }
 
-    if (this["fractal"].selected == "magnet_3") {
-      this['fractal'].currentParams["A"].parse([saved["param1"].re, saved["param1"].im]);
-      this['fractal'].currentParams["B"].parse([saved["param3"].re, saved["param3"].im]);
-      this['fractal'].currentParams["C"].parse([saved["param2"].re, saved["param2"].im]);
-      this['fractal'].currentParams["D"].parse([saved["param3"].re, saved["param3"].im]);
+    if (this.choices["fractal"].selected == "magnet_3") {
+      this.choices['fractal'].currentParams["A"].parse([saved["param1"].re, saved["param1"].im]);
+      this.choices['fractal'].currentParams["B"].parse([saved["param3"].re, saved["param3"].im]);
+      this.choices['fractal'].currentParams["C"].parse([saved["param2"].re, saved["param2"].im]);
+      this.choices['fractal'].currentParams["D"].parse([saved["param3"].re, saved["param3"].im]);
     }
 
-    if (this["fractal"].selected == "nova") {
+    if (this.choices["fractal"].selected == "nova") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-      this['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
-      this['fractal'].currentParams["converge"].parse("0.00001");
+      this.choices['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
+      this.choices['fractal'].currentParams["converge"].parse("0.00001");
     }
 
-    if (this["fractal"].selected == "novabs") {
+    if (this.choices["fractal"].selected == "novabs") {
       var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-      this['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
-      this['fractal'].currentParams["converge"].parse("0.00001");
+      this.choices['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
+      this.choices['fractal'].currentParams["converge"].parse("0.00001");
     }
 
-    if (this["fractal"].selected == "gmm") {
-      this['fractal'].currentParams["A"].parse([saved["param1"].re, saved["param1"].im]);
-      this['fractal'].currentParams["B"].parse([saved["param2"].re, saved["param2"].im]);
-      this['fractal'].currentParams["C"].parse([saved["param3"].re, saved["param3"].im]);
-      this['fractal'].currentParams["D"].parse([saved["param4"].re, saved["param4"].im]);
+    if (this.choices["fractal"].selected == "gmm") {
+      this.choices['fractal'].currentParams["A"].parse([saved["param1"].re, saved["param1"].im]);
+      this.choices['fractal'].currentParams["B"].parse([saved["param2"].re, saved["param2"].im]);
+      this.choices['fractal'].currentParams["C"].parse([saved["param3"].re, saved["param3"].im]);
+      this.choices['fractal'].currentParams["D"].parse([saved["param4"].re, saved["param4"].im]);
     }
 
-    if (this["fractal"].selected == "quadra") {
-      this['fractal'].currentParams["a"].parse([saved["param1"].re, saved["param1"].im]);
-      this['fractal'].currentParams["b"].parse([saved["param2"].re, saved["param2"].im]);
+    if (this.choices["fractal"].selected == "quadra") {
+      this.choices['fractal'].currentParams["a"].parse([saved["param1"].re, saved["param1"].im]);
+      this.choices['fractal'].currentParams["b"].parse([saved["param2"].re, saved["param2"].im]);
     }
 
-    if (this["fractal"].selected == "phoenix") {
+    if (this.choices["fractal"].selected == "phoenix") {
       if (saved["power2"])
-        this['fractal'].currentParams["q"].parse([saved["power2"], 0.0]);
-      this['fractal'].currentParams["distort"].parse([saved["param1"].re, saved["param1"].im]);
+        this.choices['fractal'].currentParams["q"].parse([saved["power2"], 0.0]);
+      this.choices['fractal'].currentParams["distort"].parse([saved["param1"].re, saved["param1"].im]);
     }
 
     //Functions and ops
     if (!saved["inductop"]) saved["inductop"] = "0";
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
-      var fns = ["ident", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs", "ident"];
+      var fns = ["abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs"];
 
-      this['post_transform'].currentParams["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
-      this['post_transform'].currentParams["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
+      this.choices['post_transform'].currentParams["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
+      this.choices['post_transform'].currentParams["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
-        this['post_transform'].currentParams["induct"].parse([saved["induct"].re, saved["induct"].im]);
+        this.choices['post_transform'].currentParams["induct"].parse([saved["induct"].re, saved["induct"].im]);
       else if (saved["param1"])
-        this['post_transform'].currentParams["induct"].parse([saved["param1"].re, saved["param1"].im]);
+        this.choices['post_transform'].currentParams["induct"].parse([saved["param1"].re, saved["param1"].im]);
 
-      this['post_transform'].currentParams["induct_on"].value = saved["inductop"];
-      if (this['post_transform'].currentParams["induct_on"].value >= 10) {
+      this.choices['post_transform'].currentParams["induct_on"].value = saved["inductop"];
+      if (this.choices['post_transform'].currentParams["induct_on"].value >= 10) {
         //Double induct, same effect as induct*2
-        this['post_transform'].currentParams["induct_on"].value -= 10;
-        this['post_transform'].currentParams["induct"].value.re *= 2.0;
-        this['post_transform'].currentParams["induct"].value.im *= 2.0;
+        this.choices['post_transform'].currentParams["induct_on"].value -= 10;
+        this.choices['post_transform'].currentParams["induct"].value.re *= 2.0;
+        this.choices['post_transform'].currentParams["induct"].value.im *= 2.0;
       }
-      if (this['post_transform'].currentParams["induct_on"].value == 1)
-        this['post_transform'].currentParams["induct_on"].value = 2;
-      if (this['post_transform'].currentParams["induct_on"].value > 1)
-        this['post_transform'].currentParams["induct_on"].value = 1;
+      if (this.choices['post_transform'].currentParams["induct_on"].value == 1)
+        this.choices['post_transform'].currentParams["induct_on"].value = 2;
+      if (this.choices['post_transform'].currentParams["induct_on"].value > 1)
+        this.choices['post_transform'].currentParams["induct_on"].value = 1;
     }
 
     //Colour formula param conversion
@@ -1763,12 +1750,8 @@
   Fractal.prototype.loadParams = function() {
     //debug("loadParams<hr>");
     //Parse param fields from formula code
-    this["fractal"].select();
-    this["pre_transform"].select();
-    this["post_transform"].select();
-    this["inside_colour"].select();
-    this["outside_colour"].select();
-    this["filter"].select();
+    for (category in this.choices)
+      this.choices[category].select();
     //Copy params to form fields
     this.copyToForm();
   }
@@ -1849,12 +1832,8 @@
     document["inputs"].elements["rotate"].value = this.origin.rotate;
 
     //Copy form values to defined parameters
-    this["fractal"].currentParams.setFromForm();
-    this["pre_transform"].currentParams.setFromForm();
-    this["post_transform"].currentParams.setFromForm();
-    this["inside_colour"].currentParams.setFromForm();
-    this["outside_colour"].currentParams.setFromForm();
-    this["filter"].currentParams.setFromForm();
+    for (category in this.choices)
+      this.choices[category].currentParams.setFromForm();
 
     //Update shader code & redraw
     this.writeShader(notime);
@@ -1875,12 +1854,8 @@
     document["inputs"].elements["julia"].checked = this.julia;
     document["inputs"].elements["perturb"].checked = this.perturb;
     document["inputs"].elements["iterations"].value = this.iterations;
-    $('fractal_formula').value = this["fractal"].selected;
-    $('pre_transform_formula').value = this["pre_transform"].selected;
-    $('post_transform_formula').value = this["post_transform"].selected;
-    $('outside_colour_formula').value = this["outside_colour"].selected;
-    $('inside_colour_formula').value = this["inside_colour"].selected;
-    $('filter_formula').value = this["filter"].selected;
+    for (category in this.choices)
+      $(category + '_formula').value = this.choices[category].selected;
     //No width or height? Set autosize, otherwise disable
     if (this.width == 0 || this.height == 0)
       document["inputs"].elements["autosize"].checked = true;
@@ -1891,12 +1866,9 @@
   //Create shader from source components
   Fractal.prototype.generateShader = function(header) {
     //Get formula selections
-    var selections = {"fractal" : this["fractal"].getParsedFormula(),
-                      "pre_transform" : this["pre_transform"].getParsedFormula(),
-                      "post_transform" : this["post_transform"].getParsedFormula(),
-                      "outside_colour" : this["outside_colour"].getParsedFormula(),
-                      "inside_colour" : this["inside_colour"].getParsedFormula(),
-                      "filter" : this["filter"].getParsedFormula()};
+    var selections = {};
+    for (category in this.choices)
+      selections[category] = this.choices[category].getParsedFormula();
 
     //Add headers + core code template
     //var shader = sources[header] + sources["include/complex-header.frag"] + sources["include/fractal-shader.frag"];
@@ -2018,11 +1990,8 @@
     if (!notime) this.timeAction("Compile");
     sources["generated.shader"] = source;
     print("Rebuilding fractal shader using:");
-    print("formula: " + this["fractal"].selected);
-    if (this["pre_transform"].selected != "none") print("Pre-transform: " + this["pre_transform"].selected);
-    if (this["post_transform"].selected != "none") print("Post-transform: " + this["post_transform"].selected);
-    if (this["outside_colour"].selected != "none") print("Outside colour: " + this["outside_colour"].selected);
-    if (this["inside_colour"].selected != "none") print("Inside colour: " + this["inside_colour"].selected);
+    for (category in this.choices)
+      if (this.choices[category].selected != "none") print(category + ": " + this.choices[category].selected);
 
     //Compile the shader using WebGL or WebCL
     var errors = "";
@@ -2061,8 +2030,8 @@
               var section = this.offsets[last].section;
               //Adjust the line number
               lineno -= this.offsets[last].value + 1;
-              lineno += this[this.offsets[last].category].lineoffsets[section];
-              var key = formulaKey(this.offsets[last].category, this[this.offsets[last].category].selected);
+              lineno += this.choices[this.offsets[last].category].lineoffsets[section];
+              var key = formulaKey(this.offsets[last].category, this.choices[this.offsets[last].category].selected);
               if (key) {
                 alert("Error on line number: " + (isNaN(lineno) ? "??" : lineno) +  "\nSection: " + section + "\nof " + 
                       sectionnames[this.offsets[last].category] + " formula: " + 
@@ -2150,12 +2119,8 @@
     this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.webgl.viewport));
 
     //Parameter uniforms...
-    this["fractal"].currentParams.setUniforms(this.gl, this.program.program),
-    this["pre_transform"].currentParams.setUniforms(this.gl, this.program.program),
-    this["post_transform"].currentParams.setUniforms(this.gl, this.program.program),
-    this["outside_colour"].currentParams.setUniforms(this.gl, this.program.program),
-    this["inside_colour"].currentParams.setUniforms(this.gl, this.program.program);
-    this["filter"].currentParams.setUniforms(this.gl, this.program.program), 
+    for (category in this.choices)
+      this.choices[category].currentParams.setUniforms(this.gl, this.program.program, category);
 
     //Gradient texture
     this.gl.activeTexture(this.gl.TEXTURE0);

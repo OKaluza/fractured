@@ -96,7 +96,7 @@ The default mouse actions are:
 - *Left-click* centre fractal on coordinate clicked on
 - *Left-click and drag* Select an area of the fractal to zoom in on
 - *Right click* switch between Mandelbrot set and Julia set at selected coordinate (at mouse pointer)
-- *Right-click and drag* scroll fractal (if larger than display window)
+- *Right-click and drag* pan/scroll fractal window (if larger than display window)
 - *Shift + scroll* Rotate in 10 degree increments
 
 Julia set preview mode: to display a Julia set preview as you move the mouse around a Mandelbrot set hit the [ESC] or back-tick [`] key. Hit the key again to turn the preview off.
@@ -109,7 +109,6 @@ Palette
 -------
 The palette editor allows selection of a number of colours forming a gradient which is used to colour the fractal display.
 Each of the colours in the gradient is represented by a line and a slider tool, except for the start and end colours.
-When the mouse pointer is over the palette, sliders controls appear.
 
 - The sliders can be dragged, adjusting the position of the colour in the gradient.
 - Clicking on the line below the slider opens the Colour Selector box allowing you to edit the colour.

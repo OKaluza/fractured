@@ -15,12 +15,12 @@ var rztimeout = undefined;
 
   function appInit() {
     if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
+    current = new Status();
     //Force offline mode when loaded locally
     if (window.location.href.indexOf("file://") == 0) current.offline = true;
     if (!navigator.onLine) current.offline = true;
     showPanel('info');
     setAll('none', 'loggedin');  //hide logged in menu options
-    current = new Status();
     var urlq = decodeURI(window.location.href);
     var h = urlq.indexOf("#");
     if (h > 0) urlq = urlq.substring(0, h);
@@ -67,38 +67,32 @@ var rztimeout = undefined;
           restored = window.atob(list[i]);
         } else if (!current.offline && list[i].length > 3) {
           //Load fractal from hash ID
-          current.locator = list[i];
-          restored = readURL('ss/fractal_get.php?id=' + current.locator);
-          if (!restored || restored.indexOf("Error:") == 0) {
-            alert("Fractal load failed!");
-            restored = "";
-            current.locator = null;
-          }
+          restored = list[i];
         }
       }
     }
     debug("Base URL: " + current.baseurl);
     debug("Query options: " + query);
 
-    //Strip commands from url (except hash if provided)
-    var base = current.baseurl;
-    if (current.locator) base += "/" + current.locator
-    window.history.pushState("", "", base);
-
-    //Colour editing and palette management
-    colours = new GradientEditor($('palette'));
-
-    //Load the last program state
-    loadState();
+    //Strip commands from url
+    window.history.pushState("", "", current.baseurl);
 
     if (!current.offline) {
       //Session restore:
-      sessionGet(readURL('ss/session_get.php')); //Get updated list...
+      //First call to server must not be async or we'll get session creation race conditions
+      sessionGet(readURL('ss/session_get.php', false)); //Get updated list...
+      //ajaxReadFile('ss/session_get.php', sessionGet, false); //Get updated list...
       //Load formula lists from server
-      loadFormulaeList(readURL('ss/formula_get.php'));
+      ajaxReadFile('ss/formula_get.php', loadFormulaeList, false);
     }
 
     //Initialise app
+
+    //Colour editing and palette management
+    colours = new GradientEditor($('palette'), paletteChanged);
+
+    //Load the last program state
+    loadState();
 
     //Fractal & canvas
     fractal = new Fractal('main', mode, current.antialias);
@@ -124,14 +118,15 @@ var rztimeout = undefined;
 
     //Draw & update
     loadLastFractal();  //Restore last if any
-    if (restored.length > 0) {
-      hideGallery();
+    if (restored.length > 30) {
       restoreFractal(restored);   //Restore from URL
+    } else if (restored.length > 0) {
+      loadUrl(restored); //Load from hash
     } else if (flickr) {
       //Return to last drawn fractal
       hideGallery();
       fractal.applyChanges();
-    } else {
+    } else if (!current.offline) {
       showGallery(location.hash);
     }
 
@@ -139,21 +134,24 @@ var rztimeout = undefined;
     loadScript("/codemirror-compressed.js", "");
   }
 
+  function paletteChanged(colours) {
+    if (!fractal) return;
+    var canvas = $('gradient');
+    if (fractal.webgl) fractal.webgl.updateTexture(fractal.webgl.gradientTexture, canvas);
+    colours.get(canvas);
+    fractal.draw();
+  }
+
   //Load from a locator hash
   function loadUrl(locator) {
     current.locator = locator;
-    hideGallery();
     fractal.clear();
-    ajaxReadFile('ss/fractal_get.php?id=' + current.locator, loadedUrl, false, updateProgress);
+    ajaxReadFile('ss/fractal_get.php?id=' + current.locator, restoreFractal, false, updateProgress);
     //Set address
     window.history.pushState("", "", current.baseurl + "/" + current.locator);
   }
 
-  function loadedUrl(data) {
-    restoreFractal(data);   //Restore from URL
-  }
-
-  function loadScript(filename, onload){
+  function loadScript(filename, onload) {
     var head = document.getElementsByTagName('head')[0];
     var script = document.createElement('script');
     script.type = 'text/javascript';
@@ -241,8 +239,13 @@ var rztimeout = undefined;
     //$S('gallery').height = h + "px";
 
     type = current.gallery.substr(1);
-    $('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
+    //$('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
+    ajaxReadFile('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h, fillGallery, false);
     current.offset = offset;
+  }
+
+  function fillGallery(html) {
+    $('gallery-display').innerHTML = html;
   }
 
   function hideGallery() {
@@ -298,6 +301,7 @@ var rztimeout = undefined;
   }
 
   function restoreFractal(restored) {
+    hideGallery();
     var lines = restored.split("\n"); // split on newlines
     var name = lines[0];
     lines.splice(0,1);
@@ -440,7 +444,7 @@ var rztimeout = undefined;
           $("width").value = $("height").value = 32;
           document["inputs"].elements["autosize"].checked = false;
           fractal.applyChanges(4, true);
-          var result = $('fractal-canvas').toDataURL("image/jpeg")
+          var result = $('fractal-canvas').toDataURL("image/jpeg", 0.75)
           thumbnails[i] = result;
         }
       });
@@ -662,7 +666,9 @@ var rztimeout = undefined;
   function thumbnail(type, size) {
    //Thumbnail image gen
    //if (type == undefined) type = "png";
+   var args;
    if (type == undefined) type = "jpeg";
+   if (type == "jpeg") args = 75;
    if (size == undefined) size = 32; //40;
    var canvas = $("fractal-canvas"),
        oldh = fractal.height,
@@ -670,7 +676,7 @@ var rztimeout = undefined;
    fractal.width = fractal.height = size;
    fractal.draw(4);
 
-   var result = canvas.toDataURL("image/" + type)
+   var result = canvas.toDataURL("image/" + type, args)
 
    fractal.width = oldw;
    fractal.height = oldh;
@@ -690,18 +696,18 @@ var rztimeout = undefined;
   }
 
   function paletteThumbnail() {
-   //Thumbnail image gen
-   var canvas = $('gradient');
-   colours.get(canvas);
-   var thumb = $('thumb');
-   thumb.width = 150;
-   thumb.height = 1;
-   thumb.style.visibility = 'visible';
-   var context = thumb.getContext('2d');  
-   context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
-   var result = thumb.toDataURL("image/png")
-   thumb.style.visibility='hidden';
-   return result;
+    //Thumbnail image gen
+    var canvas = $('gradient');
+    colours.get(canvas);
+    var thumb = $('thumb');
+    thumb.width = 150;
+    thumb.height = 1;
+    thumb.style.visibility = 'visible';
+    var context = thumb.getContext('2d');  
+    context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
+    var result = thumb.toDataURL("image/png")
+    thumb.style.visibility='hidden';
+    return result;
   }
 
   function resetState(noconfirm) {
@@ -851,13 +857,13 @@ var rztimeout = undefined;
     exportFile($('name').value + ".palette", "text/palette", source);
   }
 
-  function exportImage(type) {
+  function exportImage(type, args) {
     //Export using blob, no way to set filename yet
     window.URL = window.URL || window.webkitURL;
     if (window.URL)
-      window.open(window.URL.createObjectURL(imageToBlob(type)));
+      window.open(window.URL.createObjectURL(imageToBlob(type, args)));
     else
-      window.open($("fractal-canvas").toDataURL(type));
+      window.open($("fractal-canvas").toDataURL(type, args));
   }
 
   function exportFile(filename, content, data) {
@@ -882,9 +888,9 @@ var rztimeout = undefined;
     }
   }
 
-  function imageBase64(type) {
+  function imageBase64(type, args) {
     var canvas = $("fractal-canvas");
-    var data = canvas.toDataURL(type);
+    var data = canvas.toDataURL(type, args);
     var BASE64_MARKER = ';base64,';
     var base64Index = data.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
     return data.substring(base64Index);
@@ -900,9 +906,9 @@ var rztimeout = undefined;
     return array;
   }
 
-  function imageToBlob(type) {
+  function imageToBlob(type, args) {
     //Export using blob, no way to set filename yet
-    var data = convertToBinary(imageBase64(type));
+    var data = convertToBinary(imageBase64(type, args));
     var blob;
     try {
       //Preferred method
@@ -920,7 +926,7 @@ var rztimeout = undefined;
   function uploadImgur() {
     fractal.applyChanges();
     var canvas = $("fractal-canvas");
-    var data = imageToBlob("image/jpeg");
+    var data = imageToBlob("image/jpeg", 0.95);
    
     var fd = new FormData();
     fd.append("image", data);
@@ -962,7 +968,7 @@ var rztimeout = undefined;
 
     fractal.applyChanges();
     var canvas = $("fractal-canvas");
-    var data = imageToBlob("image/jpeg");
+    var data = imageToBlob("image/jpeg", 0.95);
    
     var fd = new FormData();
     fd.append("photo", data);
@@ -1206,14 +1212,14 @@ var rztimeout = undefined;
 
     //Update edit fields
     if (panel == "panel_formula") {
-      fractal["fractal"].reselect();
-      fractal["pre_transform"].reselect();
-      fractal["post_transform"].reselect();
+      fractal.choices["fractal"].reselect();
+      fractal.choices["pre_transform"].reselect();
+      fractal.choices["post_transform"].reselect();
     }
     if (panel == "panel_colour") {
-      fractal["outside_colour"].reselect();
-      fractal["inside_colour"].reselect();
-      fractal["filter"].reselect();
+      fractal.choices["outside_colour"].reselect();
+      fractal.choices["inside_colour"].reselect();
+      fractal.choices["filter"].reselect();
     }
     return false;
   }
@@ -1632,7 +1638,7 @@ var editorFilename;
 
   function outputFrame() {
     var canvas = $("fractal-canvas");
-    var data = imageToBlob("image/jpeg");
+    var data = imageToBlob("image/jpeg", 0.95);
     var fd = new FormData();
     fd.append("image", data);
     ajaxPost("http://localhost:8080/frame?name=" + labelToName($('name').value), fd, frameDone);

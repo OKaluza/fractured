@@ -92,7 +92,7 @@ var formula;
     if (filename == "generated.shader")
       window.opener.fractal.updateShader(code.value);
     else {
-      if (type) window.opener.fractal[type].select();
+      if (type) window.opener.fractal.choices[type].select();
       window.opener.fractal.writeShader();
     }
     window.opener.fractal.draw();
