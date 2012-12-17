@@ -972,14 +972,24 @@ var rztimeout = undefined;
     var fd = new FormData();
     fd.append("image", data);
     fd.append("title", $('name').value);
-    fd.append("caption", "Created using Fractured Studio http://fractured.ozone.id.au");
+    fd.append("description", "Created using Fractured Studio http://fractured.ozone.id.au");
     fd.append("name", $('name').value + ".jpg");
     fd.append("key", "70f934afb26ec9a9b9dc50ac1df2b40f");
    
     var onload = function(response) {
-      //alert(response);
-      var data = JSON.parse(response);
-      var url = data.upload.links.imgur_page;
+      var data;
+      try {
+        data = JSON.parse(response);
+      } catch(e) {
+        alert('Parse response error: ' + e + ' : ' + response);
+        return;
+      }
+      if (!data.success) {
+        alert('Error: ' + response);
+        return;
+      }
+      //{"data":{"id":"kS57B","deletehash":"hICeieQff1uoBt4","link":"http:\/\/i.imgur.com\/kS57B.jpg"},"success":true,"status":200}
+      var url = data.data.link;
       var link = document.createElement("a");
       link.setAttribute("href", url);
       var linkText = document.createTextNode(url);
@@ -990,14 +1000,14 @@ var rztimeout = undefined;
       $('progressmessage').appendChild(link);
       //...save in our db
       var formdata = new FormData();
-      formdata.append("url", 'http://imgur.com/' + data.upload.image.hash + '.jpg');
+      formdata.append("url", 'http://i.imgur.com/' + data.data.id + '.jpg');
       formdata.append("description", $('name').value);
-      formdata.append("thumbnail", 'http://imgur.com/' + data.upload.image.hash + 's.jpg');
+      formdata.append("thumbnail", 'http://i.imgur.com/' + data.data.id + 's.jpg');
       formdata.append("info", response);
       ajaxPost("ss/image_save.php", formdata);
     }
     progress("Uploading image to Imgur...");
-    ajaxPost("http://api.imgur.com/2/upload.json", fd, onload, updateProgress);
+    ajaxPost("https://api.imgur.com/3/image", fd, onload, updateProgress, {"Authorization" : "Client-ID b29e1ddddcb30a7"});
   }
 
   function uploadFlickr() {

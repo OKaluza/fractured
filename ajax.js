@@ -79,7 +79,7 @@ function setProgress(percentage)
 } 
 
 //Posts request to server, responds when done with response data to callback function
-function ajaxPost(url, params, callback, progress)
+function ajaxPost(url, params, callback, progress, headers)
 { 
   var http = new XMLHttpRequest();
   if (progress != undefined) http.upload.onprogress = progress;
@@ -106,6 +106,13 @@ function ajaxPost(url, params, callback, progress)
   if (typeof(params) == 'string') {
     http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     http.setRequestHeader("Content-length", params.length);
+  }
+
+  //Custom headers
+  if (headers) {
+    for (key in headers)
+      //alert(key + " : " + headers[key]);
+      http.setRequestHeader(key, headers[key]);
   }
 
   http.send(params); 
