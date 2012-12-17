@@ -6,10 +6,11 @@ precision highp float;
 #define OPENCL_MAIN 
 
 #define set_result(c) gl_FragColor = c;
-#define _call_
 #define real float
 #define complex vec2
 #define rgba vec4
+
+#define atan2(a,b) atan(a,b)
 
 //Uniform data
 uniform complex offset;
@@ -37,15 +38,15 @@ vec4 gradient(float mu)
 varying complex coord;
 
 //GLSL only maths library prototypes
-real _call_ log10(in real r);
-real _call_ trunc(in real x);
-real _call_ round(in real x);
-real _call_ cosh(in real x);
-real _call_ tanh(in real x);
-real _call_ sinh(in real x);
-real _call_ acosh(in real x);
-real _call_ atanh(in real x);
-real _call_ asinh(in real x);
-complex _call_ round(in complex z);
-complex _call_ trunc(in complex z);
+real log10(in real r);
+real trunc(in real x);
+real round(in real x);
+real cosh(in real x);
+real tanh(in real x);
+real sinh(in real x);
+real acosh(in real x);
+real atanh(in real x);
+real asinh(in real x);
+complex round(in complex z);
+complex trunc(in complex z);
 

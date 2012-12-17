@@ -102,6 +102,7 @@ var rztimeout = undefined;
     window.onresize = autoResize;
     window.onhashchange = hashChanged;
     window.onmozfullscreenchange = toggleFullscreen
+    window.onfullscreenchange = toggleFullscreen
     $('main').onwebkitfullscreenchange = toggleFullscreen;
     if (window.opera) window.onunload = beforeUnload;
     window.onbeforeunload = beforeUnload;
@@ -163,9 +164,9 @@ var rztimeout = undefined;
   function switchMode(mode) {
     if (mode == WEBGL && fractal.webgl) return;
     print("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
+      sources["generated.shader"] = "";     //Force rebuild
     if (mode > WEBGL && fractal.webcl) {
       fractal.webcl.setPrecision(mode > 1); //Switch precision
-      sources["generated.shader"] = "";     //Force rebuild
       fractal.applyChanges();
       return;
     }
@@ -288,9 +289,8 @@ var rztimeout = undefined;
         var list = JSON.parse(data);
         for (var i=0; i<list.length; i++) {
           var label = list[i].date + "\n" + list[i].description;
-          var onclick = "loadSession(" + list[i].id + ")";
-          var ondelete = "deleteSelectedState();";
-          addMenuItem(menu, label, onclick, ondelete, current.session == list[i].id, true);
+          var item = addMenuItem(menu, label, "loadSession(" + list[i].id + ")", null, true);
+          if (current.session == list[i].id) selectMenuItem(item, "deleteSelectedState();");
         }
         checkMenuHasItems(menu);
 
@@ -352,8 +352,9 @@ var rztimeout = undefined;
       try {
         localStorage.removeItem("fractured.names." + idx);
         localStorage.removeItem("fractured.fractal." + idx);
-        current.selectFractal(-1);
-        populateFractals();
+        fractalMenuDelete(idx);
+        fractalMenuSelect(-1);
+        //populateFractals();
       } catch(e) {
         alert('Storage delete error! ' + e);
       }
@@ -361,19 +362,18 @@ var rztimeout = undefined;
   }
 
   //Menu management functions...
-  function addMenuItem(menu, label, onclick, ondelete, selected, atstart) {
+  function addMenuItem(menu, label, onclick, icon, atstart) {
     var entry = document.createElement("li");
     var span = document.createElement("span");
     //span.onclick = onclick;
     span.setAttribute("onclick", onclick);
     span.appendChild(span.ownerDocument.createTextNode(label));
+    if (icon) span.appendChild(icon);
     entry.appendChild(span);
     if (atstart)
       menu.insertBefore(entry, menu.firstChild);
     else
       menu.appendChild(entry);
-    if (ondelete && selected != false) addMenuDelete(span, ondelete);
-    if (selected) entry.className = "selected_item";
     //Return span so any additional controls can be added
     return span;
   }
@@ -386,6 +386,24 @@ var rztimeout = undefined;
     //btn.className = "right loggedin";
     btn.setAttribute("onclick", onclick + " event.stopPropagation();");
     span.appendChild(btn);
+  }
+
+  function selectMenuItem(span, ondelete) {
+    if (ondelete) addMenuDelete(span, ondelete);
+    span.parentNode.className = "selected_item";
+  }
+
+  function deselectMenuItem(span, ondelete) {
+    if (!span) return;
+    //Remove delete button if any
+    if (ondelete) {
+      var children = span.childNodes;
+      for (var i=0; i<children.length; i++) {
+        if (children[i].type == "button")
+          span.removeChild(children[i]);
+      }
+    }
+    span.parentNode.className = "";
   }
 
   function checkMenuHasItems(menu) {
@@ -457,33 +475,49 @@ var rztimeout = undefined;
     var idx_str = localStorage["fractured.fractals"];
     if (idx_str) {
       var idx = parseInt(idx_str);
-      for (var i=1; i<=idx; i++) {
-        var namestr = localStorage["fractured.names." + i];
-        if (!namestr) continue; //namestr = "unnamed";
-        var source = localStorage["fractured.fractal." + i];
-        var onclick = "selectedFractal(" + i + ")";
-        var ondelete = "deleteFractal(" + i + ");";
-        var span = addMenuItem(menu, namestr, onclick, ondelete, current.fractal == i, true);
-        if (thumbnails[i]) {
-          var img = new Image;
-          img.src = thumbnails[i];
-          img.className = "thumb";
-          span.appendChild(img);
-        }
-      }
+      for (var i=1; i<=idx; i++)
+        fractalMenuAdd(i);
     }
     checkMenuHasItems(menu);
   }
 
+  function fractalMenuAdd(i) {
+    var menu = $('fractals');
+    var namestr = localStorage["fractured.names." + i];
+    if (!namestr) return; //namestr = "unnamed";
+    var source = localStorage["fractured.fractal." + i];
+    var img = null;
+    if (thumbnails[i]) {
+      img = new Image;
+      img.src = thumbnails[i];
+      img.className = "thumb";
+    }
+    var item = addMenuItem(menu, namestr, "selectedFractal(" + i + ")", img, true)
+    if (current.fractal == i) selectMenuItem(item, "deleteFractal(" + i + ");");
+    item.id = "fractalmenu_" + i;  //Set entry id
+  }
+
+  function fractalMenuSelect(idx) {
+    deselectMenuItem($("fractalmenu_" + current.fractal), true);
+    current.fractal = idx;
+    current.save();
+    if (idx >= 0)
+      selectMenuItem($("fractalmenu_" + idx), "deleteFractal(" + idx + ");");
+  }
+
+  function fractalMenuDelete(idx) {
+    $('fractals').removeChild($("fractalmenu_" + idx).parentNode);
+  }
+
   function selectedFractal(idx) {
     hideGallery();
-    current.selectFractal(idx);
+    fractalMenuSelect(idx);
     fractal.load(localStorage["fractured.fractal." + idx]);
     $('name').value = localStorage["fractured.names." + idx];
     //Generate thumbnails on select!
-    if (!thumbnails[idx])
+    if (!thumbnails[idx]) {
       thumbnails[idx] = thumbnail();
-    populateFractals();
+    }
   }
 
   function newFractal() {
@@ -492,8 +526,7 @@ var rztimeout = undefined;
     fractal.formulaDefaults();
     fractal.copyToForm();
     //De-select
-    current.selectFractal(-1);
-    populateFractals();
+    fractalMenuSelect(-1);
     fractal.applyChanges();
   }
 
@@ -508,10 +541,9 @@ var rztimeout = undefined;
         if (confirm('Overwrite "' + name + '"?')) {
           var idx = current.fractal;
           try {
-            localStorage["fractured.names." + idx] = $('name').value;
-            localStorage["fractured.fractal." + idx] = source;
-            thumbnails[idx] = thumbnail();
-            populateFractals();
+            writeFractalEntry(idx, source);
+            fractalMenuDelete(idx);
+            fractalMenuAdd(idx);
           } catch(e) {
             alert('Storage error! ' + e);
           }
@@ -542,18 +574,29 @@ var rztimeout = undefined;
     namestr = checkstr;
     idx++;  //Increment index
     try {
-      localStorage["fractured.names." + idx] = namestr;
-      localStorage["fractured.fractal." + idx] = source;
-      thumbnails[idx] = thumbnail();
-      localStorage["fractured.fractals"] = idx;
-      current.selectFractal(idx);
+      writeFractalEntry(idx, source, namestr);
+      fractalMenuAdd(idx);
+      fractalMenuSelect(idx);
       $('name').value = namestr;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
       alert('Storage error! ' + e);
       //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
-    populateFractals();
+    //populateFractals();
+  }
+
+  function writeFractalEntry(idx, source, name) {
+    if (!name)
+      name = $('name').value;
+    else 
+      $('name').value = name;
+
+    localStorage["fractured.names." + idx] = name;
+    localStorage["fractured.fractal." + idx] = source;
+    thumbnails[idx] = thumbnail();
+    localStorage["fractured.fractals"] = idx;
+    if (window.opera) saveState();  //Not saved on beforeunload
   }
 
   /**
@@ -594,9 +637,6 @@ var rztimeout = undefined;
       palettes = JSON.parse(localStorage["fractured.palettes"]);
 
     for (var i=0; i<palettes.length; i++) {
-      var onclick = "loadPalette(" + i + ");";
-      var ondelete = "deletePalette(" + i + ");";
-      var span = addMenuItem(menu, "", onclick, ondelete, true, false);
       if (!palettes[i].thumb) {
         colours.read(palettes[i].data);
         colours.update();
@@ -605,7 +645,9 @@ var rztimeout = undefined;
 
       var palimg = new Image;
       palimg.src = palettes[i].thumb;
-      span.appendChild(palimg);
+
+      var item = addMenuItem(menu, "", "loadPalette(" + i + ");", palimg, false);
+      addMenuDelete(item, "deletePalette(" + i + ");");
     }
 
     if (!localStorage["fractured.palettes"])
@@ -644,9 +686,8 @@ var rztimeout = undefined;
     removeChildren(menu);
     for (var key in localStorage) {
       if (key.indexOf("scripts/") != 0) continue;
-      var onclick = "editScript('" + key + "');";
-      var ondelete = "delete localStorage['" + key + "']; populateScripts();";
-      var span = addMenuItem(menu, key.substr(8), onclick, ondelete, null, false);
+      var item = addMenuItem(menu, key.substr(8), "editScript('" + key + "');");
+      addMenuDelete(item, "delete localStorage['" + key + "']; populateScripts();");
     }
     checkMenuHasItems(menu);
   }
@@ -1010,7 +1051,6 @@ var rztimeout = undefined;
       //Clear & repopulate list
       var menu1 = $('formulae-public');
       var menu2 = $('formulae-private');
-      var ondelete = "deleteSelectedFormulae();";
       if (current.loggedin == false)
         ondelete = null;
       removeChildren(menu1);
@@ -1019,10 +1059,14 @@ var rztimeout = undefined;
       for (var i=0; i<list.length; i++) {
         var label = list[i].date + "\n" + list[i].name;
         var onclick = "loadFormulaSet(" + list[i].id + ")";
+        var item;
         if (list[i]["public"] == "1")
-          addMenuItem(menu1, label, onclick, ondelete, current.formulae == list[i].id);
+          item = addMenuItem(menu1, label, onclick);
         else
-          addMenuItem(menu2, label, onclick, ondelete, current.formulae == list[i].id);
+          item = addMenuItem(menu2, label, onclick);
+
+        if (current.formulae == list[i].id)
+          selectMenuItem(item, "deleteSelectedFormulae();");
       }
       checkMenuHasItems(menu1);
       checkMenuHasItems(menu2);
@@ -1127,7 +1171,7 @@ var rztimeout = undefined;
   function loadState() {
     //Load includes...
     //(Allow cache, when changed update the version number)
-    sources = JSON.parse(readURL('/includes_0.6.json', false));
+    sources = JSON.parse(readURL('/includes_0.7.json', false));
 
     if (current.debug) {
       //Entries for all source files in debug edit menu
@@ -1135,7 +1179,7 @@ var rztimeout = undefined;
       removeChildren(menu);
       for (key in sources) {
         var onclick = "openEditor('" + key + "')";
-        addMenuItem(menu, key, onclick, null, false, false);
+        addMenuItem(menu, key, onclick);
       }
     }
     
@@ -1510,12 +1554,12 @@ var editorFilename;
       if (/\[Fractal\]/ig.exec(source)) {
         //Fractal file
         debug("Import: FRACTAL");
+        hideGallery();
         if (filename.indexOf(".ini") > -1) {
           fractal.iniLoader(source);
           filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
           fractal.applyChanges();
         } else {
-            hideGallery();
           fractal.load(source);
         }
         //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
@@ -1575,11 +1619,6 @@ var editorFilename;
     this.session = 0;
     this.formulae = 0;
     this.fractal = -1;
-    this.save();
-  }
-
-  Status.prototype.selectFractal = function(idx) {
-    this.fractal = idx;
     this.save();
   }
 
@@ -1680,12 +1719,12 @@ var editorFilename;
     this.count = 1;
     this.step = 1;
     this.step = Function(source);
-    this.fractal = new ParamVals(fractal.fractal.currentParams);
-    this.preTransform = new ParamVals(fractal.pre_transform.currentParams); 
-    this.postTransform = new ParamVals(fractal.post_transform.currentParams);
-    this.insideColour = new ParamVals(fractal.inside_colour.currentParams); 
-    this.outsideColour = new ParamVals(fractal.outside_colour.currentParams);
-    this.filter = new ParamVals(fractal.filter.currentParams);
+    this.fractal = new ParamVals(fractal.choices.fractal.currentParams);
+    this.preTransform = new ParamVals(fractal.choices.pre_transform.currentParams); 
+    this.postTransform = new ParamVals(fractal.choices.post_transform.currentParams);
+    this.insideColour = new ParamVals(fractal.choices.inside_colour.currentParams); 
+    this.outsideColour = new ParamVals(fractal.choices.outside_colour.currentParams);
+    this.filter = new ParamVals(fractal.choices.filter.currentParams);
   }
 
   Script.prototype.update = function() {

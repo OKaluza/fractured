@@ -41,7 +41,7 @@ input[type="number"] {border: 1px solid #998; border-radius: 3px; text-align: le
 input[type="range"] {border: 1px solid #998; border-radius: 3px; width: 150px;}
 input[type="button"] {height: 23px; font-size: 8pt; padding: 3px; min-width: 30px; border: 1px solid #998; border-radius: 3px; background: #eed;}
 input[type="checkbox"] {margin: 4px;}
-select {width: 150px; max-width: 190px; border: 1px solid #998; border-radius: 3px; background: #fff;}
+select {width: 150px; max-width: 186px; border: 1px solid #998; border-radius: 3px; background: #fff;}
 select.formula {width: 190px;}
 textarea {border: 1px solid #998; border-radius: 3px; min-height: 20px;}
 
@@ -246,7 +246,7 @@ nav#menu {float: left;}
     display:block;
     float:left;
     font-size:13px;
-    padding:2px 3px;
+    padding:2px 3px 0px;
     text-decoration:none;
   cursor: pointer; 
 }
@@ -266,7 +266,7 @@ nav#menu {float: left;}
     overflow:hidden;
   border: 1px solid #444;
   color:#bbb;
-    max-height: 19px;
+    height: 20px;
 }
 #nav li span.fly {
     background:#2f2c2a url(media/arrow.gif) no-repeat right center;
