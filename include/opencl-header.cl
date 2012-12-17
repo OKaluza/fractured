@@ -13,7 +13,6 @@
 #endif
 
 #define OPENCL
-#define _call_ __OVERLOADABLE__ 
 #define rgba float4
 #define in const
 #define discard return (rgba)(0)
@@ -21,7 +20,6 @@
 //Functions with alternate names
 #define mod(a,b) fmod((real)a,(real)b)
 #define abs(a) fabs(a)
-#define atan(a,b) atan2(a,b)
 
 //Palette lookup mu = [0,1]
 __constant sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;

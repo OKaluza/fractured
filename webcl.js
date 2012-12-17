@@ -10,6 +10,7 @@
     try {
       if (window.WebCL == undefined) return false;
 
+      //Get & select platforms, devices
       this.platforms = WebCL.getPlatformIDs();
       if (this.pid >= this.platforms.length) this.pid = this.platforms.length-1;
       this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
@@ -17,6 +18,7 @@
                                               WebCL.CL_DEVICE_TYPE_DEFAULT);
       this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
       if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
+
       debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + 
                   " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME));
 
@@ -114,11 +116,11 @@
 
       //Pass additional args
       var background = colours.palette.background;
-      this.inBuffer[0] = fractal.origin.zoom;
-      this.inBuffer[1] = fractal.origin.rotate;
-      this.inBuffer[2] = fractal.origin.pixelSize(this.canvas);
-      this.inBuffer[3] = fractal.origin.re;
-      this.inBuffer[4] = fractal.origin.im;
+      this.inBuffer[0] = fractal.position.zoom;
+      this.inBuffer[1] = fractal.position.rotate;
+      this.inBuffer[2] = fractal.position.pixelSize(this.canvas);
+      this.inBuffer[3] = fractal.position.re;
+      this.inBuffer[4] = fractal.position.im;
       this.inBuffer[5] = fractal.selected.re;
       this.inBuffer[6] = fractal.selected.im;
 

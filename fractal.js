@@ -6,13 +6,14 @@
   //Regular expressions
   var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])(@@?)(:?\w*)\s*=\s*(bool|int|real|complex|rgba|range|list|real_function|complex_function|bailout_function|expression|define)\(([\S\s]*?)\);/gi;
   var boolreg = /(true|false)/i;
+  var rfreg = /(neg|inv|sqr|cube)/g;
   var listreg = /["'](([^'"|]*\|?)*)["']/i;
   var complexreg = /\(?([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\s*,\s*([-+]?(\d*\.)?\d+([eE][+-]?\d+)?)\)?/;
 
   //Take real, return real
-  var realfunctions = ["", "abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "log", "log10", "lnr", "neg", "inv", "sin", "sinh", "sqr", "sqrt", "tan", "tanh", "zero"];
+  var realfunctions = ["", "abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cos", "cosh", "exp", "log", "log10", "lnr", "neg", "inv", "sin", "sinh", "sqr", "cube", "sqrt", "tan", "tanh", "zero"];
   //Take complex, return complex (including real functions that work component-wise)
-  var complexfunctions = ["", "abs", "acos", "cacos", "cacosh", "asin", "casin", "casinh", "atan", "catan", "catanh", "ceil", "conj", "cos", "ccos", "ccosh", "exp", "cexp", "flip", "floor", "log", "ln", "neg", "inv", "round", "sin", "csin", "csinh", "sqr", "sqrt", "tan", "ctan", "ctanh", "trunc", "czero"];
+  var complexfunctions = ["", "abs", "acos", "cacos", "cacosh", "asin", "casin", "casinh", "atan", "catan", "catanh", "ceil", "conj", "cos", "ccos", "ccosh", "exp", "cexp", "flip", "floor", "log", "log10", "neg", "inv", "round", "sin", "csin", "csinh", "sqr", "cube", "sqrt", "tan", "ctan", "ctanh", "trunc", "czero", "cln", "clog10", "csqrt"];
   //Take complex, return real
   var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
   //atan2=arg, cmag=|z|=norm, recip=inv, log=ln, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
@@ -156,6 +157,7 @@
 
     //Parse an expression into correct complex maths functions using the Jison parser
     var parsed;
+    //parser.yy = fractal;
     //Run the parser and report errors
     try {
       parsed = parser.parse(expr + ""); //Ensure passed a string
@@ -302,44 +304,54 @@
     //debug(this.label + " parsed as " + this.type + " value = " + this.value);
   }
 
-  Param.prototype.toGLSL = function() {
-    //Convert value to a valid GLSL constant in a string
-    function realStr(val) {
-      strval = "" + val;
-      //Add .0 if integer, unless in scientific notation
-      if (strval.split('.')[1] == undefined && strval.indexOf('e') < 0)
-        return strval + ".0";
-      else
-        return strval;
-    }
-
-    if (this.typeid == 1 || this.typeid == 8) //real/range
-      return realStr(this.value);
-    else if (this.typeid == 2) //complex
-      return "complex(" + realStr(this.value.re) + "," + realStr(this.value.im) + ")";
-    else if (this.typeid == 5) //'rgba'
-      return this.value.rgbaGLSL();
-    else if (this.typeid == 6) //expression
-      //Use expression parser
-      return parseExpression(this.value);
-    else
-      return "" + this.value;
-  }
-
   Param.prototype.declare = function(key) {
     //Return GLSL const/uniform declaration for this parameter
     var comment = this.label ? "//" + this.label + "\n" : "";
+    var declaration = "";
     key = '@' + key;
     type = this.type;
-    if (type == 'list') type = 'int';
-    if (type == 'int' && Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
-    if (type == 'define') return comment + "#define " + key + " " + this.value + "\n";
-    if (type == 'expression') return comment + "#define " + key + " " + this.toGLSL() + "\n";
-    if (type.indexOf('function') > 0) return comment + "#define " + key + "(args) " + this.value + "(args)\n";
-    if (type == 'range') type = 'real'; 
-    if (this.uniform)
-      return comment + "uniform " + type + " " + key + ";\n";
-    return comment + "const " + type + " " + key + " = " + this.toGLSL() + ";\n";
+
+    switch (this.typeid)
+    {
+      case 3: //Integer list
+        type = "int";
+      case 0: //Integer
+        if (Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
+      case -1: //Boolean
+        declaration =  "const " + type + " " + key + " = " + this.value + ";\n";
+        break;
+      case 8: //range
+        type = "real";
+      case 1: //real
+        strval = "" + this.value;
+        //Add .0 if integer, unless in scientific notation
+        if (strval.split('.')[1] == undefined && strval.indexOf('e') < 0)
+          strval += ".0";
+        declaration = "const " + type + " " + key + " = " + strval + ";\n";
+        break;
+      case 2: //complex
+        //return "complex(" + realStr(this.value.re) + "," + realStr(this.value.im) + ")";
+        declaration = "const " + type + " " + key + " = complex(" + this.value.re + "," + this.value.im + ");\n";
+        break;
+      case 4: //Function name
+        if (type == 'real_function' && rfreg.test(this.value))
+          declaration = "#define " + key + "(args) _" + this.value + "(args)\n";
+        else
+          declaration = "#define " + key + "(args) " + this.value + "(args)\n";
+        break;
+      case 5: //RGBA colour
+        declaration = "const " + type + " " + key + " = " + this.value.rgbaGLSL() + ";\n";
+        break;
+      case 6: //Expression
+        declaration = "#define " + key + " " + parseExpression(this.value) + "\n";
+        break;
+      case 7: //Define list
+        declaration = "#define " + key + " " + this.value + "\n";
+        break;
+    }
+
+    if (this.uniform) declaration = "uniform " + type + " " + key + ";\n";
+    return comment + declaration;
   }
 
   Param.prototype.setFromElement = function() {
@@ -1000,13 +1012,7 @@
       }
     } else {
       //Init WebCL
-      this.webcl = new WebCL_();
-      if (mode > WEBCL && !this.webcl.fp64) {
-        popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
-        renderer = WEBCL;
-      }
-      if (!this.webcl.fp64) $("fp64").disabled = true;
-      this.webcl.init(this.canvas, renderer > WEBCL);
+      this.webclInit();
     }
 
     this.antialias = antialias;
@@ -1018,14 +1024,52 @@
     this.copyToForm();
   }
 
+  Fractal.prototype.webclInit = function(pfid, devid) {
+    this.webcl = new WebCL_(pfid, devid);
+    if (renderer > WEBCL && !this.webcl.fp64) {
+      popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
+      renderer = WEBCL;
+    }
+    if (!this.webcl.fp64) $("fp64").disabled = true;
+    debug(this.webcl.pid + " : " + this.webcl.devid + " --> " + this.canvas.width + "," + this.canvas.height);
+    this.webcl.init(this.canvas, renderer > WEBCL);
+
+    setAll('block', 'webcl');  //show menu options
+    //Clear & repopulate list
+    var menu = $('platforms');
+    removeChildren(menu);
+    for (var p=0; p<this.webcl.platforms.length; p++) {
+      var plat = this.webcl.platforms[p];
+      var pfname = plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
+      var devices = plat.getDevices(WebCL.CL_DEVICE_TYPE_ALL);
+      for (var d=0; d < devices.length; d++, i++) {
+        var name = pfname + " : " + devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME);
+        var onclick = "fractal.webclInit(" + p + "," + d + ");";
+        addMenuItem(menu, name, onclick, null, p == this.webcl.pid && d == this.webcl.devid, false);
+      }
+    }
+
+    //'type' : devices[d].getDeviceInfo(WebCL.CL_DEVICE_TYPE),
+    //'name' : devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME),
+    //'vendor' : plat.getPlatformInfo(WebCL.CL_PLATFORM_VENDOR),
+
+    checkMenuHasItems(menu);
+    //Redraw if updating
+    if (sources["generated.shader"]) {
+      //Invalidate shader cache
+      sources["generated.shader"] = '';
+      this.applyChanges();
+    }
+  }
+
 //Actions
   Fractal.prototype.restoreLink = function() {
-    return '<a href="javascript:fractal.restore('+ this.origin.print() + ', new Complex'+ this.selected + ', ' + fractal.julia + ');">@</a> '; 
+    return '<a href="javascript:fractal.restore('+ this.position.print() + ', new Complex'+ this.selected + ', ' + fractal.julia + ');">@</a> '; 
   }
 
   Fractal.prototype.restore = function(im, re, rotate, zoom, selected, julia) {
     //Restore position settings to a previous state
-    this.origin = new Aspect(im, re, rotate, zoom);
+    this.position = new Aspect(im, re, rotate, zoom);
     this.selected = selected;
     this.julia = julia;
     this.copyToForm();
@@ -1034,32 +1078,30 @@
 
   Fractal.prototype.setOrigin = function(point) {
     //Adjust centre position
-    this.origin.re += point.re;
-    this.origin.im += point.im;
-    print(this.restoreLink() + "Origin: re: " + this.origin.re.toFixed(8) + " im: " + this.origin.im.toFixed(8));
+    this.position.re += point.re;
+    this.position.im += point.im;
+    print(this.restoreLink() + "Origin: re: " + this.position.re.toFixed(8) + " im: " + this.position.im.toFixed(8));
   }
 
   Fractal.prototype.applyZoom = function(factor) {
     //Adjust zoom
-    this.origin.zoom *= factor;
-    print(this.restoreLink() + "Zoom: " + this.origin.zoom.toFixed(8));
+    this.position.zoom *= factor;
+    print(this.restoreLink() + "Zoom: " + this.position.zoom.toFixed(8));
   }
 
   Fractal.prototype.selectPoint = function(point, log) {
     //Julia set switch
     if (point && !this.julia) {
       this.julia = true;
-      this.selected.re = this.origin.re + point.re;
-      this.selected.im = this.origin.im + point.im;
-      $("xSelect").value = this.origin.re + point.re;
-      $("ySelect").value = this.origin.im + point.im;
+      $("xSelect").value = this.selected.re = this.position.re + point.re;
+      $("ySelect").value = this.selected.im = this.position.im + point.im;
     } else {
       this.julia = false;
     }
 
     //Switch saved views
-    var tempPos = this.origin.clone();
-    this.origin = this.savePos.clone();
+    var tempPos = this.position.clone();
+    this.position = this.savePos.clone();
     this.savePos = tempPos;
 
     if (log) {
@@ -1076,7 +1118,7 @@
     $('name').value = "unnamed"
     this.width = 0;
     this.height = 0;
-    this.origin = new Aspect(0.0, 0, 0, 0.5); 
+    this.position = new Aspect(0.0, 0, 0, 0.5); 
     this.savePos = new Aspect(0.0, 0, 0, 0.5);
     this.selected = new Complex(0, 0);
     this.julia = false;
@@ -1182,7 +1224,7 @@
       code += "width=" + this.canvas.width + "\n" +
               "height=" + this.canvas.height + "\n";
     }
-    code += this.origin +
+    code += this.position +
             "selected=" + this.selected + "\n" +
             "julia=" + this.julia + "\n" +
             "perturb=" + this.perturb + "\n" +
@@ -1306,11 +1348,13 @@
         if (pair[0] == "width" || pair[0] == "height" || pair[0] == "iterations")
           this[pair[0]] = parseInt(pair[1]);
         else if (pair[0] == "zoom" || pair[0] == "rotate")
-          this.origin[pair[0]] = parseReal(pair[1]);
+          this.position[pair[0]] = parseReal(pair[1]);
         else if (pair[0] == "origin" || pair[0] == "selected") {
           var c = parseComplex(pair[1]);
-          this[pair[0]].re = c.re;
-          this[pair[0]].im = c.im;
+          var key = pair[0];
+          if (pair[0] == "origin") key = "position";
+          this[key].re = c.re;
+          this[key].im = c.im;
         } else if (pair[0] == "julia" || pair[0] == "perturb")
           this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
         else if (pair[0] == "inrepeat") //Moved to colour, hack to transfer param from old saves
@@ -1496,33 +1540,33 @@
         else if (pair[0] == "Iterations")
           this.iterations = parseInt(pair[1]) + 1;   //Extra iteration in loop
         else if (pair[0] == "Xstart")
-          this.origin.re = parseReal(pair[1]);
+          this.position.re = parseReal(pair[1]);
         else if (pair[0] == "Ystart")
-          this.origin.im = parseReal(pair[1]);
+          this.position.im = parseReal(pair[1]);
         else if (pair[0] == "Width")
           this.width = pair[1];
         else if (pair[0] == "Height")
           this.height = pair[1];
         else if (pair[0] == "Zoom")
-          {if (pair[1] == 0) this.origin.zoom = 0.5;}
+          {if (pair[1] == 0) this.position.zoom = 0.5;}
         else if (pair[0] == "UnitsPerPixel")
         {
-          //Old files provide units per pixel and top left coord (already saved in origin)
+          //Old files provide units per pixel and top left coord (already saved in position)
           var upp = parseReal(pair[1]);
           var fwidth = this.width * upp;
           var fheight = this.height * upp;
           //Use largest zoom calculated from units per pixel * pixels in each dimension
           var zoomx = 2.0 / fwidth;
           var zoomy = 2.0 / fheight;
-          this.origin.zoom = zoomx > zoomy ? zoomx : zoomy;
+          this.position.zoom = zoomx > zoomy ? zoomx : zoomy;
           //Convert top-left coords into origin coord
-          this.origin.re += fwidth * 0.5;
-          this.origin.im += fheight * 0.5;
+          this.position.re += fwidth * 0.5;
+          this.position.im += fheight * 0.5;
         }
         else if (pair[0] == "AntiAlias")
           {}//Global property, don't override antialias
         else if (pair[0] == "Rotation")
-          this.origin.rotate = pair[1];
+          this.position.rotate = pair[1];
         //Selected coords for Julia/Perturb
         else if (pair[0] == "CXstart")
           this.selected.re = parseReal(pair[1]);
@@ -1668,10 +1712,10 @@
     //Functions and ops
     if (!saved["inductop"]) saved["inductop"] = "0";
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
-      var fns = ["abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs"];
+      var fns = ["", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs"];
 
-      this.choices['post_transform'].currentParams["re_fn"].parse(fns[parseInt(saved["re_fn"])]);
-      this.choices['post_transform'].currentParams["im_fn"].parse(fns[parseInt(saved["im_fn"])]);
+      this.choices['post_transform'].currentParams["re_fn"].parse(fns[saved["re_fn"]]);
+      this.choices['post_transform'].currentParams["im_fn"].parse(fns[saved["im_fn"]]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])
@@ -1697,49 +1741,49 @@
       var catname = category + "_colour";
       var params = formula[catname].currentParams;
 
-      if (params[":repeat"])
-        params[":repeat"].value = category.indexOf('in') == 0 ? saved["inrepeat"] : saved["outrepeat"];
+      if (params["repeat"])
+        params["repeat"].value = category.indexOf('in') == 0 ? saved["inrepeat"] : saved["outrepeat"];
 
       if (formula[catname].selected == "smooth") {
-        params[":type2"].value = false;
+        params["type2"].value = false;
         if (saved[category] == "Smooth 2")
-          params[":type2"].value = true;
+          params["type2"].value = true;
         //???? Override these? or leave?
-        params[":power"].value = "2";
-        params[":bailout"].value = saved["bailout"] ? saved["bailout"] : "escape";
+        params["power"].value = "2";
+        params["bailout"].value = saved["bailout"] ? saved["bailout"] : "escape";
       }
 
       if (formula[catname].selected == "triangle_inequality") {
         //???? Override these? or leave?
-        params[":power"].value = "2";
-        params[":bailout"].value = saved["bailout"] ? saved["bailout"] : "escape";
+        params["power"].value = "2";
+        params["bailout"].value = saved["bailout"] ? saved["bailout"] : "escape";
       }
 
       if (formula[catname].selected == "exponential_smoothing") {
-        params[":diverge"].value = true;
-        params[":converge"].value = false;
-        params[":use_z_old"].value = false;
+        params["diverge"].value = true;
+        params["converge"].value = false;
+        params["use_z_old"].value = false;
         if (saved[category] == "Exp. Smoothing - Xdiverge")
-          params[":use_z_old"].value = true;
+          params["use_z_old"].value = true;
         if (saved[category] == "Exp. Smoothing - converge") {
-          params[":diverge"].value = false;
-          params[":converge"].value = true;
-          params[":use_z_old"].value = true;
+          params["diverge"].value = false;
+          params["converge"].value = true;
+          params["use_z_old"].value = true;
         }
         if (saved[category] == "Exp. Smoothing - Both") {
-          params[":converge"].value = true;
-          params[":use_z_old"].value = true;
+          params["converge"].value = true;
+          params["use_z_old"].value = true;
         }
       }
 
       if (formula[catname].selected == "gaussian_integers") {
-        params[":mode"].parse(saved["param2"].re);
-        params[":colourby"].parse(saved["param2"].im);
+        params["mode"].parse(saved["param2"].re);
+        params["colourby"].parse(saved["param2"].im);
       }
     }
 
-    convertColourParams("outside", this);
-    convertColourParams("inside", this);
+    convertColourParams("outside", this.choices);
+    convertColourParams("inside", this.choices);
 
     //Update parameters to form
     this.loadParams();
@@ -1757,7 +1801,7 @@
   }
 
   Fractal.prototype.resetZoom = function() {
-    this.origin = new Aspect(0.0, 0, 0, 0.5);
+    this.position = new Aspect(0.0, 0, 0, 0.5);
     this.copyToForm();
     this.draw();
   }
@@ -1819,17 +1863,15 @@
     this.iterations = parseReal($("iterations").value);
     this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
     this.perturb = document["inputs"].elements["perturb"].checked ? 1 : 0;
-    this.origin.rotate = parseReal($("rotate").value);
-    this.origin.re = parseReal($("xOrigin").value);
-    this.origin.im = parseReal($("yOrigin").value);
+    this.position = new Aspect(parseReal($("xOrigin").value), parseReal($("yOrigin").value),
+                               parseReal($("rotate").value), parseReal($("zoom").value));
     this.selected.re = parseReal($("xSelect").value);
     this.selected.im = parseReal($("ySelect").value);
-    this.origin.zoom = parseReal($("zoom").value);
 
     //Limit rotate to range [0-360)
-    if (this.origin.rotate < 0) this.origin.rotate += 360;
-    this.origin.rotate %= 360;
-    document["inputs"].elements["rotate"].value = this.origin.rotate;
+    if (this.position.rotate < 0) this.position.rotate += 360;
+    this.position.rotate %= 360;
+    document["inputs"].elements["rotate"].value = this.position.rotate;
 
     //Copy form values to defined parameters
     for (category in this.choices)
@@ -1845,12 +1887,12 @@
     //debug("copyToForm<hr>");
     document["inputs"].elements["width"].value = this.width;
     document["inputs"].elements["height"].value = this.height;
-    document["inputs"].elements["xOrigin"].value = this.origin.re;
-    document["inputs"].elements["yOrigin"].value = this.origin.im;
+    document["inputs"].elements["xOrigin"].value = this.position.re;
+    document["inputs"].elements["yOrigin"].value = this.position.im;
     document["inputs"].elements["xSelect"].value = this.selected.re;
     document["inputs"].elements["ySelect"].value = this.selected.im;
-    document["inputs"].elements["zoom"].value = this.origin.zoom;
-    document["inputs"].elements["rotate"].value = this.origin.rotate;
+    document["inputs"].elements["zoom"].value = this.position.zoom;
+    document["inputs"].elements["rotate"].value = this.position.rotate;
     document["inputs"].elements["julia"].checked = this.julia;
     document["inputs"].elements["perturb"].checked = this.perturb;
     document["inputs"].elements["iterations"].value = this.iterations;
@@ -1913,6 +1955,8 @@
     //(...modified to also allow single variables, note: first pattern is to ignore function call match)
     var creg = /([^a-zA-Z0-9_\)])\(([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\)/g
     shader = shader.replace(creg, "$1complex($2,$5)");
+
+    shader = shader.replace(/ident/g, ""); //Strip ident() calls
 
     return shader;
   }
@@ -2113,10 +2157,10 @@
     this.gl.uniform1i(this.program.uniforms["julia"], this.julia);
     this.gl.uniform1i(this.program.uniforms["perturb"], this.perturb);
     this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.background.rgbaGL());
-    this.gl.uniform2f(this.program.uniforms["origin"], this.origin.re, this.origin.im);
+    this.gl.uniform2f(this.program.uniforms["origin"], this.position.re, this.position.im);
     this.gl.uniform2f(this.program.uniforms["selected_"], this.selected.re, this.selected.im);
     this.gl.uniform2f(this.program.uniforms["dims"], this.webgl.viewport.width, this.webgl.viewport.height);
-    this.gl.uniform1f(this.program.uniforms["pixelsize"], this.origin.pixelSize(this.webgl.viewport));
+    this.gl.uniform1f(this.program.uniforms["pixelsize"], this.position.pixelSize(this.webgl.viewport));
 
     //Parameter uniforms...
     for (category in this.choices)
@@ -2129,10 +2173,10 @@
 
     //Apply translation to origin, any rotation and scaling (inverse of zoom factor)
     this.webgl.modelView.identity()
-    this.webgl.modelView.translate([this.origin.re, this.origin.im, 0])
-    this.webgl.modelView.rotate(this.origin.rotate, [0, 0, -1]);
+    this.webgl.modelView.translate([this.position.re, this.position.im, 0])
+    this.webgl.modelView.rotate(this.position.rotate, [0, 0, -1]);
     //Apply zoom and flip Y to match old coord system
-    this.webgl.modelView.scale([1.0/this.origin.zoom, -1.0/this.origin.zoom, 1.0]);
+    this.webgl.modelView.scale([1.0/this.position.zoom, -1.0/this.position.zoom, 1.0]);
     //Scaling to preserve fractal aspect ratio
     if (this.webgl.viewport.width > this.webgl.viewport.height)
       this.webgl.modelView.scale([this.webgl.viewport.width / this.webgl.viewport.height, 1.0, 1.0]);  //Scale width
@@ -2156,7 +2200,7 @@
     var select = $("select");
 
     //Convert mouse coords into fractal coords
-    var point = this.origin.convert(mouse.x, mouse.y, mouse.element);
+    var point = this.position.convert(mouse.x, mouse.y, mouse.element);
 
     //Selection box? Ignore if too small a region selected
     if (select.style.display == 'block' && select.w > 5 && select.h > 5) {
@@ -2166,7 +2210,7 @@
       //select.x -= offset[0];
       //select.y -= offset[1];
       //Get centre of selection in fractal coords
-      var centre = this.origin.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
+      var centre = this.position.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
       //Adjust centre position to match mouse left click
       this.setOrigin(centre);
       //Adjust zoom by factor of element width to selection
@@ -2207,8 +2251,8 @@
     if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
     {
       //Convert mouse coords into fractal coords
-      mouse.point = this.origin.convert(mouse.x, mouse.y, mouse.element);
-      mouse.coord = new Aspect(mouse.point.re + this.origin.re, mouse.point.im + this.origin.im, 0, 0);
+      mouse.point = this.position.convert(mouse.x, mouse.y, mouse.element);
+      mouse.coord = new Aspect(mouse.point.re + this.position.re, mouse.point.im + this.position.im, 0, 0);
       $("coords").innerHTML = "&nbsp;re: " + mouse.coord.re.toFixed(8) + " im: " + mouse.coord.im.toFixed(8);
 
       //Constantly updated mini julia set rendering

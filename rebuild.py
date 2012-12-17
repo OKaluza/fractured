@@ -26,7 +26,7 @@ for key in inc:
   f = open(key, 'r')
   inc[key] = f.read()
 
-f = open('includes_0.6.json', 'w')
+f = open('includes_0.7.json', 'w')
 f.write(json.dumps(inc))
 
 sources = OrderedDict()

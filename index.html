@@ -41,7 +41,7 @@
     <div id="title">
       <h1><span id="heading1">
       <a href="javascript:showGallery();">Fractured</a></span>
-      </h1><h3>0.6</h3>
+      </h1><h3>0.7</h3>
     </div>
 
     <nav id="menu">
@@ -178,6 +178,12 @@
                 </div>
               </ul>
             </li>
+            <li class="webcl" style="display: none;"><span class="fly" tabindex="1">OpenCL Platforms</span>
+              <ul class="dd listmenu">
+                <div id="platforms" class="selectlist">
+                </div>
+              </ul>
+            </li>
             <li><span onclick="regenerateThumbs();">Rebuild Thumbnails</span></li>
             <li class="render"><span id="previewbtn" onclick="togglePreview();">Show Preview</span></li>
             <li><span id="toolsbtn" onclick="toggleParams();">Hide Tools &uarr;</span></li>
@@ -186,7 +192,7 @@
         </li>
 
 
-        <li><span onclick="hideGallery(); fractal.applyChanges();" style="padding: 2px 4px 2px 1px;"><img style="float:left" src="media/draw.png" >Draw</span></li>
+        <li><span onclick="hideGallery(); fractal.applyChanges();" style="padding: 2px 4px 0px 1px;"><img style="float:left" src="media/draw.png" >Draw</span></li>
 
       </ul>
 

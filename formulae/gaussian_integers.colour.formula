@@ -9,10 +9,9 @@
 @normalise = list('none|point|factor|f(z)');
 //Norm factor
 @normfact = complex(1,0);
-//Norm function
-@normfunc = complex_function(ident);
+//Norm fn
+@normfunc = complex_function();
 
-real @r;
 real @rmin = 1.0e12;
 real @rmax = 0.0;
 real @rave = 0.0;
@@ -22,21 +21,22 @@ real @itermax = 0.0;
 
 complex @zmin = (0,0);
 complex @zmax = (0,0);
-complex @normfac;
+real @r;
+
+complex @factor = (1,0);
 
 init:
-  if (@normalise == 0)
-    @normfac = (1,0);      //no normalisation
   if (@normalise == 1)
-    @normfac = point;        //point normalisation
+    @factor = point;        //point normalisation
   if (@normalise == 2)
-    @normfac = @normfact;    //factor normalisation
-  if (@normalise == 3)
-    @normfac = @normfunc(z); //f(z) normalisation
+    @factor = @normfact;    //factor normalisation
 
 calc:
   //Round Mode = round/truncate/floor/ceiling
-  @r = cabs(z - mul(@rmode(div(z,@normfac)), @normfac));
+  if (@normalise == 3)
+    @factor = @normfunc(z); //f(z) normalisation
+  
+  @r = cabs(z - mul(@rmode(div(z,@factor)), @factor));
 
   @total = @total + @r;
   @rave = @total / real(count);
@@ -101,3 +101,5 @@ result:
     index = @rmax / (@rmin + 1.e-12);
 
   colour = gradient(@repeat * index);
+
+
