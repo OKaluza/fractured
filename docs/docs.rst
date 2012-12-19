@@ -9,10 +9,10 @@
 ======================
 Fractured - User Guide
 ======================
-| Fractured | Fractal art studio | Version 0.6 (Oct 2012)
+| Fractured | Fractal art studio | Version VERSION
 | |copy| Owen Kaluza, 2012
 
-http://fractured.ozone.id.au/docs.html
+http://fractured.ozone.id.au/docs_VERSION.html
 
 .. contents:: `Table of contents`
 
@@ -148,7 +148,6 @@ The fields are:
 - *Origin* complex coordinate at the centre of the fractal display
 - *Selected* complex coordinate selected for use in rendering Julia Sets and the Perturb option.
 - *Julia* when checked indicates Julia Set mode, plotting a Julia Set at the selected coordinate.
-- *Perturb* when checked indicates applying the selected coordinate as a perturbation of the rendered fractal (the value is added with every iteration of the formula)
 - *Iterations* maximum number of iterations to apply the selected formula
 
 Formula
@@ -411,11 +410,11 @@ In the formula editor code sections, any text surrounded by back-slash "\\" char
 
 For example, entering::
 
-  z = \z^2 + c\;
+  z = \z^2 + 2\;
 
 will be translated internally to::
 
-  z = add(sqr(z), c);
+  z = sqr(z) + complex(2,0);
 
 Some other forms the parser will recognise:
 
@@ -440,7 +439,7 @@ A set of brackets with a comma implies a complex number, in parsed expressions t
 
   (sin(x), y^2) ==> complex(sin(x), y^2)
 
-In base formula code you are limited to single constants or variables as the real and imaginary components of complex number initialisations.
+In base formula code you are limited to single constants or variables as the real and imaginary components in parentheses for them to be converted automatically to complex number initialisations, for other expressions you must fully specify "complex(real expr, imag expr)".
 
 Expressions can also be entered over multiple lines and semi-colons are not required at the end of lines.
 
@@ -475,7 +474,6 @@ Built in variables
 - colour
 - offset
 - julia
-- perturb
 - pixelsize
 - dims
 - origin
@@ -488,25 +486,37 @@ Built in variables
 
 Functions
 ~~~~~~~~~
-Maths functions from GLSL: (need to cross-reference and confirm available in OpenCL)
 
+Real input, Real output only
+- zero lnr _inv _neg _sqr _cube
+
+Real input, Real output (or component-wise Complex input and output)
 - abs acos asin atan
-- ceil cos cross
-- degrees distance dot equal exp exp2
-- floor inversesqrt length
-- log log2 max min mix mod
-- normalize pow radians sign sin sqrt tan
+- ceil cos cross 
+- degrees radians distance exp
+- inversesqrt
+- log log2 log10 max min mix mod
+- pow sign sin sqrt tan
+- floor trunc round 
 
-Additional functions provided:
+Complex input, Real output
+- manhattan norm cabs
+- dot length normalize
 
-- ident zero czero gradient
-- mul div add sub inv sqr cube cpow
-- ln lnr log10 manhattan norm cabs
-- arg neg conj polar
+Complex input, Complex output
+- czero mul div inv sqr cube
+- ln log10
+- arg neg conj
 - cosh tanh sinh acosh atanh asinh 
-- cexp csin ccos ctan casin cacos
+- cpow cexp csin ccos ctan casin cacos
 - catan csinh ccosh ctanh casinh
 - cacosh catanh csqrt csqrt2 equals
+- normalize 
+
+Others
+- rgba gradient(mu)
+- complex polar(r, theta)
+- bool equals(complex, complex, real tolerance)
 
 **TODO: Further document maths library functions, scripting, default formulae**
 

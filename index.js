@@ -15,7 +15,7 @@ var rztimeout = undefined;
 
   function appInit() {
     if (!supports_html5_storage()) {alert("Local Storage not supported!"); return;}
-    current = new Status();
+    current = new Status("---VERSION---");
     //Force offline mode when loaded locally
     if (window.location.href.indexOf("file://") == 0) current.offline = true;
     if (!navigator.onLine) current.offline = true;
@@ -131,7 +131,7 @@ var rztimeout = undefined;
       showGallery(location.hash);
     }
 
-    ajaxReadFile('docs.html', insertHelp);
+    ajaxReadFile('docs_' + current.version + '.html', insertHelp);
     loadScript("/codemirror-compressed.js", "");
   }
 
@@ -1181,7 +1181,7 @@ var rztimeout = undefined;
   function loadState() {
     //Load includes...
     //(Allow cache, when changed update the version number)
-    sources = JSON.parse(readURL('/includes_0.7.json', false));
+    sources = JSON.parse(readURL('/includes_' + current.version + '.json', false));
 
     if (current.debug) {
       //Entries for all source files in debug edit menu
@@ -1591,7 +1591,9 @@ var editorFilename;
   /**
    * @constructor
    */
-  function Status() {
+  function Status(version) {
+    this.version = version;
+    $('version').innerHTML = version;
     this.loggedin = false;
     this.offline = null;
     this.gallery = "#examples";

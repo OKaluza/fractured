@@ -30,10 +30,7 @@ GLSL_MAIN
   else
   {
     //Mandelbrot set default
-    if (perturb) 
-      z = selected; //Perturbation
-    else
-      z = (0,0);
+    z = (0,0);
     c = point;
   }
   z_1 = z_2 = (0,0);

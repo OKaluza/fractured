@@ -1,6 +1,11 @@
 import json
 import re
+import sys
+import os
 from collections import OrderedDict
+
+version = sys.argv[1]
+print version
 
 def process(cat, formulae):
   for i in formulae:
@@ -23,10 +28,11 @@ inc = {
 
 for key in inc:
   print key
-  f = open(key, 'r')
-  inc[key] = f.read()
+  if os.path.exists(key):
+    f = open(key, 'r')
+    inc[key] = f.read()
 
-f = open('includes_0.7.json', 'w')
+f = open('includes_' + version + '.json', 'w')
 f.write(json.dumps(inc))
 
 sources = OrderedDict()

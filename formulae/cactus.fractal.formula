@@ -13,6 +13,4 @@ reset:
   z = point;
   if (julia)
     z = selected;
-  else
-    if (perturb) z = (0,0);
 

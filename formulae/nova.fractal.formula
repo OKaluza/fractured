@@ -15,4 +15,4 @@
 //Reset, called immediately before iterating
 reset:
   //Nova init
-  if (!julia && !perturb) z = (1,0);
+  if (!julia) z = (1,0);

@@ -1,5 +1,6 @@
 #COMP = yui-compressor -v 
 #FLAGS = -o
+VERSION = 0.71
 COMP = java -jar compiler-latest/compiler.jar --js=
 FLAGS = --js_output_file=
 SCRIPTS = colourPicker.js gradient.js formulae.js index.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js #gl-matrix.js 
@@ -12,6 +13,7 @@ all: fractured-compressed.js codemirror-compressed.js docs.html json
 
 fractured-compressed.js: $(SCRIPTS)
 	cat $(SCRIPTS) > fractured-index.js
+	sed -i "s/---VERSION---/$(VERSION)/g" fractured-index.js
 	$(COMP)fractured-index.js $(FLAGS)fractured-compressed.js #--compilation_level ADVANCED_OPTIMIZATIONS
 	$(COMP)gl-matrix.js $(FLAGS)gl-matrix-min.js
 
@@ -22,8 +24,10 @@ codemirror-compressed.js: $(CMSCRIPTS)
 
 docs.html: docs/docs.rst
 	rst2html	$(RSTFLAGS)	$<	$@
+	sed -i "s/VERSION/$(VERSION)/g" docs.html
+	cp docs.html docs_$(VERSION).html
 
 .PHONY: json
 json:
-	python rebuild.py
+	python rebuild.py $(VERSION)
 

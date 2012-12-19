@@ -1045,7 +1045,8 @@
       for (var d=0; d < devices.length; d++, i++) {
         var name = pfname + " : " + devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME);
         var onclick = "fractal.webclInit(" + p + "," + d + ");";
-        addMenuItem(menu, name, onclick, null, p == this.webcl.pid && d == this.webcl.devid, false);
+        var item = addMenuItem(menu, name, onclick);
+        if (p == this.webcl.pid && d == this.webcl.devid) selectMenuItem(item);
       }
     }
 
@@ -1122,7 +1123,6 @@
     this.savePos = new Aspect(0.0, 0, 0, 0.5);
     this.selected = new Complex(0, 0);
     this.julia = false;
-    this.perturb = false;
     this.iterations = 100;
 
     this.choices = {"fractal" : null, "pre_transform" : null, "post_transform" : null, "outside_colour" : null, "inside_colour" : null, "filter" : null};
@@ -1227,7 +1227,6 @@
     code += this.position +
             "selected=" + this.selected + "\n" +
             "julia=" + this.julia + "\n" +
-            "perturb=" + this.perturb + "\n" +
             "iterations=" + this.iterations + "\n";
 
     //Formula selections
@@ -1289,7 +1288,7 @@
     //Reset everything...
     this.resetDefaults();
     this.formulaDefaults();
-    //1. Load fixed params as key=value: origin, selected, julia, perturb, 
+    //1. Load fixed params as key=value: origin, selected, julia, 
     //2. Load selected formula names
     //3. Load code for each selected formula
     //4. For each formula, load formula params into params[formula]
@@ -1355,7 +1354,7 @@
           if (pair[0] == "origin") key = "position";
           this[key].re = c.re;
           this[key].im = c.im;
-        } else if (pair[0] == "julia" || pair[0] == "perturb")
+        } else if (pair[0] == "julia")
           this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
         else if (pair[0] == "inrepeat") //Moved to colour, hack to transfer param from old saves
           saved["inrepeat"] = pair[1];
@@ -1536,7 +1535,7 @@
         } else if (pair[0] == "JuliaFlag")
           this.julia = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "PerturbFlag" || pair[0] == "zFlag")
-          this.perturb = parseInt(pair[1]) ? true : false;
+          saved["perturb"] = parseInt(pair[1]) ? true : false;
         else if (pair[0] == "Iterations")
           this.iterations = parseInt(pair[1]) + 1;   //Extra iteration in loop
         else if (pair[0] == "Xstart")
@@ -1711,8 +1710,10 @@
 
     //Functions and ops
     if (!saved["inductop"]) saved["inductop"] = "0";
-    if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0) {
+    if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0 || saved["perturb"]) {
       var fns = ["", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs"];
+
+      this.choices['post_transform'].currentParams["perturb"].parse(fns[saved["perturb"]]);
 
       this.choices['post_transform'].currentParams["re_fn"].parse(fns[saved["re_fn"]]);
       this.choices['post_transform'].currentParams["im_fn"].parse(fns[saved["im_fn"]]);
@@ -1862,7 +1863,6 @@
 
     this.iterations = parseReal($("iterations").value);
     this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
-    this.perturb = document["inputs"].elements["perturb"].checked ? 1 : 0;
     this.position = new Aspect(parseReal($("xOrigin").value), parseReal($("yOrigin").value),
                                parseReal($("rotate").value), parseReal($("zoom").value));
     this.selected.re = parseReal($("xSelect").value);
@@ -1894,7 +1894,6 @@
     document["inputs"].elements["zoom"].value = this.position.zoom;
     document["inputs"].elements["rotate"].value = this.position.rotate;
     document["inputs"].elements["julia"].checked = this.julia;
-    document["inputs"].elements["perturb"].checked = this.perturb;
     document["inputs"].elements["iterations"].value = this.iterations;
     for (category in this.choices)
       $(category + '_formula').value = this.choices[category].selected;
@@ -2042,7 +2041,7 @@
     if (this.webgl) {
       this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
       //Restore uniforms/attributes for fractal program
-      var uniforms = ["palette", "offset", "iterations", "julia", "perturb", "origin", "selected_", "dims", "pixelsize", "background"];
+      var uniforms = ["palette", "offset", "iterations", "julia", "origin", "selected_", "dims", "pixelsize", "background"];
       this.program.setup(["aVertexPosition"], uniforms);
       errors = this.program.errors;
       this.parseErrors(errors, /0:(\d+)/);
@@ -2155,7 +2154,6 @@
     //Uniform variables
     this.gl.uniform1i(this.program.uniforms["iterations"], this.iterations);
     this.gl.uniform1i(this.program.uniforms["julia"], this.julia);
-    this.gl.uniform1i(this.program.uniforms["perturb"], this.perturb);
     this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.background.rgbaGL());
     this.gl.uniform2f(this.program.uniforms["origin"], this.position.re, this.position.im);
     this.gl.uniform2f(this.program.uniforms["selected_"], this.selected.re, this.selected.im);
