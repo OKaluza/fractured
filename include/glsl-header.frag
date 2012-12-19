@@ -16,7 +16,6 @@ precision highp float;
 uniform complex offset;
 uniform int iterations;
 uniform bool julia;
-uniform bool perturb;
 uniform real pixelsize;
 uniform complex dims;
 uniform complex origin;
@@ -36,17 +35,3 @@ vec4 gradient(float mu)
 
 //Current complex coordinate
 varying complex coord;
-
-//GLSL only maths library prototypes
-real log10(in real r);
-real trunc(in real x);
-real round(in real x);
-real cosh(in real x);
-real tanh(in real x);
-real sinh(in real x);
-real acosh(in real x);
-real atanh(in real x);
-real asinh(in real x);
-complex round(in complex z);
-complex trunc(in complex z);
-

@@ -330,7 +330,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       "catan csinh ccosh ctanh casinh cacosh catanh csqrt equals " + 
       "trunc round flip imag cln clog10"),
     stdvar: words("z c z_1 z_2 point coord selected limit count escaped converged colour alpha" +
-      "offset julia perturb pixelsize dims origin selected_ palette background antialias " +
+      "offset julia pixelsize dims origin selected_ palette background antialias " +
       "gl_BackColor gl_BackLightModelProduct gl_BackLightProduct " +
       "gl_BackMaterial gl_BackSecondaryColor gl_ClipPlane gl_ClipVertex " +
       "gl_Color gl_Color gl_DepthRange gl_DepthRangeParameters " +

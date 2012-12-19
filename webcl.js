@@ -2,8 +2,7 @@
    * @constructor
    */
   function WebCL_(pid, devid) {
-    if (!pid) pid = 0;
-    if (!devid) devid = 0;
+    if (devid == undefined) devid = 0;
     this.pid = pid;
     this.devid = devid;
     this.fp64 = false;
@@ -12,15 +11,23 @@
 
       //Get & select platforms, devices
       this.platforms = WebCL.getPlatformIDs();
-      if (this.pid >= this.platforms.length) this.pid = this.platforms.length-1;
+      //Pick default platform, NVIDIA if available, otherwise first in list
+      if (this.pid == undefined || this.pid >= this.platforms.length) {
+        for (this.pid=this.platforms.length-1; this.pid>=0; this.pid--) {
+          var pfname = this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME);
+          if (pfname.indexOf("NVIDIA") >= 0) break;
+        }
+      }
+
+      //Create the context
       this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
                                               this.platforms[this.pid]],
                                               WebCL.CL_DEVICE_TYPE_DEFAULT);
       this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
       if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
 
-      debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + 
-                  " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME));
+      debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + " (" + this.pid + ")" +  
+                  " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME) + " (" + this.devid + ")");
 
       //Check for double precision support
       var extensions = this.platforms[this.pid].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
@@ -124,7 +131,7 @@
       this.inBuffer[5] = fractal.selected.re;
       this.inBuffer[6] = fractal.selected.im;
 
-      var inBuffer2 = new Int8Array([antialias, fractal.julia, fractal.perturb]);
+      var inBuffer2 = new Int8Array([antialias, fractal.julia]);
       var inBuffer3 = new Int32Array([fractal.iterations, this.viewport.width, this.viewport.height]);
 
       var size = this.inBuffer.byteLength;

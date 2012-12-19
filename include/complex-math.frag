@@ -43,30 +43,11 @@ complex conj(in complex z)
   return complex(z.x, -z.y);
 }
 
-real ln(in real x)
-{
-  return log(x);
-}
-
-complex cln(in complex z)
-{
-  return complex(log(cabs(z)), arg(z));
-}
-
-complex clog10(in complex z)
-{
-  return complex(log10(cabs(z)), arg(z));
-}
 
 #ifdef GLSL
 //Functions only required for GLSL, predefined in OpenCL
 #define PI  real(3.141592654)
 #define E   real(2.718281828)
-
-//real log10(in real r)
-//{
-//  return log(r) / log(10.0);
-//}
 
 //Hacks for opera to fix faulty recursive call detection
 #define RROUND(x) real(int(x + (x < 0.0 ? -0.5 : 0.5)))
@@ -84,9 +65,9 @@ real round(in real x)
   //return real(int(x + (x < 0.0 ? -0.5 : 0.5)));
 }
 
-real log10(in real x)
+real log10(in real r)
 {
-  return ln(x) / ln(10.0);
+  return log(r) / log(10.0);
 }
 
 complex round(in complex z)
@@ -168,6 +149,21 @@ real lnr(in real r)
 {
   //For colouring algorithms, return real part
   return log(abs(r));
+}
+
+real ln(in real x)
+{
+  return log(x);
+}
+
+complex cln(in complex z)
+{
+  return complex(log(cabs(z)), arg(z));
+}
+
+complex clog10(in complex z)
+{
+  return complex(log10(cabs(z)), arg(z));
 }
 
 /*
