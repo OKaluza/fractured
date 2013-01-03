@@ -6,51 +6,55 @@
 .. |settings| image:: media/settingsi.png
 .. |draw| image:: media/draw.png
 
-======================
-Fractured - User Guide
-======================
+.. _WebGL: http://www.khronos.org/webgl
+.. _WebCL: http://www.khronos.org/webcl
+.. _plugin: http://webcl.nokiaresearch.com
+
+==========================================================================
+Fractured - `User Guide <http://fractured.ozone.id.au/docs_VERSION.html>`_
+==========================================================================
 | Fractured | Fractal art studio | Version VERSION
 | |copy| Owen Kaluza, 2012
-
-http://fractured.ozone.id.au/docs_VERSION.html
 
 .. contents:: `Table of contents`
 
 Introduction
 ============
-Fractured is a fractal exploration application written in Javascript and WebGL / WebCL.
+Fractured is a GPU accelerated fractal exploration application written in HTML,CSS,Javascript and WebGL_ / WebCL_\*.
 It is designed to work as a stand-alone app, but there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
 
-It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae (despite there being loads of great fractal programs around). From my deranged perspective, I'd miss out on most of the fun if I didn't write it myself.
-I was also interested in rendering complex fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
+It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae. Despite there being loads of great fractal programs around, from my deranged perspective it was more fun to write it myself.
+I was also interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
 
 First attempts were in Java with JOGL, then I heard about WebGL which seemed the perfect technology for this project (although it turned out to be limited in several really annoying ways), so I got motivated again, and ported the progress so far to HTML5, learning Javascript along the way.
 The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far I could take the single-page web-browser app, of course there was always just one more feature I wanted to implement.
-  
-Now many lost weekends and evenings later I've had enough and it seems to finally have turned into a fairly complete thing, it does what I need and maybe someone else will find it useful.
 
+Now many lost weekends and evenings later it seems to finally have turned into a fairly complete thing, does what I needed it to and maybe someone else will find it useful.
+
+\*There's also experimental WebCL_ support which allows CPU rendering and double precision mode where possible. It will only work with the Nokia Firefox plugin_ for now but when the standard solidifies a bit I'll make sure it runs with other implementations.
+  
 *(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)*
 
 Acknowledgments
 ---------------
 
-- CodeMirror http://codemirror.net/ used for formula / shader code editing component.
-- Expression parser built using Jison http://zaach.github.com/jison/
+- CodeMirror http://codemirror.net used for formula / shader code editing component.
+- Expression parser built using Jison http://zaach.github.com/jison
 - Vector and Matrix library: glMatrix https://github.com/toji/gl-matrix
-- Learning WebGL http://learningwebgl.com/ for WebGL tutorials
-- WebCL tutorials: Nokia Research WebCL http://webcl.nokiaresearch.com/ and, WebCL Examples http://www.ibiblio.org/e-notes/webcl/webcl.htm
-- Some fractal formulae based on those in Gnofract http://gnofract4d.sourceforge.net/ and UltraFractal http://www.ultrafractal.com/
-- ColorJack.com http://www.colorjack.com/software/dhtml+color+picker.html for the design the colour picker is based on.
+- Learning WebGL http://learningwebgl.com for WebGL tutorials
+- WebCL tutorials: Nokia Research WebCL http://webcl.nokiaresearch.com (particular thanks to Tomi Aarnio from Nokia for helping me get WebCL working correctly on CPU platforms) also the WebCL `Examples <http://www.ibiblio.org/e-notes/webcl/webcl.htm>`_.
+- Some fractal formulae based on those in Gnofract http://gnofract4d.sourceforge.net/ and UltraFractal http://www.ultrafractal.com
+- My colour picker css design is based on one from `ColorJack.com <http://www.colorjack.com/software/dhtml+color+picker.html>`_.
 
 Requirements
 ------------
 - A modern browser supporting WebGL, confirmed working with Firefox, Chrome & Safari.
 - A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
-- Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin: http://webcl.nokiaresearch.com/ 
-- *Note* My development platform is Linux, Firefox, NVidia. Other platforms have not all been well tested yet. Everything should work fine though (in theory).
-- **Note: Windows** windows browsers do WebGL rendering via conversion to DirectX shaders (ANGLE), this "feature" is a bit experimental and does not always play nicely. I highly recommend using native OpenGL rendering where possible, but you have to enable it in your browser manually (in Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop).
+- Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin_. 
+- **Note: Windows** in windows Chrome and Firefox do WebGL rendering via conversion to DirectX shaders (`Angle <http://code.google.com/p/angleproject/>`_), this "feature" is a bit unreliable at times. For best results where possible I recommend using native OpenGL rendering, this has to be enabled in your browser manually. In Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop *(in recent versions of Chrome it appears Native OpenGL support is broken, until this is fixed you are stuck with Angle!)*.
 - **Note: Safari** if not enabled, WebGL can be switched on  by going into preferences -> advanced, show develop menu. Then select Enable WebGL on the Develop menu.
-- **Note: Opera** Opera's WebGL implementation is still causing me some problems, hope to support it in the future.
+- **Note: Opera** As of Opera 12.12 the WebGL implementation works with Fractured though it must first be enabled by setting "Enable WebGL" to 1 in opera:config.
+- *Note* My development platform is Linux, Firefox, NVidia. I've tested as many other platforms as I've been able to but if haven't covered every browser/platform combination.
 
 Workspace
 =========
@@ -386,7 +390,7 @@ Multiplication and division of complex numbers and addition/subtraction of compl
 
 The best way to avoid this problem is to use the **expression parser** discussed in the section below, this will automatically translate your operations into the correct form, in fact you might as well skip ahead to the next heading as the rest of this section is for information purposes only and not relevant if you stick to using the expression parser for entering equations.
 
-As operators can't be overloaded in GLSL, for mathematically correct results with complex numbers the *mul()* and *div()* functions have been defined instead of * and / which are designed to do correct complex number multiplication and division. For addition/subtraction ensure if you add or subtract a real number to a complex you declare it as a complex with a zero imaginary component, alternatively there are add() and sub() functions defined that handle all combinations of complex and real addition/subtraction.
+As operators can't be overloaded in GLSL, for mathematically correct results with complex numbers the *mul()* and *div()* functions have been defined instead of * and / which are designed to do correct complex number multiplication and division. For addition/subtraction ensure if you add or subtract a real number to a complex you declare it as a complex with a zero imaginary component.
 
 *eg: if z is a complex number*::
 

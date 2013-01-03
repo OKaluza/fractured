@@ -30,31 +30,12 @@ rgba read_palette(image2d_t palette, float mu)
   return (rgba)(p.x/255.0, p.y/255.0, p.z/255.0, p.w/255.0); 
 }
 
-#define CALCPIXEL rgba calcpixel(int iterations, complex coord, complex offset, bool julia, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background)
+#define CALCPIXEL rgba calcpixel(int iterations, complex coord, complex offset, bool julia, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background, __global real* input)
 #define GLSL_MAIN 
 #define OPENCL_MAIN CALCPIXEL {
 
-#define set_result(c) return c;
+#define set_result(c) return clamp(c, 0.0f, 1.0f);
 CALCPIXEL;  //Prototype
-
-//Input data
-typedef struct __attribute__ ((packed)) Input
-{
-  real zoom;
-  real rotation;
-
-  real pixelsize;
-  complex origin;
-  complex selected;
-  rgba background;
-
-  uchar antialias;
-  uchar julia;
-
-  int iterations;
-  int width;
-  int height;
-} Input;
 
 complex rotate2d(complex v, real angle)
 {
@@ -82,16 +63,32 @@ complex convert(int2 pos, int2 size, real zoom, real rotation)
    return rotate2d((complex)(re, im), -rotation);
 }
 
-__kernel void sample(__global struct Input* input, read_only image2d_t palette, __global float4* temp, int j, int k)
+__kernel void sample(
+    read_only image2d_t palette, 
+    __global float4* temp,
+    __global real* input, 
+    int antialias,
+    int julia,
+    int iterations,
+    int width,
+    int height,
+    int j, int k)
 {
-  int2 pos = (int2)(get_global_id(0), get_global_id(1));
-  int2 size = (int2)(input->width, input->height);
-  complex dims = (complex)(input->width, input->height);
-  complex coord = input->origin + convert(pos, size, input->zoom, input->rotation);
+  real zoom = input[0];
+  real rotation = input[1];
+  real pixelsize = input[2];
+  complex origin = (complex)(input[3],input[4]);
+  complex selected = (complex)(input[5],input[6]);
+  rgba background = (rgba)(input[7],input[8],input[9],input[10]);
 
-  complex offset = (complex)((real)j/(real)input->antialias-0.5, (real)k/(real)input->antialias-0.5);
-  rgba pixel = calcpixel(input->iterations, coord, offset, input->julia, input->pixelsize, 
-                     dims, input->origin, input->selected, palette, input->background);
+  int2 pos = (int2)(get_global_id(0), get_global_id(1));
+  int2 size = (int2)(width, height);
+  complex dims = (complex)(width, height);
+  complex coord = origin + convert(pos, size, zoom, rotation);
+
+  complex offset = (complex)((real)j/(real)antialias-0.5, (real)k/(real)antialias-0.5);
+  rgba pixel = calcpixel(iterations, coord, offset, julia, pixelsize, 
+                     dims, origin, selected, palette, background, input);
 
   if (j==0 && k==0) temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] = (rgba)(0);
   temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] += pixel;

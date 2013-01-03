@@ -1,33 +1,56 @@
-#COMP = yui-compressor -v 
-#FLAGS = -o
-VERSION = 0.71
+VERSION = 0.72
 COMP = java -jar compiler-latest/compiler.jar --js=
 FLAGS = --js_output_file=
-SCRIPTS = colourPicker.js gradient.js formulae.js index.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js #gl-matrix.js 
-CM = codemirror/
-CMSCRIPTS = $(CM)lib/codemirror.js $(wildcard $(CM)lib/util/*.js) $(CM)mode/clike/clike.js $(CM)mode/javascript/javascript.js
-# Flags to pass to rst2html
 RSTFLAGS = --stylesheet-path=docs/docstyle.css 
 
-all: fractured-compressed.js codemirror-compressed.js docs.html json
+#Targets
+fractured=release/fractured_$(VERSION).js
+includes=release/includes_$(VERSION).json
+formulae=release/formulae_$(VERSION).json
+docs=release/docs_$(VERSION).html
+codemirror=release/codemirror.js
 
-fractured-compressed.js: $(SCRIPTS)
-	cat $(SCRIPTS) > fractured-index.js
-	sed -i "s/---VERSION---/$(VERSION)/g" fractured-index.js
-	$(COMP)fractured-index.js $(FLAGS)fractured-compressed.js #--compilation_level ADVANCED_OPTIMIZATIONS
-	$(COMP)gl-matrix.js $(FLAGS)gl-matrix-min.js
+#Sources
+SCRIPTS = colourPicker.js gradient.js formulae.js index.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js 
+CMSCRIPTS = codemirror/lib/codemirror.js $(wildcard codemirror/lib/util/*.js) codemirror/mode/clike/clike.js codemirror/mode/javascript/javascript.js
 
-codemirror-compressed.js: $(CMSCRIPTS)
-	cat $(CMSCRIPTS) > codemirror-index.js
-	$(COMP)codemirror-index.js $(FLAGS)$(CM)codemirror-compressed.js
-	cat $(CM)LICENSE $(CM)codemirror-compressed.js > codemirror-compressed.js
+all: release $(fractured) $(codemirror) $(docs) $(includes) $(formulae)
 
-docs.html: docs/docs.rst
-	rst2html	$(RSTFLAGS)	$<	$@
-	sed -i "s/VERSION/$(VERSION)/g" docs.html
-	cp docs.html docs_$(VERSION).html
+.PHONY : release
+release:
+	-mkdir release
+	sed "s/VERSION/$(VERSION)/g" index.html > release/index.html
+	sed -i "/<!--@ -->/,/<!-- @-->/d" release/index.html
+	sed -i "s/<!--script\(.*\)script-->/<script\1script>/g" release/index.html
+	cp palettes.json editor.html favicon.ico styles.css release
+	cp --parents codemirror/lib/codemirror.css release
+	cp --parents codemirror/lib/util/dialog.css release
+	cp --parents -R codemirror/theme release
+	cp -R media release
+	cp -R ss release
 
-.PHONY: json
-json:
-	python rebuild.py $(VERSION)
+.PHONY : clean
+clean:
+	-rm -r release
 
+$(fractured): $(SCRIPTS) gl-matrix.js
+	cat $(SCRIPTS) > /tmp/fractured-index.js
+	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fractured-index.js
+	$(COMP)/tmp/fractured-index.js $(FLAGS)/tmp/fractured-compressed.js
+	$(COMP)gl-matrix.js $(FLAGS)/tmp/gl-matrix-min.js
+	cat /tmp/fractured-compressed.js /tmp/gl-matrix-min.js > $(fractured)
+
+$(codemirror): $(CMSCRIPTS)
+	cat $(CMSCRIPTS) > /tmp/codemirror-index.js
+	$(COMP)/tmp/codemirror-index.js $(FLAGS)/tmp/codemirror-compressed.js
+	cat codemirror/LICENSE /tmp/codemirror-compressed.js > $(codemirror)
+
+$(docs): docs/docs.rst
+	rst2html $(RSTFLAGS) $< $@
+	sed -i "s/VERSION/$(VERSION)/g" $(docs)
+
+$(includes): $(wildcard include/*)
+	python rebuild.py $(includes)
+
+$(formulae): $(wildcard formulae/*.formula)
+	python rebuild.py $(formulae)

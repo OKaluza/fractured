@@ -132,7 +132,7 @@ var rztimeout = undefined;
     }
 
     ajaxReadFile('docs_' + current.version + '.html', insertHelp);
-    loadScript("/codemirror-compressed.js", "");
+    loadScript("/codemirror.js", "");
   }
 
   function paletteChanged(colours) {
@@ -165,16 +165,15 @@ var rztimeout = undefined;
     if (mode == WEBGL && fractal.webgl) return;
     print("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
       sources["generated.shader"] = "";     //Force rebuild
-    if (mode > WEBGL && fractal.webcl) {
+    if (mode > WEBGL && renderer == WEBCL && fractal.webcl) {
       fractal.webcl.setPrecision(mode > 1); //Switch precision
       fractal.applyChanges();
       return;
     }
 
     //Recreate canvas & fractal
-    source = fractal.toStringMinimal();
-    fractal = new Fractal('main', mode, fractal.antialias);
-    fractal.load(source);
+    fractal.setRenderer('main', mode);
+    fractal.applyChanges();
   }
 
   function handleKey(event) {
@@ -478,7 +477,6 @@ var rztimeout = undefined;
       for (var i=1; i<=idx; i++)
         fractalMenuAdd(i);
     }
-    checkMenuHasItems(menu);
   }
 
   function fractalMenuAdd(i) {
@@ -632,7 +630,7 @@ var rztimeout = undefined;
     var palettes;
     if (!localStorage["fractured.palettes"])
       //Default palettes
-      palettes = JSON.parse(readURL('/palettes.json', true));
+      palettes = JSON.parse(readURL('/palettes.json', false));
     else
       palettes = JSON.parse(localStorage["fractured.palettes"]);
 
@@ -715,7 +713,7 @@ var rztimeout = undefined;
        oldh = fractal.height,
        oldw = fractal.width;
    fractal.width = fractal.height = size;
-   fractal.draw(4);
+   fractal.draw(4, true);
 
    var result = canvas.toDataURL("image/" + type, args)
 
@@ -1197,7 +1195,7 @@ var rztimeout = undefined;
     formula_list = null;
     var f_source = localStorage["fractured.formulae"];
     if (f_source) formula_list = JSON.parse(f_source);
-    if (!formula_list) formula_list = JSON.parse(readURL('/defaultformulae.json', true));
+    if (!formula_list) formula_list = JSON.parse(readURL('/formulae_' + current.version + '.json', false));
 
     //Cached thumbnails
     thumbnails = [];
@@ -1546,7 +1544,7 @@ var editorFilename;
       //JSON: session, formulae
       try {
         var parsed = JSON.parse(source);
-        if (!parsed) return;
+        if (!parsed) {alert("Invalid data"); return;}
         if (parsed["fractured.name"]) {
           //Session state
           debug("Import: SESSION");
@@ -1593,7 +1591,6 @@ var editorFilename;
    */
   function Status(version) {
     this.version = version;
-    $('version').innerHTML = version;
     this.loggedin = false;
     this.offline = null;
     this.gallery = "#examples";
@@ -1755,6 +1752,9 @@ var editorFilename;
 
     function next() {
       script.step();
+      //Update & redraw (without timers or incremental drawing)
+      fractal.applyChanges(null, true);
+      //Next step...
       if (script.count < script.steps) {
         script.count++;
         if (window.requestAnimationFrame)
@@ -1762,7 +1762,7 @@ var editorFilename;
         else
           next();
       } else {
-        current.output = false;
+        current.output = true;
         print("Script finished");
       }
     }
