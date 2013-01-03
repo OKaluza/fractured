@@ -5,7 +5,7 @@
 //Power (q)
 @q = real(0);
 //Distortion
-@distort = complex(1);
+@distort = complex(0.5,0);
 //Escape
 @escape = real(4);
 //Bailout Test

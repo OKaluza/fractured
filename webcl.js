@@ -6,6 +6,7 @@
     this.pid = pid;
     this.devid = devid;
     this.fp64 = false;
+    this.timer = null;
     try {
       if (window.WebCL == undefined) return false;
 
@@ -42,11 +43,11 @@
     }
   }
 
-  WebCL_.prototype.init = function(canvas, fp64) {
+  WebCL_.prototype.init = function(canvas, fp64, threads) {
     this.canvas = canvas;
     this.ctx2d = canvas.getContext("2d");
     this.gradientcanvas = document.getElementById('gradient');
-    this.threads = 64;
+    this.threads = threads;
     this.setPrecision(fp64);
     this.format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
@@ -56,11 +57,12 @@
 
   WebCL_.prototype.setPrecision = function(fp64) {
     this.fp64 = (fp64 == true);
-    this.inBuffer = this.fp64 ? new Float64Array(7) : new Float32Array(7);
-    this.input = this.ctx.createBuffer(WebCL.CL_MEM_WRITE_ONLY, this.inBuffer.byteLength + 4*4 + 3*4 + 3);
+    this.inBuffer = this.fp64 ? new Float64Array(256) : new Float32Array(256);
+    this.input = this.ctx.createBuffer(WebCL.CL_MEM_READ_ONLY, this.inBuffer.byteLength);
   }
 
   WebCL_.prototype.buildProgram = function(kernelSrc) {
+    if (this.timer) {clearTimeout(this.timer); this.timer = null;}
     if (!this.ctx) return;
     if (this.fp64) kernelSrc = "#define FP64\n" + kernelSrc;
 
@@ -74,9 +76,9 @@
              + this.program.getProgramBuildInfo (this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_LOG);
     }
     this.k_sample = this.program.createKernel("sample");
-    this.k_sample.setKernelArg(0, this.input);
-    this.k_sample.setKernelArg(1, this.palette);
-    if (this.temp) this.k_sample.setKernelArg(2, this.temp);
+    this.k_sample.setKernelArg(0, this.palette);
+    this.k_sample.setKernelArg(2, this.input);
+    if (this.temp) this.k_sample.setKernelArg(1, this.temp);
     this.k_average = this.program.createKernel("average");
     if (this.output) this.k_average.setKernelArg(0, this.output);
     if (this.temp) this.k_average.setKernelArg(1, this.temp);
@@ -90,19 +92,19 @@
   //WebCL_.prototype.sizeChanged = function(width, height) {
   WebCL_.prototype.setViewport = function(x, y, width, height) {
     //Clear canvas first
+    if (!this.ctx2d) {debug("SetViewport: No 2d context!"); return;}
     this.ctx2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     //Adjust width/height, ensure is a multiple of work-group size
-    var threads = Math.round(Math.sqrt(this.threads));   //Threads per dimension
-    this.local = [threads, threads];
-    this.global = [this.getGlobalSize(width, threads), this.getGlobalSize(height, threads)];
+    this.local = [this.threads, this.threads];
+    this.global = [this.getGlobalSize(width, this.threads), this.getGlobalSize(height, this.threads)];
 
     //If width and height changed, recreate output buffer
     if (!this.viewport || this.viewport.width != this.global[0] || this.viewport.height != this.global[1]) {
       this.viewport = new Viewport(x, y, this.global[0], this.global[1]);
       this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, this.format, this.viewport.width, this.viewport.height, 0);
       this.temp = this.ctx.createBuffer(WebCL.CL_MEM_READ_WRITE, this.global[0]*this.global[1]*4*4);
-      if (this.k_sample) this.k_sample.setKernelArg (2, this.temp);
+      if (this.k_sample) this.k_sample.setKernelArg (1, this.temp);
       if (this.k_average) this.k_average.setKernelArg(0, this.output);
       if (this.k_average) this.k_average.setKernelArg(1, this.temp);
     } else {
@@ -111,18 +113,41 @@
     }
   }
 
+  WebCL_.prototype.resetInput = function() {
+    //End index of built-in inputs
+    this.incount = 11;
+  }
+
+  WebCL_.prototype.setInput = function(param, type, name) {
+    //Set input values and return a declaration/initialisation for the kernel
+    var declare = type + " " + name;
+
+    if (param.typeid == 2) {
+      this.inBuffer[this.incount] = param.value.re;
+      declare += " = complex(input[" + (this.incount++);
+      this.inBuffer[this.incount] = param.value.im;
+      declare += "],input[" + (this.incount++) + "]);\n";
+    } else {
+      this.inBuffer[this.incount] = param.value;
+      declare += " = (" + type + ")input[" + (this.incount++) + "];\n";
+    }
+
+    return declare;
+  }
+
   WebCL_.prototype.draw = function(fractal, antialias) {
     if (!this.k_sample) return; //Sanity check
+    if (this.timer) {clearTimeout(this.timer); this.timer = null;}
     if (antialias == undefined) antialias = 1;
     if (antialias > 4) antialias = 4; //Temporary fix, webgl antialias is not as effective, requires higher numbers
+    this.antialias = antialias;
     if (!this.queue) return;
     try {
       ctx_g = this.gradientcanvas.getContext("2d");
-      var outImage = this.ctx2d.createImageData(this.viewport.width, this.viewport.height);
+      this.outImage = this.ctx2d.createImageData(this.viewport.width, this.viewport.height);
       var gradient = ctx_g.getImageData(0, 0, this.gradientcanvas.width, 1);
 
       //Pass additional args
-      var background = colours.palette.background;
       this.inBuffer[0] = fractal.position.zoom;
       this.inBuffer[1] = fractal.position.rotate;
       this.inBuffer[2] = fractal.position.pixelSize(this.canvas);
@@ -130,19 +155,20 @@
       this.inBuffer[4] = fractal.position.im;
       this.inBuffer[5] = fractal.selected.re;
       this.inBuffer[6] = fractal.selected.im;
+      //Background
+      var background = colours.palette.background;
+      this.inBuffer[7] = background.red/255.0;
+      this.inBuffer[8] = background.green/255.0;
+      this.inBuffer[9] = background.blue/255.0;
+      this.inBuffer[10] = background.alpha;
 
-      var inBuffer2 = new Int8Array([antialias, fractal.julia]);
-      var inBuffer3 = new Int32Array([fractal.iterations, this.viewport.width, this.viewport.height]);
+      this.k_sample.setKernelArg(3, Math.floor(antialias));
+      this.k_sample.setKernelArg(4, Math.floor(fractal.julia));
+      this.k_sample.setKernelArg(5, Math.floor(fractal.iterations));
+      this.k_sample.setKernelArg(6, Math.floor(this.viewport.width));
+      this.k_sample.setKernelArg(7, Math.floor(this.viewport.height));
 
-      var size = this.inBuffer.byteLength;
-      var offset = 0;
-      this.queue.enqueueWriteBuffer(this.input, false, offset, size, this.inBuffer, []);
-      offset += size; size = 4*4;  //4*rgba
-      this.queue.enqueueWriteBuffer(this.input, false, offset, size, background.rgbaGL(), []);    
-      offset += size; size = inBuffer2.byteLength;
-      this.queue.enqueueWriteBuffer(this.input, false, offset, size, inBuffer2, []);    
-      offset += size; size = inBuffer3.byteLength;
-      this.queue.enqueueWriteBuffer(this.input, false, offset, size, inBuffer3, []);    
+      this.queue.enqueueWriteBuffer(this.input, false, 0, this.inBuffer.byteLength, this.inBuffer, []);
 
       this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], gradient.width*4, 0, gradient.data, []);
 
@@ -150,28 +176,51 @@
       debug("WebCL: Global (" + this.global[0] + "x" + this.global[1] + 
                    ") Local (" + this.local[0] + "x" + this.local[1] + ")");
 
-      for (var j=0; j<antialias; j++) {
-        for (var k=0; k<antialias; k++) {
-          debug("Antialias pass ... " + j + " - " + k);
-          this.k_sample.setKernelArg(3, j);
-          this.k_sample.setKernelArg(4, k);
-          this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
-          this.queue.finish();
-        }
-      }
-      //Combine
-      debug("Combining samples...");
-      this.k_average.setKernelArg(2, antialias*antialias);
-      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
-
-      this.queue.enqueueReadImage(this.output, false, [0,0,0], [this.viewport.width,this.viewport.height,1], 0, 0, outImage.data, []);
-      this.queue.finish();
-
-      this.ctx2d.putImageData(outImage, this.viewport.x, this.viewport.y);
+      this.j = 0;
+      this.k = 0;
+      var that = this;
+      this.pass();
 
     } catch(e) {
       alert(e.message);
       throw e;
     }
   }
+
+  WebCL_.prototype.pass = function() {
+    //debug("Antialias pass ... " + this.j + " - " + this.k);
+    this.k_sample.setKernelArg(8, this.j);
+    this.k_sample.setKernelArg(9, this.k);
+    this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
+
+    //Combine
+    this.k_average.setKernelArg(2, this.j*this.antialias+this.k+1);
+    this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
+
+    this.queue.enqueueReadImage(this.output, false, [0,0,0], 
+         [this.viewport.width,this.viewport.height,1], 0, 0, this.outImage.data, []);
+    this.queue.finish();
+
+    this.ctx2d.putImageData(this.outImage, this.viewport.x, this.viewport.y);
+
+    //Next...
+    this.k++;
+    if (this.k >= this.antialias) {
+      this.k = 0;
+      this.j++;
+    }
+
+    if (this.j < this.antialias) {
+      if (!this.time)
+        this.pass();  //Don't draw incrementally when timers disabled
+      else {
+        var that = this;
+        this.timer = setTimeout(function () {that.pass();}, 10);
+      }
+    } else {
+      this.timer = null;
+      if (this.time) this.time.print("Draw");
+    }
+  }
+
 

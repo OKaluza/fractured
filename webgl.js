@@ -25,6 +25,7 @@
     this.perspective = new ViewMatrix();
     this.textures = [];
     this.errors = false;
+    this.timer = null;
 
     try {
       var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
@@ -48,6 +49,7 @@
 
   WebGL.prototype.draw2d = function(antialias) {
     if (antialias == undefined) antialias = 1;
+    if (this.timer) {clearTimeout(this.timer); this.timer = null;}
       //Enable this to render frame to texture 
       //this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, rttFramebuffer);
 
@@ -70,24 +72,19 @@
       //Draw and blend multiple passes for anti-aliasing
       this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
-      var blendinc = 0;
-      //var data = new Int8Array(this.viewport.width * this.viewport.height * 4);
-      for (var j=0; j<antialias; j++) {
-        for (var k=0; k<antialias; k++) {
-          var blendval = 1.0 - blendinc;
-          blendval *= blendval;// * blendval;
-          this.gl.blendColor(0, 0, 0, blendval);
-          //print(blendval);
-          blendinc += 1.0/(antialias*antialias);
-          this.gl.uniform2f(this.program.uniforms['offset'], j/antialias-0.5, k/antialias-0.5);
-          //Draw!
-          this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
-        }
-      }
+      this.blendinc = 0;
+
+      this.j = 0;
+      this.k = 0;
+      this.antialias = antialias;
+      var that = this;
+      this.pass();
+
     } else {
       //Draw, single pass
       this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
       this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
+      if (this.time) this.time.print("Draw");
     }
 
     return; //Below is to display rendered texture
@@ -117,6 +114,37 @@
 
     gl.disableVertexAttribArray(defaultProgram.textureCoordAttribute);
 */
+  }
+
+  WebGL.prototype.pass = function() {
+    //debug("Antialias pass ... " + this.j + " - " + this.k);
+    var blendval = 1.0 - this.blendinc;
+    blendval *= blendval;// * blendval;
+    this.gl.blendColor(0, 0, 0, blendval);
+    //print(blendval);
+    this.blendinc += 1.0/(this.antialias*this.antialias);
+    this.gl.uniform2f(this.program.uniforms['offset'], this.j/this.antialias-0.5, this.k/this.antialias-0.5);
+    //Draw!
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
+
+    //Next...
+    this.k++;
+    if (this.k >= this.antialias) {
+      this.k = 0;
+      this.j++;
+    }
+
+    if (this.j < this.antialias) {
+      if (!this.time)
+        this.pass();  //Don't draw incrementally when timers disabled
+      else {
+        var that = this;
+        this.timer = setTimeout(function () {that.pass();}, 10);
+      }
+    } else {
+      this.timer = null;
+      if (this.time) this.time.print("Draw");
+    }
   }
 
   WebGL.prototype.updateTexture = function(texture, image, unit) {

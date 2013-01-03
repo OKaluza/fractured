@@ -126,6 +126,8 @@ real atanh(in real x)
 
 real to_real_(in complex z) { return z.x; }
 
+#define inversesqrt(x) rsqrt(x)
+
 #endif
 
 complex mul(in complex a, in complex b)
