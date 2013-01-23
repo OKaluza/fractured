@@ -18,7 +18,7 @@
     $desc = "Newly shared images";
   }
 
-  $getFeed = mysql_query($query)or die(mysql_error());
+  $getFeed = $mysql->query($query)or die($mysql->error());
 
   // Output XML (RSS)
   echo '<?xml version="1.0" encoding="ISO-8859-1" ?>
@@ -38,7 +38,7 @@
 
   echo "\n<atom:link href='{$root}rss.php?type={$type}' rel='self' type='application/rss+xml' />\n";
 
-  while($rssFeed = mysql_fetch_array($getFeed)) {
+  while($rssFeed = $getFeed->fetch_array()) {
     if ($type == "shared")
       $link = $root . $rssFeed['locator'];
     else if ($type == "images")

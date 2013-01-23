@@ -13,12 +13,12 @@
     exit();
   }
 
-  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
+  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with real_escape_string anyway)
   if(get_magic_quotes_gpc()) {
-    $desc = mysql_real_escape_string(stripslashes($desc));
+    $desc = $mysql->real_escape_string(stripslashes($desc));
     $data = stripslashes($_POST["data"]);
   } else {
-    $desc = mysql_real_escape_string($desc);
+    $desc = $mysql->real_escape_string($desc);
     $data = $_POST["data"];
   }
   $mysqldate = date("Y-m-d H:i:s");
@@ -28,27 +28,27 @@
   if ($size > 1000)
     $data = addslashes(gzencode($data, 9));
   else
-    $data = mysql_real_escape_string($data);
+    $data = $mysql->real_escape_string($data);
 
   if (!$sessid)
   {
     $query = "INSERT INTO session (user_id, date, description, data, size) values('$user', '$mysqldate', '$desc', '$data', '$size');";
-    $result = mysql_query($query);
+    $result = $mysql->query($query);
 
-    if (!$result) die('Invalid query: ' . mysql_error());
+    if (!$result) die('Invalid query: ' . $mysql->error());
 
     //New session inserted, save id
-    $sessid = mysql_insert_id();
+    $sessid = $mysql->insert_id;
   }
   else
   {
     $query = "UPDATE session SET date = '$mysqldate', data = '$data', size = '$size' WHERE id = '$sessid' AND user_id = '$user';";
-    $result = mysql_query($query);
-    if (!$result) die('Invalid query: ' . mysql_error());
+    $result = $mysql->query($query);
+    if (!$result) die('Invalid query: ' . $mysql->error());
   }
 //echo $query;
 
-  mysql_close();
+  $mysql->close();
   echo $sessid;
   exit();
 ?>

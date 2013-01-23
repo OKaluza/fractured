@@ -10,10 +10,10 @@
   if (isset($formulae))
   {
     $query = "SELECT * FROM formula WHERE (public = 1 OR user_id = '$user') AND id = '$formulae';";
-    $result = mysql_query( $query );
-    if( mysql_num_rows( $result ))
+    $result = $mysql->query( $query );
+    if ($result->num_rows)
     {
-      $row = mysql_fetch_assoc($result);
+      $row = $result->fetch_assoc();
       //Return the first row result JSON (should only be one)
       echo $row["data"];
     }
@@ -21,11 +21,11 @@
   else
   {
     $query = "SELECT * FROM formula WHERE public = 1 OR user_id = '$user';";
-    $result = mysql_query( $query );
+    $result = $mysql->query( $query );
     // Fetch each row of the results into array $row
     echo '[';
     $count = 0;
-    while ($row = mysql_fetch_array($result))
+    while ($row = $result->fetch_array())
     {
       if ($count > 0) echo ',';
       $count++;
@@ -40,7 +40,7 @@
   }
 
   //Close to free resources
-  mysql_close();
+  $mysql->close();
   
   exit();
 ?>

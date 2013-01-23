@@ -158,13 +158,18 @@
     while (match = reg.exec(expr)) {
       var key = match[1];
       var found = savevars[key];
+      //Check global fractal savevars too...
       if (found == undefined) found = fractal_savevars[key];
+      //Found a variable with known (constant) value, substitute value into expression
       if (found != undefined) {
+        //Cast to string
+        found = found + "";
         //Replace the matched param with value
         var newval = expr.slice(0, reg.lastIndex - match[0].length);
         expr = newval + found + expr.slice(reg.lastIndex, expr.length);
-        //Removed adjustment as calc slightly out and not neccessary to adjust position
-        //reg.lastIndex += (found - match[0].length); //Adjust search position
+        //Adjust search position to account for substituted value
+        if (!found.length) alert(found);
+        reg.lastIndex += (found.length - match[0].length);
       }
     }
 

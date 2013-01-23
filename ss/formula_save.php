@@ -12,35 +12,35 @@
   if ($user <= 0) exit();
 
   //Get submitted details
-  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
+  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with real_escape_string anyway)
   if(get_magic_quotes_gpc()) {
-    $name = mysql_real_escape_string(stripslashes($name));
+    $name = $mysql->real_escape_string(stripslashes($name));
     $data = stripslashes($_POST["data"]);
   } else {
-    $name = mysql_real_escape_string($name);
+    $name = $mysql->real_escape_string($name);
     $data = $_POST["data"];
   }
-  $data = mysql_real_escape_string($data);
+  $data = $mysql->real_escape_string($data);
   $mysqldate = date("Y-m-d H:i:s");
 
   if (!$fid)
   {
     $query = "INSERT INTO formula (user_id, date, name, data, public) values('$user', '$mysqldate', '$name', '$data', '$public');";
-    $result = mysql_query($query);
+    $result = $mysql->query($query);
 
-    if (!$result) die('Invalid query: ' . mysql_error());
+    if (!$result) die('Invalid query: ' . $mysql->error());
 
     //New session inserted, save id
-    $fid = mysql_insert_id();
+    $fid = $mysql->insert_id;
   }
   else
   {
     $query = "UPDATE formula SET date = '$mysqldate', data = '$data', public = '$public' WHERE id = '$fid' AND user_id = '$user';";
-    $result = mysql_query($query);
-    if (!$result) die('Invalid query: ' . mysql_error());
+    $result = $mysql->query($query);
+    if (!$result) die('Invalid query: ' . $mysql->error());
   }
 //echo $query;
 
-  mysql_close();
+  $mysql->close();
   echo $fid;
 ?>

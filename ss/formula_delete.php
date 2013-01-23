@@ -9,11 +9,11 @@
   {
     $query = sprintf("DELETE FROM formula WHERE id = '$fid' AND user_id = '$user';");
     //echo $query;
-    $result = mysql_query($query);
-    if (!$result) die('Invalid query: ' . mysql_error());
+    $result = $mysql->query($query);
+    if (!$result) die('Invalid query: ' . $mysql->error());
   }
 
-  mysql_close();
+  $mysql->close();
 
   exit();
 ?>
