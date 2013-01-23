@@ -1046,27 +1046,32 @@
 
     if (renderer >= WEBCL) {
       //Init WebCL
-      if (this.webcl)
-        this.webcl = new WebCL_(this.webcl.pid, this.webcl.devid);  //Use existing settings
-      else
-        this.webcl = new WebCL_();
+      try {
+        if (this.webcl)
+          this.webcl = new WebCL_(this.webcl.pid, this.webcl.devid);  //Use existing settings
+        else
+          this.webcl = new WebCL_();
 
-      if (!this.webcl) {
-        popup("Error creating WebCL context, attempting fallback to WebGL...");
+        if (!this.webcl) throw("Error creating WebCL context, attempting fallback to WebGL...");
+
+        if (renderer > WEBCL && !this.webcl.fp64) {
+          popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
+        }
+
+        $("fp64").disabled = !this.webcl.fp64;
+        debug(this.webcl.pid + " : " + this.webcl.devid + " --> " + this.canvas.width + "," + this.canvas.height);
+        this.webcl.init(this.canvas, renderer > WEBCL, 8);
+        this.webclMenu();
+        this.webgl = null;
+      } catch(e) {
+        //WebCL init failed, fallback to WebGL
+        popup("Error creating WebCL context: " + e.message + "<br>Falling back to WebGL...");
+        this.webcl = null;
         renderer = WEBGL;
-        return;
       }
+    }
 
-      if (renderer > WEBCL && !this.webcl.fp64) {
-        popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
-      }
-
-      $("fp64").disabled = !this.webcl.fp64;
-      debug(this.webcl.pid + " : " + this.webcl.devid + " --> " + this.canvas.width + "," + this.canvas.height);
-      this.webcl.init(this.canvas, renderer > WEBCL, 8);
-      this.webclMenu();
-      this.webgl = null;
-    } else {
+    if (renderer == WEBGL) {
       //Init WebGL
       if (!window.WebGLRenderingContext) {
         popup("Sorry, WebGL support not detected, try <a href='http://get.webgl.org'>http://get.webgl.org</a> for more information");
