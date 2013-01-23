@@ -12,13 +12,10 @@
 
       //Get & select platforms, devices
       this.platforms = WebCL.getPlatformIDs();
-      //Pick default platform, NVIDIA if available, otherwise first in list
-      if (this.pid == undefined || this.pid >= this.platforms.length) {
-        for (this.pid=this.platforms.length-1; this.pid>=0; this.pid--) {
-          var pfname = this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME);
-          if (pfname.indexOf("NVIDIA") >= 0) break;
-        }
-      }
+      if (this.pid == undefined || this.pid >= this.platforms.length)
+        this.pid = 0;
+
+      if(this.platforms.length<1) throw("No OpenCL platforms found!");
 
       //Create the context
       this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
@@ -38,12 +35,12 @@
       debug("WebCL ready, extensions: " + extensions);
 
     } catch(e) {
-      alert(e.message);
       throw e;
     }
   }
 
   WebCL_.prototype.init = function(canvas, fp64, threads) {
+    if (!this.ctx) return false;
     this.canvas = canvas;
     this.ctx2d = canvas.getContext("2d");
     this.gradientcanvas = document.getElementById('gradient');
@@ -53,6 +50,7 @@
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
     this.queue = this.ctx.createCommandQueue(this.devices[this.devid], 0);
     this.setViewport(0, 0, canvas.width, canvas.height);
+    return true;
   }
 
   WebCL_.prototype.setPrecision = function(fp64) {
