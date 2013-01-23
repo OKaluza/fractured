@@ -161,21 +161,6 @@ var rztimeout = undefined;
     head.appendChild(script);
   }
 
-  function switchMode(mode) {
-    if (mode == WEBGL && fractal.webgl) return;
-    print("Switching to " + (mode==WEBGL ? "WebGL" : mode == WEBCL ? "WebCL" : "WebCL fp64"));
-      sources["generated.shader"] = "";     //Force rebuild
-    if (mode > WEBGL && renderer == WEBCL && fractal.webcl) {
-      fractal.webcl.setPrecision(mode > 1); //Switch precision
-      fractal.applyChanges();
-      return;
-    }
-
-    //Recreate canvas & fractal
-    fractal.setRenderer('main', mode);
-    fractal.applyChanges();
-  }
-
   function handleKey(event) {
     switch (event.keyCode) {
       case 13:
@@ -1194,7 +1179,11 @@ var rztimeout = undefined;
     //Load formulae
     formula_list = null;
     var f_source = localStorage["fractured.formulae"];
-    if (f_source) formula_list = JSON.parse(f_source);
+    if (f_source) {
+      ///TEMP: remove perturb lines from stored formulae
+      f_source = f_source.replace(/if[^;]*perturb[^;]*/, "");
+      formula_list = JSON.parse(f_source);
+    }
     if (!formula_list) formula_list = JSON.parse(readURL('/formulae_' + current.version + '.json', false));
 
     //Cached thumbnails

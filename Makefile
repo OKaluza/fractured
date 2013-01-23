@@ -1,4 +1,4 @@
-VERSION = 0.72
+VERSION = 0.73
 COMP = java -jar compiler-latest/compiler.jar --js=
 FLAGS = --js_output_file=
 RSTFLAGS = --stylesheet-path=docs/docstyle.css 
