@@ -56,7 +56,7 @@
   }
 
   WebCL_.prototype.setPrecision = function(fp64) {
-    this.fp64 = (fp64 == true);
+    this.fp64 = (fp64 == true && this.fp64);
     this.inBuffer = this.fp64 ? new Float64Array(256) : new Float32Array(256);
     this.input = this.ctx.createBuffer(WebCL.CL_MEM_READ_ONLY, this.inBuffer.byteLength);
   }
@@ -95,14 +95,14 @@
     if (!this.ctx2d) {debug("SetViewport: No 2d context!"); return;}
     this.ctx2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    //Adjust width/height, ensure is a multiple of work-group size
+    //Adjust global size to at least [width][height], ensuring is a multiple of work-group size
     this.local = [this.threads, this.threads];
     this.global = [this.getGlobalSize(width, this.threads), this.getGlobalSize(height, this.threads)];
 
     //If width and height changed, recreate output buffer
-    if (!this.viewport || this.viewport.width != this.global[0] || this.viewport.height != this.global[1]) {
-      this.viewport = new Viewport(x, y, this.global[0], this.global[1]);
-      this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, this.format, this.viewport.width, this.viewport.height, 0);
+    if (!this.viewport || this.viewport.width != width || this.viewport.height != height) {
+      this.viewport = new Viewport(x, y, width, height);
+      this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, this.format, this.global[0], this.global[1], 0);
       this.temp = this.ctx.createBuffer(WebCL.CL_MEM_READ_WRITE, this.global[0]*this.global[1]*4*4);
       if (this.k_sample) this.k_sample.setKernelArg (1, this.temp);
       if (this.k_average) this.k_average.setKernelArg(0, this.output);
@@ -144,7 +144,7 @@
     if (!this.queue) return;
     try {
       ctx_g = this.gradientcanvas.getContext("2d");
-      this.outImage = this.ctx2d.createImageData(this.viewport.width, this.viewport.height);
+      this.outImage = this.ctx2d.createImageData(this.global[0], this.global[1]);
       var gradient = ctx_g.getImageData(0, 0, this.gradientcanvas.width, 1);
 
       //Pass additional args
@@ -198,7 +198,7 @@
     this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
 
     this.queue.enqueueReadImage(this.output, false, [0,0,0], 
-         [this.viewport.width,this.viewport.height,1], 0, 0, this.outImage.data, []);
+         [this.global[0],this.global[1],1], 0, 0, this.outImage.data, []);
     this.queue.finish();
 
     this.ctx2d.putImageData(this.outImage, this.viewport.x, this.viewport.y);

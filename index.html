@@ -164,9 +164,9 @@
             <li style="display: none" id="modemenu"><span class="fly" tabindex="1">Render Mode</span>
               <ul>
                 <li><hr></li>
-                <li><span onclick="switchMode(WEBGL);">WebGL Mode</span></li>
-                <li><span onclick="switchMode(WEBCL);">WebCL Mode</span></li>
-                <li><span onclick="switchMode(WEBCL64);">WebCL fp64</span></li>
+                <li><span onclick="fractal.switchMode(WEBGL);">WebGL Mode</span></li>
+                <li><span onclick="fractal.switchMode(WEBCL);">WebCL Mode</span></li>
+                <li><span onclick="fractal.switchMode(WEBCL64);">WebCL fp64</span></li>
               </ul>
             </li>
             <li><span class="fly" tabindex="1">Scripts</span>
@@ -225,9 +225,9 @@
         <p>Local storage usage:</p>
         <div id="indicatorbg"><div id="indicator"></div></div>
         <p>Renderer:</p>
-        <input type="button" value="WebGL" onClick="switchMode(WEBGL);">
-        <input type="button" id="webcl" value="WebCL" onClick="switchMode(WEBCL);">
-        <input type="button" id="fp64" value="WebCL fp64" onClick="switchMode(WEBCL64);">
+        <input type="button" id="webgl" value="WebGL" onClick="fractal.switchMode(WEBGL);">
+        <input type="button" id="webcl" value="WebCL" onClick="fractal.switchMode(WEBCL);">
+        <input type="button" id="fp64" value="WebCL fp64" onClick="fractal.switchMode(WEBCL64);">
         <hr>
         <div id="help">
         Help file not loaded

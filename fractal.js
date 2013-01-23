@@ -1011,6 +1011,16 @@
     this.copyToForm();
   }
 
+  Fractal.prototype.switchMode = function(mode) {
+    if (mode == WEBGL && this.webgl) return;
+    //Recreate canvas & fractal
+    this.setRenderer('main', mode);
+    if (sources["generated.shader"]) {
+      sources["generated.shader"] = "";     //Force rebuild
+      this.applyChanges();
+    }
+  }
+
   Fractal.prototype.setRenderer = function(parentid, mode) {
     //Create new canvas
     this.canvas = document.createElement("canvas");
@@ -1036,11 +1046,27 @@
 
     if (renderer >= WEBCL) {
       //Init WebCL
-      this.webclInit();
-      this.webgl = null;
-    }
+      if (this.webcl)
+        this.webcl = new WebCL_(this.webcl.pid, this.webcl.devid);  //Use existing settings
+      else
+        this.webcl = new WebCL_();
 
-    if (renderer == WEBGL) {
+      if (!this.webcl) {
+        popup("Error creating WebCL context, attempting fallback to WebGL...");
+        renderer = WEBGL;
+        return;
+      }
+
+      if (renderer > WEBCL && !this.webcl.fp64) {
+        popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
+      }
+
+      $("fp64").disabled = !this.webcl.fp64;
+      debug(this.webcl.pid + " : " + this.webcl.devid + " --> " + this.canvas.width + "," + this.canvas.height);
+      this.webcl.init(this.canvas, renderer > WEBCL, 8);
+      this.webclMenu();
+      this.webgl = null;
+    } else {
       //Init WebGL
       if (!window.WebGLRenderingContext) {
         popup("Sorry, WebGL support not detected, try <a href='http://get.webgl.org'>http://get.webgl.org</a> for more information");
@@ -1056,29 +1082,18 @@
         }
       }
     }
-  }
 
-  Fractal.prototype.webclInit = function(pfid, devid) {
-    if (this.webcl && pfid == undefined)
-      this.webcl = new WebCL_(this.webcl.pid, this.webcl.devid);  //Use existing settings
+    //Style buttons
+    $("webgl").className = "";
+    $("webcl").className = "";
+    $("fp64").className = "";
+    if (renderer == WEBGL) 
+      $("webgl").className = "activemode";
+    else if (renderer == WEBCL64 && this.webcl.fp64)
+      $("fp64").className = "activemode";
     else
-      this.webcl = new WebCL_(pfid, devid);
-
-    if (!this.webcl) {
-      popup("Error creating WebCL context, attempting fallback to WebGL...");
-      renderer = WEBGL;
-      return;
-    }
-
-    if (renderer > WEBCL && !this.webcl.fp64) {
-      popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
-      renderer = WEBCL;
-    }
-
-    $("fp64").disabled = !this.webcl.fp64;
-    debug(this.webcl.pid + " : " + this.webcl.devid + " --> " + this.canvas.width + "," + this.canvas.height);
-    this.webcl.init(this.canvas, renderer > WEBCL, 8);
-    this.webclMenu();
+      $("webcl").className = "activemode";
+    print("Mode set to " + (renderer==WEBGL ? "WebGL" : renderer == WEBCL64 && this.webcl.fp64 ? "WebCL fp64" : "WebCL"));
   }
 
   Fractal.prototype.webclMenu = function() {
@@ -1102,7 +1117,9 @@
 
   Fractal.prototype.webclSet = function(pfid, devid) {
     //Init with new selection
-    this.webclInit(pfid, devid);
+    this.webcl.pid = pfid;
+    this.webcl.devid = devid;
+    this.setRenderer('main', renderer);
 
     //Redraw if updating
     if (sources["generated.shader"]) {
@@ -1869,9 +1886,10 @@
   }
 
   Fractal.prototype.sizeCanvas = function() {
-    //This sanity check necessary, as sizeCanvas called when canvas still hidden
-    if (this.canvas.style.display != 'block') {
-      debug("sizeCanvas: abort, canvas hidden");
+    //This sanity check necessary for now as sizeCanvas is 
+    //sometimes called when canvas still hidden (so width/height=0)
+    if (this.canvas.style.display == 'none') {
+      debug("sizeCanvas: skipped, canvas hidden");
       return;
     }
 
