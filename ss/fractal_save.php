@@ -55,17 +55,17 @@
   if ($user <= 0) exit();
 
   //Get submitted details
-  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with mysql_real_escape_string anyway)
+  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with real_escape_string anyway)
   if(get_magic_quotes_gpc()) {
-    $desc = mysql_real_escape_string(stripslashes($desc));
+    $desc = $mysql->real_escape_string(stripslashes($desc));
     $data = stripslashes($_POST["source"]);
     $thumb = stripslashes(base64_decode($_POST["thumbnail"]));
   } else {
-    $desc = mysql_real_escape_string($desc);
+    $desc = $mysql->real_escape_string($desc);
     $data = $_POST["source"];
     $thumb = base64_decode($_POST["thumbnail"]);
   }
-  $data = mysql_real_escape_string($data);
+  $data = $mysql->real_escape_string($data);
 
   $mysqldate = date("Y-m-d H:i:s");
 
@@ -84,7 +84,7 @@
 
     $query = "INSERT INTO fractal (locator, user_id, date, name, source, public) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public');";
 
-    $result = mysql_query($query);
+    $result = $mysql->query($query);
     if ($result == 1) //Loop until insert successful
     {
       writeThumb($public, $locator, $thumb);
@@ -94,17 +94,17 @@
     {
       //Update allowed if locator set and user_id matches
       $query = "UPDATE fractal SET date = '$mysqldate', name = '$desc', source = '$data', public = '$public' WHERE locator = '$locator' AND user_id = '$user';";
-      $result = mysql_query($query);
-      if (!$result) die('Invalid query: ' . mysql_error());
+      $result = $mysql->query($query);
+      if (!$result) die('Invalid query: ' . $mysql->error());
       writeThumb($public, $locator, $thumb);
       break;
     }
     //echo $ftime . "," . $inttime . "," . $locator . "<br>";
-    //echo mysql_error();
+    //echo $mysql->error();
     usleep(1000);  //Wait for 1 millisecond
   }
 
-  mysql_close();
+  $mysql->close();
   $loc = "http://{$_SERVER['SERVER_NAME']}/$locator";
   echo $loc;
   exit();

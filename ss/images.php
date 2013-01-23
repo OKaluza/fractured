@@ -22,22 +22,22 @@
   else if ($type == "myimages")
     $query = "SELECT url,thumb FROM image WHERE user_id = '$user' ORDER BY date;";
 
-  $result = mysql_query( $query );
-  if (!$result) die ('Unable to run query:'.mysql_error());
-  $totimg = mysql_num_rows($result);
+  $result = $mysql->query( $query );
+  if (!$result) die ('Unable to run query:'.$mysql->error());
+  $totimg = $result->num_rows;
   $imgpage = 0;
   if ($totimg > 0) 
   {
     $links = array();
     $thumbs = array();
-    while ($row = mysql_fetch_array($result, MYSQL_NUM))
+    while ($row = $result->fetch_array(MYSQLI_NUM))
     {
       $links[] = $row[0];
       if ($thumb == 100) $thumbs[] = $row[1];
     }
 
     //Close to free resources
-    mysql_close();
+    $mysql->close();
 
     if (isset($_GET['offset']))
       $offset = $_GET['offset'];
