@@ -18,7 +18,7 @@
     $desc = "Newly shared images";
   }
 
-  $getFeed = $mysql->query($query)or die($mysql->error());
+  $getFeed = $mysql->query($query)or die($mysql->error);
 
   // Output XML (RSS)
   echo '<?xml version="1.0" encoding="ISO-8859-1" ?>

@@ -35,7 +35,7 @@
     $query = "INSERT INTO session (user_id, date, description, data, size) values('$user', '$mysqldate', '$desc', '$data', '$size');";
     $result = $mysql->query($query);
 
-    if (!$result) die('Invalid query: ' . $mysql->error());
+    if (!$result) die('Invalid query: ' . $mysql->error);
 
     //New session inserted, save id
     $sessid = $mysql->insert_id;
@@ -44,7 +44,7 @@
   {
     $query = "UPDATE session SET date = '$mysqldate', data = '$data', size = '$size' WHERE id = '$sessid' AND user_id = '$user';";
     $result = $mysql->query($query);
-    if (!$result) die('Invalid query: ' . $mysql->error());
+    if (!$result) die('Invalid query: ' . $mysql->error);
   }
 //echo $query;
 

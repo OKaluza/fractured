@@ -27,7 +27,7 @@
   $query = "INSERT INTO image (url, user_id, date, name, thumb, info) values('$url', '$user', '$mysqldate', '$desc', '$thumb', '$info');";
 
   $result = $mysql->query($query);
-  if (!$result) die('Invalid query: ' . $mysql->error());
+  if (!$result) die('Invalid query: ' . $mysql->error);
   $mysql->close();
 
   exit();
