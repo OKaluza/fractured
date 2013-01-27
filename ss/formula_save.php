@@ -28,7 +28,7 @@
     $query = "INSERT INTO formula (user_id, date, name, data, public) values('$user', '$mysqldate', '$name', '$data', '$public');";
     $result = $mysql->query($query);
 
-    if (!$result) die('Invalid query: ' . $mysql->error());
+    if (!$result) die('Invalid query: ' . $mysql->error);
 
     //New session inserted, save id
     $fid = $mysql->insert_id;
@@ -37,7 +37,7 @@
   {
     $query = "UPDATE formula SET date = '$mysqldate', data = '$data', public = '$public' WHERE id = '$fid' AND user_id = '$user';";
     $result = $mysql->query($query);
-    if (!$result) die('Invalid query: ' . $mysql->error());
+    if (!$result) die('Invalid query: ' . $mysql->error);
   }
 //echo $query;
 

@@ -95,12 +95,12 @@
       //Update allowed if locator set and user_id matches
       $query = "UPDATE fractal SET date = '$mysqldate', name = '$desc', source = '$data', public = '$public' WHERE locator = '$locator' AND user_id = '$user';";
       $result = $mysql->query($query);
-      if (!$result) die('Invalid query: ' . $mysql->error());
+      if (!$result) die('Invalid query: ' . $mysql->error);
       writeThumb($public, $locator, $thumb);
       break;
     }
     //echo $ftime . "," . $inttime . "," . $locator . "<br>";
-    //echo $mysql->error();
+    //echo $mysql->error;
     usleep(1000);  //Wait for 1 millisecond
   }
 

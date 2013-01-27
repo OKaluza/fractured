@@ -23,7 +23,7 @@
     $query = "SELECT url,thumb FROM image WHERE user_id = '$user' ORDER BY date;";
 
   $result = $mysql->query( $query );
-  if (!$result) die ('Unable to run query:'.$mysql->error());
+  if (!$result) die ('Unable to run query:'.$mysql->error);
   $totimg = $result->num_rows;
   $imgpage = 0;
   if ($totimg > 0) 
