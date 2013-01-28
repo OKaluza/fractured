@@ -22,7 +22,7 @@ if "include" in sys.argv[1]:
   "include/fractal-shader.frag" : "",
   "include/complex-math.frag" : "",
   "include/shader2d.vert" : "",
-  "generated.shader" : ""
+  "generated.source" : ""
   }
 
   for key in sources:

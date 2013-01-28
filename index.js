@@ -1,7 +1,5 @@
 //TODO:
 //Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
-//Fixed size images revert to window size?
-//Sometimes loaded palette is not drawn
 
 //Globals
 var current;  //Status
@@ -77,25 +75,24 @@ var rztimeout = undefined;
     //Strip commands from url
     window.history.pushState("", "", current.baseurl);
 
+    //Colour editing and palette management
+    colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();});
+
+    //Fractal & canvas
+    fractal = new Fractal('main', mode, current.antialias);
+
     if (!current.offline) {
       //Session restore:
       //First call to server must not be async or we'll get session creation race conditions
-      sessionGet(readURL('ss/session_get.php', false)); //Get updated list...
+      sessionGet(readURL('ss/session_get.php?info=' + fractal.infoString(), false)); //Get updated list...
       //ajaxReadFile('ss/session_get.php', sessionGet, false); //Get updated list...
       //Load formula lists from server
       ajaxReadFile('ss/formula_get.php', loadFormulaeList, false);
     }
 
     //Initialise app
-
-    //Colour editing and palette management
-    colours = new GradientEditor($('palette'), paletteChanged);
-
-    //Load the last program state
-    loadState();
-
-    //Fractal & canvas
-    fractal = new Fractal('main', mode, current.antialias);
+    loadState();    //Load the last program state
+    fractal.init(); //Create a default fractal
 
     //Event handling
     document.onkeydown = handleKey;
@@ -131,23 +128,16 @@ var rztimeout = undefined;
       showGallery(location.hash);
     }
 
-    ajaxReadFile('docs_' + current.version + '.html', insertHelp);
+    loadHelp();
     loadScript("/codemirror.js", "");
-  }
-
-  function paletteChanged(colours) {
-    if (!fractal) return;
-    var canvas = $('gradient');
-    if (fractal.webgl) fractal.webgl.updateTexture(fractal.webgl.gradientTexture, canvas);
-    colours.get(canvas);
-    fractal.draw();
   }
 
   //Load from a locator hash
   function loadUrl(locator) {
     current.locator = locator;
     fractal.clear();
-    ajaxReadFile('ss/fractal_get.php?id=' + current.locator, restoreFractal, false, updateProgress);
+    progress("Loading fractal...");
+    ajaxReadFile('ss/fractal_get.php?id=' + current.locator, restoreFractal, false);
     //Set address
     window.history.pushState("", "", current.baseurl + "/" + current.locator);
   }
@@ -176,12 +166,14 @@ var rztimeout = undefined;
     }
   }
 
-  function insertHelp(data) {
-    var tempDiv = document.createElement('div');
-    tempDiv.innerHTML = data;
-    var divs = tempDiv.getElementsByTagName('div')
-    if (divs.length > 0)
-      $('help').innerHTML = divs[0].innerHTML;
+  function loadHelp() {
+    ajaxReadFile('docs_' + current.version + '.html', function(data) {
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = data;
+      var divs = tempDiv.getElementsByTagName('div')
+      if (divs.length > 0)
+        $('help').innerHTML = divs[0].innerHTML;
+      } );
   }
 
   //Utility, set display style of all elements of classname
@@ -298,6 +290,7 @@ var rztimeout = undefined;
       fractal.load(data);
       $('name').value = name;
     }
+    progress();
   }
 
   function setAntiAlias(val) {
@@ -622,14 +615,14 @@ var rztimeout = undefined;
     for (var i=0; i<palettes.length; i++) {
       if (!palettes[i].thumb) {
         colours.read(palettes[i].data);
-        colours.update();
+        colours.update(true);
         palettes[i].thumb = paletteThumbnail();
       }
 
       var palimg = new Image;
       palimg.src = palettes[i].thumb;
 
-      var item = addMenuItem(menu, "", "loadPalette(" + i + ");", palimg, false);
+      var item = addMenuItem(menu, "", "loadPalette(" + i + "); fractal.applyChanges();", palimg, false);
       addMenuDelete(item, "deletePalette(" + i + ");");
     }
 
@@ -644,7 +637,6 @@ var rztimeout = undefined;
     if (pstr) {
       var palettes = JSON.parse(pstr);
       colours.read(palettes[idx].data);
-      fractal.applyChanges();
     }
   }
 
@@ -772,7 +764,6 @@ var rztimeout = undefined;
   }
 
   function uploadFractalFile(pub) {
-    fractal.applyChanges();
     var formdata = new FormData();
     formdata.append("type", 0);
     if (current.locator && 
@@ -793,19 +784,16 @@ var rztimeout = undefined;
   }
 
   function fractalUploaded(url) {
+    if (url.indexOf("http") < 0) {alert(url); progress(); return;}
     var link = document.createElement("a");
     link.setAttribute("href", url);
     var linkText = document.createTextNode(url);
     link.appendChild(linkText);
-
-    $("progressstatus").innerHTML = "";
-    $("progressmessage").innerHTML = "";
-    $("progressmessage").appendChild(link);
-    $S("progressbar").width = "300px";
+    //$S("progressbar").width = "300px";
+    progressDoneLink(link);
   }
 
   function packFractal() {
-    fractal.applyChanges();
     var data = window.btoa($('name').value + "\n" + fractal.toString());
     packURL(data);
   }
@@ -863,13 +851,15 @@ var rztimeout = undefined;
   }
 
   function exportFractalFile() {
-    fractal.applyChanges();
     source = fractal.toString();
     exportFile($('name').value + ".fractal", "text/fractal-source", source);
   }
 
   function exportFormulaFile(filename, type, source) {
-    exportFile(filenameToName(filename)[0] + "." + categoryToType(type) + ".formula", "text/fractal-formula", source);
+    var fn = filename;
+    if (fn.indexOf(".") < 0)
+      fn = filenameToName(fn)[0] + "." + categoryToType(type) + ".formula";
+    exportFile(fn, "text/fractal-formula", source);
   }
 
   function exportFormulaSet() {
@@ -948,7 +938,6 @@ var rztimeout = undefined;
   }
 
   function uploadImgur() {
-    fractal.applyChanges();
     var canvas = $("fractal-canvas");
     var data = imageToBlob("image/jpeg", 0.95);
    
@@ -977,10 +966,7 @@ var rztimeout = undefined;
       link.setAttribute("href", url);
       var linkText = document.createTextNode(url);
       link.appendChild(linkText);
-      $('progressmessage').innerHTML = '';
-      $('progressstatus').innerHTML = '';
-      $S('progressbar').width = 0;
-      $('progressmessage').appendChild(link);
+      progressDoneLink(link);
       //...save in our db
       var formdata = new FormData();
       formdata.append("url", 'http://i.imgur.com/' + data.data.id + '.jpg');
@@ -1000,7 +986,6 @@ var rztimeout = undefined;
       return;
     }
 
-    fractal.applyChanges();
     var canvas = $("fractal-canvas");
     var data = imageToBlob("image/jpeg", 0.95);
    
@@ -1020,10 +1005,7 @@ var rztimeout = undefined;
       link.setAttribute("href", data.url);
       var linkText = document.createTextNode(data.url);
       link.appendChild(linkText);
-      $('progressmessage').innerHTML = '';
-      $('progressstatus').innerHTML = '';
-      $S('progressbar').width = 0;
-      $('progressmessage').appendChild(link);
+      progressDoneLink(link);
       //...save in our db
       var formdata = new FormData();
       formdata.append("url", data.url);
@@ -1072,19 +1054,19 @@ var rztimeout = undefined;
     if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
     current.formulae = id;
     current.save();
-    importFormulae(readURL('ss/formula_get.php?id=' + id));
+    progress("Downloading formula set...");
+    importFormulae(readURL('ss/formula_get.php?id=' + id, true, updateProgress));
     //Repopulate menu (so selected set)
     loadFormulaeList(readURL('ss/formula_get.php'));
+    progress();
   }
 
   function importFormulae(data) {
-    var parsed = JSON.parse(data);
-    if (!parsed) return;
     try {
       //localStorage['formula_list'] = parsed;
-      formula_list = parsed; //localStorage["fractured.formula"]);
+      //formula_list = parsed; //localStorage["fractured.formula"]);
       //Create formula entries in drop-downs (and any saved load sources)
-      updateFormulaLists();
+      importFormulaList(data);
       fractal.copyToForm();  //Update selections
       fractal.reselectAll();
       localStorage["fractured.formulae"] = data;
@@ -1181,18 +1163,17 @@ var rztimeout = undefined;
     var f_source = localStorage["fractured.formulae"];
     if (f_source) {
       ///TEMP: remove perturb lines from stored formulae
-      f_source = f_source.replace(/if[^;]*perturb[^;]*/, "");
-      formula_list = JSON.parse(f_source);
+      f_source = f_source.replace(/if[^@;]*perturb[^;]*/, "");
+      importFormulaList(f_source);
+      //formula_list = JSON.parse(f_source);
     }
-    if (!formula_list) formula_list = JSON.parse(readURL('/formulae_' + current.version + '.json', false));
+    //if (!formula_list) formula_list = JSON.parse(readURL('/formulae_' + current.version + '.json', false));
+    if (!formula_list) importFormulaList(readURL('/formulae_' + current.version + '.json', false));
 
     //Cached thumbnails
     thumbnails = [];
     var t_source = localStorage["fractured.thumbnails"];
     if (t_source) thumbnails = JSON.parse(t_source);
-
-    //Create formula entries in drop-downs (and any saved load sources)
-    updateFormulaLists();
 
     populateFractals();
     populatePalettes();
@@ -1214,6 +1195,7 @@ var rztimeout = undefined;
     } else {
       //Load & draw default palettes
       loadPalette(0);
+      fractal.applyChanges();
     }
   }
 
@@ -1313,12 +1295,11 @@ var rztimeout = undefined;
 
   function popup(text) {
     var el = $('popup');
-    if (el.style.display == 'block')
-      el.style.display = 'none';
-    else {
+    if (text) {
       $('popupmessage').innerHTML = text;
       el.style.display = 'block';
-    }
+    } else
+      el.style.display = 'none';
   }
 
   function progress(text) {
@@ -1328,10 +1309,18 @@ var rztimeout = undefined;
       //setTimeout("$('progress').style.display = 'none';", 150);
     } else {
       $('progressmessage').innerHTML = text;
-      $('progressstatus').innerHTML = "0%";
+      $('progressstatus').innerHTML = "";
       $S('progressbar').width = 0;
       el.style.display = 'block';
     }
+  }
+
+  function progressDoneLink(link) {
+    $("progressstatus").innerHTML = "";
+    $("progressmessage").innerHTML = "";
+    $("progressmessage").appendChild(link);
+    //$S("progressbar").width = "0px";
+      $S('progressbar').width = 0;
   }
 
   function login(id) {
@@ -1444,6 +1433,7 @@ var editorFilename;
         field.value = parseReal(field.value) + parseReal(field.step) * event.spin;
         field.onchange();
       } else  {
+        //If any of modifier keys held, scroll digit under mouse pointer
         var pos;
         var dpt = field.value.indexOf(".");
         if (event.shiftKey || event.altKey || event.ctrlKey) {

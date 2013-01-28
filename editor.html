@@ -83,17 +83,18 @@ var formula;
       return;
     }
 
-    if (type)
-       window.opener.formula_list[filename].source = code.value;
-    else
-      window.opener.sources[filename] = code.value;
-
     //Editing compiled shader source?
-    if (filename == "generated.shader")
-      window.opener.fractal.updateShader(code.value);
-    else {
-      if (type) window.opener.fractal.choices[type].select();
-      window.opener.fractal.writeShader();
+    if (filename == "generated.source") {
+      window.opener.fractal.generated.update(code.value);
+    } else {
+      //Save, reselect, rebuild
+      if (type) {
+        window.opener.formula_list[filename].source = code.value;
+        window.opener.fractal.choices[type].select();
+      } else {
+        window.opener.sources[filename] = code.value;
+      }
+      window.opener.fractal.rebuild();
     }
     window.opener.fractal.draw();
   }

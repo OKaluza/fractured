@@ -15,14 +15,14 @@ real @csum = 0.0;
 
 calc:
   if (@diverge)
-    @sum += real(@dexp);
+    @sum += @dexp;
 
   if (@converge)
-    @csum += real(@cexp);
+    @csum += @cexp;
 
 result:
   real mu = @sum;
   if (!@diverge || @converge && converged)
     mu =  @csum;
     
-  colour = gradient(@repeat * mu / real(limit));
+  colour = gradient(@repeat * mu / R(limit));

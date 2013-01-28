@@ -24,20 +24,16 @@
     this.modelView = new ViewMatrix();
     this.perspective = new ViewMatrix();
     this.textures = [];
-    this.errors = false;
     this.timer = null;
 
-    try {
-      var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
-      if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
-      // Try to grab the standard context. If it fails, fallback to experimental.
-      this.gl = canvas.getContext("webgl", options) || canvas.getContext("experimental-webgl", options);
-      this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
-    } catch(e) {
-      this.errors = e;
-    }
+    if (!window.WebGLRenderingContext) throw "Browser doesn't support WebGL";
 
-    if (!this.gl) this.errors = "Failed to get context";
+    var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+    if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
+    // Try to grab the standard context. If it fails, fallback to experimental.
+    this.gl = canvas.getContext("webgl", options) || canvas.getContext("experimental-webgl", options);
+    this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
+    if (!this.gl) throw "Failed to get context";
   }
 
   WebGL.prototype.setMatrices = function() {
@@ -251,6 +247,7 @@
   //Program object
   function WebGLProgram(gl, vs, fs) {
     //Can be passed source directly or script tag
+    this.program = null;
     if (vs.indexOf("main") < 0) vs = getSourceFromElement(vs);
     if (fs.indexOf("main") < 0) fs = getSourceFromElement(fs);
     //Pass in vertex shader, fragment shaders...
@@ -274,21 +271,15 @@
     this.program = this.gl.createProgram();
 
     this.vshader = this.compileShader(vs, this.gl.VERTEX_SHADER);
-    if (typeof(this.vshader) == 'string') this.errors = this.vshader;
     this.fshader = this.compileShader(fs, this.gl.FRAGMENT_SHADER);
-    if (typeof(this.fshader) == 'string') this.errors = this.fshader;
 
-    if (typeof(this.vshader) == 'object' && typeof(this.fshader) == 'object') {
-      this.gl.attachShader(this.program, this.vshader);
-      this.gl.attachShader(this.program, this.fshader);
+    this.gl.attachShader(this.program, this.vshader);
+    this.gl.attachShader(this.program, this.fshader);
 
-      this.gl.linkProgram(this.program);
-   
-      if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
-        alert("Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program));
-      }
-    } else {
-      this.program = null;
+    this.gl.linkProgram(this.program);
+ 
+    if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+      throw "Could not initialise shaders: " + this.gl.getProgramInfoLog(this.program);
     }
   }
 
@@ -297,9 +288,8 @@
     var shader = this.gl.createShader(type);
     this.gl.shaderSource(shader, source);
     this.gl.compileShader(shader);
-    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      return this.gl.getShaderInfoLog(shader);
-    }
+    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS))
+      throw this.gl.getShaderInfoLog(shader);
     return shader;
   }
 

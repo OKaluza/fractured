@@ -19,6 +19,7 @@
 "^"                    return '^'
 "("                    return '('
 ")"                    return ')'
+"#"                    return '#'
 "||"                   return '$'
 "|"                    return '|'
 ","                    return ','
@@ -42,6 +43,7 @@
 /* operator associations and precedence */
 
 %left '<' '>' '==' '!=' '<=' '>='
+%left REAL
 %left UNOT
 %left '+' '-'
 %left '*' '/'
@@ -110,10 +112,10 @@ e
           $$ = $e1 + " + " + $e2;
           yy[$$] = 'real';
         } else if (yy[$e1] == 'real') {
-          $$ = "complex(" + $e1 + ",0) + " + $e2;
+          $$ = "C(" + $e1 + ",0) + " + $e2;
           yy[$$] = 'complex';
         } else if (yy[$e2] == 'real') {
-          $$ = $e1 + " + complex(" + $e2 + ",0)";
+          $$ = $e1 + " + C(" + $e2 + ",0)";
           yy[$$] = 'complex';
         } else {
           $$ = $e1 + " + " + $e2;
@@ -127,10 +129,10 @@ e
           $$ = $e1 + " - " + $e2;
           yy[$$] = 'real';
         } else if (yy[$e1] == 'real') {
-          $$ = "complex(" + $e1 + ",0) - " + $e2;
+          $$ = "C(" + $e1 + ",0) - " + $e2;
           yy[$$] = 'complex';
         } else if (yy[$e2] == 'real') {
-          $$ = $e1 + " - complex(" + $e2 + ",0)";
+          $$ = $e1 + " - C(" + $e2 + ",0)";
           yy[$$] = 'complex';
         } else {
           $$ = $e1 + " - " + $e2;
@@ -189,7 +191,7 @@ e
           yy[$$] = 'real';
         } else {
           if (power == 0.0)
-            $$ = "complex(1,0)";
+            $$ = "C(1,0)";
           else if (power == 1.0)
             $$ = $e1;
           else if (power == 2.0)
@@ -198,9 +200,9 @@ e
             $$ = "cube(" + $e1 + ")";
           else {
             if (yy[$e1] == 'real')
-              $e1 = "complex(" + $e1 + ",0)";
+              $e1 = "C(" + $e1 + ",0)";
             if (yy[$e2] == 'real')
-              $e2 = "complex(" + $e2 + ",0)";
+              $e2 = "C(" + $e2 + ",0)";
             $$ = "cpow(" + $e1 + "," + $e2 + ")"
           }
           yy[$$] = 'complex';
@@ -208,10 +210,15 @@ e
       }
     | e '==' e -> $e1 + " == " + $e2
     | e '!=' e -> $e1 + " != " + $e2
-    | e '<=' e -> "real(" + $e1 + ") <= real(" + $e2 + ")"
-    | e '>=' e -> "real(" + $e1 + ") >= real(" + $e2 + ")"
-    | e '<' e  -> "real(" + $e1 + ") < real(" + $e2 + ")"
-    | e '>' e  -> "real(" + $e1 + ") > real(" + $e2 + ")"
+    | e '<=' e -> "R(" + $e1 + ") <= R(" + $e2 + ")"
+    | e '>=' e -> "R(" + $e1 + ") >= R(" + $e2 + ")"
+    | e '<' e  -> "R(" + $e1 + ") < R(" + $e2 + ")"
+    | e '>' e  -> "R(" + $e1 + ") > R(" + $e2 + ")"
+    | '#' e %prec REAL
+      {
+        $$ = "R(" + $e + ")";
+        yy[$$] = 'real';
+      }
     | '!' e %prec UNOT  // -> "!" + $e
       {
         $$ = "!" + $e;
@@ -222,7 +229,7 @@ e
         $$ = "-" + $e;
         yy[$$] = yy[$e];
       }
-    | '|' e '|' %prec NORM //-> "complex(cabs(" + $e + "),0)"
+    | '|' e '|' %prec NORM //-> "C(cabs(" + $e + "),0)"
       {
         if (yy[$e] == 'real')
           $$ = "abs(" + $e + ")";
@@ -230,7 +237,7 @@ e
           $$ = "cabs(" + $e + ")";
         yy[$$] = 'real';
       }
-    | '$' e '$' %prec NORM //-> "complex(norm(" + $e + "),0)"
+    | '$' e '$' %prec NORM //-> "C(norm(" + $e + "),0)"
       {
         if (yy[$e] == 'real')
           $$ = "(" + $e + "*" + $e + ")";

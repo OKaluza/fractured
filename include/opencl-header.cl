@@ -1,5 +1,5 @@
-//OpenCL specific header 
-//(also need to search & replace all casts type() with c-style cast (type)() complex/real/rgba/int
+//--- OpenCL specific header --------------------------------------
+#define OPENCL
 #ifdef FP64
 //Double precision
 #pragma OPENCL EXTENSION cl_khr_fp64: enable
@@ -12,14 +12,24 @@
 #define complex float2
 #endif
 
-#define OPENCL
 #define rgba float4
 #define in const
 #define discard return (rgba)(0)
 
-//Functions with alternate names
+//Initialisers
+//#define C(x,y) (complex)(x,y)
+//Initialise complex,
+//really strange problem when using (complex)(x,y) (eg: for power, passed to cpow() )
+//setting components seems to work around it... (problem on NVIDIA Only)
+complex C(in real x, in real y) { complex z; z.x = x; z.y = y; return z; }
+#define R(x) (real)(x)
+
+//Maths functions with alternate names
 #define mod(a,b) fmod((real)a,(real)b)
 #define abs(a) fabs(a)
+#define inversesqrt(x) rsqrt(x)
+#define PI  M_PI_F
+#define E   M_E_F
 
 //Palette lookup mu = [0,1]
 __constant sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;
@@ -31,8 +41,6 @@ rgba read_palette(image2d_t palette, float mu)
 }
 
 #define CALCPIXEL rgba calcpixel(int iterations, complex coord, complex offset, bool julia, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background, __global real* input)
-#define GLSL_MAIN 
-#define OPENCL_MAIN CALCPIXEL {
 
 #define set_result(c) return clamp(c, 0.0f, 1.0f);
 CALCPIXEL;  //Prototype

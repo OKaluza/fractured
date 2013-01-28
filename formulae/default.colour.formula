@@ -6,4 +6,4 @@
 @repeat = real(1);
 
 result:
-  colour = gradient(@repeat * real(count) / real(limit));
+  colour = gradient(@repeat * R(count) / R(limit));

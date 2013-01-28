@@ -95,6 +95,10 @@
       //Update allowed if locator set and user_id matches
       $query = "UPDATE fractal SET date = '$mysqldate', name = '$desc', source = '$data', public = '$public' WHERE locator = '$locator' AND user_id = '$user';";
       $result = $mysql->query($query);
+      if ($mysql->affected_rows < 1) {
+        echo "Zero rows affected, Permission denied, is this your fractal?";
+        exit();
+      }
       if (!$result) die('Invalid query: ' . $mysql->error);
       writeThumb($public, $locator, $thumb);
       break;
