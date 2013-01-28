@@ -29,8 +29,8 @@ calc:
   }
 
 result:
-  @sum /= real(count);
-  @sum2 /= real(count-1);
+  @sum /= R(count);
+  @sum2 /= R(count-1);
   real f = @il * (@lp - @lfn(@lfn(cabs(z))));
   real idx = @sum2 + (@sum - @sum2) * (f+1.0);
   colour = gradient(@repeat * idx);

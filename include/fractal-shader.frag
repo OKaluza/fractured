@@ -1,8 +1,15 @@
-OPENCL_MAIN
+//--- Main program ------------------------------------------------
+#ifdef OPENCL
+CALCPIXEL
+{
+#endif
 
 ---DATA---
 
-GLSL_MAIN
+#ifdef GLSL
+void main()
+{
+#endif
 
   //Globals
   complex z, c;
@@ -14,10 +21,10 @@ GLSL_MAIN
   bool converged = false;
 
   int limit = iterations;   //Max iterations
-  rgba colour = rgba(0.0,0.0,0.0,0.0);
+  rgba colour = background;
 
   //Init fractal
-  point = coord + complex(offset.x*pixelsize, offset.y*pixelsize);
+  point = coord + C(offset.x*pixelsize, offset.y*pixelsize);
 
   ---INIT---
 

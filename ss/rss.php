@@ -16,6 +16,9 @@
     $query = "SELECT name,url FROM image ORDER BY date DESC;";
     $title = "Recent Images";
     $desc = "Newly shared images";
+  } else {
+    echo "Feed not specified";
+    exit();
   }
 
   $getFeed = $mysql->query($query)or die($mysql->error);

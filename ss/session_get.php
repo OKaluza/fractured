@@ -13,6 +13,10 @@
     session_destroy();
   }
 
+  //Some browser info
+  if (isset($_GET['info']))
+    $_SESSION["info"] = $_GET['info'];
+
   if ($user > 0)
   {
     //Retrieve specific ID or list?

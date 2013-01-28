@@ -13,6 +13,6 @@ real @il = 1.0/@lfn(@power);
 real @lp = @lfn(@lfn(@bailout));
 
 result:
-  real mu = real(count) + (@lp - @lfn(@lfn(cabs(z)))) * @il;
+  real mu = R(count) + (@lp - @lfn(@lfn(cabs(z)))) * @il;
   //Colour from gradient 
-  colour = gradient(@repeat * mu / real(limit));
+  colour = gradient(@repeat * mu / R(limit));

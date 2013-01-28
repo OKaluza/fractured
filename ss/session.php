@@ -10,4 +10,11 @@ session_start();
 //session_set_cookie_params ( int $lifetime [, string $path [, string $domain [, bool $secure = false [, bool $httponly = false ]]]] )
 session_start();
 */
+
+//Save some info
+if (!isset($_SESSION['ip']))
+{
+  $_SESSION['ip'] = $_SERVER['REMOTE_ADDR'];
+  $_SESSION['useragent'] = $_SERVER['HTTP_USER_AGENT'];
+}
 ?>

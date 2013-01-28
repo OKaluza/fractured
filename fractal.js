@@ -2,7 +2,7 @@
   var WEBGL = 0;
   var WEBCL = 1;
   var WEBCL64 = 2;
-  var renderer = WEBGL;
+  var NONE = -1;
   //Regular expressions
   var paramreg = /(\/\/(.*))?(?:\r\n|[\r\n])(@@?)(\w*)\s*=\s*(bool|int|real|complex|rgba|range|list|real_function|complex_function|bailout_function|expression|define)\(([\S\s]*?)\);/gi;
   var boolreg = /(true|false)/i;
@@ -168,7 +168,6 @@
         var newval = expr.slice(0, reg.lastIndex - match[0].length);
         expr = newval + found + expr.slice(reg.lastIndex, expr.length);
         //Adjust search position to account for substituted value
-        if (!found.length) alert(found);
         reg.lastIndex += (found.length - match[0].length);
       }
     }
@@ -347,7 +346,7 @@
         break;
       case 2: //complex
         //return "complex(" + realStr(this.value.re) + "," + realStr(this.value.im) + ")";
-        declaration = "const " + type + " " + key + " = complex(" + this.value.re + "," + this.value.im + ");\n";
+        declaration = "const " + type + " " + key + " = C(" + this.value.re + "," + this.value.im + ");\n";
         break;
       case 4: //Function name
         if (type == 'real_function' && rfreg.test(this.value))
@@ -368,7 +367,7 @@
 
     if (this.uniform) {
       //WebCL: "uniforms' passed in input[] array
-      if (renderer > WEBGL && fractal.webcl)
+      if (fractal.renderer > WEBGL && fractal.webcl)
         declaration = fractal.webcl.setInput(this, type, key);
       else
         declaration = "uniform " + type + " " + key + ";\n";
@@ -1001,6 +1000,7 @@
    */
   function Fractal(parentid, mode, antialias) {
     //Construct a new default fractal object
+    this.renderer = WEBGL;
 
     this.setRenderer(parentid, mode);
 
@@ -1009,19 +1009,34 @@
 
     this.antialias = antialias;
     this.preview = null;
+  }
 
-    this.offsets = [];
-
+  Fractal.prototype.init = function() {
+    //Set the default fractal options
     this.resetDefaults();
     this.copyToForm();
+  }
+
+  Fractal.prototype.infoString = function() {
+    //Some info about browser capability
+    var info = "";
+    if (window.WebGLRenderingContext) info += "W";
+    if (this.webgl) info += "G";
+    if (this.webcl) {
+      info += "C";
+      if (this.webcl.fp64) info += "D";
+      if (this.pfstrings) info += this.pfstrings;
+    }
+    debug("INFO: " + info);
+    return info;
   }
 
   Fractal.prototype.switchMode = function(mode) {
     if (mode == WEBGL && this.webgl) return;
     //Recreate canvas & fractal
     this.setRenderer('main', mode);
-    if (sources["generated.shader"]) {
-      sources["generated.shader"] = "";     //Force rebuild
+    if (sources["generated.source"]) {
+      sources["generated.source"] = "";     //Force rebuild
       this.applyChanges();
     }
   }
@@ -1040,56 +1055,57 @@
     pelement.appendChild(this.canvas);
 
     //Render mode, If not set, use WebCL if available
-    renderer = mode;
-    if (renderer == undefined) renderer = WEBCL;
+    this.renderer = mode;
+    if (this.renderer == undefined) this.renderer = WEBCL;
     if (window.WebCL == undefined) {
       if (mode > WEBGL) popup("Sorry, Nokia WebCL plugin not found, try <a href='http://webcl.nokiaresearch.com/'>webcl.nokiaresearch.com</a> for more information");
-      renderer = WEBGL;
+      this.renderer = WEBGL;
       $("webcl").disabled = true;
       $("fp64").disabled = true;
     }
 
-    if (renderer >= WEBCL) {
+    if (this.renderer >= WEBCL) {
       //Init WebCL
       try {
         if (this.webcl)
-          this.webcl = new WebCL_(this.webcl.pid, this.webcl.devid);  //Use existing settings
+          this.webcl = new OpenCL(this.webcl.pid, this.webcl.devid);  //Use existing settings
         else
-          this.webcl = new WebCL_();
+          this.webcl = new OpenCL();
 
-        if (!this.webcl) throw("Error creating WebCL context, attempting fallback to WebGL...");
-
-        if (renderer > WEBCL && !this.webcl.fp64) {
-          popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> extension is required for double precision support in WebCL");
+        if (this.renderer > WEBCL && !this.webcl.fp64) {
+          popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> " + 
+                "extension is required for double precision support in WebCL");
         }
 
         $("fp64").disabled = !this.webcl.fp64;
         debug(this.webcl.pid + " : " + this.webcl.devid + " --> " + this.canvas.width + "," + this.canvas.height);
-        this.webcl.init(this.canvas, renderer > WEBCL, 8);
+        this.webcl.init(this.canvas, this.renderer > WEBCL, 8);
         this.webclMenu();
         this.webgl = null;
       } catch(e) {
         //WebCL init failed, fallback to WebGL
         popup("Error creating WebCL context: " + e.message + "<br>Falling back to WebGL...");
         this.webcl = null;
-        renderer = WEBGL;
+        this.renderer = WEBGL;
       }
     }
 
-    if (renderer == WEBGL) {
-      //Init WebGL
-      if (!window.WebGLRenderingContext) {
-        popup("Sorry, WebGL support not detected, try <a href='http://get.webgl.org'>http://get.webgl.org</a> for more information");
-      } else {
+    if (this.renderer == WEBGL) {
+      try {
+        //Init WebGL
         this.webgl = new WebGL(this.canvas);
-        if (this.webgl.errors) {
-          popup("Error initialising WebGL (" + this.webgl.errors + "), try <a href='http://get.webgl.org/troubleshooting'>http://get.webgl.org/troubleshooting</a> for more information");
-          this.webgl = null;
-        } else {
-          this.gl = this.webgl.gl;
-          this.webgl.init2dBuffers();
-          setAll('none', 'webcl');  //hide CL menu options
-        }
+        this.gl = this.webgl.gl;
+        this.webgl.init2dBuffers();
+        setAll('none', 'webcl');  //hide CL menu options
+      } catch(e) {
+        //WebGL init failed
+        var error = e;
+        if (e.message) error = e.message;
+        popup("Error initialising WebGL (" + error + 
+              ")<br>Try <a href='http://get.webgl.org/troubleshooting'>" + 
+              "http://get.webgl.org/troubleshooting</a> for more information");
+        this.webgl = null;
+        this.renderer = NONE;
       }
     }
 
@@ -1097,16 +1113,19 @@
     $("webgl").className = "";
     $("webcl").className = "";
     $("fp64").className = "";
-    if (renderer == WEBGL) 
+    if (this.renderer == WEBGL) 
       $("webgl").className = "activemode";
-    else if (renderer == WEBCL64 && this.webcl.fp64)
+    else if (this.renderer == WEBCL64 && this.webcl.fp64)
       $("fp64").className = "activemode";
-    else
+    else if (this.renderer == WEBCL)
       $("webcl").className = "activemode";
-    print("Mode set to " + (renderer==WEBGL ? "WebGL" : renderer == WEBCL64 && this.webcl.fp64 ? "WebCL fp64" : "WebCL"));
+
+    var renderer_names = ["None", "WebGL", "WebCL", "WebCL fp64"];
+    print("Mode set to " + renderer_names[this.renderer+1]);
   }
 
   Fractal.prototype.webclMenu = function() {
+    this.pfstrings = "";
     setAll('block', 'webcl');  //show menu options
     //Clear & repopulate list
     var menu = $('platforms');
@@ -1114,9 +1133,17 @@
     for (var p=0; p<this.webcl.platforms.length; p++) {
       var plat = this.webcl.platforms[p];
       var pfname = plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
+      this.pfstrings += "+" + /^[^\s]*/.exec(pfname)[0];
       var devices = plat.getDevices(WebCL.CL_DEVICE_TYPE_ALL);
       for (var d=0; d < devices.length; d++, i++) {
         var name = pfname + " : " + devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME);
+        var dtype = devices[d].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
+        if (dtype == WebCL.CL_DEVICE_TYPE_CPU)
+          this.pfstrings += "-C"; 
+        else if (dtype == WebCL.CL_DEVICE_TYPE_GPU)
+          this.pfstrings += "-G";
+        else
+          this.pfstrings += "-O";
         var onclick = "fractal.webclSet(" + p + "," + d + ");";
         var item = addMenuItem(menu, name, onclick);
         if (p == this.webcl.pid && d == this.webcl.devid) selectMenuItem(item);
@@ -1129,18 +1156,18 @@
     //Init with new selection
     this.webcl.pid = pfid;
     this.webcl.devid = devid;
-    this.setRenderer('main', renderer);
+    this.setRenderer('main', this.renderer);
 
     //Redraw if updating
-    if (sources["generated.shader"]) {
+    if (sources["generated.source"]) {
       //Invalidate shader cache
-      sources["generated.shader"] = '';
+      sources["generated.source"] = '';
       this.applyChanges();
     }
   }
 
   Fractal.prototype.precision = function(val) {
-    if (renderer > WEBGL && this.webcl.fp64) return val.toFixed(15);
+    if (this.renderer > WEBGL && this.webcl.fp64) return val.toFixed(15);
     return val.toFixed(8);
   }
 
@@ -1248,7 +1275,7 @@
     var type = arr[1];
     var key = type + "/" + name;
     if (formula_list[key]) {
-      if (formula_list[key].source.strip() == source.strip()) return;
+      if (formula_list[key].equals(source)) return;
 
       if (confirm("Replace formula definition " + key + " with new definition from this file?")) {
         formula_list[key].source = source;
@@ -1263,15 +1290,17 @@
 
   Fractal.prototype.deleteFormula = function(select) {
     var sel = $(select + '_formula');
-    var key = formulaKey(select, sel.options[sel.selectedIndex].value);
+    var selid = sel.selectedIndex;
+    var key = formulaKey(select, sel.options[selid].value);
     if (!key) return;
     var label = formula_list[key].label;
     if (!label || !confirm('Really delete the "' + label + '" formula?')) return;
+    sel.remove(selid);
     delete formula_list[key];
     //Select previous
-    sel.selectedIndex--;
+    sel.selectedIndex = selid - 1;
     saveSelections(); //Update formula selections into selected variable
-    updateFormulaLists();
+    //updateFormulaLists();
     //Finally, reselect
     this.reselectAll();
   }
@@ -1336,7 +1365,7 @@
       if (this.choices[category].selected != "none") {
         //Don't save formula source twice if same used
         if (category=="post_transform" && this.choices["post_transform"].selected == this.choices["pre_transform"].selected) continue;
-        if (category=="inside_colour" && this.choices["outside_colour"].selected == this.choices["inside_colour"].selected) break;
+        if (category=="inside_colour" && this.choices["outside_colour"].selected == this.choices["inside_colour"].selected) continue;
         code += "\n[formula." + category + "]\n" + this.choices[category].getSource();
       }
     }
@@ -1483,11 +1512,11 @@
                 if (!formula_list[key]) {
                   debug("Imported new formula: " + key);
                   var f = new FormulaEntry(categoryToType(category), nameToLabel(name), buffer);
-                } else if (formula_list[key].source.strip() != buffer.strip()) {
+                } else if (!formula_list[key].equals(buffer)) {
                   //First search other formulae in this category for duplicate entries!
                   var found = false;
                   for (k in formula_list) {
-                    if (formula_list[k].source.strip() == buffer.strip()) {
+                    if (formula_list[k].equals(buffer)) {
                       debug("Found duplicate formula definition, using name: " + formula_list[k].name + " (was: " + name + ")");
                       name = formula_list[k].name;
                       found = true;
@@ -1928,7 +1957,7 @@
       if (this.webgl) {
         this.webgl.viewport.width = width;
         this.webgl.viewport.height = height;
-      } else if (renderer >= WEBCL && this.webcl) {
+      } else if (this.renderer >= WEBCL && this.webcl) {
         //Update WebCL buffer if size changed
         if (this.webcl.viewport.width != this.canvas.width || this.webcl.viewport.height != this.canvas.height) {
           debug("Size changed, WebCL resize");
@@ -1940,7 +1969,7 @@
 
   //Apply any changes to parameters or formula selections and redraw
   Fractal.prototype.applyChanges = function(antialias, notime) {
-    //Update palette
+    //Update palette texture
     var canvas = $('gradient');
     colours.get(canvas);
     if (this.webgl) this.webgl.updateTexture(this.webgl.gradientTexture, canvas);
@@ -1973,8 +2002,13 @@
       this.choices[category].currentParams.setFromForm();
 
     //Update shader code & redraw
-    this.writeShader(notime);
+    this.rebuild(notime);
     this.draw(antialias, notime);
+  }
+
+  Fractal.prototype.rebuild = function(notime) {
+    this.generated = new Generator(this, this.renderer >= WEBCL && this.webcl, notime);
+    this.generated.generate();
   }
 
   //Update form controls with fractal data
@@ -1999,77 +2033,101 @@
       document["inputs"].elements["autosize"].checked = false;
   }
 
-  //Create shader from source components
-  Fractal.prototype.generateShader = function(header) {
-    //Get formula selections
-    var selections = {};
-    for (category in this.choices)
-      selections[category] = this.choices[category].getParsedFormula();
+  /**
+   * @constructor
+   */
+  function Generator(fractal, webcl, notime) {
+    this.fractal = fractal;
+    this.webcl = webcl;
+    this.notime = notime;
+    this.source = "";
+  }
 
+  Generator.prototype.headers = function() {
     //Add headers + core code template
-    //var shader = sources[header] + sources["include/complex-header.frag"] + sources["include/fractal-shader.frag"];
-    //Insert the complex maths library + core code template
-    //var shader = "#define MAXITER " + this.iterations + "\n" + 
-    var shader = "#define MAXITER " + (100 * Math.ceil(this.iterations / 100)) + "\n" + 
-                 sources[header] + 
-                 sources["include/complex-math.frag"] + 
-                 sources["include/fractal-shader.frag"];
+    var headers = "";
+    if (this.webcl) {
+      //OpenCL kernel
+      this.fractal.webcl.resetInput();
+      headers += sources["include/opencl-header.cl"];
+    } else {
+      //GLSL shader
+      headers += sources["include/glsl-header.frag"];
+    }
+
+    headers += sources["include/complex-math.frag"]; 
+
+    //Insert at beginning of source
+    headers += "\n#define MAXITER " + (100 * Math.ceil(this.fractal.iterations / 100)) + "\n";
+    this.headerlen = headers.split("\n").length;
+    this.source = headers + this.source;
+  }
+
+  //Create shader from source components
+  Generator.prototype.generate = function() {
+    this.source = sources["include/fractal-shader.frag"]; 
+    //Get formula selections
+    this.selections = {};
+    for (category in this.fractal.choices)
+      this.selections[category] = this.fractal.choices[category].getParsedFormula();
 
     //Replace ---SECTION--- in template with formula code
     this.offsets = [];
-    shader = this.templateInsert(shader, selections, "DATA", "data", 
-                ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour", "filter"], 2);
-    shader = this.templateInsert(shader, selections, "INIT", "init",
-                ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "RESET", "reset", 
-                ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "PRE_TRANSFORM", "transform", ["pre_transform"], 4);
-    shader = this.templateInsert(shader, selections, "ZNEXT", "znext", ["fractal"], 2);
-    shader = this.templateInsert(shader, selections, "POST_TRANSFORM", "transform", ["post_transform"], 4);
-    shader = this.templateInsert(shader, selections, "ESCAPED", "escaped", ["fractal"], 2);
-    shader = this.templateInsert(shader, selections, "CONVERGED", "converged", ["fractal"], 2);
-    shader = this.templateInsert(shader, selections, "OUTSIDE_CALC", "calc", ["outside_colour"], 4);
-    shader = this.templateInsert(shader, selections, "INSIDE_CALC", "calc", ["inside_colour"], 4);
-    shader = this.templateInsert(shader, selections, "OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
-    shader = this.templateInsert(shader, selections, "FILTER", "filter", ["filter"], 2);
-    this.offsets.push(new LineOffset("(end)", "(end)", shader.split("\n").length));
-
-    //Append the complex maths library
-    //shader = shader + sources["include/complex-math.frag"];
-
-    //Remove param declarations, replace with newline to preserve line numbers
-    //shader = shader.replace(paramreg, "//(Param removed)\n");
+    var alltypes = ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour", "filter"];
+    this.templateInsert("DATA", "data", alltypes, 2);
+    this.templateInsert("INIT", "init", alltypes, 2);
+    this.templateInsert("RESET", "reset", alltypes, 2);
+    this.templateInsert("PRE_TRANSFORM", "transform", ["pre_transform"], 4);
+    this.templateInsert("ZNEXT", "znext", ["fractal"], 2);
+    this.templateInsert("POST_TRANSFORM", "transform", ["post_transform"], 4);
+    this.templateInsert("ESCAPED", "escaped", ["fractal"], 2);
+    this.templateInsert("CONVERGED", "converged", ["fractal"], 2);
+    this.templateInsert("OUTSIDE_CALC", "calc", ["outside_colour"], 4);
+    this.templateInsert("INSIDE_CALC", "calc", ["inside_colour"], 4);
+    this.templateInsert("OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
+    this.templateInsert("INSIDE_COLOUR", "result", ["inside_colour"], 2);
+    this.templateInsert("FILTER", "filter", ["filter"], 2);
+    this.offsets.push(new LineOffset("(end)", "(end)", this.source.split("\n").length));
 
     //Replace any (x,y) constants with complex(x,y)
     //(where x,y can be a numeric constant)
-    //var creg = /([^a-zA-Z_])\(([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)/g;
-    //shader = shader.replace(creg, "$1complex($2,$4)");
-
     //(...modified to also allow single variables, note: first pattern is to ignore function call match)
     var creg = /([^a-zA-Z0-9_\)])\(([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\s*,\s*([-+]?((\d*\.)?\d+|[a-zA-Z_][a-zA-Z0-9_]*))\)/g
-    shader = shader.replace(creg, "$1complex($2,$5)");
+    //var creg = /([^a-zA-Z_])\(([-+]?(\d*\.)?\d+)\s*,\s*([-+]?(\d*\.)?\d+)\)/g;
+    this.source = this.source.replace(creg, "$1C($2,$5)");
 
-    shader = shader.replace(/ident/g, ""); //Strip ident() calls
+    this.source = this.source.replace(/ident/g, ""); //Strip ident() calls
 
-    return shader;
+    //Switch to C-style casts for OpenCL
+    if (this.webcl) {
+      this.source = this.source.replace(/complex\(/g, "C(");
+      this.source = this.source.replace(/real\(/g, "(real)(");
+      this.source = this.source.replace(/float\(/g, "(float)(");
+      this.source = this.source.replace(/int\(/g, "(int)(");
+      this.source = this.source.replace(/rgba\(/g, "(rgba)(");
+    }
+
+    //Insert headers
+    this.headers();
+    //Recompile
+    this.compile();
   }
 
-  Fractal.prototype.templateInsert = function(shader, selections, marker, section, sourcelist, indent) {
+  Generator.prototype.templateInsert = function(marker, section, sourcelist, indent) {
     var source = "//***" + marker + "***\n";
     var regex = new RegExp("---" + marker + "---");
     var spaces = "          ";
     spaces = spaces.substr(0, indent);
 
     //Save the line offset where inserted
-    var match = regex.exec(shader);
-    var offset = shader.slice(0, match.index).split("\n").length;
+    var match = regex.exec(this.source);
+    var offset = this.source.slice(0, match.index).split("\n").length;
     //debug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
 
     //Get sources
     for (s in sourcelist) {
       //Get code for this section from each of the sources
-      var code = selections[sourcelist[s]][section];
+      var code = this.selections[sourcelist[s]][section];
       if (!code) continue;
 
       //Replace spaces at line beginnings with specified indent
@@ -2090,101 +2148,86 @@
     }
 
     //Replaces a template section with the passed source
-    return shader.replace(regex, source);
+    this.source = this.source.replace(regex, source);
   }
 
-  //Build and redraw shader
-  Fractal.prototype.writeShader = function(notime) {
-    var source;
-    if (this.webgl) {
-      //Create the GLSL shader
-      source = this.generateShader("include/glsl-header.frag");
-    } else if (renderer >= WEBCL && this.webcl) {
-      //Build OpenCL kernel
-      this.webcl.resetInput();
-      source = this.generateShader("include/opencl-header.cl");
+  Generator.prototype.update = function(source) {
+    //Replacement source and recompile
+    this.source = source;
+    this.compile();
+  }
 
-      //var native_fn = /(cos|exp|log|log2|log10|sin|sqrt|tan)\(/g;
-      //source = source.replace(native_fn, "native_$1(");
-
-      //Switch to C-style casts
-      source = source.replace(/complex\(/g, "(complex)(");
-      source = source.replace(/real\(/g, "to_real_("); //Modified to allow convert from complex
-      source = source.replace(/float\(/g, "(float)(");
-      source = source.replace(/int\(/g, "(int)(");
-      source = source.replace(/rgba\(/g, "(rgba)(");
-
-    }
+  //Rebuild from source
+  Generator.prototype.compile = function() {
     //Only recompile if data has changed!
-    if (sources["generated.shader"] != source) {
-      this.updateShader(source, notime);
+    if (sources["generated.source"] != this.source) {
+      //Save for debugging
+      var timer = new Timer();
+      sources["generated.source"] = this.source;
+
+      //Compile the shader using WebGL or WebCL
+      //Any build errors will cause exceptions
+      var error_regex = /0:(\d+)/;
+      try {
+        if (this.webcl) {
+          error_regex = /[^-](\d+):/;
+          //error_regex = /:(\d+):/;
+          this.fractal.webcl.buildProgram(this.source);
+        } else {
+          this.fractal.updateShader(this.source);
+        }
+        if (!this.notime) timer.print("Compile");
+      } catch (e) {
+        this.parseErrors(e, error_regex);
+      }
+
       //Opera doesn't support onbeforeunload, so save state now
       if (window.opera) saveState();
     } else
       debug("Shader build skipped, no changes");
   }
 
-  Fractal.prototype.updateShader = function(source, notime) {
-    //Save for debugging
-    var timer = new Timer();
-    sources["generated.shader"] = source;
-    print("Rebuilding fractal shader using:");
-    for (category in this.choices)
-      if (this.choices[category].selected != "none") print(category + ": " + this.choices[category].selected);
-
-    //Compile the shader using WebGL or WebCL
-    var errors = "";
-    if (this.webgl) {
-      this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
-      //Restore uniforms/attributes for fractal program
-      var uniforms = ["palette", "offset", "iterations", "julia", "origin", "selected_", "dims", "pixelsize", "background"];
-      this.program.setup(["aVertexPosition"], uniforms);
-      errors = this.program.errors;
-      this.parseErrors(errors, /0:(\d+)/);
-      //Get HLSL source if available
-      if (current.debug) {
-        var angle = this.gl.getExtension("WEBGL_debug_shaders");
-        if (angle) sources["generated.hlsl"] = angle.getTranslatedShaderSource(this.program.fshader);
+  Generator.prototype.parseErrors = function(errors, regex) {
+    //Parse errors using supplied regex to find line number
+    var match = regex.exec(errors);
+    var found = false;
+    if (match) {
+      var lineno = parseInt(match[1]) - this.headerlen + 1; //Subtract header length
+      var last = null
+      for (i in this.offsets) {
+        if (last) {
+          //debug("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
+          if (lineno >= this.offsets[last].value && lineno < this.offsets[i].value) {
+            var section = this.offsets[last].section;
+            //Adjust the line number
+            lineno -= this.offsets[last].value + 1;
+            lineno += this.fractal.choices[this.offsets[last].category].lineoffsets[section];
+            var key = formulaKey(this.offsets[last].category, this.fractal.choices[this.offsets[last].category].selected);
+            if (key) {
+              alert("Error on line number: " + (isNaN(lineno) ? "??" : lineno) +  "\nSection: " + section + "\nof " + 
+                    sectionnames[this.offsets[last].category] + " formula: " + 
+                    (key ? formula_list[key].label : "?") + "\n--------------\n" + errors);
+              found = true;
+            }
+            break;
+          }
+        }
+        last = i;
       }
-    } else if (renderer >= WEBCL && this.webcl) {
-      errors = this.webcl.buildProgram(source);
-      this.parseErrors(errors, /:(\d+):/);
     }
-
-    if (!notime) timer.print("Compile");
+    if (!found) alert(errors);  //Otherwise show raw error
   }
 
-  Fractal.prototype.parseErrors = function(errors, regex) {
-    if (errors) {
-      var match = regex.exec(errors);
-      var found = false;
-      if (match) {
-        var lineno = parseInt(match[1]);
-        if (renderer >= WEBCL && this.webcl) lineno--; //WebCL seems to be reporting errors on next line
-        //alert(match[1]);
-        var last = null
-        for (i in this.offsets) {
-          if (last) {
-            //debug("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
-            if (lineno >= this.offsets[last].value && lineno < this.offsets[i].value) {
-              var section = this.offsets[last].section;
-              //Adjust the line number
-              lineno -= this.offsets[last].value + 1;
-              lineno += this.choices[this.offsets[last].category].lineoffsets[section];
-              var key = formulaKey(this.offsets[last].category, this.choices[this.offsets[last].category].selected);
-              if (key) {
-                alert("Error on line number: " + (isNaN(lineno) ? "??" : lineno) +  "\nSection: " + section + "\nof " + 
-                      sectionnames[this.offsets[last].category] + " formula: " + 
-                      (key ? formula_list[key].label : "?") + "\n--------------\n" + errors);
-                found = true;
-              }
-              break;
-            }
-          }
-          last = i;
-        }
-      }
-      if (!found) alert(errors);  //Simply show compile error
+  Fractal.prototype.updateShader = function(source) {
+    //Compile the WebGL shader
+    this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
+    //Restore uniforms/attributes for fractal program
+    var uniforms = ["palette", "offset", "iterations", "julia", "origin", "selected_", "dims", "pixelsize", "background"];
+    this.program.setup(["aVertexPosition"], uniforms);
+    //Get HLSL source if available
+    if (current.debug) {
+      var angle = this.gl.getExtension("WEBGL_debug_shaders");
+      if (angle) sources["generated.hlsl"] = angle.getTranslatedShaderSource(this.program.fshader);
     }
   }
 
@@ -2212,7 +2255,7 @@
     if (this.webgl) {
       this.webgl.time = timer;
       this.renderWebGL(antialias);
-    } else if (renderer >= WEBCL && this.webcl) {
+    } else if (this.renderer >= WEBCL && this.webcl) {
       this.webcl.time = timer;
       this.webcl.draw(this, antialias);
     } else
@@ -2225,7 +2268,7 @@
 
     if (this.webgl)
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-    else if (renderer >= WEBCL && this.webcl)
+    else if (this.renderer >= WEBCL && this.webcl)
       this.canvas.width = this.canvas.width;  //Clears 2d canvas
   }
 
@@ -2241,7 +2284,7 @@
       this.renderWebGL(this.antialias);
       this.webgl.viewport = new Viewport(0, 0, this.canvas.width, this.canvas.height);
       this.gl.disable(this.gl.SCISSOR_TEST);
-    } else if (renderer >= WEBCL && this.webcl) {
+    } else if (this.renderer >= WEBCL && this.webcl) {
       this.webcl.time = null; //Disable timer
       this.webcl.setViewport(x, y, w, h);
       this.webcl.draw(this, this.antialias);

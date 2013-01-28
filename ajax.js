@@ -45,9 +45,27 @@ function ajaxReadFile(filename, callback, nocache, progress)
   http.send(null); 
 }
 
-function readURL(url, nocache) {
+function readURL(url, nocache, progress) {
   //Read url (synchronous)
   var http = new XMLHttpRequest();
+  var total = 0;
+  if (progress != undefined) {
+    if (typeof(progress) == 'number')
+      total = progress;
+    else
+      http.onprogress = progress;
+  }
+
+  http.onreadystatechange = function()
+  {
+    if (total > 0 && http.readyState > 2) {
+      //Passed size progress
+      var recvd = parseInt(http.responseText.length);
+      //total = parseInt(http.getResponseHeader('Content-length'))
+      setProgress(recvd / total * 100);
+    }
+  } 
+
   //Add date to url to prevent caching
   if (nocache)
   {
@@ -58,6 +76,7 @@ function readURL(url, nocache) {
   http.overrideMimeType('text/plain; charset=x-user-defined');
   http.send(null);
   if (http.status != 200) return '';
+  setProgress(100);
   return http.responseText;
 }
 

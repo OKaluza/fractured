@@ -1,46 +1,41 @@
   /**
    * @constructor
    */
-  function WebCL_(pid, devid) {
+  function OpenCL(pid, devid) {
     if (devid == undefined) devid = 0;
     this.pid = pid;
     this.devid = devid;
     this.fp64 = false;
     this.timer = null;
-    try {
-      if (window.WebCL == undefined) return false;
 
-      //Get & select platforms, devices
-      this.platforms = WebCL.getPlatformIDs();
-      if (this.pid == undefined || this.pid >= this.platforms.length)
-        this.pid = 0;
+    if (window.WebCL == undefined) throw "window.WebCL not available";
 
-      if(this.platforms.length<1) throw("No OpenCL platforms found!");
+    //Get & select platforms, devices
+    this.platforms = WebCL.getPlatformIDs();
+    if (this.pid == undefined || this.pid >= this.platforms.length)
+      this.pid = 0;
 
-      //Create the context
-      this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
-                                              this.platforms[this.pid]],
-                                              WebCL.CL_DEVICE_TYPE_DEFAULT);
-      this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
-      if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
+    if(this.platforms.length<1) throw "No OpenCL platforms found!";
 
-      debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + " (" + this.pid + ")" +  
-                  " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME) + " (" + this.devid + ")");
+    //Create the context
+    this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
+                                            this.platforms[this.pid]],
+                                            WebCL.CL_DEVICE_TYPE_DEFAULT);
+    this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
+    if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
 
-      //Check for double precision support
-      var extensions = this.platforms[this.pid].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
-      extensions += " " + this.devices[this.devid].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
-      if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
-        this.fp64 = true; //Initial state of flag shows availability of fp64 support
-      debug("WebCL ready, extensions: " + extensions);
+    debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + " (" + this.pid + ")" +  
+                " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME) + " (" + this.devid + ")");
 
-    } catch(e) {
-      throw e;
-    }
+    //Check for double precision support
+    var extensions = this.platforms[this.pid].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
+    extensions += " " + this.devices[this.devid].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
+    if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
+      this.fp64 = true; //Initial state of flag shows availability of fp64 support
+    debug("WebCL ready, extensions: " + extensions);
   }
 
-  WebCL_.prototype.init = function(canvas, fp64, threads) {
-    if (!this.ctx) return false;
+  OpenCL.prototype.init = function(canvas, fp64, threads) {
     this.canvas = canvas;
     this.ctx2d = canvas.getContext("2d");
     this.gradientcanvas = document.getElementById('gradient');
@@ -50,28 +45,27 @@
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
     this.queue = this.ctx.createCommandQueue(this.devices[this.devid], 0);
     this.setViewport(0, 0, canvas.width, canvas.height);
-    return true;
   }
 
-  WebCL_.prototype.setPrecision = function(fp64) {
+  OpenCL.prototype.setPrecision = function(fp64) {
     this.fp64 = (fp64 == true && this.fp64);
     this.inBuffer = this.fp64 ? new Float64Array(256) : new Float32Array(256);
     this.input = this.ctx.createBuffer(WebCL.CL_MEM_READ_ONLY, this.inBuffer.byteLength);
   }
 
-  WebCL_.prototype.buildProgram = function(kernelSrc) {
+  OpenCL.prototype.buildProgram = function(kernelSrc) {
     if (this.timer) {clearTimeout(this.timer); this.timer = null;}
     if (!this.ctx) return;
     if (this.fp64) kernelSrc = "#define FP64\n" + kernelSrc;
 
     this.program = this.ctx.createProgramWithSource(kernelSrc);
     try {
-      this.program.buildProgram ([this.devices[this.devid]], "");
+      this.program.buildProgram([this.devices[this.devid]], "");
     } catch(e) {
-      return "Failed to build WebCL program. Error "
-             + this.program.getProgramBuildInfo (this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_STATUS)
-             + ":  " 
-             + this.program.getProgramBuildInfo (this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_LOG);
+      throw "Failed to build WebCL program. Error "
+            + this.program.getProgramBuildInfo(this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_STATUS)
+            + ":  " 
+            + this.program.getProgramBuildInfo(this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_LOG);
     }
     this.k_sample = this.program.createKernel("sample");
     this.k_sample.setKernelArg(0, this.palette);
@@ -83,12 +77,12 @@
   }
 
   //Calculates global work size given problem size and thread count
-  WebCL_.prototype.getGlobalSize = function(n, threads) {
+  OpenCL.prototype.getGlobalSize = function(n, threads) {
     return threads * Math.ceil(n/threads);
   }
 
-  //WebCL_.prototype.sizeChanged = function(width, height) {
-  WebCL_.prototype.setViewport = function(x, y, width, height) {
+  //OpenCL.prototype.sizeChanged = function(width, height) {
+  OpenCL.prototype.setViewport = function(x, y, width, height) {
     //Clear canvas first
     if (!this.ctx2d) {debug("SetViewport: No 2d context!"); return;}
     this.ctx2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -111,12 +105,12 @@
     }
   }
 
-  WebCL_.prototype.resetInput = function() {
+  OpenCL.prototype.resetInput = function() {
     //End index of built-in inputs
     this.incount = 11;
   }
 
-  WebCL_.prototype.setInput = function(param, type, name) {
+  OpenCL.prototype.setInput = function(param, type, name) {
     //Set input values and return a declaration/initialisation for the kernel
     var declare = type + " " + name;
 
@@ -133,7 +127,7 @@
     return declare;
   }
 
-  WebCL_.prototype.draw = function(fractal, antialias) {
+  OpenCL.prototype.draw = function(fractal, antialias) {
     if (!this.k_sample) return; //Sanity check
     if (this.timer) {clearTimeout(this.timer); this.timer = null;}
     if (antialias == undefined) antialias = 1;
@@ -185,7 +179,7 @@
     }
   }
 
-  WebCL_.prototype.pass = function() {
+  OpenCL.prototype.pass = function() {
     //debug("Antialias pass ... " + this.j + " - " + this.k);
     this.k_sample.setKernelArg(8, this.j);
     this.k_sample.setKernelArg(9, this.k);

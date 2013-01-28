@@ -35,7 +35,6 @@ function FormulaEntry(type, label, source, name) {
   this.type = type;
   this.name = name;
   this.label = label;
-  this.type = type;
   this.source = source;
 
   //Add to the global list
@@ -49,7 +48,20 @@ FormulaEntry.prototype.toString = function() {
   return "[" + this.type + "/" + this.name + "] = " + this.source;
 }
 
-function updateFormulaLists() {
+FormulaEntry.prototype.equals = function(source2) {
+  //Strips all whitespace and comments and compares resulting string
+  function strip(source) {
+    source = source.replace(/\/\*([\s\S]*?)\*\/|(\/\/.*)/g, "");
+    source = source.strip();
+      source = source.replace(/complex\(/g, "C(");
+      source = source.replace(/real\(/g, "R(");
+    return source;
+  }
+  return (strip(this.source) == strip(source2));
+}
+
+function importFormulaList(data) {
+  formula_list = {};
   //Clear existing
   $("fractal_formula").options.length = 0;
   $("pre_transform_formula").options.length = 0;
@@ -65,10 +77,17 @@ function updateFormulaLists() {
   addToSelect("inside_colour", "same", "As above");
   addToSelect("filter", "none", "");
 
-  //Run through the list and add to select lists
-  for (key in formula_list) {
-    //print(formula_list[key].name)
-    addSelectEntry(formula_list[key]);
+  //Create proper FormulaEntry objects from JSON data
+  try {
+    var parsed = JSON.parse(data);
+    //Run through the list and add to select lists
+    for (key in parsed) {
+      //formula_list[key] = new FormulaEntry();
+      var f = new FormulaEntry(parsed[key].type, parsed[key].label, parsed[key].source, parsed[key].name);
+      //debug(formula_list[key].constructor.name);
+    }
+  } catch(e) {
+    alert('ImportFormulaList error: ' + e);
   }
 
   //Set selected defaults

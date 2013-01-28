@@ -9,4 +9,4 @@
 
 transform:
   z = @fn(z);
-  z = complex(@re_fn(z.x), @im_fn(z.y));
+  z = C(@re_fn(z.x), @im_fn(z.y));

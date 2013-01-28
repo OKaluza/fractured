@@ -8,6 +8,7 @@ function GradientEditor(canvas, callback) {
   this.inserting = false;
   this.editing = null;
   this.element = null;
+  this.spin = 0;
   var self = this;
   function saveColour(val) {self.save(val);}
   function abortColour() {self.cancel();}
@@ -190,13 +191,22 @@ GradientEditor.prototype.move = function(event, mouse) {
 }
 
 GradientEditor.prototype.wheel = function(event, mouse) {
-  this.cycle(0.01 * event.spin);
+  if (this.timer)
+    clearTimeout(this.timer);
+  else
+    this.canvas.style.cursor = "wait";
+  this.spin += 0.01 * event.spin;
+  //this.cycle(0.01 * event.spin);
+  var this_ = this;
+  this.timer = setTimeout(function() {this_.cycle(this_.spin); this_.spin = 0;}, 150);
 }
 
 GradientEditor.prototype.leave = function(event, mouse) {
 }
 
 GradientEditor.prototype.cycle = function(inc) {
+  this.canvas.style.cursor = "default";
+  this.timer = null;
   //Shift all colours cyclically
   for (var i = 1; i < this.palette.colours.length-1; i++)
   {

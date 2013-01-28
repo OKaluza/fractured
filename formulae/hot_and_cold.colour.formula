@@ -25,7 +25,7 @@ calc:
     @farcalls++;
 
 result:
-  //return gradient(repeat * real(@closecalls) / real(count));
-  rgba hcolour = @hotcolour * (real(@closecalls)/real(count));
-  rgba ccolour = @coldcolour * (real(@farcalls)/real(count));
+  //return gradient(repeat * R(@closecalls) / R(count));
+  rgba hcolour = @hotcolour * (R(@closecalls)/R(count));
+  rgba ccolour = @coldcolour * (R(@farcalls)/R(count));
   colour = hcolour + ccolour;

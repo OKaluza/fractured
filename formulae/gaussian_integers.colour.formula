@@ -39,18 +39,18 @@ calc:
   @r = cabs(z - mul(@rmode(div(z,@factor)), @factor));
 
   @total = @total + @r;
-  @rave = @total / real(count);
+  @rave = @total / R(count);
   if (@r < @rmin)
   {
      @rmin = @r;
      @zmin = z;
-     @itermin = real(count+1);
+     @itermin = R(count+1);
   }
   if (@r > @rmax)
   {
      @rmax = @r;
      @zmax = z;
-     @itermax = real(count+1);
+     @itermax = R(count+1);
   }
 
 result:
