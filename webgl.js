@@ -152,7 +152,7 @@
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
   }
 
-  WebGL.prototype.initTextureFramebuffer = function(width, height) {
+  WebGL.prototype.initTextureFramebuffer = function(width, height, depth) {
     //Create the framebuffer object
     this.rttFramebuffer = this.gl.createFramebuffer();
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.rttFramebuffer);
@@ -173,12 +173,13 @@
     this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.rttTexture, 0);
 
     //Depth buffer? (not required for 2d only renders)
-    this.rttDepthbuffer = this.gl.createRenderbuffer();
-    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.rttDepthbuffer);
-    this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, width, height);
-    this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, this.rttDepthbuffer);
-
-    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
+    if (depth) {
+      this.rttDepthbuffer = this.gl.createRenderbuffer();
+      this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.rttDepthbuffer);
+      this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, width, height);
+      this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, this.rttDepthbuffer);
+      this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
+    }
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
 
