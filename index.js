@@ -91,8 +91,8 @@ var rztimeout = undefined;
     }
 
     //Initialise app
-    loadState();    //Load the last program state
-    fractal.init(); //Create a default fractal
+    if (!loadState()) return;   //Load the last program state
+    fractal.init();             //Create a default fractal
 
     //Event handling
     document.onkeydown = handleKey;
@@ -507,7 +507,6 @@ var rztimeout = undefined;
   }
 
   function storeFractal() {
-    fractal.applyChanges();
     source = fractal.toStringNoFormulae();  //Default is to save to local storage without formulae
     //Save current fractal to list
     if (current.fractal >= 0) {
@@ -596,7 +595,7 @@ var rztimeout = undefined;
       palettes.push(new PaletteEntry(source, paletteThumbnail()));
       localStorage["fractured.palettes"] = JSON.stringify(palettes);
     } catch(e) {
-      alert('Storage error! ' + e);
+      alert('error! ' + e);
     }
     populatePalettes();
   }
@@ -944,7 +943,7 @@ var rztimeout = undefined;
     var fd = new FormData();
     fd.append("image", data);
     fd.append("title", $('name').value);
-    fd.append("description", "Created using Fractured Studio http://fractured.ozone.id.au");
+    fd.append("description", "Created using Fractured Studio http://fract.ured.me");
     fd.append("name", $('name').value + ".jpg");
     fd.append("key", "70f934afb26ec9a9b9dc50ac1df2b40f");
    
@@ -992,7 +991,7 @@ var rztimeout = undefined;
     var fd = new FormData();
     fd.append("photo", data);
     fd.append("title", $('name').value);
-    fd.append("description", 'Created using <a href="http://fractured.ozone.id.au">Fractured Studio http://fractured.ozone.id.au</a>');
+    fd.append("description", 'Created using <a href="http://fract.ured.me">Fractured Studio http://fract.ured.me</a>');
     fd.append("tags", $('name').value);
     fd.append("public", 1);
     fd.append("friend", 1);
@@ -1146,7 +1145,15 @@ var rztimeout = undefined;
   function loadState() {
     //Load includes...
     //(Allow cache, when changed update the version number)
-    sources = JSON.parse(readURL('/includes_' + current.version + '.json', false));
+    var incfile = '/includes_' + current.version + '.json';
+    var incdata = readURL(incfile, false);
+    if (!incdata) {
+      popup("<b><i>" + incfile + "</i></b> not found! Application may have been upgraded, " + 
+            "<a href='javascript:location.reload(true)'>click here" + 
+            "</a> to try and reload new version from server"); 
+      return false;
+    }
+    sources = JSON.parse(incdata);
 
     if (current.debug) {
       //Entries for all source files in debug edit menu
@@ -1161,13 +1168,7 @@ var rztimeout = undefined;
     //Load formulae
     formula_list = null;
     var f_source = localStorage["fractured.formulae"];
-    if (f_source) {
-      ///TEMP: remove perturb lines from stored formulae
-      f_source = f_source.replace(/if[^@;]*perturb[^;]*/, "");
-      importFormulaList(f_source);
-      //formula_list = JSON.parse(f_source);
-    }
-    //if (!formula_list) formula_list = JSON.parse(readURL('/formulae_' + current.version + '.json', false));
+    if (f_source) importFormulaList(f_source);
     if (!formula_list) importFormulaList(readURL('/formulae_' + current.version + '.json', false));
 
     //Cached thumbnails
@@ -1183,6 +1184,7 @@ var rztimeout = undefined;
     var size = JSON.stringify(localStorage).length;
     var indic = size / 5000000;
     $S('indicator').width = (350 * indic) + 'px';
+    return true;
   }
 
 
@@ -1212,7 +1214,7 @@ var rztimeout = undefined;
       localStorage["fractured.name"] = $('name').value;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
-      alert('Storage error: ' + e);
+      alert('error: ' + e);
     }
   }
 

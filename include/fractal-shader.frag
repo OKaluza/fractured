@@ -19,6 +19,7 @@ void main()
   int count = 0;            //Step counter
   bool escaped = false;     //Bailout flags
   bool converged = false;
+  bool perturb = false;     //Temporary: for old formulae
 
   int limit = iterations;   //Max iterations
   rgba colour = background;

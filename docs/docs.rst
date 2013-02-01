@@ -11,7 +11,7 @@
 .. _plugin: http://webcl.nokiaresearch.com
 
 ==========================================================================
-Fractured - `User Guide <http://fractured.ozone.id.au/docs_VERSION.html>`_
+Fractured - `User Guide <http://fract.ured.me/docs_VERSION.html>`_
 ==========================================================================
 | Fractured | Fractal art studio | Version VERSION
 | |copy| Owen Kaluza, 2012
@@ -33,7 +33,7 @@ Now many lost weekends and evenings later it seems to finally have turned into a
 
 \*There's also experimental WebCL_ support which allows CPU rendering and double precision mode where possible. It will only work with the Nokia Firefox plugin_ for now but when the standard solidifies a bit I'll make sure it runs with other implementations.
   
-*(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)*
+*(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) kaluza.id.au)*
 
 Acknowledgments
 ---------------

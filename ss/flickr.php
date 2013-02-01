@@ -22,7 +22,7 @@ if (isset($_GET['test']))
 }
 else if (isset($_GET['auth']))
 {
-  $f->getRequestToken("http://fractured.ozone.id.au/ss/flickr.php", "write"); 
+  $f->getRequestToken("http://fract.ured.me/ss/flickr.php", "write"); 
 }
 else if (isset($_GET['logout']))
 {
