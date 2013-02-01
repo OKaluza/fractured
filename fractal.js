@@ -1300,7 +1300,6 @@
     //Select previous
     sel.selectedIndex = selid - 1;
     saveSelections(); //Update formula selections into selected variable
-    //updateFormulaLists();
     //Finally, reselect
     this.reselectAll();
   }
@@ -1830,10 +1829,12 @@
     if (saved["re_fn"] > 0 || saved["im_fn"] > 0 || saved["inductop"] > 0 || saved["perturb"]) {
       var fns = ["", "abs", "sin", "cos", "tan", "asin", "acos", "atan", "trunc", "log", "log10", "sqrt", "flip", "inv", "abs"];
 
-      this.choices['post_transform'].currentParams["perturb"].parse(fns[saved["perturb"]]);
+      this.choices['post_transform'].currentParams["perturb"].parse(saved["perturb"]);
 
-      this.choices['post_transform'].currentParams["re_fn"].parse(fns[saved["re_fn"]]);
-      this.choices['post_transform'].currentParams["im_fn"].parse(fns[saved["im_fn"]]);
+      if (saved["re_fn"])
+        this.choices['post_transform'].currentParams["re_fn"].parse(fns[saved["re_fn"]]);
+      if (saved["im_fn"])
+        this.choices['post_transform'].currentParams["im_fn"].parse(fns[saved["im_fn"]]);
 
       //Later versions use separate parameter, older used param1:
       if (saved["induct"])

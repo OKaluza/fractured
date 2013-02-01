@@ -21,6 +21,8 @@
     $query = "SELECT url,thumb FROM image ORDER BY date DESC;";
   else if ($type == "myimages")
     $query = "SELECT url,thumb FROM image WHERE user_id = '$user' ORDER BY date;";
+  } else
+    exit();
 
   $result = $mysql->query( $query );
   if (!$result) die ('Unable to run query:'.$mysql->error);
