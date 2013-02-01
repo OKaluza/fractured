@@ -6,7 +6,7 @@ var current;  //Status
 var sources;  //Source files
 var fractal;  //Fractal renderer
 var colours;  //Gradient
-var thumbnails;  //Thumbs
+var fractals = {}; //Fractal list
 
 //Timers
 var rztimeout = undefined;
@@ -321,21 +321,16 @@ var rztimeout = undefined;
     }
   }
 
-  function deleteFractal(idx) {
-    //if (current.fractal >= 0) {
-      //var idx = current.fractal;
-      var name = localStorage["fractured.names." + idx];
-      if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
-      try {
-        localStorage.removeItem("fractured.names." + idx);
-        localStorage.removeItem("fractured.fractal." + idx);
-        fractalMenuDelete(idx);
-        fractalMenuSelect(-1);
-        //populateFractals();
-      } catch(e) {
-        alert('Storage delete error! ' + e);
-      }
-    //}
+  function deleteFractal(name) {
+    if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
+    try {
+      fractalMenuDelete(name);
+      fractalMenuSelect();
+      delete fractals[name];
+      if (window.opera) saveState();  //Not saved on beforeunload
+    } catch(e) {
+      alert('Storage delete error! ' + e);
+    }
   }
 
   //Menu management functions...
@@ -393,6 +388,12 @@ var rztimeout = undefined;
 
   function performTask(number, numToProcess, processItem) {
     var pos = 0;
+    var items = [];
+    for (key in fractals) {
+      items[pos] = fractals[key];
+      pos++;
+    }
+    pos = 0;
     progress("Generating thumbnails...");
     // This is run once for every numToProcess items.
     function iteration() {
@@ -400,7 +401,7 @@ var rztimeout = undefined;
         var j = Math.min(pos + numToProcess, number);
         // Start at current position and loop to last position.
         for (var i = pos; i < j; i++) {
-          processItem(i);
+          processItem(items[i]);
         }
         // Increment current position.
         pos += numToProcess;
@@ -427,72 +428,116 @@ var rztimeout = undefined;
   function regenerateThumbs() {
     //Recreate all thumbnail images
     current.output = false;
-    var count = parseInt(localStorage["fractured.fractals"]);
-    thumbnails = [];  //Clear existing
+    var count = Object.keys(fractals).length;
     current.timer = new Date().getTime();
     var step = Math.ceil(count/25);
     performTask(count, step,
-      function (index) {
-        var i = index + 1;
-        if (localStorage["fractured.fractal." + i]) {
-          fractal.load(localStorage["fractured.fractal." + i], true);
-          $("width").value = $("height").value = 32;
-          document["inputs"].elements["autosize"].checked = false;
-          fractal.applyChanges(4, true);
-          var result = $('fractal-canvas').toDataURL("image/jpeg", 0.75)
-          thumbnails[i] = result;
-        }
+      function (f) {
+        fractal.load(f.source, true);
+        $("width").value = $("height").value = 32;
+        document["inputs"].elements["autosize"].checked = false;
+        fractal.applyChanges(4, true);
+        var result = $('fractal-canvas').toDataURL("image/jpeg", 0.75)
+        f.thumbnail = result;
       });
+  }
+
+  function convertFractals(count) {
+    //Convert to new format list (indexed by name, ordered by insertion)
+    fractals = {};
+    //Cached thumbnails
+    thumbnails = [];
+    var t_source = localStorage["fractured.thumbnails"];
+    if (t_source) thumbnails = JSON.parse(t_source);
+
+    for (var i=1; i<=count; i++) {
+      var source = localStorage["fractured.fractal." + i];
+      var name = localStorage["fractured.names." + i];
+      if (!source) continue;
+      fractals[name] = new FractalEntry(source, thumbnails[i]);
+    }
+
+    localStorage["fractured.fractals"] = JSON.stringify(fractals);
+    for (var i=1; i<=count; i++) {
+      localStorage.removeItem("fractured.names." + i);
+      localStorage.removeItem("fractured.fractal." + i);
+    }
+    localStorage.removeItem("fractured.thumbnails");
+    current.fractal = null;
   }
 
   function populateFractals() {
     //Clear & repopulate list
+    next_id = 0;
     var menu = $('fractals');
     removeChildren(menu);
-    var idx_str = localStorage["fractured.fractals"];
-    if (idx_str) {
-      var idx = parseInt(idx_str);
-      for (var i=1; i<=idx; i++)
-        fractalMenuAdd(i);
+    var fr_str = localStorage["fractured.fractals"];
+    if (fr_str) {
+      //Detect/convert old format...
+      var idx = parseInt(fr_str);
+      if (idx > 0)
+        convertFractals(idx); //Convert from old format
+      else
+        fractals = JSON.parse(fr_str);
+
+      for (var name in fractals)
+        fractalMenuAdd(name);
     }
   }
 
-  function fractalMenuAdd(i) {
-    var menu = $('fractals');
-    var namestr = localStorage["fractured.names." + i];
-    if (!namestr) return; //namestr = "unnamed";
-    var source = localStorage["fractured.fractal." + i];
-    var img = null;
-    if (thumbnails[i]) {
-      img = new Image;
-      img.src = thumbnails[i];
+  function fractalMenuThumb(name) {
+    if (fractals[name].thumbnail) {
+      var img = new Image;
+      img.src = fractals[name].thumbnail;
       img.className = "thumb";
+      return img;
     }
-    var item = addMenuItem(menu, namestr, "selectedFractal(" + i + ")", img, true)
-    if (current.fractal == i) selectMenuItem(item, "deleteFractal(" + i + ");");
-    item.id = "fractalmenu_" + i;  //Set entry id
+    return null;
   }
 
-  function fractalMenuSelect(idx) {
-    deselectMenuItem($("fractalmenu_" + current.fractal), true);
-    current.fractal = idx;
+  function fractalMenuUpdate(name) {
+    //Update thumbnail
+    var img = fractalMenuThumb(name);
+    var item = $(fractals[name].id);
+    if (img && item.childNodes.length > 1) {
+      item.replaceChild(img, item.childNodes[1]);
+    }
+  }
+
+  var next_id = 0;
+  function fractalMenuAdd(name) {
+    var menu = $('fractals');
+    var source = fractals[name].source;
+    var img = fractalMenuThumb(name);
+    var item = addMenuItem(menu, name, "selectedFractal('" + name + "')", img, true)
+    if (current.fractal == name) selectMenuItem(item, "deleteFractal('" + name + "');");
+    item.id = "fractalmenu_" + next_id;  //Set entry id
+    fractals[name].id = item.id;
+    next_id++;
+  }
+
+  function fractalMenuSelect(name) {
+    debug(current.fractal);
+    if (current.fractal)
+      deselectMenuItem($(fractals[current.fractal].id), true);
+    current.fractal = name;
     current.save();
-    if (idx >= 0)
-      selectMenuItem($("fractalmenu_" + idx), "deleteFractal(" + idx + ");");
+    if (name)
+      selectMenuItem($(fractals[name].id), "deleteFractal('" + name + "');");
   }
 
-  function fractalMenuDelete(idx) {
-    $('fractals').removeChild($("fractalmenu_" + idx).parentNode);
+  function fractalMenuDelete(name) {
+    $('fractals').removeChild($(fractals[name].id).parentNode);
   }
 
-  function selectedFractal(idx) {
+  function selectedFractal(name) {
     hideGallery();
-    fractalMenuSelect(idx);
-    fractal.load(localStorage["fractured.fractal." + idx]);
-    $('name').value = localStorage["fractured.names." + idx];
+    fractalMenuSelect(name);
+    fractal.load(fractals[name].source);
+    $('name').value = name;
     //Generate thumbnails on select!
-    if (!thumbnails[idx]) {
-      thumbnails[idx] = thumbnail();
+    if (!fractals[name].thumbnail) {
+      fractals[name].thumbnail = thumbnail();
     }
   }
 
@@ -502,25 +547,24 @@ var rztimeout = undefined;
     fractal.formulaDefaults();
     fractal.copyToForm();
     //De-select
-    fractalMenuSelect(-1);
+    fractalMenuSelect();
     fractal.applyChanges();
   }
 
   function storeFractal() {
     source = fractal.toStringNoFormulae();  //Default is to save to local storage without formulae
     //Save current fractal to list
-    if (current.fractal >= 0) {
+    if (current.fractal) {
       //Save existing
-      var name = localStorage["fractured.names." + current.fractal];
-      if (name == $('name').value) {
+      var name = current.fractal;
+      if (name == $('name').value && fractals[name]) {
         if (confirm('Overwrite "' + name + '"?')) {
-          var idx = current.fractal;
           try {
-            writeFractalEntry(idx, source);
-            fractalMenuDelete(idx);
-            fractalMenuAdd(idx);
+            fractals[name].source = source;
+            fractals[name].thumbnail = thumbnail();
+            fractalMenuUpdate(name);
           } catch(e) {
-            alert('Storage error! ' + e);
+            alert('error! ' + e);
           }
           return;
         }
@@ -528,50 +572,41 @@ var rztimeout = undefined;
     }
 
     //Save new
-    var idx_str = localStorage["fractured.fractals"];
-    var idx = (idx_str ? parseInt(idx_str) : 0);
     //Get name and check list for dupes
-    var namestr = $('name').value;
-    if (!namestr) namestr = "unnamed";
+    var name = $('name').value;
+    if (!name) name = "unnamed";
     var add = 0;
-    var checkstr = namestr;
-    var i;
-    do {
-      for (i=0; i<=idx; i++) {
-        if (checkstr == localStorage["fractured.names." + i]) {
-          checkstr = namestr + (++add);
-          break;
-        }
-      }
-    } while (i <= idx);
-    if (namestr != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
-    //if (namestr == checkstr && !confirm('Save new fractal as "' + namestr + '"?')) return;
-    namestr = checkstr;
-    idx++;  //Increment index
+    var checkstr = name;
+    //Find unique name
+    while (fractals[checkstr])
+      checkstr = name + (++add);
+    if (name != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
+    //if (name == checkstr && !confirm('Save new fractal as "' + name + '"?')) return;
+    name = checkstr;
     try {
-      writeFractalEntry(idx, source, namestr);
-      fractalMenuAdd(idx);
-      fractalMenuSelect(idx);
-      $('name').value = namestr;
+      fractals[name] = new FractalEntry(source);
+      fractalMenuAdd(name);
+      fractalMenuSelect(name);
+      $('name').value = name;
     } catch(e) {
       //data wasn’t successfully saved due to quota exceed so throw an error
-      alert('Storage error! ' + e);
+      alert('error! ' + e);
       //alert('Quota exceeded! ' + idx + " ... Local storage length = " + JSON.stringify(localStorage).length);
     }
-    //populateFractals();
+    if (window.opera) saveState();  //Not saved on beforeunload
   }
 
-  function writeFractalEntry(idx, source, name) {
-    if (!name)
-      name = $('name').value;
-    else 
-      $('name').value = name;
+  /**
+   * @constructor
+   */
+  function FractalEntry(source, thumb) {
+    //Construct a new fractal menu item
+    this.source = source;
 
-    localStorage["fractured.names." + idx] = name;
-    localStorage["fractured.fractal." + idx] = source;
-    thumbnails[idx] = thumbnail();
-    localStorage["fractured.fractals"] = idx;
-    if (window.opera) saveState();  //Not saved on beforeunload
+    if (thumb)
+      this.thumbnail = thumb;
+    else
+      this.thumbnail = thumbnail(); //Create from active
   }
 
   /**
@@ -678,12 +713,10 @@ var rztimeout = undefined;
     openEditor(key);
   }
 
-  function thumbnail(type, size) {
+  function thumbnail(type, size, args) {
    //Thumbnail image gen
-   //if (type == undefined) type = "png";
-   var args;
    if (type == undefined) type = "jpeg";
-   if (type == "jpeg") args = 75;
+   if (args == undefined && type == "jpeg") args = 75;
    if (size == undefined) size = 32; //40;
    var canvas = $("fractal-canvas"),
        oldh = fractal.height,
@@ -705,7 +738,6 @@ var rztimeout = undefined;
    context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
    var result = thumb.toDataURL("image/jpeg")
    thumb.style.visibility='hidden';
-
 //*/
    return result;
   }
@@ -734,6 +766,7 @@ var rztimeout = undefined;
       loadPalette(0); //Palette reset
       newFractal();
       current.clear();
+      fractals = {};
     }
   }
 
@@ -1171,11 +1204,6 @@ var rztimeout = undefined;
     if (f_source) importFormulaList(f_source);
     if (!formula_list) importFormulaList(readURL('/formulae_' + current.version + '.json', false));
 
-    //Cached thumbnails
-    thumbnails = [];
-    var t_source = localStorage["fractured.thumbnails"];
-    if (t_source) thumbnails = JSON.parse(t_source);
-
     populateFractals();
     populatePalettes();
     populateScripts();
@@ -1207,8 +1235,7 @@ var rztimeout = undefined;
     try {
       //Save formulae
       localStorage["fractured.formulae"] = JSON.stringify(formula_list);
-      //Thumbnails
-      localStorage["fractured.thumbnails"] = JSON.stringify(thumbnails);
+      localStorage["fractured.fractals"] = JSON.stringify(fractals);
       //Save current fractal (as default)
       localStorage["fractured.active"] = fractal;
       localStorage["fractured.name"] = $('name').value;
@@ -1593,7 +1620,7 @@ var editorFilename;
       this.debug = data.debug;
       if (this.debug) this.debugOn();
     } else {
-      this.fractal = -1;
+      this.fractal = null;
       this.session = 0;
       this.formulae = 0;
       this.antialias = 2;
@@ -1608,7 +1635,7 @@ var editorFilename;
   Status.prototype.clear = function() {
     this.session = 0;
     this.formulae = 0;
-    this.fractal = -1;
+    this.fractal = null;
     this.save();
   }
 

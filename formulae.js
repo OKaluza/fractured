@@ -170,3 +170,236 @@ function filenameToName(filename) {
     ext = filename.substr(end+1, eend-end-1);
   return [filename.substr(start, end), ext];
 }
+
+//Contains a formula selection and its parameter set
+/**
+ * @constructor
+ */
+function Formula(category) {
+  this.category = category;
+  this.params = {};
+  this.defaultparams = {};
+  this.lineoffsets = {};
+  this.reselect();
+}
+
+Formula.prototype.exists = function(value) {
+  //Check a formula name is a valid selection
+  var sel = $(this.category + '_formula');
+  sel.value = value;
+  return sel.value == value;
+}
+
+Formula.prototype.reselect = function(idx) {
+  //Select, by index from select control if present and idx provided
+  var sel = $(this.category + '_formula');
+  var name = 'default';
+  //Formula categories may have a select element, in which case use it
+  if (sel) {
+    if (idx != undefined)
+      sel.selectedIndex = idx;
+    //TODO: BETTER ERROR HANDLING: This means a formula that is no longer present was selected
+    if (sel.selectedIndex < 0) {alert(this.category + " : Invalid selection!"); return;}
+    name = sel.options[sel.selectedIndex].value;
+  }
+  this.select(name);
+}
+
+Formula.prototype.select = function(name) {
+  //Formula selected, parse it's parameters
+  if (name) this.selected = name;
+  else name = this.selected;  //Re-selecting current
+  //debug("Selecting " + name + " for " + this.category + "_params");
+
+  //Delete any existing dynamic form fields
+  var element = $(this.category + "_params");
+  if (!element) alert("Element is null! " + this.category + " - " + name);
+  removeChildren(element);
+
+  //Save existing param set
+  var oldparams = this.params[name];
+
+  //Create new empty param set
+  this.params[name] = new ParameterSet();
+  //Save a reference to active parameters
+  this.currentParams = this.params[name];
+
+  var code = this.getSource();
+  if (code.length > 0) {
+    //Copy the default params if not yet set
+    if (!this.defaultparams[name]) {
+      this.defaultparams[name] = new ParameterSet();
+      this.defaultparams[name].parseFormula(code);
+    }
+
+    //Load the parameter set for selected formula
+    this.params[name].parseFormula(code);
+    //Copy previous values
+    this.params[name].restoreValues(oldparams, this.defaultparams[name]);
+    //Update the fields
+    this.params[name].createFields(this.category, name);
+  }
+  //debug("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
+     //consoleTrace();
+}
+
+Formula.prototype.getkey = function() {
+  return formulaKey(this.category, this.selected);
+}
+
+Formula.prototype.getSource = function() {
+  //if (this.selected == "none") return "";
+  if (this.selected == "none" || this.selected == "same") return "";
+  var key = this.getkey();
+  if (!key) return "";
+  if (formula_list[key]) {
+    //TEMPORARY HACK FOR OLD ESCAPE/CONVERGE TESTS and LOGE == LN
+    var source = formula_list[key].source.replace(/if \((.*)\) break;/g, "converged = ($1);");
+    var source = source.replace("loge", "ln");
+    if (source != formula_list[key].source) {
+      formula_list[key].source = source;
+      alert(source);
+    }
+    return formula_list[key].source;
+  }
+  print("Formula Missing! No entry found for: " + key);
+  return "";
+}
+
+Formula.prototype.getCodeSections = function() {
+  var code = this.getSource();
+  var section = "data";
+  var sections = {"init" : "", "reset" : "", "znext" : "", "escaped" : "", "converged" : "", "calc" : "", "result" : "", "transform" : "", "filter" : ""};
+  var match;
+  var lastIdx = 0;
+  var reg = /^([a-z]+):/gm;
+
+  this.lineoffsets = {};
+
+  //Get section blocks by finding start labels:
+  while (match = reg.exec(code)) {
+    //Save the previous section
+    sections[section] = code.slice(lastIdx, reg.lastIndex - match[0].length - 1);
+    this.lineoffsets[section] = code.slice(0, lastIdx).split("\n").length +1;
+    lastIdx = reg.lastIndex;
+    section = match[1]; //match[0].substr(0, match[0].length-1);
+  }
+  //Save the final section
+  sections[section] = code.slice(lastIdx);
+  this.lineoffsets[section] = code.slice(0, lastIdx).split("\n").length +1;
+
+  //Defaults for missing sections
+  if (this.category == "fractal") {
+    //If use znext expression if found, otherwise use function, define default if not found
+    if (sections["znext"].length == 0) {
+      if (this.currentParams["znext"])
+        sections["znext"] = "\n  z = @znext;\n";
+      else
+        sections["znext"] = "\n  z = sqr(z)+c;\n";
+    }
+
+    var converged_defined = true;
+    //Converged flag for use in code
+    if (sections["converged"].length == 0) {
+      //No converged: section defined
+      if (this.currentParams["converged"]) {
+        //Have a converged parameter
+        sections["converged"] += "\nconverged = (@converged);\n";
+      } else if (!this.currentParams["converge"]) {
+        //No converge limit defined
+        converged_defined = false;
+      } else {
+        //Numeric converge param only, insert default test
+        sections["converged"] += "\nconverged = (@bailtest(z) < @converge);\n";
+      }
+    }
+
+    //Escaped flag for use in code
+    if (sections["escaped"].length == 0) {
+      //No escaped: section defined
+      if (this.currentParams["escaped"]) {
+        //Have an escaped parameter
+        sections["escaped"] += "\nescaped = (@escaped);\n";
+      } else if (!this.currentParams["escape"]) {
+        //No escape limit defined, if no converge defined either, create a default bailout
+        if (!converged_defined) {
+          sections["escaped"] += "\nescaped = (@bailtest(z) > escape);\n";
+        }
+      } else {
+        //Numeric escape param only, insert default test
+        sections["escaped"] += "\nescaped = (@bailtest(z) > @escape);\n";
+      }
+    }
+
+    //Append extra data definitions
+    if (!this.currentParams["escape"]) sections["data"] += "\n#define escape 4.0\n";
+    if (!this.currentParams["bailtest"]) sections["data"] += "\n#define @bailtest norm\n";
+
+  } else if (this.category.indexOf("colour") > -1) {
+    //Default colour result
+    if (sections["result"].length == 0)
+      sections["result"] = "\n  colour = background;\n";
+
+    //Same colouring, always use the outside result...
+    if (this.selected == "same")
+      sections["calc"] = "\n  if (i==limit-1) escaped = true;\n";
+  }
+
+  return sections;
+}
+
+Formula.prototype.getParsedFormula = function() {
+  //Get formula definition
+  var sections = this.getCodeSections();
+  var data = sections["data"];
+
+  //Get block of param declarations by finding first and last match index
+  var match;
+  var firstIdx = -1;
+  var lastIdx = 0;
+  while (match = paramreg.exec(data)) {
+    if (firstIdx < 0) firstIdx = paramreg.lastIndex - match[0].length;
+    lastIdx = paramreg.lastIndex;
+  }
+
+  //Get the parameter declaration code
+  //(This also saves values of parameters in savevars[] array)
+  var params = this.currentParams.toCode();
+  if (this.category == "fractal") fractal_savevars = savevars;
+
+  //Strip out param definitions, replace with declarations
+  var head = firstIdx >= 0 ? data.slice(0, firstIdx) : "";
+  var body = data.slice(lastIdx, data.length);
+  //alert(this.catageory + " -- " + firstIdx + "," + lastIdx + " ==>\n" + head + "===========\n" + body);
+  data = head + params.slice(0, params.length-1) + body;
+
+  //Parse any /expression/s and @params
+  //Replace @ symbols with formula type and "_"
+  //(to prevent namespace clashes in globals/function names/params)
+  sections["data"] = data.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
+  for (key in sections) {
+    //sections[key] = sections[key].replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
+    sections[key] = this.parseExpressions(sections[key]);
+    sections[key] = sections[key].replace(/@([a-zA-Z_])/g, this.category + "_$1");
+  }
+
+  //return code;
+  return sections;
+}
+
+Formula.prototype.parseExpressions = function(code) {
+  //Parse all \...\ enclosed sections as expressions
+  var reg = /\\([\s\S]*?)\\/gm;
+  var match;
+  while (match = reg.exec(code)) {
+    //Replace the matched expression with parser result
+    var newval = code.slice(0, reg.lastIndex - match[0].length);
+    var result = parseExpression(match[1]);
+    //debug(match[1] + " -> "  + result);
+    code = newval + result + code.slice(reg.lastIndex, code.length);
+    reg.lastIndex += (result - match[0].length); //Adjust search position
+  }
+  return code;
+}
+
+
