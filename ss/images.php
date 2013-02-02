@@ -21,7 +21,7 @@
     $query = "SELECT url,thumb FROM image ORDER BY date DESC;";
   else if ($type == "myimages")
     $query = "SELECT url,thumb FROM image WHERE user_id = '$user' ORDER BY date;";
-  } else
+  else
     exit();
 
   $result = $mysql->query( $query );
@@ -96,8 +96,8 @@
         $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
     }
     echo '<div class="float">';
-    echo '<a href="'.$url.'">';
-	  echo '<img src="' . $filename . '" />';
+    echo '<a href="#'.$links[$x].'">';
+	  echo '<img src="' . $filename . '" onmousedown="loadUrl(\'' . $links[$x] . '\');"/>';
     echo "</a></div>\n";
   }
 
