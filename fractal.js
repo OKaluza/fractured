@@ -1277,7 +1277,7 @@ Generator.prototype.compile = function() {
     }
 
     //Opera doesn't support onbeforeunload, so save state now
-    if (window.opera) saveState();
+    if (window.opera && state.output) state.save();
   } else
     debug("Shader build skipped, no changes");
 }
@@ -1320,7 +1320,7 @@ Fractal.prototype.updateShader = function(source) {
   var uniforms = ["palette", "offset", "iterations", "julia", "origin", "selected_", "dims", "pixelsize", "background"];
   this.program.setup(["aVertexPosition"], uniforms);
   //Get HLSL source if available
-  if (current.debug) {
+  if (state.debug) {
     var angle = this.gl.getExtension("WEBGL_debug_shaders");
     if (angle) sources["generated.hlsl"] = angle.getTranslatedShaderSource(this.program.fshader);
   }
@@ -1428,7 +1428,7 @@ Fractal.prototype.renderWebGL = function(antialias) {
 
   //debug('>> Drawing fractal (aa=' + antialias + ")");
   this.webgl.draw2d(antialias);
-  if (current.recording)
+  if (state.recording)
     window.outputFrame(); 
 }
 
@@ -1496,7 +1496,7 @@ Fractal.prototype.up = function(event, mouse) {
 Fractal.prototype.move = function(event, mouse) {
   //Mouseover processing
     mouse.point = new Aspect(0, 0, 0, 0);
-  if (!fractal || current.mode == 0) return true;
+  if (!fractal || state.mode == 0) return true;
   if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
   {
     //Convert mouse coords into fractal coords

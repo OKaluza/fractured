@@ -17,6 +17,8 @@
 <script type="text/javascript" src="parameter.js"></script>
 <script type="text/javascript" src="formulae.js"></script>
 <script type="text/javascript" src="index.js"></script>
+<script type="text/javascript" src="state.js"></script>
+<script type="text/javascript" src="automation.js"></script>
 <script type="text/javascript" src="utils.js"></script>
 <script type="text/javascript" src="ajax.js"></script>
 <script type="text/javascript" src="mouse.js"></script>
@@ -50,13 +52,13 @@
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
               <ul class="dd listmenu">
-                <li><span onclick="current.debugOff();">Disable Debug</span></li>
+                <li><span onclick="state.debugOff();">Disable Debug</span></li>
                 <li><hr></li>
                 <div id="debugedit" class="selectlist">
                 </div>
               </ul>
             </li>
-            <li><span onclick="resetState();">New</span></li>
+            <li><span onclick="state.reset();">New</span></li>
             <div id="session_user_menu" class="loggedin">
               <li><span onclick="uploadState();">Save</span></li>
               <li><span onclick="exportStateFile();">Export</span></li>

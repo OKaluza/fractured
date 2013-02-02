@@ -1,4 +1,4 @@
-VERSION = 0.77
+VERSION = 0.78
 COMP = java -jar compiler-latest/compiler.jar --js=
 FLAGS = --js_output_file=
 RSTFLAGS = --stylesheet-path=docs/docstyle.css 
@@ -11,7 +11,7 @@ docs=release/docs_$(VERSION).html
 codemirror=release/codemirror.js
 
 #Sources
-SCRIPTS = colourPicker.js gradient.js parameter.js formulae.js index.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js 
+SCRIPTS = colourPicker.js gradient.js parameter.js formulae.js index.js state.js automation.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js 
 CMSCRIPTS = codemirror/lib/codemirror.js $(wildcard codemirror/lib/util/*.js) codemirror/mode/clike/clike.js codemirror/mode/javascript/javascript.js
 
 all: release $(fractured) $(codemirror) $(docs) $(includes) $(formulae)
