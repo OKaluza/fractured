@@ -176,7 +176,7 @@ e
       }
     | e '^' e 
       {
-        var power = parseFloat(yytext);
+        var power = parseFloat($e2);
         if (yy[$e1] == 'real' && yy[$e2] == 'real') {
           if (power == 0.0)
             $$ = "1.0";
@@ -288,7 +288,7 @@ e
         yy[$$] = 'complex';
       }
     | const {yy[$$] = 'real';} //"(" + $1 + ",0)"
-    | COMPLEX {yy[$$] = 'complex';}
+    | COMPLEX {$$ = "C" + $COMPLEX; yy[$$] = 'complex';}
     | IDENTIFIER 
       {
         switch ($IDENTIFIER)

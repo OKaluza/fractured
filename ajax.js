@@ -16,12 +16,12 @@ function ajaxReadFile(filename, callback, nocache, progress)
       //Passed size progress
       var recvd = parseInt(http.responseText.length);
       //total = parseInt(http.getResponseHeader('Content-length'))
-      setProgress(recvd / total * 100);
+      if (progress) setProgress(recvd / total * 100);
     }
 
     if(http.readyState == 4) {
       if(http.status == 200) {
-        setProgress(100);
+        if (progress) setProgress(100);
         debug("RECEIVED: " + filename);
         if (callback)
           callback(http.responseText, filename);
@@ -62,7 +62,7 @@ function readURL(url, nocache, progress) {
       //Passed size progress
       var recvd = parseInt(http.responseText.length);
       //total = parseInt(http.getResponseHeader('Content-length'))
-      setProgress(recvd / total * 100);
+      if (progress) setProgress(recvd / total * 100);
     }
   } 
 
@@ -76,7 +76,7 @@ function readURL(url, nocache, progress) {
   http.overrideMimeType('text/plain; charset=x-user-defined');
   http.send(null);
   if (http.status != 200) return '';
-  setProgress(100);
+  if (progress) setProgress(100);
   return http.responseText;
 }
 
@@ -107,7 +107,7 @@ function ajaxPost(url, params, callback, progress, headers)
   { 
     if(http.readyState == 4)
       if(http.status == 200) {
-        setProgress(100);
+        if (progress) setProgress(100);
         debug("POST: " + url);
         if (callback)
           callback(http.responseText);

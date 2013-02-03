@@ -21,6 +21,7 @@ function State(version) {
   if (source) {
     var data = JSON.parse(source);
     this.fractal = data.fractal;
+    if (typeof this.fractal != 'string') this.fractal = null;
     this.session = data.session;
     this.formulae = data.formulae;
     this.antialias = data.antialias;
@@ -187,6 +188,7 @@ State.prototype.load = function() {
 
   palettes = this.getPalettes();
   fractals = this.getFractals();
+  if (state.fractal && !fractals[state.fractal]) state.fractal = null;
   populatePalettes();
   populateFractals();
   populateScripts();

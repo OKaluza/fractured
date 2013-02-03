@@ -110,7 +110,7 @@ case 14:
       
 break;
 case 15:
-        var power = parseFloat(yytext);
+        var power = parseFloat($$[$0]);
         if (yy[$$[$0-2]] == 'real' && yy[$$[$0]] == 'real') {
           if (power == 0.0)
             this.$ = "1.0";
@@ -230,7 +230,7 @@ case 31:
 break;
 case 32:yy[this.$] = 'real';
 break;
-case 33:yy[this.$] = 'complex';
+case 33:this.$ = "C" + $$[$0]; yy[this.$] = 'complex';
 break;
 case 34:
         switch ($$[$0])

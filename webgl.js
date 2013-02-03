@@ -29,6 +29,7 @@
     if (!window.WebGLRenderingContext) throw "Browser doesn't support WebGL";
 
     var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+    //Opera bug: if this is not set images are upside down, if it is can't antialias onto transparent background
     if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
     // Try to grab the standard context. If it fails, fallback to experimental.
     this.gl = canvas.getContext("webgl", options) || canvas.getContext("experimental-webgl", options);
@@ -115,7 +116,8 @@
   WebGL.prototype.pass = function() {
     //debug("Antialias pass ... " + this.j + " - " + this.k);
     var blendval = 1.0 - this.blendinc;
-    blendval *= blendval;// * blendval;
+    //blendval *= blendval;
+    blendval = Math.pow(blendval, 1.5);
     this.gl.blendColor(0, 0, 0, blendval);
     //print(blendval);
     this.blendinc += 1.0/(this.antialias*this.antialias);
