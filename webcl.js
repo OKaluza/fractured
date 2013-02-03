@@ -7,6 +7,7 @@
     this.devid = devid;
     this.fp64 = false;
     this.timer = null;
+    this.resetInput();
 
     if (window.WebCL == undefined) throw "window.WebCL not available";
 
@@ -131,7 +132,6 @@
     if (!this.k_sample) return; //Sanity check
     if (this.timer) {clearTimeout(this.timer); this.timer = null;}
     if (antialias == undefined) antialias = 1;
-    if (antialias > 4) antialias = 4; //Temporary fix, webgl antialias is not as effective, requires higher numbers
     this.antialias = antialias;
     if (!this.queue) return;
     try {

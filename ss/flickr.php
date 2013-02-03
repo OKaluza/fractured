@@ -66,7 +66,7 @@ elseif (isset($_GET['oauth_token']))
     $_SESSION['OauthToken'] = $f->getOauthToken();  
     $_SESSION['OauthSecretToken'] = $f->getOauthSecretToken(); 
     //echo "Authenticated: $OauthToken $OauthSecretToken";
-    header('Location: /');
+    header('Location: /flickr');
   }
 }
 else

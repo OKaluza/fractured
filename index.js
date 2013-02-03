@@ -53,7 +53,7 @@ function appInit() {
       if (list[i].indexOf('debug') >= 0) {
         //debug mode enabled, show extra menus
         state.debugOn();
-        //state.saveStatus();
+        state.saveStatus();
       } else if (list[i].indexOf('flickr') >= 0) {
         flickr = true; //Skip gallery display
       } else if (list[i].indexOf('reset') >= 0) {
@@ -127,6 +127,8 @@ function appInit() {
   } else if (flickr) {
     //Return to last drawn fractal
     hideGallery();
+    //Upload when draw finished
+    fractal.ondraw = uploadFlickr;
     fractal.applyChanges();
   } else if (!state.offline) {
     showGallery(location.hash);
@@ -299,8 +301,8 @@ function restoreFractal(restored) {
 }
 
 function setAntiAlias(val) {
-  if (!val) val = prompt('Enter quality (1-16) Higher values may be very slow!');
-  if (val && val > 0 && val <= 16) {
+  if (!val) val = prompt('Enter quality (1-8) Higher values may be very slow!');
+  if (val && val > 0 && val <= 8) {
     fractal.antialias = state.antialias = val;
     state.saveStatus();
     setAntiAliasMenu();
@@ -939,19 +941,20 @@ function uploadImgur() {
 }
 
 function uploadFlickr() {
+  fractal.ondraw = null;  //Remove callback
   var test = JSON.parse(readURL('ss/flickr.php?test'));
   if (!test.username) {
-    window.location = "/ss/flickr.php?auth";
+    popup("Not logged in.<br><a href='/ss/flickr.php?auth'>Click here</a> to log in to your flickr account");
+    //window.location = "/ss/flickr.php?auth";
     return;
   }
 
-  var canvas = $("fractal-canvas");
   var data = imageToBlob("image/jpeg", 0.95);
  
   var fd = new FormData();
   fd.append("photo", data);
   fd.append("title", $('name').value);
-  fd.append("description", 'Created using <a href="http://fract.ured.me">Fractured Studio http://fract.ured.me</a>');
+  fd.append("description", "Created using <a href='http://fract.ured.me'>Fractured Studio (fract.ured.me)</a>");
   fd.append("tags", $('name').value);
   fd.append("public", 1);
   fd.append("friend", 1);
@@ -1163,8 +1166,7 @@ function progressDoneLink(link) {
   $("progressstatus").innerHTML = "";
   $("progressmessage").innerHTML = "";
   $("progressmessage").appendChild(link);
-  //$S("progressbar").width = "0px";
-    $S('progressbar').width = 0;
+  $S("progressbar").width = "0px";
 }
 
 function login(id) {

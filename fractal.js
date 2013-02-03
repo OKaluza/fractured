@@ -12,13 +12,16 @@ var fractal_savevars = {};
 /**
  * @constructor
  */
-function Timer() {
+function Timer(oncomplete) {
   this.time = new Date().getTime();
+  this.oncomplete = oncomplete;
 }
 
 Timer.prototype.print = function(action) {
   this.elapsed = new Date().getTime() - this.time;
   print(action + " took: " + (this.elapsed / 1000) + " seconds");
+  //If set, call the completion action
+  if (this.oncomplete) this.oncomplete();
 }
 
 /**
@@ -422,10 +425,10 @@ Fractal.prototype.toStringMinimal = function() {
 Fractal.prototype.paramString = function() {
   //Return fractal parameters as a string
   var code = "[fractal]\n";
-  if (!document["inputs"].elements["autosize"].checked) {
-    //Only write width & height if autosize disabled
-    code += "width=" + this.canvas.width + "\n" +
-            "height=" + this.canvas.height + "\n";
+  if (this.width && this.height) {
+    //No width & height = autosize
+    code += "width=" + this.width + "\n" +
+            "height=" + this.height + "\n";
   }
   code += this.position +
           "selected=" + this.selected + "\n" +
@@ -496,7 +499,9 @@ Fractal.prototype.load = function(source, noapply) {
   //3. Load code for each selected formula
   //4. For each formula, load formula params into params[formula]
   //5. Load palette
-  /*/Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
+  //Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
+    var skipformula = false;
+    var old = source;
   source = source.replace(/_primes/g, "_integers");
   source = source.replace(/exp_smooth/g, "exponential_smoothing");
   source = source.replace(/magnet(\d)/g, "magnet_$1");
@@ -508,7 +513,9 @@ Fractal.prototype.load = function(source, noapply) {
     source = source.replace(/^bailout=/gm, "converge=");
   else
     source = source.replace(/^bailout=/gm, "escape=");
-  source = source.replace(/^bailoutc=/gm, "converge=");*/
+  source = source.replace(/^bailoutc=/gm, "converge=");
+    if (source != old) skipformula = true; //Don't import any formulae for old files!
+
     var saved = {}; //Another patch addition, remove once all converted
       //Strip leading : from old data
           source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
@@ -540,7 +547,13 @@ Fractal.prototype.load = function(source, noapply) {
     if (!line) continue;
 
     ///Remove this later
-    if (section == "params.base") section = "fractal";  //Base params fix temporary hack
+    if (section == "params.base") {
+      //Base params fix temporary hack
+      if (line.indexOf("iterations") == 0)
+        section = "fractal";
+      else
+        section = "params.transform";
+    }
 
     if (section == "fractal") {
       //parse into attrib=value pairs
@@ -559,6 +572,8 @@ Fractal.prototype.load = function(source, noapply) {
         this[key].im = c.im;
       } else if (pair[0] == "julia")
         this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
+      else if (pair[0] == "perturb" && (parseInt(pair[1]) == 1 || pair[1] == 'true'))
+        saved["perturb"] = 'true';
       else if (pair[0] == "inrepeat") //Moved to colour, hack to transfer param from old saves
         saved["inrepeat"] = pair[1];
       else if (pair[0] == "outrepeat") //Moved to colour, hack to transfer param from old saves
@@ -571,9 +586,9 @@ Fractal.prototype.load = function(source, noapply) {
           var oldline = lines[j];
           lines[j] = lines[j].replace("params." + pair[1], "params." + pair[0]);
           lines[j] = lines[j].replace("formula." + pair[1], "formula." + pair[0]);
-          if (pair[0] == "inside_colour") lines[j] = lines[j].replace(pair[1] + "_in_", ":");
-          if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", ":");
-          //if (lines[j] != oldline) debug(oldline + " ==> " + lines[j]);
+          if (pair[0] == "inside_colour") lines[j] = lines[j].replace(pair[1] + "_in_", "");
+          if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", "");
+          if (lines[j] != oldline) debug(oldline + " ==> " + lines[j]);
         }
 
         //Formula name, create entry if none
@@ -581,7 +596,7 @@ Fractal.prototype.load = function(source, noapply) {
         var category = pair[0];
         if (!this.choices[category]) {print("INVALID CATEGORY: " + category); continue;} //TEMP 
         var key = formulaKey(category, name, false);   //3rd param, check flag: Don't check exists because might not yet!
-        if (key) {
+        if (key && !skipformula) {
           //Read ahead to get formula definition!
           var formula_section = "";
           for (var j=i+1; j < lines.length; j++) {
@@ -641,13 +656,18 @@ Fractal.prototype.load = function(source, noapply) {
       }
     } else if (section.slice(0, 7) == "params.") {
       var pair1 = section.split(".");
+        //Old formulae, swap transform with post_transform
+        if (pair1[1] == "transform") pair1[1] = "post_transform";
       var category = pair1[1];
+        if (!this.choices[category]) {print("INVALID CATEGORY: " + category); continue;} //TEMP 
       var formula = this.choices[category].selected;
       if (curparam && line.indexOf("=") < 0 && line.length > 0) {
         //Multi-line value (ok for expressions)
         curparam.value += "\n" + lines[i];
       } else {
         var pair2 = line.split("=");
+          //Old formulae... remove prefixes
+          if (pair2[0].indexOf(pair1[1] + "_") == 0) pair2[0] = pair2[0].replace(pair1[1] + "_", "");
         if (this.choices[category].currentParams[pair2[0]]) {
           curparam = this.choices[category].currentParams[pair2[0]];
           curparam.parse(pair2[1]);
@@ -670,6 +690,10 @@ Fractal.prototype.load = function(source, noapply) {
 
   //Amend changed params, remove this when saved fractals updated
   var reup = false;
+  if (saved["perturb"]) {
+    this.choices["post_transform"].currentParams["perturb"].parse(saved["perturb"]); 
+    reup  = true;
+  }
   if (saved["vary"]) {
     this.choices["post_transform"].currentParams["vary"].parse(saved["vary"]); 
     this.choices["post_transform"].currentParams["miniter"].value = this.iterations; 
@@ -1342,7 +1366,8 @@ Fractal.prototype.timeAction = function(action) {
 Fractal.prototype.draw = function(antialias, notime) {
   if (!antialias) antialias = this.antialias;
   var timer = null;
-  if (!notime) timer = new Timer();
+  if (!notime)
+    timer = new Timer(this.ondraw);
 
   //Set canvas size
   this.sizeCanvas();
