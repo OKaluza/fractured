@@ -65,7 +65,7 @@ void main()
     }
 
     //Run next calc step
-    count = i+1;  //Current step count
+    count++;  //Current step count
     ---ZNEXT---
 
     {
@@ -87,7 +87,8 @@ void main()
     }
   }
 
-  if (escaped || converged)
+  //Defined as: escaped || converged (or: true, when using same colour for both)
+  if (outside_set)
   {
     //Outside colour: normalised colour index [0,1]
     ---OUTSIDE_COLOUR---

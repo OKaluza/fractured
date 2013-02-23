@@ -258,7 +258,7 @@ Formula.prototype.getSource = function() {
     var source = source.replace("loge", "ln");
     if (source != formula_list[key].source) {
       formula_list[key].source = source;
-      alert(source);
+      alert("LOGE=>LN\n" + source);
     }
     return formula_list[key].source;
   }
@@ -335,16 +335,7 @@ Formula.prototype.getCodeSections = function() {
     if (!this.currentParams["escape"]) sections["data"] += "\n#define escape 4.0\n";
     if (!this.currentParams["bailtest"]) sections["data"] += "\n#define @bailtest norm\n";
 
-  } else if (this.category.indexOf("colour") > -1) {
-    //Default colour result
-    if (sections["result"].length == 0)
-      sections["result"] = "\n  colour = background;\n";
-
-    //Same colouring, always use the outside result...
-    if (this.selected == "same")
-      sections["calc"] = "\n  if (i==limit-1) escaped = true;\n";
   }
-
   return sections;
 }
 

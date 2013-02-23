@@ -28,11 +28,15 @@ Timer.prototype.print = function(action) {
  * @constructor
  */
 function Aspect(re, im, rotation, zoom) {
-  this.re = re;
-  this.im = im;
+  // call base class constructor
+  Complex.call(this, re, im); 
   this.rotate = rotation;
   this.zoom = zoom; 
 }
+
+//Inherits from Complex
+Aspect.prototype = new Complex();
+Aspect.prototype.constructor = Aspect;
 
 Aspect.prototype.print = function() {
   return this.re + ',' + this.im + ',' + this.rotate + ',' + this.zoom;
@@ -95,16 +99,14 @@ function LineOffset(category, section, value) {
 /**
  * @constructor
  */
-function Fractal(parentid, mode, antialias) {
+function Fractal(parentid) {
   //Construct a new default fractal object
-  this.renderer = WEBGL;
-
-  this.setRenderer(parentid, mode);
+  this.setRenderer(parentid, state.renderer);
 
   //Set canvas size
   this.sizeCanvas();
 
-  this.antialias = antialias;
+  this.antialias = state.antialias;
   this.preview = null;
 }
 
@@ -153,9 +155,8 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
 
   //Render mode, If not set, use WebCL if available
   this.renderer = mode;
-  if (this.renderer == undefined) this.renderer = WEBCL;
+  if (this.renderer == undefined) this.renderer = WEBGL;
   if (window.WebCL == undefined) {
-    if (mode > WEBGL) popup("Sorry, Nokia WebCL plugin not found, try <a href='http://webcl.nokiaresearch.com/'>webcl.nokiaresearch.com</a> for more information");
     this.renderer = WEBGL;
     $("webcl").disabled = true;
     $("fp64").disabled = true;
@@ -164,26 +165,28 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   if (this.renderer >= WEBCL) {
     //Init WebCL
     try {
-      if (this.webcl)
-        this.webcl = new OpenCL(this.webcl.pid, this.webcl.devid);  //Use existing settings
-      else
-        this.webcl = new OpenCL();
+      this.webcl = new OpenCL(state.platform, state.device);  //Use existing settings
 
       if (this.renderer > WEBCL && !this.webcl.fp64) {
         popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> " + 
               "extension is required for double precision support in WebCL");
+        this.renderer = WEBCL;
       }
 
       $("fp64").disabled = !this.webcl.fp64;
-      debug(this.webcl.pid + " : " + this.webcl.devid + " --> " + this.canvas.width + "," + this.canvas.height);
+      debug(state.platform + " : " + state.device + " --> " + this.canvas.width + "," + this.canvas.height);
       this.webcl.init(this.canvas, this.renderer > WEBCL, 8);
       this.webclMenu();
       this.webgl = null;
     } catch(e) {
       //WebCL init failed, fallback to WebGL
-      popup("Error creating WebCL context: " + e.message + "<br>Falling back to WebGL...");
+      var error = e;
+      if (e.message) error = e.message;
+      popup("WebCL could not be initialised (" + error + ")<br>Try <a href='http://webcl.nokiaresearch.com/'>webcl.nokiaresearch.com</a> for more information.");
       this.webcl = null;
       this.renderer = WEBGL;
+      $("webcl").disabled = true;
+      $("fp64").disabled = true;
     }
   }
 
@@ -198,9 +201,9 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
       //WebGL init failed
       var error = e;
       if (e.message) error = e.message;
-      popup("Error initialising WebGL (" + error + 
+      popup("WebGL support not available (" + error + 
             ")<br>Try <a href='http://get.webgl.org/troubleshooting'>" + 
-            "http://get.webgl.org/troubleshooting</a> for more information");
+            "http://get.webgl.org/troubleshooting</a> for more information.");
       this.webgl = null;
       this.renderer = NONE;
     }
@@ -219,6 +222,8 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
 
   var renderer_names = ["None", "WebGL", "WebCL", "WebCL fp64"];
   print("Mode set to " + renderer_names[this.renderer+1]);
+  state.renderer = this.renderer;
+  state.saveStatus();
 }
 
 Fractal.prototype.webclMenu = function() {
@@ -243,7 +248,7 @@ Fractal.prototype.webclMenu = function() {
         this.pfstrings += "-O";
       var onclick = "fractal.webclSet(" + p + "," + d + ");";
       var item = addMenuItem(menu, name, onclick);
-      if (p == this.webcl.pid && d == this.webcl.devid) selectMenuItem(item);
+      if (p == state.platform && d == state.device) selectMenuItem(item);
     }
   }
   checkMenuHasItems(menu);
@@ -251,8 +256,8 @@ Fractal.prototype.webclMenu = function() {
 
 Fractal.prototype.webclSet = function(pfid, devid) {
   //Init with new selection
-  this.webcl.pid = pfid;
-  this.webcl.devid = devid;
+  state.platform = pfid;
+  state.device = devid;
   this.setRenderer('main', this.renderer);
 
   //Redraw if updating
@@ -324,8 +329,8 @@ Fractal.prototype.resetDefaults = function() {
   $('name').value = "unnamed"
   this.width = 0;
   this.height = 0;
-  this.position = new Aspect(0.0, 0, 0, 0.5); 
-  this.savePos = new Aspect(0.0, 0, 0, 0.5);
+  this.position = new Aspect(0, 0, 0, 0.5); 
+  this.savePos = new Aspect(0, 0, 0, 0.5);
   this.selected = new Complex(0, 0);
   this.julia = false;
   this.iterations = 100;
@@ -424,7 +429,7 @@ Fractal.prototype.toStringMinimal = function() {
 
 Fractal.prototype.paramString = function() {
   //Return fractal parameters as a string
-  var code = "[fractal]\n";
+  var code = "[fractal]\nversion=" + state.version + "\n";
   if (this.width && this.height) {
     //No width & height = autosize
     code += "width=" + this.width + "\n" +
@@ -490,7 +495,10 @@ Fractal.prototype.loadPalette = function(source) {
 
 //Load fractal from file
 Fractal.prototype.load = function(source, noapply) {
-  //debug("load<hr>");
+  if (!this.webgl && !this.webcl) return;
+  //Strip leading : from old data
+  source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
+  if (state.legacy && source.indexOf("version=") < 0) return this.loadOld(source, noapply);
   //Reset everything...
   this.resetDefaults();
   this.formulaDefaults();
@@ -499,32 +507,9 @@ Fractal.prototype.load = function(source, noapply) {
   //3. Load code for each selected formula
   //4. For each formula, load formula params into params[formula]
   //5. Load palette
-  //Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
-    var skipformula = false;
-    var old = source;
-  source = source.replace(/_primes/g, "_integers");
-  source = source.replace(/exp_smooth/g, "exponential_smoothing");
-  source = source.replace(/magnet(\d)/g, "magnet_$1");
-  source = source.replace(/burningship/g, "burning_ship");
-  source = source.replace(/zold/gm, "z_old");
-  source = source.replace(/^power=/gm, "p=");
-  source = source.replace(/^bailfunc=/gm, "bailtest=");
-  if (source.indexOf("nova") > 0)
-    source = source.replace(/^bailout=/gm, "converge=");
-  else
-    source = source.replace(/^bailout=/gm, "escape=");
-  source = source.replace(/^bailoutc=/gm, "converge=");
-    if (source != old) skipformula = true; //Don't import any formulae for old files!
-
-    var saved = {}; //Another patch addition, remove once all converted
-      //Strip leading : from old data
-          source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
-
   var lines = source.split("\n"); // split on newlines
   var section = "";
   var curparam = null;
-
-  //var formulas = {};
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
@@ -546,57 +531,33 @@ Fractal.prototype.load = function(source, noapply) {
 
     if (!line) continue;
 
-    ///Remove this later
-    if (section == "params.base") {
-      //Base params fix temporary hack
-      if (line.indexOf("iterations") == 0)
-        section = "fractal";
-      else
-        section = "params.transform";
-    }
+    ///Remove this some day
+    if (section == "params.base") section = "fractal";
 
     if (section == "fractal") {
       //parse into attrib=value pairs
       var pair = line.split("=");
 
       //Process ini format params
-      if (pair[0] == "width" || pair[0] == "height" || pair[0] == "iterations")
+      if (pair[0] == "version")
+        print("Loading Fractal params, version: " + pair[1]);
+      else if (pair[0] == "width" || pair[0] == "height" || pair[0] == "iterations")
         this[pair[0]] = parseInt(pair[1]);
       else if (pair[0] == "zoom" || pair[0] == "rotate")
         this.position[pair[0]] = parseReal(pair[1]);
-      else if (pair[0] == "origin" || pair[0] == "selected") {
-        var c = parseComplex(pair[1]);
-        var key = pair[0];
-        if (pair[0] == "origin") key = "position";
-        this[key].re = c.re;
-        this[key].im = c.im;
-      } else if (pair[0] == "julia")
+      else if (pair[0] == "origin")
+        this.position.set(pair[1]);
+      else if (pair[0] == "selected")
+        this.selected.set(pair[1]);
+      else if (pair[0] == "julia")
         this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
-      else if (pair[0] == "perturb" && (parseInt(pair[1]) == 1 || pair[1] == 'true'))
-        saved["perturb"] = 'true';
-      else if (pair[0] == "inrepeat") //Moved to colour, hack to transfer param from old saves
-        saved["inrepeat"] = pair[1];
-      else if (pair[0] == "outrepeat") //Moved to colour, hack to transfer param from old saves
-        saved["outrepeat"] = pair[1];
-      else {
-        //Old formulae, swap transform with post_transform
-        if (pair[0] == "transform") pair[0] = "post_transform";
-        //Old formulae - replace in lines
-        for (var j = i+1; j < lines.length; j++) {
-          var oldline = lines[j];
-          lines[j] = lines[j].replace("params." + pair[1], "params." + pair[0]);
-          lines[j] = lines[j].replace("formula." + pair[1], "formula." + pair[0]);
-          if (pair[0] == "inside_colour") lines[j] = lines[j].replace(pair[1] + "_in_", "");
-          if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", "");
-          if (lines[j] != oldline) debug(oldline + " ==> " + lines[j]);
-        }
-
+      //Formula selection?
+      else if (pair[0] in this.choices) {
         //Formula name, create entry if none
         var name = pair[1];
         var category = pair[0];
-        if (!this.choices[category]) {print("INVALID CATEGORY: " + category); continue;} //TEMP 
         var key = formulaKey(category, name, false);   //3rd param, check flag: Don't check exists because might not yet!
-        if (key && !skipformula) {
+        if (key) {
           //Read ahead to get formula definition!
           var formula_section = "";
           for (var j=i+1; j < lines.length; j++) {
@@ -650,16 +611,144 @@ Fractal.prototype.load = function(source, noapply) {
         }
 
         this.choices[category].select(name);
-        //alert("formulas[" + pair[1] + "] = " + pair[0]);
-        //formulas[pair[1]] = pair[0]; //Save for a reverse lookup
-        //alert(pair[0] + " == " + formulas[pair[0]]);
+      } else {
+        print("Unrecognised fractal parameter: " + line);
+      }
+    } else if (section.slice(0, 7) == "params.") {
+      var pair1 = section.split(".");
+      var category = pair1[1];
+      if (!category in this.choices) {print("INVALID CATEGORY: " + category); continue;}
+      var formula = this.choices[category].selected;
+      if (curparam && line.indexOf("=") < 0 && line.length > 0) {
+        //Multi-line value (ok for expressions)
+        curparam.value += "\n" + lines[i];
+      } else {
+        var pair2 = line.split("=");
+        if (this.choices[category].currentParams[pair2[0]]) {
+          curparam = this.choices[category].currentParams[pair2[0]];
+          curparam.parse(pair2[1]);
+        } else { //Not defined in formula, skip
+          print("Undeclared: (" + formula + ") [" + pair2[0] + "]=" + pair2[1]);
+        }
+      }
+    }
+  }
+
+  //Select formulae and update parameters
+  this.loadParams();
+
+  if (!noapply) this.applyChanges();
+}
+
+//Load fractal from file (with back compatibility)
+Fractal.prototype.loadOld = function(source, noapply) {
+  print("Parsing old fractal style");
+  //Reset everything...
+  this.resetDefaults();
+  this.formulaDefaults();
+  //Name change fixes... TODO: resave or run a sed script on all existing saved fractals then can remove these lines
+  source = source.replace(/_primes/g, "_integers");
+  source = source.replace(/exp_smooth/g, "exponential_smoothing");
+  source = source.replace(/magnet(\d)/g, "magnet_$1");
+  source = source.replace(/burningship/g, "burning_ship");
+  source = source.replace(/zold/gm, "z_old");
+  source = source.replace(/^power=/gm, "p=");
+  source = source.replace(/^bailfunc=/gm, "bailtest=");
+  if (source.indexOf("nova") > 0)
+    source = source.replace(/^bailout=/gm, "converge=");
+  else
+    source = source.replace(/^bailout=/gm, "escape=");
+  source = source.replace(/^bailoutc=/gm, "converge=");
+
+    var saved = {}; //Another patch addition, remove once all converted
+
+  var lines = source.split("\n"); // split on newlines
+  var section = "";
+  var curparam = null;
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (line[0] == "[") {
+      var buffer = "";
+      section = line.slice(1, line.length-1);
+
+      if (section == "palette"){
+        //Collect lines into palette data
+        for (var j = i+1; j < lines.length; j++) {
+          if (lines[j][0] == "[") break;
+          buffer += lines[j] + "\n";
+        }
+        colours.read(buffer);
+        i = j-1;
+      }
+      continue;
+    }
+
+    if (!line) continue;
+
+    ///Remove this later
+    if (section == "params.base") {
+      //Base params fix temporary hack
+      if (line.indexOf("iterations") == 0)
+        section = "fractal";
+      else
+        section = "params.transform";
+    }
+
+    if (section == "fractal") {
+      //parse into attrib=value pairs
+      var pair = line.split("=");
+
+      //Process ini format params
+      if (pair[0] == "width" || pair[0] == "height" || pair[0] == "iterations")
+        this[pair[0]] = parseInt(pair[1]);
+      else if (pair[0] == "zoom" || pair[0] == "rotate")
+        this.position[pair[0]] = parseReal(pair[1]);
+      else if (pair[0] == "origin")
+        this.position.set(pair[1]);
+      else if (pair[0] == "selected")
+        this.selected.set(pair[1]);
+      else if (pair[0] == "julia")
+        this[pair[0]] = (parseInt(pair[1]) == 1 || pair[1] == 'true');
+      else if (pair[0] == "perturb" && (parseInt(pair[1]) == 1 || pair[1] == 'true'))
+        saved["perturb"] = 'true';
+      else if (pair[0] == "inrepeat") //Moved to colour, hack to transfer param from old saves
+        saved["inrepeat"] = pair[1];
+      else if (pair[0] == "outrepeat") //Moved to colour, hack to transfer param from old saves
+        saved["outrepeat"] = pair[1];
+      else if (pair[0] in this.choices || pair[0] == "transform") {
+        //Old formulae, swap transform with post_transform
+        if (pair[0] == "transform") pair[0] = "post_transform";
+        //Old formulae - replace in lines
+        for (var j = i+1; j < lines.length; j++) {
+          var oldline = lines[j];
+          lines[j] = lines[j].replace("params." + pair[1], "params." + pair[0]);
+          lines[j] = lines[j].replace("formula." + pair[1], "formula." + pair[0]);
+          if (pair[0] == "inside_colour") lines[j] = lines[j].replace(pair[1] + "_in_", "");
+          if (pair[0] == "outside_colour") lines[j] = lines[j].replace(pair[1] + "_out_", "");
+          if (lines[j] != oldline) debug(oldline + " ==> " + lines[j]);
+        }
+
+        //Formula name, create entry if none
+        var name = pair[1];
+        var category = pair[0];
+        if (!category in this.choices) {print("INVALID CATEGORY: " + category); continue;}
+        //Skip formula loading in old files...must have correct formula loaded already
+        var key = formulaKey(category, name, false);
+        if (!this.choices[category].exists(name)) {
+          alert("Formula not found: " + name);
+          return;
+        } else
+          this.choices[category].select(name);
+      } else {
+        print("Unrecognised parameter: " + line);
       }
     } else if (section.slice(0, 7) == "params.") {
       var pair1 = section.split(".");
         //Old formulae, swap transform with post_transform
         if (pair1[1] == "transform") pair1[1] = "post_transform";
       var category = pair1[1];
-        if (!this.choices[category]) {print("INVALID CATEGORY: " + category); continue;} //TEMP 
+        if (!category in this.choices) {print("INVALID CATEGORY: " + category); continue;}
       var formula = this.choices[category].selected;
       if (curparam && line.indexOf("=") < 0 && line.length > 0) {
         //Multi-line value (ok for expressions)
@@ -667,6 +756,7 @@ Fractal.prototype.load = function(source, noapply) {
       } else {
         var pair2 = line.split("=");
           //Old formulae... remove prefixes
+          //so in section [params.inside_colour] remove inside_colour_
           if (pair2[0].indexOf(pair1[1] + "_") == 0) pair2[0] = pair2[0].replace(pair1[1] + "_", "");
         if (this.choices[category].currentParams[pair2[0]]) {
           curparam = this.choices[category].currentParams[pair2[0]];
@@ -678,7 +768,7 @@ Fractal.prototype.load = function(source, noapply) {
               saved["vary"] = pair2[1];
             }
           } else if (pair2[0] != "antialias") { //Ignored, now a global renderer setting
-            print("Skipped param, not declared: " + section + "--- this.choices[" + formula + "].currentParams[" + pair2[0] + "]=" + pair2[1]);
+            print("Undeclared: (" + formula + ") [" + pair2[0] + "]=" + pair2[1]);
           }
         }
       }
@@ -709,7 +799,7 @@ Fractal.prototype.load = function(source, noapply) {
     reup  = true;
   }
   if (reup) this.loadParams();
-  if (noapply == undefined) this.applyChanges();
+  if (!noapply) this.applyChanges();
 }
 
 //Conversion from my old fractal ini files
@@ -1038,7 +1128,7 @@ Fractal.prototype.loadParams = function() {
 }
 
 Fractal.prototype.resetZoom = function() {
-  this.position = new Aspect(0.0, 0, 0, 0.5);
+  this.position = new Aspect(0, 0, 0, 0.5);
   this.copyToForm();
   this.draw();
 }
@@ -1088,6 +1178,7 @@ Fractal.prototype.sizeCanvas = function() {
 
 //Apply any changes to parameters or formula selections and redraw
 Fractal.prototype.applyChanges = function(antialias, notime) {
+  if (!this.webgl && !this.webcl) return;
   //Update palette texture
   var canvas = $('gradient');
   colours.get(canvas);
@@ -1108,8 +1199,7 @@ Fractal.prototype.applyChanges = function(antialias, notime) {
   this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
   this.position = new Aspect(parseReal($("xOrigin").value), parseReal($("yOrigin").value),
                              parseReal($("rotate").value), parseReal($("zoom").value));
-  this.selected.re = parseReal($("xSelect").value);
-  this.selected.im = parseReal($("ySelect").value);
+  this.selected = new Complex(parseReal($("xSelect").value), parseReal($("ySelect").value));
 
   //Limit rotate to range [0-360)
   if (this.position.rotate < 0) this.position.rotate += 360;
@@ -1178,6 +1268,10 @@ Generator.prototype.headers = function() {
 
   //Insert at beginning of source
   headers += "\n#define MAXITER " + (100 * Math.ceil(this.fractal.iterations / 100)) + "\n";
+  if (this.fractal.choices["inside_colour"].selected == "same")
+    headers += "\n#define outside_set true\n";
+  else
+    headers += "\n#define outside_set escaped || converged\n";
   this.headerlen = headers.split("\n").length;
   this.source = headers + this.source;
 }
@@ -1724,5 +1818,6 @@ function togglePreview() {
     $('previewbtn').innerHTML = "Show Preview &#10003;"
   }
 }
+
 
 

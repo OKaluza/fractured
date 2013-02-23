@@ -13,8 +13,12 @@ var palettes; //Palette list
 var rztimeout = undefined;
 
 function appInit() {
-  state = new State("---VERSION---");
-  if (!state) {alert("Local Storage not supported!"); return;}
+  try {
+    state = new State("---VERSION---");
+  } catch (e) {
+    popup(e);
+    return;
+  }
   //Force offline mode when loaded locally
   if (window.location.href.indexOf("file://") == 0) state.offline = true;
   if (!navigator.onLine) state.offline = true;
@@ -45,7 +49,6 @@ function appInit() {
     query = location.hash.substr(1);
   }
   var restored = "";
-  var mode;
   var flickr = false;
   if (query) {
     var list = query.split("&");
@@ -54,16 +57,13 @@ function appInit() {
         //debug mode enabled, show extra menus
         state.debugOn();
         state.saveStatus();
+      } else if (list[i].indexOf('legacy') >= 0) {
+        state.legacy = true;
+        debug("Legacy loading mode enabled");
       } else if (list[i].indexOf('flickr') >= 0) {
         flickr = true; //Skip gallery display
       } else if (list[i].indexOf('reset') >= 0) {
         state.resetFormulae();
-      } else if (list[i].indexOf('fp64') == 0 || list[i].indexOf('double') == 0) {
-        mode = WEBCL64;
-      } else if (list[i].indexOf('webcl') >= 0) {
-        mode = WEBCL;
-      } else if (list[i].indexOf('webgl') >= 0) {
-        mode = WEBGL;
       } else if (list[i].length > 20) {
         //Load fractal from base64 packed url
         restored = window.atob(list[i]);
@@ -83,7 +83,7 @@ function appInit() {
   colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();});
 
   //Fractal & canvas
-  fractal = new Fractal('main', mode, state.antialias);
+  fractal = new Fractal('main');
 
   if (!state.offline) {
     //Session restore:
@@ -136,6 +136,12 @@ function appInit() {
 
   loadHelp();
   loadScript("/codemirror.js", "");
+}
+
+//Forced reset - used when upgrading
+function resetReload() {
+  history.pushState("",document.title,location.pathname+"&reset");
+  location.reload(true);
 }
 
 //Load from a locator hash
@@ -411,7 +417,6 @@ function fractalMenuAdd(name) {
 }
 
 function fractalMenuSelect(name) {
-  debug(state.fractal);
   if (state.fractal)
     deselectMenuItem($(fractals[state.fractal].id), true);
   state.fractal = name;
@@ -441,8 +446,12 @@ function deleteFractal(name) {
 function performTask(number, numToProcess, processItem) {
   var pos = 0;
   var items = [];
-  for (key in fractals) {
+  for (var key in fractals) {
     items[pos] = fractals[key];
+    if (state.legacy) { //CONVERT ALL
+      fractal.load(fractals[key].source, true);
+      fractals[key].source = fractal.toStringNoFormulae();
+    }
     pos++;
   }
   pos = 0;
@@ -1141,9 +1150,27 @@ function toggle(id) {
 }
 
 function popup(text) {
+  /*
+  var popdiv = document.createElement('div');
+  popdiv.className = 'popup';
+  var popclose = document.createElement('div');
+  popclose.className = 'popclose';
+  popclose.appendChild(popclose.ownerDocument.createTextNode('X'));
+  popclose.setAttribute("onclick", 'this.parentNode.parentNode.removeChild(this.parentNode);');
+  popdiv.appendChild(popclose);
+  var popmsg = document.createElement('div');
+  popmsg.appendChild(popclose.ownerDocument.createTextNode(text));
+  popdiv.appendChild(popmsg);
+  $('main').appendChild(popdiv);
+  */
   var el = $('popup');
   if (text) {
-    $('popupmessage').innerHTML = text;
+    if (el.style.display == 'block') {
+      $('popupmessage').innerHTML += "<hr>" + text;
+    } else {
+      $('popupmessage').innerHTML = text;
+    }
+    el.style.marginTop = "-" + Math.floor($('popup').clientHeight / 2) + "px";
     el.style.display = 'block';
   } else
     el.style.display = 'none';
@@ -1350,7 +1377,7 @@ function fileSelected(files) {
       reader.onload = (function(file) {
         return function(e) {
           //alert(e.target.result);
-          importFile(e.target.result, file.name);
+          importFile(e.target.result, file.name, file.lastModifiedDate);
         };
       })(file);
 
@@ -1362,7 +1389,7 @@ function fileSelected(files) {
   }
 }
 
-function importFile(source, filename) {
+function importFile(source, filename, date) {
   //Determine file type from content
   if (source.charAt(0) == '{') {
     //JSON: session, formulae
@@ -1390,9 +1417,13 @@ function importFile(source, filename) {
       if (filename.indexOf(".ini") > -1) {
         fractal.iniLoader(source);
         filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
-        fractal.applyChanges();
       } else {
-        fractal.load(source);
+        //Pre 0.7, 0.78+ files have version=
+        if (state.legacy || date && date < new Date(2012,9,1))
+          fractal.loadOld(source);
+        else
+          fractal.load(source);
+        //if (/version=\(/g.exec(source))
       }
       //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
       $('name').value = filename.substr(0, filename.lastIndexOf('.')) || filename;

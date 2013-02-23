@@ -9,12 +9,19 @@
     this.timer = null;
     this.resetInput();
 
-    if (window.WebCL == undefined) throw "window.WebCL not available";
-
-    //Get & select platforms, devices
-    this.platforms = WebCL.getPlatformIDs();
-    if (this.pid == undefined || this.pid >= this.platforms.length)
-      this.pid = 0;
+    var cl = window.WebCL;
+    if (!cl) throw "No WebCL interface";
+    if (!cl.getPlatforms) throw "Unknown WebCL interface";
+    try {
+      //cl.getPlatforms();
+      //Get & select platforms, devices
+      this.platforms = WebCL.getPlatformIDs();
+      if (this.pid == undefined || this.pid >= this.platforms.length)
+        this.pid = 0;
+    } catch (e) {
+      print("detectCL exception: " + e);
+      throw "No OpenCL drivers available"
+    }
 
     if(this.platforms.length<1) throw "No OpenCL platforms found!";
 
@@ -29,8 +36,8 @@
                 " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME) + " (" + this.devid + ")");
 
     //Check for double precision support
-    var extensions = this.platforms[this.pid].getPlatformInfo(window.WebCL.CL_PLATFORM_EXTENSIONS);
-    extensions += " " + this.devices[this.devid].getDeviceInfo(window.WebCL.CL_DEVICE_EXTENSIONS);
+    var extensions = this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_EXTENSIONS);
+    extensions += " " + this.devices[this.devid].getDeviceInfo(cl.CL_DEVICE_EXTENSIONS);
     if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
       this.fp64 = true; //Initial state of flag shows availability of fp64 support
     debug("WebCL ready, extensions: " + extensions);
@@ -61,7 +68,9 @@
 
     this.program = this.ctx.createProgramWithSource(kernelSrc);
     try {
-      this.program.buildProgram([this.devices[this.devid]], "");
+      var options = "-cl-no-signed-zeros -cl-mad-enable -cl-fast-relaxed-math"
+      this.program.buildProgram([this.devices[this.devid]], options);
+      debug("<hr>" + this.program.getProgramBuildInfo(this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_LOG) + "<hr>");
     } catch(e) {
       throw "Failed to build WebCL program. Error "
             + this.program.getProgramBuildInfo(this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_STATUS)
@@ -154,11 +163,11 @@
       this.inBuffer[9] = background.blue/255.0;
       this.inBuffer[10] = background.alpha;
 
-      this.k_sample.setKernelArg(3, Math.floor(antialias));
-      this.k_sample.setKernelArg(4, Math.floor(fractal.julia));
-      this.k_sample.setKernelArg(5, Math.floor(fractal.iterations));
-      this.k_sample.setKernelArg(6, Math.floor(this.viewport.width));
-      this.k_sample.setKernelArg(7, Math.floor(this.viewport.height));
+      this.k_sample.setKernelArg(3, antialias, WebCL.types.INT);
+      this.k_sample.setKernelArg(4, fractal.julia, WebCL.types.INT);
+      this.k_sample.setKernelArg(5, fractal.iterations, WebCL.types.INT);
+      this.k_sample.setKernelArg(6, this.viewport.width, WebCL.types.INT);
+      this.k_sample.setKernelArg(7, this.viewport.height, WebCL.types.INT);
 
       this.queue.enqueueWriteBuffer(this.input, false, 0, this.inBuffer.byteLength, this.inBuffer, []);
 
@@ -170,7 +179,6 @@
 
       this.j = 0;
       this.k = 0;
-      var that = this;
       this.pass();
 
     } catch(e) {
@@ -181,13 +189,16 @@
 
   OpenCL.prototype.pass = function() {
     //debug("Antialias pass ... " + this.j + " - " + this.k);
-    this.k_sample.setKernelArg(8, this.j);
-    this.k_sample.setKernelArg(9, this.k);
+    this.k_sample.setKernelArg(8, this.j, WebCL.types.INT);
+    this.k_sample.setKernelArg(9, this.k, WebCL.types.INT);
+    //debug("Dims: " + this.global.length + " Global: " + JSON.stringify(this.global) + " Local: " + JSON.stringify(this.local));
     this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
+    //this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, [], []);
 
     //Combine
-    this.k_average.setKernelArg(2, this.j*this.antialias+this.k+1);
+    this.k_average.setKernelArg(2, this.j*this.antialias+this.k+1, WebCL.types.INT);
     this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
+    //this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, [], []);
 
     this.queue.enqueueReadImage(this.output, false, [0,0,0], 
          [this.global[0],this.global[1],1], 0, 0, this.outImage.data, []);

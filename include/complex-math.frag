@@ -12,6 +12,11 @@ bool equals(in complex z1, in complex z2, real tolerance)
   return distance(z1, z2) <= abs(tolerance);
 }
 
+real sgn(real x)
+{
+  return x / abs(x);
+}
+
 real manhattan(in complex z)
 {
   return abs(z.x) + abs(z.y);
@@ -55,7 +60,6 @@ complex div(in complex z, in complex w)
 
 complex inv(in complex z)
 {
-  if (z.y==0.0) return C(1.0/z.x, 0);  
   //1.0 / z
   return conj(z) / norm(z);
 }
@@ -110,73 +114,26 @@ complex cube(in complex z)
 
 complex cpow(in complex base, in complex exponent)
 {
-  /*/Simpler version?
+  //Simpler version?
   real r = cabs(base);
   real t = arg(base);
   real a = pow(r,exponent.x)*exp(-exponent.y*t);
   real b = exponent.x*t + exponent.y*log(r);
-  return C(a*cos(b), a*sin(b));*/
-
-  if (base.x == 0.0 && base.y == 0.0) return C(0,0);
-  if (exponent.y == 0.0) 
-  {
-    if (exponent.x == 2.0) return sqr(base);
-    if (exponent.x == 3.0) return cube(base);
-  }
-
-  real re =  log(cabs(base));
-  real im =  arg(base);
-
-  real re2, im2;
-  if (exponent.y == 0.0) 
-  {
-    re2 = exponent.x * re;
-    im2 = exponent.x * im;
-  }
-  else
-  {
-    re2 = (re*exponent.x) - (im*exponent.y);
-    im2 = (re*exponent.y) + (im*exponent.x);
-  }
-
-  real scalar = exp(re2);
-
-  return C(scalar * cos(im2), scalar * sin(im2));
-  //complex temp = mul(C(log(cabs(base)), arg(base)), exponent);
-  //real scalar = exp(temp.x);
-  //return C(scalar * cos(temp.y), scalar * sin(temp.y));
+  return C(a*cos(b), a*sin(b));
 }
 
 complex cexp(in complex z) 
 {
-    real scalar = exp(z.x); // e^ix = cis x
-    return C(scalar * cos(z.y), scalar * sin(z.y));
+  real scalar = exp(z.x); // e^ix = cis 
+  return C(scalar * cos(z.y), scalar * sin(z.y));
 }
 
 complex csqrt(in complex z)
 {
-  if (z.y == 0.0)
-  {
-    if (z.x < 0.0)
-      return C(0.0, sqrt(-z.x));
-    else
-      return C(sqrt(z.x), 0.0);
-  }
-  if (z.x == 0.0)
-  {
-    real r = sqrt(0.5 * abs(z.y));
-    if (z.y < 0.0) r = -r;
-    return C(r, r);
-  }
-
-  real t = sqrt(2.0 * (cabs(z) + abs(z.x)));
-  real u = t / 2.0;
-  
-  if (z.x > 0.0)
-    return C(u, z.y / t);
-
-  if (z.y < 0.0) u = -u;
-  return C(abs(z.y / t), u);
+  real ab = cabs(z);
+  real x = (1.0 / sqrt(2.0)) * sqrt(ab + z.x);
+  real y = (sgn(z.y) / sqrt(2.0)) * sqrt(ab - z.x);
+  return C(x, y);
 }
 
 // Returns the sine of a complex number.
