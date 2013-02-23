@@ -86,19 +86,18 @@
     if ($thumb == 100)
     {
       $url = $links[$x];
-      $filename = $thumbs[$x];
+	    $img = '<img src="' . $thumbs[$x] . '"/>';
     }
     else 
     {
       $filename = "/thumbs/" . $links[$x] . ".jpg";
-      $url = "javascript:loadUrl('" . $links[$x] . "')";
+      $url = '#' . $links[$x]; #"javascript:loadUrl('" . $links[$x] . "')";
       if (!file_exists(".." . $filename))
         $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
+	    $img = '<img src="' . $filename . '" onmousedown="loadUrl(\'' . $links[$x] . '\');"/>';
     }
-    echo '<div class="float">';
-    echo '<a href="#'.$links[$x].'">';
-	  echo '<img src="' . $filename . '" onmousedown="loadUrl(\'' . $links[$x] . '\');"/>';
-    echo "</a></div>\n";
+    echo "<div class='float' style='width: $thumb; height: $thumb;'>";
+    echo "<a href='$url'>$img</a></div>\n";
   }
 
   //Display page jump links

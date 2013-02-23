@@ -31,7 +31,7 @@
 
 // Updated to use a modification of the "returnExportsGlobal" pattern from https://github.com/umdjs/umd
 
-(function (root, factory) {
+/*(function (root, factory) {
     if (typeof exports === 'object') {
         // Node. Does not work with strict CommonJS, but
         // only CommonJS-like enviroments that support module.exports,
@@ -48,6 +48,7 @@
     }
 }(this, function (root) {
     "use strict";
+    */
 
     // Tweak to your liking
     var FLOAT_EPSILON = 0.000001;
@@ -1378,7 +1379,7 @@
     
     /*
      * Exports
-     */
+     *
 
     if(root) {
         root.glMatrixArrayType = MatrixArray;
@@ -1400,3 +1401,4 @@
         mat4: mat4
     };
 }));
+*/

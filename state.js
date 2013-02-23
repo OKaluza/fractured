@@ -4,7 +4,9 @@
  * @constructor
  */
 function State(version) {
-  if (!this.supported()) return null;
+  if (!this.supported()) throw "Error initialising state: Local storage not supported";
+  this.upgrademsg = "<a href='javascript:resetReload()'>click here" + 
+                    "</a> to complete update by reloading from server"; 
   this.version = version;
   this.loggedin = false;
   this.offline = null;
@@ -16,23 +18,35 @@ function State(version) {
   this.locator = null;
   this.output = true;
 
+  //Defaults in case no saved settings
+  this.fractal = null;
+  this.session = 0;
+  this.formulae = 0;
+  this.antialias = 2;
+  this.debug = false;
+  this.renderer = WEBCL;  //Try WebCL first if avail
+  this.platform = this.device = 0;
+
   //Persistent settings:
   var source = localStorage["fractured.current"];
   if (source) {
     var data = JSON.parse(source);
+    if (this.version != data.version) {
+      //Updated - save new version and force reload!
+      data.version = this.version;
+      localStorage["fractured.current"] = JSON.stringify(data);
+      popup("New version <b>" + data.version + "</b>: Application upgraded<br>" + this.upgrademsg);
+    }
     this.fractal = data.fractal;
     if (typeof this.fractal != 'string') this.fractal = null;
     this.session = data.session;
     this.formulae = data.formulae;
     this.antialias = data.antialias;
     this.debug = data.debug;
+    this.renderer = data.renderer;
+    this.platform = data.platform;
+    this.device = data.device;
     if (this.debug) this.debugOn();
-  } else {
-    this.fractal = null;
-    this.session = 0;
-    this.formulae = 0;
-    this.antialias = 2;
-    this.debug = false;
   }
 }
 
@@ -50,11 +64,15 @@ State.prototype.clearStatus = function() {
 
 State.prototype.saveStatus = function() {
   var data = {};
+  data.version = this.version;
   data.fractal = this.fractal;
   data.session = this.session;
   data.formulae = this.formulae;
   data.antialias = this.antialias;
   data.debug = this.debug;
+  data.renderer = this.renderer;
+  data.platform = this.platform;
+  data.device = this.device;
   localStorage["fractured.current"] = JSON.stringify(data);
 }
 
@@ -66,7 +84,7 @@ State.prototype.debugOn = function() {
 
 State.prototype.debugOff = function() {
   this.debug = false;
-  this.save();
+  this.saveStatus();
   $S('debugmenu').display = 'none';
   $S('recordmenu').display = 'none';
 }
@@ -107,10 +125,10 @@ State.prototype.getFractals = function() {
   if (fr_str) {
     //Detect/convert old format...
     var count = parseInt(fr_str);
-    if (count > 0)
-      fractals = this.convertFractals(count); //Convert from old format
-    else
+    if (isNaN(count))
       fractals = JSON.parse(fr_str);
+    else
+      fractals = this.convertFractals(count); //Convert from old format
   }
   return fractals;
 }
@@ -163,9 +181,7 @@ State.prototype.load = function() {
   var incfile = '/includes_' + this.version + '.json';
   var incdata = readURL(incfile, false);
   if (!incdata) {
-    popup("<b><i>" + incfile + "</i></b> not found! Application may have been upgraded, " + 
-          "<a href='javascript:location.reload(true)'>click here" + 
-          "</a> to try and reload new version from server"); 
+    popup("<b><i>" + incfile + "</i></b> not found! Application may have been upgraded, " + this.upgrademsg);
     return false;
   }
   sources = JSON.parse(incdata);
@@ -188,7 +204,7 @@ State.prototype.load = function() {
 
   palettes = this.getPalettes();
   fractals = this.getFractals();
-  if (state.fractal && !fractals[state.fractal]) state.fractal = null;
+  if (this.fractal && !fractals[this.fractal]) this.fractal = null;
   populatePalettes();
   populateFractals();
   populateScripts();
@@ -220,7 +236,7 @@ State.prototype.read = function(data) {
     return;
   }
   //Replace session id, not saved in state data
-  state.saveStatus();
+  this.saveStatus();
   sessionGet(readURL('ss/session_get.php')); //Get updated list...
   this.load();  //load the state data
   progress();
@@ -231,7 +247,7 @@ State.prototype.toString = function() {
   this.save();
   this.clearStatus();  //Clear local storage settings
   var source = JSON.stringify(localStorage);
-  state.saveStatus(); //Restore settings
+  this.saveStatus(); //Restore settings
   return source;
 }
 

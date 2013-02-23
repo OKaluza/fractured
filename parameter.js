@@ -33,6 +33,13 @@ Complex.prototype.toString = function() {
   return "(" + this.re + "," + this.im + ")";
 }
 
+Complex.prototype.set = function(pos) {
+  if (typeof pos == 'string')
+    pos = parseComplex(pos);
+  this.re = pos.re;
+  this.im = pos.im;
+}
+
 function parseComplex(value) {
   //Parse string as complex number
   var match = complexreg.exec(value);
@@ -76,9 +83,18 @@ function parseExpression(expr) {
     }
   }
 
+  //Implicit multiply no longer supported by parser
+  //()(), #(), ()a, #a(), #a
+  expr = expr.replace(/\)\(/g, ")*(");
+  expr = expr.replace(/([-+]?\d*\.?\d+)\(/g, "$1*(");
+  expr = expr.replace(/\)(@?[_a-zA-Z][_a-zA-Z0-9]*)/g, ")*$1");
+  expr = expr.replace(/([-+]?\d*\.?\d+)(@?[_a-zA-Z][_a-zA-Z0-9]*)\(/g, "$1*$2*(");
+  expr = expr.replace(/([-+]?\d*\.?\d+)(@?[_a-zA-Z][_a-zA-Z0-9]*)/g, "$1*$2");
+  debug("expr: " + expr);
+
   //Parse an expression into correct complex maths functions using the Jison parser
   var parsed;
-  //parser.yy = fractal;
+  parser.yy = {};
   //Run the parser and report errors
   try {
     parsed = parser.parse(expr + ""); //Ensure passed a string

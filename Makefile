@@ -1,6 +1,8 @@
-VERSION = 0.78
+VERSION = 0.79
 COMP = java -jar compiler-latest/compiler.jar --js=
 FLAGS = --js_output_file=
+#COMP = cp 
+#FLAGS = 
 RSTFLAGS = --stylesheet-path=docs/docstyle.css 
 
 #Targets
@@ -36,6 +38,8 @@ clean:
 $(fractured): $(SCRIPTS) gl-matrix.js
 	cat $(SCRIPTS) > /tmp/fractured-index.js
 	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fractured-index.js
+	#$(COMP)/tmp/fractured-index.js $(FLAGS)$(fractured)
+	#$(COMP)gl-matrix.js $(FLAGS)release/gl-matrix-min.js
 	$(COMP)/tmp/fractured-index.js $(FLAGS)/tmp/fractured-compressed.js
 	$(COMP)gl-matrix.js $(FLAGS)/tmp/gl-matrix-min.js
 	cat /tmp/fractured-compressed.js /tmp/gl-matrix-min.js > $(fractured)

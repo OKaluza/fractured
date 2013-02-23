@@ -8,15 +8,10 @@
 //Log function
 @lfn = real_function(log);
 
-real @il = 1.0/@lfn(@power);  //Inverse log of (power)
-real @lp = @lfn(@lfn(@bailout)/2.0);
-real @sum = 10.0;
-real @sum2 = 5.0;
-real @ac = 0.0;
+real @sum, @sum2, @ac;
 
 reset:
-  @sum = 0.0;
-  @sum2 = 0.0;
+  @sum = @sum2 = 0.0;
   @ac = cabs(c);
 
 calc:
@@ -29,8 +24,10 @@ calc:
   }
 
 result:
+  real il = 1.0/@lfn(@power);  //Inverse log of (power)
+  real lp = @lfn(@lfn(@bailout)/2.0);
   @sum /= R(count);
   @sum2 /= R(count-1);
-  real f = @il * (@lp - @lfn(@lfn(cabs(z))));
+  real f = il * (lp - @lfn(@lfn(cabs(z))));
   real idx = @sum2 + (@sum - @sum2) * (f+1.0);
   colour = gradient(@repeat * idx);

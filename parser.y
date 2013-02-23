@@ -33,6 +33,8 @@
 ">"                    return '>'
 "!"                    return '!'
 <<EOF>>                return 'EOF'
+E                      return 'E'
+PI                     return 'PI'
 "manhattan"|"norm"|"cabs"|"arg"|"imag"|"dot"|"real" return 'REALFN'
 "pow"|"exp"|"sin"|"cos"|"tan"|"asin"|"acos"|"atan"|"sinh"|"cosh"|"tanh"|"asinh"|"acosh"|"atanh"|"sqrt"|"ln"|"log10" return 'COMPLEXFN';
 [@:]*[_a-zA-Z][_a-zA-Z0-9]*("."[w-z])? return 'IDENTIFIER';
@@ -43,13 +45,13 @@
 /* operator associations and precedence */
 
 %left '<' '>' '==' '!=' '<=' '>='
-%left REAL
-%left UNOT
 %left '+' '-'
 %left '*' '/'
 %left '^'
 %left CPLX
 %left NORM
+%left REAL
+%left UNOT
 %left UMINUS
 
 %start expressions
@@ -63,8 +65,11 @@ expressions
 
 p
     : '(' e ')' 
-      {
-        $$ = "(" + $e + ")" 
+      {        
+        if (yy[$e] == 'real' && yy.eval && yy.eval($e))
+          $$ = yy.eval($e);
+        else
+          $$ = "(" + $e + ")" 
         yy[$$] = yy[$e];
       }
     ;
@@ -72,13 +77,32 @@ p
 real
     : INTEGER -> $1 + ".0"
     | REAL
-    | E
-    | PI
+    | E -> "2.718281828"
+    | PI -> "3.141592654"
     ;
 
 const
     : real
       {
+        //Define eval function, replace
+        //with safer version if required
+        if (!yy.eval) {
+          yy.eval = function(expr) {
+              expr += "";
+              var reg = /(?:[a-z$_][a-z0-9$_]*)|(?:[;={}\[\]"'!&<>^\\?:])/ig,
+              // Detect valid JS identifier names and replace them
+              expr = expr.replace(reg, function(fn) {
+                // If the name is a direct member of Math, allow
+                if (Math.hasOwnProperty(fn))
+                  return "Math."+fn;
+                // Otherwise the expression is invalid
+                else
+                  return null;
+              });
+              try { return eval(expr); } catch (e) { return null; };
+            };
+        }
+
         yy[$$] = 'real';
         //alert($$ + " ==> " + yy[$$]);
       }
@@ -108,8 +132,12 @@ call
 e
     : e '+' e //-> $e1 + " + " + $e2
       {
-        if (yy[$e1] == 'real' && yy[$e2] == 'real') {
+        if (yy.eval && yy.eval($e1) == 0.0) $$ = $e2;
+        if (yy.eval && yy.eval($e2) == 0.0) $$ = $e1;
+        else if (yy[$e1] == 'real' && yy[$e2] == 'real') {
           $$ = $e1 + " + " + $e2;
+          var ev = yy.eval ? yy.eval($$) : null;
+          if (ev) $$ = ev;
           yy[$$] = 'real';
         } else if (yy[$e1] == 'real') {
           $$ = "C(" + $e1 + ",0) + " + $e2;
@@ -121,12 +149,15 @@ e
           $$ = $e1 + " + " + $e2;
           yy[$$] = 'complex';
         }
-        //alert(yy[$$] + " : " + yy[$e1] + " + " + yy[$e2]);
       }
     | e '-' e //-> $e1 + " - " + $e2
       {
+        if (yy.eval && yy.eval($e1) == 0.0) $$ = $e2;
+        if (yy.eval && yy.eval($e2) == 0.0) $$ = $e1;
         if (yy[$e1] == 'real' && yy[$e2] == 'real') {
           $$ = $e1 + " - " + $e2;
+          var ev = yy.eval ? yy.eval($$) : null;
+          if (ev) $$ = ev;
           yy[$$] = 'real';
         } else if (yy[$e1] == 'real') {
           $$ = "C(" + $e1 + ",0) - " + $e2;
@@ -141,12 +172,18 @@ e
       }
     | e '*' e
       {
-        //alert(yy[$e1] + " * " + yy[$e2]);
+        if (yy.eval && yy.eval($e1) == 1.0) $$ = $e2;
+        if (yy.eval && yy.eval($e2) == 1.0) $$ = $e1;
         if (yy[$e1] == 'real' && yy[$e2] == 'real') {
           $$ = $e1 + " * " + $e2;
+          var ev = yy.eval ? yy.eval($$) : null;
+          if (ev) $$ = ev;
           yy[$$] = 'real';
-        } else if (yy[$e1] == 'real' || yy[$e2] == 'real') {
-          $$ = $e1 + " * " + $e2;
+        } else if (yy[$e1] == 'real') {
+          $$ = "mul(C(" + $e1 + ",0)," + $e2 + ")";
+          yy[$$] = 'complex';
+        } else if (yy[$e2] == 'real') {
+          $$ = "mul(" + $e1 + ",C(" + $e2 + ",0))";
           yy[$$] = 'complex';
         } else {
           $$ = "mul(" + $e1 + "," + $e2 + ")";
@@ -155,33 +192,41 @@ e
       }
     | e '/' e
       {
+        if (yy.eval && yy.eval($e2) == 1.0) $$ = $e1;
         if (yy[$e1] == 'real' && yy[$e2] == 'real') {
           $$ = $e1 + " / " + $e2;
+          var ev = yy.eval ? yy.eval($$) : null;
+          if (ev) $$ = ev;
           yy[$$] = 'real';
         } else if (yy[$e1] == 'real') {
-          if (parseFloat($e1) == 1.0)
+          if (yy.eval && yy.eval($e1) == 1.0)
             $$ = "inv(" + $e2 + ")";
           else
-            $$ = $e1 + " * inv(" + $e2 + ")";
+            $$ = "div(C(" + $e1 + ",0), " + $e2 + ")";
+            //$$ = $e1 + " * inv(" + $e2 + ")";
           yy[$$] = 'complex';
         } else if (yy[$e2] == 'real') {
-          $$ = $e1 + " / " + $e2;
+          if (yy.eval && yy.eval($e2) == 1.0)
+            $$ = $e1;
+          else
+            $$ = "div(" + $e1 + ",(C(, " + $e2 + ",0))";
+            //$$ = $e1 + " / " + $e2;
           yy[$$] = 'complex';
         } else {
           $$ = "div(" + $e1 + "," + $e2 + ")";
           yy[$$] = 'complex';
         }
-        //alert(yy[$$] + " : " + yy[$e1] + " / " + yy[$e2]);
-
       }
     | e '^' e 
       {
-        var power = parseFloat($e2);
-        if (yy[$e1] == 'real' && yy[$e2] == 'real') {
-          if (power == 0.0)
+        var power = yy.eval ? yy.eval($e2) : $e2;
+        if (power == 1.0) $$ = $e1;
+        else if (yy[$e1] == 'real' && yy[$e2] == 'real') {
+          $$ = "pow(" + $e1 + ", " + $e2 + ")";
+          var ev = yy.eval ? yy.eval($$) : null;
+          if (ev) $$ = ev;
+          else if (power == 0.0)
             $$ = "1.0";
-          else if (power == 1.0)
-            $$ = $e1;
           else if (power == 2.0)
             $$ = "(" + $e1 + "*" + $e1 + ")";
           else if (power == 3.0)
@@ -192,8 +237,6 @@ e
         } else {
           if (power == 0.0)
             $$ = "C(1,0)";
-          else if (power == 1.0)
-            $$ = $e1;
           else if (power == 2.0)
             $$ = "sqr(" + $e1 + ")";
           else if (power == 3.0)
@@ -244,48 +287,6 @@ e
         else
           $$ = "norm(" + $e + ")";
         yy[$$] = 'real';
-      }
-    | p p //-> "mul(" + $p1 + "," + $p2 + ")"
-      {
-        if (yy[$p1] == 'real' || yy[$p2] == 'real') {
-          $$ = $p1 + "*" + $p2 + ")";
-          if (yy[$p1] == 'real' && yy[$p2] == 'real')
-            yy[$$] = 'real';
-          else
-            yy[$$] = 'complex';
-        } else {
-          $$ = "mul(" + $p1 + "," + $p2 + ")";
-          yy[$$] = 'complex';
-        }
-      }
-    | const p 
-      {
-        $$ = $const + " * " + $p;
-        yy[$$] = yy[$p];
-      }
-    | const p IDENTIFIER //-> $const + " * mul(" + $p + "," + $IDENTIFIER + ")"
-      {
-        if (yy[$p] == 'real')
-          $$ = $const + "*" + $p + "*" + $IDENTIFIER;
-        else
-          $$ = $const + " * mul(" + $p + "," + $IDENTIFIER + ")";
-        yy[$$] = 'complex';
-      }
-    | const IDENTIFIER p //-> $const + " * mul(" + $IDENTIFIER + "," + $p + ")"
-      {
-        if (yy[$p] == 'real')
-          $$ = $const + "*" + $IDENTIFIER + "*" + $p;
-        else
-          $$ = $const + " * mul(" + $IDENTIFIER + "," + $p + ")";
-        yy[$$] = 'complex';
-      }
-    | p IDENTIFIER //-> "mul(" + $p + "," + $IDENTIFIER + ")"
-      {
-        if (yy[$p] == 'real')
-          $$ = $p + "*" + $IDENTIFIER;
-        else
-          $$ = "mul(" + $p + "," + $IDENTIFIER + ")";
-        yy[$$] = 'complex';
       }
     | const {yy[$$] = 'real';} //"(" + $1 + ",0)"
     | COMPLEX {$$ = "C" + $COMPLEX; yy[$$] = 'complex';}
