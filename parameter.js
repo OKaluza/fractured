@@ -61,6 +61,8 @@ function parseReal(value, invalid_default) {
 }
 
 function parseExpression(expr) {
+  //Ensure is a string
+  expr = expr + "";
   //Optimisation: 
   //find all variables in expression and if found in param list, replace with their value
   //(requires savevars[] array created when parsing parameters in toCode())

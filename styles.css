@@ -472,8 +472,9 @@ background: #fff;
 min-width: 206px; max-width: 206px;
 border: 1px solid #998; border-radius: 3px; min-height: 20px;
 margin: 2px; padding: 0px;
+  height: auto;
+  overflow: visible;
 }
 div.row .CodeMirror:focus {border-color: blue;}
-.CodeMirror-scroll {height: auto; overflow: visible;}
 
 .cm-s-fracturedlight { background: #fff; }

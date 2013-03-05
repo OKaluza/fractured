@@ -917,7 +917,7 @@ Fractal.prototype.iniLoader = function(source) {
           this.choices["post_transform"].select("fractured");
           this.choices["post_transform"].currentParams["vary"].parse(pair[1]);
           this.choices["post_transform"].currentParams["miniter"].value = this.iterations; 
-          this.iterations *= 2;
+          this.iterations = Math.floor(this.iterations*2.414); //1+sqrt(2)
         }
       }
       //Following parameters need to be created rather than just set values, save for processing later
@@ -966,6 +966,7 @@ Fractal.prototype.iniLoader = function(source) {
 
   //Process the palette data
   colours.read(paletteSource);
+  if (state.legacy) colours.palette.background.alpha = 1.0;
   
   if (saved["smooth"]) {
     //Really old
@@ -1004,14 +1005,18 @@ Fractal.prototype.iniLoader = function(source) {
 
   if (this.choices["fractal"].selected == "nova") {
     var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-    this.choices['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
-    this.choices['fractal'].currentParams["converge"].parse("0.00001");
+    if (relax) {
+      this.choices['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
+      this.choices['fractal'].currentParams["converge"].parse("0.00001");
+    }
   }
 
   if (this.choices["fractal"].selected == "novabs") {
     var relax = (saved["param2"] ? saved["param2"] : saved["param1"]);
-    this.choices['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
-    this.choices['fractal'].currentParams["converge"].parse("0.00001");
+    if (relax) {
+      this.choices['fractal'].currentParams["relax"].parse([relax.re, relax.im]);
+      this.choices['fractal'].currentParams["converge"].parse("0.00001");
+    }
   }
 
   if (this.choices["fractal"].selected == "gmm") {
@@ -1104,7 +1109,12 @@ Fractal.prototype.iniLoader = function(source) {
     }
 
     if (formula[catname].selected == "gaussian_integers") {
-      params["mode"].parse(saved["param2"].re);
+      switch (parseInt(saved["param2"].re)) {
+        case 0: params["rmode"].parse("round"); break;
+        case 1: params["rmode"].parse("trunc"); break;
+        case 2: params["rmode"].parse("floor"); break;
+        case 3: params["rmode"].parse("ceil"); break;
+      }
       params["colourby"].parse(saved["param2"].im);
     }
   }
@@ -1286,7 +1296,7 @@ Generator.prototype.generate = function() {
 
   //Replace ---SECTION--- in template with formula code
   this.offsets = [];
-  var alltypes = ["pre_transform", "post_transform", "fractal", "inside_colour", "outside_colour", "filter"];
+  var alltypes = ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour", "filter"];
   this.templateInsert("DATA", "data", alltypes, 2);
   this.templateInsert("INIT", "init", alltypes, 2);
   this.templateInsert("RESET", "reset", alltypes, 2);
