@@ -99,13 +99,8 @@ void main()
     ---INSIDE_COLOUR---
   }
 
-  //Combine with global alpha from background colour
-  float alpha = colour.w + background.w;
-
   ---FILTER---
 
-  //Set alpha
-  colour.w = alpha;
   //Set final colour
   set_result(colour);
 }

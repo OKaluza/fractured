@@ -44,7 +44,7 @@ function appInit() {
       state.baseurl = urlq.substr(0, pos);
     }
   }
-  if (!query && !$(location.hash)) {
+  if (!query && location.hash && !$(location.hash)) {
     //Convert #id to query if not a section tag
     query = location.hash.substr(1);
   }
@@ -66,7 +66,12 @@ function appInit() {
         state.resetFormulae();
       } else if (list[i].length > 20) {
         //Load fractal from base64 packed url
-        restored = window.atob(list[i]);
+        try {
+          restored = window.atob(list[i]);
+        } catch(e) {
+          print(e);
+          restored = "";
+        }
       } else if (!state.offline && list[i].length > 3) {
         //Load fractal from hash ID
         restored = list[i];

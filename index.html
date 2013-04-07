@@ -159,9 +159,8 @@
             </li>
             <li style="display: none" id="recordmenu"><span class="fly" tabindex="1">Record</span>
               <ul>
-                <li><span id="recordOn" onclick="record(true);">On</span></li>
-                <li><span id="recordOff" class="selected_item" onclick="record(false);">Off</span></li>
-                <li><span onclick="ajaxReadFile('http://localhost:8080/end', frameDone);">End</span></li>
+                <li><span id="recordOn" onclick="recordStart();">On</span></li>
+                <li><span id="recordOff" class="selected_item" onclick="recordStop();">Off</span></li>
               </ul>
             </li>
             <li style="display: none" id="modemenu"><span class="fly" tabindex="1">Render Mode</span>
@@ -201,10 +200,10 @@
     </nav>
 
     <section id="controls">
-      <div id="backgroundBG" class="colourbg">
+      <div id="backgroundBG" class="colourbg checkerboard">
         <div id="backgroundCUR" class="colour" onmousedown="colours.editBackground(this);"></div>
       </div>
-      <canvas id="palette" width="572" height="24"></canvas>
+      <canvas id="palette" width="572" height="24" class="checkerboard"></canvas>
     </section>
 
   </header>
@@ -242,7 +241,7 @@
         <form id="param_inputs" name="inputs" class="scroll" onmousedown="handleFormMouseDown(event)">
           <div class="row">
             <label>Name</label>
-            <span class="field"><input type="text" id="name" name="description" value="unnamed" style="width: 160px">
+            <span class="field"><input type="text" id="name" name="description" value="unnamed">
             </span>
           </div>
           <div class="row">
@@ -433,7 +432,7 @@
       <div id="gallery-display">
       </div>
     </div>
-    <img id="background" src="">
+    <img id="background" class="checkerboard" src="">
     <div id="select"></div>
 
   </section>
@@ -451,11 +450,11 @@
   </div>
   <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
 
-  <div id="openid_form" class="popup" style="display: none; width: 255px;">
+  <div id="openid_form" class="popup">
     <div class="popclose" onclick="toggle('openid_form');">X</div>
     <img src="media/logos/logo_openid.png" alt="OpenID">
     <form action="ss/authenticate.php" method="post" name="login_form" accept-charset="utf-8">
-      <input type="text" value="" name="openid_url" id="openid" style="width: 200px;"/>
+      <input type="text" value="" name="openid_url" id="openid"/>
       <input type="button" class="right" value="Login" onclick="toggle('openid_form'); login($('openid').value);">
     </form>
   </div>
@@ -475,7 +474,7 @@
 
   <!-- Colour picker -->
   <div id="picker">
-    <div id="pickCURBG"><div id="pickCUR"></div></div>
+    <div id="pickCURBG" class="checkerboard"><div id="pickCUR"></div></div>
     <div id="pickRGB" onclick="colours.picker.updateString()">R: 255 G: 255 B: 255</div>
     <div id="pickCLOSE">X</div>
     <div id="pickOK">OK</div><br>
@@ -486,7 +485,7 @@
      <div id="Hmodel" class="sliderBG"></div>
      <div id="Hslide" class="sliderControl"></div>
     </div>
-    <div id="O" class="slider">
+    <div id="O" class="slider checkerboard">
      <div id="Omodel" class="sliderBG"></div>
      <div id="Oslide" class="sliderControl"></div>
     </div>

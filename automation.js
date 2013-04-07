@@ -1,13 +1,21 @@
-function record(state) {
-  state.recording = state;
-  var canvas = $("fractal-canvas");
+function recordStart() {
+  //Switched on
+  state.recording = true;
+  //Ensure a multiple of 2
+  if (fractal.width % 2 == 1) fractal.width -= 1;
+  if (fractal.height % 2 == 1) fractal.height -= 1;
+  fractal.ondraw = outputFrame;
+  $('recordOn').className = 'selected_item';
+  $('recordOff').className = '';
+}
+
+function recordStop() {
   if (state.recording) {
-    //Ensure a multiple of 2
-    if (fractal.width % 2 == 1) fractal.width -= 1;
-    if (fractal.height % 2 == 1) fractal.height -= 1;
+    ajaxReadFile('http://localhost:8080/end', frameDone);
+    fractal.ondraw = null;
   }
-  $('recordOn').className = state.recording ? 'selected_item' : '';
-  $('recordOff').className = !state.recording ? 'selected_item' : '';
+  $('recordOn').className = '';
+  $('recordOff').className = 'selected_item';
 }
 
 function outputFrame() {
@@ -15,7 +23,15 @@ function outputFrame() {
   var data = imageToBlob("image/jpeg", 0.95);
   var fd = new FormData();
   fd.append("image", data);
-  ajaxPost("http://localhost:8080/frame?name=" + labelToName($('name').value), fd, frameDone);
+  try {
+    var http = new XMLHttpRequest();
+    http.open("POST", "http://localhost:8080/frame?name=" + labelToName($('name').value), false); 
+    http.send(fd);
+  } catch (e) {
+    debug(e.message);
+  }
+  frameDone();
+  //ajaxPost("http://localhost:8080/frame?name=" + labelToName($('name').value) + "&frame=" + state.recording, fd, frameDone);
 }
 
 function frameDone(response) {
@@ -80,6 +96,7 @@ function runScript(filename) {
     script.step();
     //Update & redraw (without timers or incremental drawing)
     fractal.applyChanges(null, true);
+    if (state.recording) window.outputFrame(); 
     //Next step...
     if (script.count < script.steps) {
       script.count++;
