@@ -144,6 +144,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   //Create new canvas
   this.canvas = document.createElement("canvas");
   this.canvas.id = "fractal-canvas"
+  this.canvas.className = "checkerboard";
   this.canvas.mouse = new Mouse(this.canvas, this);
   this.canvas.mouse.setDefault();
 
@@ -1551,14 +1552,12 @@ Fractal.prototype.renderWebGL = function(antialias) {
   else if (this.webgl.viewport.height > this.webgl.viewport.width)
     this.webgl.modelView.scale([1.0, this.webgl.viewport.height / this.webgl.viewport.width, 1.0]);  //Scale height
 
-  //var bg = colours.palette.background.rgbaGL();
-  //this.gl.clearColor(bg[0], bg[1], bg[2], bg[3]);
+  //Always use transparent background,
+  //bg colour is used in shader and pre-blended into palette
   this.gl.clearColor(0, 0, 0, 0);
 
   //debug('>> Drawing fractal (aa=' + antialias + ")");
   this.webgl.draw2d(antialias);
-  if (state.recording)
-    window.outputFrame(); 
 }
 
 //////////////////////////////////////////////////////////////////
@@ -1798,7 +1797,7 @@ function clearPreviewJulia() {
   var canvas = $("fractal-canvas");
   clearTimeout(fractal.preview.timeout);
   document.mouse.moveUpdate = false;
-    $S("fractal-canvas").backgroundImage = "url('media/bg.png')";
+    $S("fractal-canvas").backgroundImage = $S("palette").backgroundImage; //"url('media/bg.png')";
     $S("background").display = "none";
   $("background").src = "";
   fractal.preview = null;

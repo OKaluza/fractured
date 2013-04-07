@@ -126,16 +126,22 @@
         for (var i = 1; i < list.length; i++) {
           var x1 = Math.round(width * list[i].position);
           context.fillStyle = context.createLinearGradient(x0, 0, x1, 0);
-          context.fillStyle.addColorStop(0.0, list[i-1].colour.html());
-          context.fillStyle.addColorStop(1.0, list[i].colour.html());
+          //Pre-blend with background unless in UI mode
+          var colour1 = ui ? list[i-1].colour : this.background.blend(list[i-1].colour);
+          var colour2 = ui ? list[i].colour : this.background.blend(list[i].colour);
+          context.fillStyle.addColorStop(0.0, colour1.html());
+          context.fillStyle.addColorStop(1.0, colour2.html());
           context.fillRect(x0, 0, x1-x0, height);
           x0 = x1;
         }
       } else {
         //Single gradient
         context.fillStyle = context.createLinearGradient(0, 0, width, 0);
-        for (var i = 0; i < list.length; i++)
-          context.fillStyle.addColorStop(list[i].position, list[i].colour.html());
+        for (var i = 0; i < list.length; i++) {
+          //Pre-blend with background unless in UI mode
+          var colour = ui ? list[i].colour : this.background.blend(list[i].colour);
+          context.fillStyle.addColorStop(list[i].position, colour.html());
+        }
         context.fillRect(0, 0, width, height);
       }
 
@@ -202,12 +208,18 @@
         this.green = colour.green;
         this.blue = colour.blue;
         this.alpha = colour.alpha;
-      } else {
+      } else if (colour.R) {
         //RGBA
         this.red = colour.R;
         this.green = colour.G;
         this.blue = colour.B;
         this.alpha = typeof colour.A == "undefined" ? 1.0 : colour.A;
+      } else {
+        //Assume array
+        this.red = colour[0];
+        this.green = colour[1];
+        this.blue = colour[2];
+        this.alpha = typeof colour[3] == "undefined" ? 1.0 : colour[3];
       }
     } else {
       //Convert from integer AABBGGRR
@@ -369,5 +381,15 @@
     this.green = Math.round(this.green + lambda * (other.green - this.green));
     this.blue = Math.round(this.blue + lambda * (other.blue - this.blue));
     this.alpha = Math.round(this.alpha + lambda * (other.alpha - this.alpha));
+  }
+
+  Colour.prototype.blend = function(src) {
+    //Blend this colour with another and return result (uses src alpha from other colour)
+    return new Colour([
+      Math.round((1.0 - src.alpha) * this.red + src.alpha * src.red),
+      Math.round((1.0 - src.alpha) * this.green + src.alpha * src.green),
+      Math.round((1.0 - src.alpha) * this.blue + src.alpha * src.blue),
+      (1.0 - src.alpha) * this.alpha + src.alpha * src.alpha
+    ]);
   }
 
