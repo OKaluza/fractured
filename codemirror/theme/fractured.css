@@ -22,6 +22,8 @@
 .cm-s-fracturedlight span.cm-param {color: black; font-weight:bold;}
 .cm-s-fracturedlight span.cm-local {color: #633;}
 
+.cm-s-fracturedlight .CodeMirror-matchingbracket {text-decoration: underline; color: black !important;}
+
 /* Dark version */
 .cm-s-fractureddark { background: #312922; color: beige; }
 .cm-s-fractureddark span.CodeMirror-selected { background: #38c !important; }
@@ -44,6 +46,8 @@
 .cm-s-fractureddark span.cm-type {color: #7a0;}
 .cm-s-fractureddark span.cm-param {color: #ccc; font-weight:bold;}
 .cm-s-fractureddark span.cm-local {color: seagreen; }
+
+.cm-s-fractureddark .CodeMirror-matchingbracket {text-decoration: underline; color: white !important;}
 
 /* Unused? */
 .cm-s-fractured span.cm-def {color: white;}

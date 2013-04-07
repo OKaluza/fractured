@@ -468,13 +468,16 @@ ul.navigation li span {border-radius: 4px; display: block; width: 5em; color: #a
   font-family: 'Droid Sans Mono',monospace;
   font-size: 9pt;
   line-height: 1.0em;
-background: #fff;
-min-width: 206px; max-width: 206px;
-border: 1px solid #998; border-radius: 3px; min-height: 20px;
-margin: 2px; padding: 0px;
+  background: #fff;
+  min-width: 206px; max-width: 206px;
+  min-height: 20px;
   height: auto;
-  overflow: visible;
+  margin: 2px; padding: 0px;
+  border: 1px solid #998; border-radius: 3px; 
+/* overflow: visible; Causes problem in CM 3.1 */
 }
-div.row .CodeMirror:focus {border-color: blue;}
 
 .cm-s-fracturedlight { background: #fff; }
+/* This doesn't seem to work */
+.cm-s-fracturedlight .CodeMirror-focused .CodeMirror-selected { border-color: blue; }
+
