@@ -323,10 +323,10 @@ Param.prototype.setFromElement = function() {
       this.value = this.input.value.trim();
       break;
     case 6: //Expression
-      if (this.input.editor)
-        this.value = this.input.editor.getValue();
-      else
+      if (this.input.tagName == 'TEXTAREA')
         this.value = this.input.value.trim();
+      else
+        this.value = this.input.getValue();
       break;
     case 5: //RGBA colour
       this.value = new Colour(this.input.style.backgroundColor);
@@ -355,10 +355,10 @@ Param.prototype.copyToElement = function() {
       this.input[1].value = this.value.im;
       break;
     case 6: //Expression
-      if (this.input.editor)
-        this.input.editor.setValue(this.value);
+      if (this.input.tagName == 'TEXTAREA')
+        this.input.value = this.value;
       else
-        this.value = this.input.value = this.value;
+        this.input.setValue(this.value);
       break;
     case 5: //RGBA colour
       this.input.style.backgroundColor = this.value.html();
@@ -616,7 +616,7 @@ ParameterSet.prototype.createFields = function(category, name) {
       case 5: 
         //Colour picker
         input = document.createElement("div");
-        input.className = "colourbg";
+        input.className = "colourbg checkerboard";
         var cinput = document.createElement("div");
         cinput.className = "colour";
         cinput.style.backgroundColor = this[key].value.html();
@@ -626,12 +626,9 @@ ParameterSet.prototype.createFields = function(category, name) {
         break;
       case 6: 
         //Expression
-        input = document.createElement("textarea");
-        input.value = this[key].value;
-        input.setAttribute("spellcheck", false);
-        spanin.appendChild(input);
         if (typeof CodeMirror == 'function') {
-          input.editor = new CodeMirror.fromTextArea(input, {
+          input = CodeMirror(spanin, {
+            value: this[key].value,
             mode: "text/x-glsl",
             theme: "fracturedlight",
             indentUnit: 2,
@@ -639,6 +636,11 @@ ParameterSet.prototype.createFields = function(category, name) {
             matchBrackets: true,
             lineWrapping: true
           });
+        } else {
+          input = document.createElement("textarea");
+          input.value = this[key].value;
+          input.setAttribute("spellcheck", false);
+          spanin.appendChild(input);
         }
         break;
       case 7: 

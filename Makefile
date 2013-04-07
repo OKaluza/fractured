@@ -14,7 +14,7 @@ codemirror=release/codemirror.js
 
 #Sources
 SCRIPTS = colourPicker.js gradient.js parameter.js formulae.js index.js state.js automation.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js 
-CMSCRIPTS = codemirror/lib/codemirror.js $(wildcard codemirror/lib/util/*.js) codemirror/mode/clike/clike.js codemirror/mode/javascript/javascript.js
+CMSCRIPTS = $(wildcard codemirror/lib/*.js) codemirror/mode/clike/clike.js codemirror/mode/javascript/javascript.js
 
 all: release $(fractured) $(codemirror) $(docs) $(includes) $(formulae)
 
@@ -25,9 +25,8 @@ release:
 	sed -i "/<!--@ -->/,/<!-- @-->/d" release/index.html
 	sed -i "s/<!--script\(.*\)script-->/<script\1script>/g" release/index.html
 	cp palettes.json editor.html favicon.ico styles.css release
-	cp --parents codemirror/lib/codemirror.css release
-	cp --parents codemirror/lib/util/dialog.css release
 	cp --parents -R codemirror/theme release
+	cp codemirror/lib/codemirror.css codemirror/lib/dialog.css release/codemirror
 	cp -R media release
 	cp -R ss release
 
