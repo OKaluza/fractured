@@ -140,7 +140,8 @@ function appInit() {
   }
 
   loadHelp();
-  loadScript("/codemirror.js", "");
+  loadScript("/codemirror_---VERSION---.js", "");
+  doResize();
 }
 
 //Forced reset - used when upgrading
@@ -181,6 +182,15 @@ function handleKey(event) {
       togglePreview();
       break;
   }
+}
+
+function sendEmail() {
+  var formdata = new FormData();
+  formdata.append("email", $('email').value); 
+  formdata.append("subject", "http://fract.ured.me feedback form");
+  formdata.append("message", $('message_body').value);
+  progress("Sending email...");
+  ajaxPost("ss/mailer.php", formdata, progressDone, updateProgress);
 }
 
 function loadHelp() {
@@ -761,12 +771,8 @@ function uploadFractalFile(pub) {
 
 function fractalUploaded(url) {
   if (url.indexOf("http") < 0) {alert(url); progress(); return;}
-  var link = document.createElement("a");
-  link.setAttribute("href", url);
-  var linkText = document.createTextNode(url);
-  link.appendChild(linkText);
   //$S("progressbar").width = "300px";
-  progressDoneLink(link);
+  progressDone(url, url);
 }
 
 function packFractal() {
@@ -937,11 +943,7 @@ function uploadImgur() {
     }
     //{"data":{"id":"kS57B","deletehash":"hICeieQff1uoBt4","link":"http:\/\/i.imgur.com\/kS57B.jpg"},"success":true,"status":200}
     var url = data.data.link;
-    var link = document.createElement("a");
-    link.setAttribute("href", url);
-    var linkText = document.createTextNode(url);
-    link.appendChild(linkText);
-    progressDoneLink(link);
+    progressDone(url, url);
     //...save in our db
     var formdata = new FormData();
     formdata.append("url", 'http://i.imgur.com/' + data.data.id + '.jpg');
@@ -977,11 +979,7 @@ function uploadFlickr() {
  
   var onload = function(response) {
     var data = JSON.parse(response);
-    var link = document.createElement("a");
-    link.setAttribute("href", data.url);
-    var linkText = document.createTextNode(data.url);
-    link.appendChild(linkText);
-    progressDoneLink(link);
+    progressDone(data.url, data.url);
     //...save in our db
     var formdata = new FormData();
     formdata.append("url", data.url);
@@ -1108,10 +1106,12 @@ function showPanel(name)
   return false;
 }
 
-function toggleParams() {
+function toggleParams(force) {
   var sidebar = $("left");
   var main = $("main");
-  if (sidebar.style.display == 'none') {
+  on = force;
+  if (on == undefined) on = (sidebar.style.display == 'none');
+  if (on) {
     sidebar.style.display = '';
     main.style.left = '334px';
     $('toolsbtn').innerHTML = "Hide Tools &uarr;"
@@ -1120,7 +1120,7 @@ function toggleParams() {
     main.style.left = '1px';
     $('toolsbtn').innerHTML = "Show Tools &darr;"
   }
-  autoResize(document["inputs"].elements["autosize"].checked);
+  if (force == undefined) autoResize(document["inputs"].elements["autosize"].checked);
 }
 
 function toggleFullscreen(newval) {
@@ -1194,10 +1194,19 @@ function progress(text) {
   }
 }
 
-function progressDoneLink(link) {
+function progressDone(msg, url) {
   $("progressstatus").innerHTML = "";
-  $("progressmessage").innerHTML = "";
-  $("progressmessage").appendChild(link);
+  var pmsg = $("progressmessage")
+  pmsg.innerHTML = "";
+  if (url) {
+    var link = document.createElement("a");
+    link.setAttribute("href", url);
+    var linkText = document.createTextNode(msg);
+    link.appendChild(linkText);
+    pmsg.appendChild(link);
+  } else {
+    pmsg.appendChild(pmsg.ownerDocument.createTextNode(msg));
+  }
   $S("progressbar").width = "0px";
 }
 
@@ -1219,22 +1228,40 @@ function logout() {
 
 /////////////////////////////////////////////////////////////////////////
 //Event handling
+function doResize() {
+  //Hide title if window too small
+  print(window.innerWidth);
+  if (window.innerWidth < 990) {
+    $S('title').display = "none";
+    $S('title2').display = "block";
+  } else {
+    $S('title').display = "block";
+    $S('title2').display = "none";
+  }
+
+  //Too small for palette, need an alternative but hide for now
+  if (window.innerWidth < 850)
+    $S('controls').display = "none";
+  else
+    $S('controls').display = "block";
+
+  //Mobile browser size, default to hide tools
+  if (window.innerWidth < 450) {
+    if (!state.small) {
+      state.small = true;
+      toggleParams(false);
+    }
+  } else
+    state.small = false;
+
+  if (state.mode == 0)
+    loadGallery();
+  else
+    fractal.applyChanges();
+}
 
 function autoResize(newval) {
   if (rztimeout) clearTimeout(rztimeout);
-
-  function doResize() {
-    if (state.mode == 0)
-      loadGallery();
-    else
-      fractal.applyChanges();
-
-    //Hide title if window too small
-    if (window.innerWidth < 990)
-      $S('title').display = "none";
-    else
-      $S('title').display = "block";
-  }
 
   //If value passed, setting autoSize, otherwise responding to resize event
   if (typeof(newval) == 'boolean') {

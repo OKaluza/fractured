@@ -41,11 +41,15 @@
 
     //Check for all-transparent palette and fix
     var opaque = false;
-    for (var c = 0; c < this.colours.length; c++)
+    for (var c = 0; c < this.colours.length; c++) {
       if (this.colours[c].colour.alpha > 0) opaque = true;
+      //Fix alpha=255
+      if (this.colours[c].colour.alpha > 1.0)
+        this.colours[c].colour.alpha = 1.0;
+    }
     if (!opaque) {
       for (var c = 0; c < this.colours.length; c++)
-        this.colours[c].colour.alpha = 255;
+        this.colours[c].colour.alpha = 1.0;
     }
   }
 

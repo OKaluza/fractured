@@ -17,6 +17,7 @@ function State(version) {
   this.baseurl = "";
   this.locator = null;
   this.output = true;
+  this.small = false; //Mobile mode, width < 450
 
   //Defaults in case no saved settings
   this.fractal = null;

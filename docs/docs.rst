@@ -23,12 +23,7 @@ Introduction
 Fractured is a GPU accelerated fractal exploration application written in HTML,CSS,Javascript and WebGL_ / WebCL_\*.
 It is designed to work as a stand-alone app, but there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
 
-It started as a rewrite of my old fractal rendering code to run faster, cross-platform and with editable formulae. Despite there being loads of great fractal programs around, from my deranged perspective it was more fun to write it myself.
-I was also interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
-
-First attempts were in Java with JOGL, then I heard about WebGL which seemed the perfect technology for this project (although it turned out to be limited in several really annoying ways), so I got motivated again, and ported the progress so far to HTML5, learning Javascript along the way.
-The formula editor and renderer was finished early last year and it probably should have stopped there but it became a bit of an experiment on seeing how far I could take the single-page web-browser app, of course there was always just one more feature I wanted to implement.
-
+I wrote it because I was interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
 Now many lost weekends and evenings later it seems to finally have turned into a fairly complete thing, does what I needed it to and maybe someone else will find it useful.
 
 \*There's also experimental WebCL_ support which allows CPU rendering and double precision mode where possible. It will only work with the Nokia Firefox plugin_ for now but when the standard solidifies a bit I'll make sure it runs with other implementations.
@@ -50,7 +45,7 @@ Acknowledgments
 Requirements
 ------------
 - A modern browser supporting WebGL, confirmed working with Firefox, Chrome & Safari.
-- A graphics card with up to date drivers that support OpenGL. This tool is designed to fully utilise the resources of the graphics processor so the better your graphics card, the faster it will render fractals.
+- A graphics card with up to date drivers that support OpenGL. (Unless using WebCL: the better your graphics card, the faster it will render fractals).
 - Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin_. 
 - **Note: Windows** in windows Chrome and Firefox do WebGL rendering via conversion to DirectX shaders (`Angle <http://code.google.com/p/angleproject/>`_), this is a workaround for poor quality windows OpenGL graphics drivers and is a bit unreliable at times. For best results where possible I recommend using native OpenGL rendering, this has to be enabled in your browser manually. In Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop *(in recent versions of Chrome it appears Native OpenGL support is broken, until this is fixed you are stuck with Angle!)*.
 - **Note: Safari** if not enabled, WebGL can be switched on  by going into preferences -> advanced, show develop menu. Then select Enable WebGL on the Develop menu.
@@ -59,7 +54,7 @@ Requirements
 
 Workspace
 =========
-On first loading the app you should be presented with a workspace showing a selection of example fractals and the following user interface elements:
+What you are looking at on first loading the app: a workspace showing a selection of example fractals and the following user interface:
 
 - *Top Menu* containing the [Studio], |fractal| Fractal, |formula| Formula, |image| Image, |palette| Palette and |settings| Settings menus and the [|draw| Draw] button
 - *Palette* an editable gradient colour palette and background colour selection
@@ -287,7 +282,7 @@ In order to use the server features you must log in, you can use any OpenID prov
 
 Editing Formulae
 ================
-There are limitless possibilities here to define your own fractal, transform and colour formulae. 
+Once you exhaust the possibilities opened by changing the parameters in the predefined formulae and editing expressions within the **expression parser** there are further limitless possibile fractal domains to explore by defining your own fractal, transform and colour formulae using the built in formula definition language. 
 Each formula selection has three buttons to the right:
 
 - The [Edit] button opens an editor allowing you to modify the formula code.
@@ -381,8 +376,8 @@ Complex numbers are represented as two-dimensional vector types, and created usi
 
 All code statements in the formula definition must end in a semi-colon ";" as with in other c-style languages.
 
-Complexities of complex arithmetic
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Complex arithmetic in formulae
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 When writing formula code you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations but not others.
 
 Addition and subtraction of two complex numbers and multiplication of a real number with a complex number works correctly as these operations are defined for complex numbers the same as the equivalent vector operations.
@@ -421,24 +416,14 @@ will be translated internally to::
 
   z = sqr(z) + complex(2,0);
 
-Some other forms the parser will recognise:
-
-Two bracketed expressions without an operator between them will be implicitly multiplied::
+Some forms of implicit multiplication are recognised, eg:
 
   (z + 1)(z - 1) ==> (z + 1) * (z - 1)
-
-A numeric constant immediately before a set of brackets will be be an implicit multiplication, the numeric constant can also be followed by a single variable, eg::
-
   3(z + 1) ==> 3 * (z + 1)
   3x(z + 1) ==> 3 * x * (z + 1)
-
-This does not work with variables alone, eg: x(z + 1) as it is indistinguishable from a function call to the parser.
-
-For a single variable, you can follow it after the bracketed expression though, eg::
-
   (z + 1)x ==> (z + 1) * x
 
-No other forms of implicit multiplication are recognised, elsewhere you must insert a multiplication symbol.
+This does not work with variables alone, eg: x(z + 1) as it is indistinguishable from a function call to the parser, so make sure you use a multiplication symbol in such cases.
 
 A set of brackets with a comma implies a complex number, in parsed expressions the components of the complex number can contain any expression::
 

@@ -100,6 +100,7 @@
     //Adjust global size to at least [width][height], ensuring is a multiple of work-group size
     this.local = [this.threads, this.threads];
     this.global = [this.getGlobalSize(width, this.threads), this.getGlobalSize(height, this.threads)];
+    if (this.global[0] <= 0 || this.global[1] <- 0) return;
 
     //If width and height changed, recreate output buffer
     if (!this.viewport || this.viewport.width != width || this.viewport.height != height) {
@@ -138,7 +139,8 @@
   }
 
   OpenCL.prototype.draw = function(fractal, antialias) {
-    if (!this.k_sample) return; //Sanity check
+    if (!this.k_sample) return; //Sanity checks
+    if (this.global[0] <= 0 || this.global[1] <- 0) return;
     if (this.timer) {clearTimeout(this.timer); this.timer = null;}
     if (antialias == undefined) antialias = 1;
     this.antialias = antialias;
