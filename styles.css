@@ -436,17 +436,20 @@ aside {
 
 #O {border: 1px solid #888; left: 9px;}
 
-#help p, h1, h2, h3 {margin-top: .5em; margin-bottom: .5em;}
+.help p, h1, h2, h3 {margin-top: .5em; margin-bottom: .5em;}
 
 /* Help docs styles */
-#help { font-size: 9pt }
+.help { font-size: 9pt }
 
-#help h1 { font-size: 130% }
-#help h2 { font-size: 115% }
-#help h3 { font-size: 100% }
+.help h1 { font-size: 130% }
+.help h2 { font-size: 115% }
+.help h3 { font-size: 100% }
 
 /* bold-faced definition list terms */
-#help li em { font-weight: bold }
+.help li em { font-weight: bold }
+
+form.email textarea { margin: 2px; padding: 0px; font-size: 10pt; height: 100px; width: 98%;}
+form.email input[type="text"] { border: 1px solid #998; border-radius: 3px; width: 98%;}
 
 /* Gallery: floating images  and container */    
 div#gallery {width: 100%; height: 100%; margin: 0px; padding: 0;

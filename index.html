@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta charset="ISO-8859-1">
+<meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1" />
 
 <title>Fractured | Fractal Studio</title>
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
-<link rel="stylesheet" href="codemirror/codemirror.css">
-<link rel="stylesheet" href="codemirror/theme/fractured.css">
+<link rel="stylesheet" type="text/css" href="codemirror_VERSION.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
 <!--@ -->
@@ -48,6 +48,7 @@
 
     <nav id="menu">
       <ul id="nav">
+        <li id="title2" style="display: none;"><span onclick="showGallery();" style="padding: 1px 1px 0px 1px;"><img style="float:left" src="media/icon.png" ></span></li>
         <li><span class="fly" tabindex="1">Studio</span>
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1">Debug</span>
@@ -226,12 +227,24 @@
       <div class="panel scroll" id="panel_info" style="display: block">
         <p>Local storage usage:</p>
         <div id="indicatorbg"><div id="indicator"></div></div>
-        <p>Renderer:</p>
+        <div class="help">
+        <p>Use these buttons to switch renderers if you have the <a href="http://webcl.nokiaresearch.com">Nokia WebCL</a> firefox plugin.</p>
         <input type="button" id="webgl" value="WebGL" onClick="fractal.switchMode(WEBGL);">
         <input type="button" id="webcl" value="WebCL" onClick="fractal.switchMode(WEBCL);">
         <input type="button" id="fp64" value="WebCL fp64" onClick="fractal.switchMode(WEBCL64);">
+        <p>When available, <b>WebCL fp64</b> uses double precision calculations allowing deeper fractal zooms, but will be slower to render.</p>
+        <p>If using WebCL you can select from different platforms and devices in the settings menu (gear icon above).</p>
+        <p>Still experimenting with this and the documentation is a bit rough so if you have any problems, questions or feedback don't hesitate to use this form to contact me. I'll also try to get over my social media aversion to use <a href="https://twitter.com/OwKal">twitter</a> to post updates and monitor <a href="https://twitter.com/search/fractured">#fractured</a> for any feedback or suggestions.</p>
+        </div>
+        <form class="email">
+          <p>E-mail:</p>
+          <input type="text" id="email" />
+          <p>Message:</p>
+          <textarea id="message_body"></textarea></p>
+          <input type="button" value="Send" onclick="sendEmail();">
+        </form>
         <hr>
-        <div id="help">
+        <div class="help" id="help">
         Help file not loaded
         </div>
       </div>
@@ -419,9 +432,9 @@
         <a id="#examples" href="#examples">Examples</a>
         <a id="#shared" href="#shared">Shared</a>
         <a id="#images" href="#images">Images</a>
-        <a id="#myshared" href="#myshared">My Shared </a>
-        <a id="#myuploads" href="#myuploads">My Uploads</a>
-        <a id="#myimages" href="#myimages">My Images</a>
+        <a id="#myshared" href="#myshared" class="loggedin">My Shared </a>
+        <a id="#myuploads" href="#myuploads" class="loggedin">My Uploads</a>
+        <a id="#myimages" href="#myimages" class="loggedin">My Images</a>
         <div id="note#examples">Some simple example fractals showing the basic pre-defined formulae and colouring algorithms. Click on the preview image to load the fractal into the viewer.</div>
         <div id="note#shared">Fractals that users have shared and made available to others to view and explore. Click on the preview to open the fractal.</div>
         <div id="note#images">Images created from fractals and shared on Imgur or Flickr</div>
@@ -440,6 +453,7 @@
   <div id="fonttest"></div>
   <!-- Hidden -->
   <div id="hidden" style="display: none">
+        <a id="dummylink" href="#">Dummy</a>
     <canvas id="gradient" width="2048" height="1"></canvas>
     <canvas id="thumb" width="32" height=32"></canvas>
 
