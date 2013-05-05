@@ -504,9 +504,11 @@ ParameterSet.prototype.createFields = function(category, name) {
       if (selectedTab != $('tab_colour')) return;
       break;
   }
+  /* Hack: detect Android and disable CodeMirror on fields */
+  var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
   var field_area = $(category + "_params");
-  var divider = document.createElement("div");
-  divider.className = "divider";
+  var parambox = document.createElement("div");
+  parambox.className = "parambox";
   var label = "";
   if (sectionnames[category]) {
     var key = formulaKey(category, name);
@@ -518,11 +520,12 @@ ParameterSet.prototype.createFields = function(category, name) {
     label = formula_list[key].label;
     //label = formula_list[formulaKey(category, name)].label;
     var divlabel = document.createElement("span");
-    divlabel.className = "divider-label";
-    divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[category] + ": " + label));
-    divider.appendChild(divlabel);
+    divlabel.className = "parambox-label";
+    divlabel.innerHTML = sectionnames[category] + ": <b>" + label + "</b>";
+    //divlabel.appendChild(divlabel.ownerDocument.createTextNode(sectionnames[category] + ": " + label));
+    parambox.appendChild(divlabel);
   }
-  field_area.appendChild(divider);
+  field_area.appendChild(parambox);
 
   for (key in this)
   {
@@ -543,7 +546,7 @@ ParameterSet.prototype.createFields = function(category, name) {
     row.appendChild(label);
     row.appendChild(spanin);
     //Add row to area div
-    field_area.appendChild(row);
+    parambox.appendChild(row);
 
     //Create the input fields
     this[key].input = null;
@@ -626,7 +629,7 @@ ParameterSet.prototype.createFields = function(category, name) {
         break;
       case 6: 
         //Expression
-        if (typeof CodeMirror == 'function') {
+        if (!isAndroid && typeof CodeMirror == 'function') {
           input = CodeMirror(spanin, {
             value: this[key].value,
             mode: "text/x-glsl",
@@ -636,6 +639,7 @@ ParameterSet.prototype.createFields = function(category, name) {
             matchBrackets: true,
             lineWrapping: true
           });
+          input.on("blur", function() {fractal.applyChanges();});
         } else {
           input = document.createElement("textarea");
           input.value = this[key].value;
@@ -652,17 +656,20 @@ ParameterSet.prototype.createFields = function(category, name) {
         spanin.appendChild(input);
         break;
     }
-    //Instant update for uniform values...
-    if (this[key].uniform) {
-      if (this[key].typeid == 2) {
-        input[0].setAttribute("onchange", onchange);
-        input[1].setAttribute("onchange", onchange);
-      } else
-        input.setAttribute("onchange", onchange);
-    }
+    //Instant update... (on for all now draw button removed)
+    if (this[key].typeid == 2) {
+      input[0].setAttribute("onchange", onchange);
+      input[1].setAttribute("onchange", onchange);
+    } else if (input.setAttribute)
+      input.setAttribute("onchange", onchange);
     //Save the field element
     this[key].input = input;
   }
+
+  //Clear
+  var clr = document.createElement("div");
+  clr.className = "clear gap";
+  parambox.appendChild(clr);
 }
 
 //Set field values as uniforms

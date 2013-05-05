@@ -1,6 +1,7 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 
 <title>Fractured | editor</title>
+<meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1" />
 
 <link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
 
@@ -75,7 +76,8 @@ var formula;
   }
 
   saveEditor = function() {
-    editor.save();  //Updates textarea content
+    if (editor)
+      editor.save();  //Updates textarea content
 
     //JS Script?
     if (filename.indexOf(".js") >= 0) {
@@ -142,19 +144,24 @@ var formula;
       sel.options[sel.length] = new Option("dark", "fractureddark");
     }
 
-    editor = new CodeMirror.fromTextArea(code, {
-      mode: editmode,
-      theme: edittheme,
-      height: "100%",
-      saveFunction: saveEditor,
-      lineNumbers: true,
-      indentUnit: 2,
-      tabSize: 2,
-      /*tabMode: "classic",*/
-      matchBrackets: true
-    });
-    
-    sel.value = edittheme;
+    /* Hack: detect Android and disable CodeMirror */
+    var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
+    if (isAndroid) {
+      document.getElementById('cm_buttons').style.display = 'none';
+    } else {
+      editor = new CodeMirror.fromTextArea(code, {
+        mode: editmode,
+        theme: edittheme,
+        height: "100%",
+        saveFunction: saveEditor,
+        lineNumbers: true,
+        indentUnit: 2,
+        tabSize: 2,
+        /*tabMode: "classic",*/
+        matchBrackets: true
+      });
+      sel.value = edittheme;
+    }
   };
 
   function selectTheme(sel) {
@@ -186,13 +193,15 @@ function replace() {
   <input type="button" id="runbtn" value="Run" style="display:none" onclick="runScript()">
   <input type="button" id="savebtn" value="Save" onclick="saveEditor()">
   <input type="button" value="Export" onclick="window.opener.exportFormulaFile(filename, window.type, code.value)">
-  <input type="button" value="Find" onclick="search()">
-  <input type="button" value="Replace" onclick="replace()">
-  <input type="button" value=" < " onclick="CodeMirror.commands['findPrevious'](editor);">
-  <input type="button" value=" > " onclick="CodeMirror.commands['findNext'](editor);">
-  <input type="button" value="Replace All" onclick="CodeMirror.commands['replaceAll'](editor);">
-  <select id="theme" style="float: right" onchange="selectTheme(this)">
-  </select>
+  <div id="cm_buttons">
+    <input type="button" value="Find" onclick="search()">
+    <input type="button" value="Replace" onclick="replace()">
+    <input type="button" value=" < " onclick="CodeMirror.commands['findPrevious'](editor);">
+    <input type="button" value=" > " onclick="CodeMirror.commands['findNext'](editor);">
+    <input type="button" value="Replace All" onclick="CodeMirror.commands['replaceAll'](editor);">
+    <select id="theme" style="float: right" onchange="selectTheme(this)">
+    </select>
+  </div>
 </div>
 
 <div id="code">

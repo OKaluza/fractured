@@ -12,6 +12,46 @@ var palettes; //Palette list
 //Timers
 var rztimeout = undefined;
 
+var activeMenu = null;
+var activeSubMenu = null;
+function menu(el, level) {
+  if (el) {
+    //Open a drop down menu, if level > 0 is a sub menu
+    var nodes = el.parentNode.childNodes;
+    for (var i=0; i<nodes.length; i++) {
+      if (nodes[i].tagName == "UL") {
+        var active = nodes[i].style;
+        if (!level && activeMenu && activeMenu != active) activeMenu.display = 'none';
+        if (activeSubMenu && activeSubMenu != active) activeSubMenu.display = 'none';
+        if (active.display != 'block') {
+          active.display = 'block';
+          if (level == 1) activeSubMenu = active;
+          else activeMenu = active;
+        } else {
+          active.display = 'none';
+          if (level == 1) activeSubMenu = null;
+          else activeMenu = null;
+        }
+        break;
+      }
+    }
+  } else {
+    //Action executed, hide menus
+    if (activeMenu) activeMenu.display = 'none';
+    if (activeSubMenu) activeSubMenu.display = 'none';
+    $S('nav').display = '';
+  }
+}
+
+function mainmenu() {
+  if ($S('nav').display != 'block') {
+    $S('nav').display = 'block';
+  } else {
+    $S('nav').display = 'none';
+    menu();
+  }
+}
+
 function appInit() {
   try {
     state = new State("---VERSION---");
@@ -23,7 +63,6 @@ function appInit() {
   if (window.location.href.indexOf("file://") == 0) state.offline = true;
   if (!navigator.onLine) state.offline = true;
   showPanel('info');
-  setAll('none', 'loggedin');  //hide logged in menu options
   var urlq = decodeURI(window.location.href);
   var h = urlq.indexOf("#");
   if (h > 0) urlq = urlq.substring(0, h);
@@ -57,9 +96,6 @@ function appInit() {
         //debug mode enabled, show extra menus
         state.debugOn();
         state.saveStatus();
-      } else if (list[i].indexOf('legacy') >= 0) {
-        state.legacy = true;
-        debug("Legacy loading mode enabled");
       } else if (list[i].indexOf('flickr') >= 0) {
         flickr = true; //Skip gallery display
       } else if (list[i].indexOf('reset') >= 0) {
@@ -123,25 +159,49 @@ function appInit() {
 
   setAntiAliasMenu();
 
-  //Draw & update
-  state.lastFractal();  //Restore last if any
-  if (restored.length > 30) {
-    restoreFractal(restored);   //Restore from URL
-  } else if (restored.length > 0) {
-    loadUrl(restored); //Load from hash
-  } else if (flickr) {
-    //Return to last drawn fractal
-    hideGallery();
-    //Upload when draw finished
-    fractal.ondraw = uploadFlickr;
-    fractal.applyChanges();
-  } else if (!state.offline) {
-    showGallery(location.hash);
+  //Restore last fractal settings/palette if any
+  var loaded = state.lastFractal();
+
+  //Load from URL/address
+  if (restored.length) {
+    if (restored.length > 30) {
+      restoreFractal(restored);   //Restore from URL
+    } else {
+      loadUrl(restored); //Load from hash
+    }
+  } else if (loaded) {
+    //Previous viewing restored
+    if (flickr) {
+      //Upload when draw finished
+      fractal.ondraw = uploadFlickr;
+      hideGallery();
+      fractal.applyChanges();
+    } else {
+    //hideGallery();
+    //fractal.applyChanges();
+    //Display last viewed card...
+
+    }
   }
 
-  loadHelp();
+  //No fractal loaded? Display gallery
+  if (state.mode == 0)
+    showGallery(location.hash);
+
   loadScript("/codemirror_---VERSION---.js", "");
-  doResize();
+
+  if (loaded) showCard("previous_fractal");
+  showCard("local_storage");
+  if (!$("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
+  if (fractal.webgl) showCard("webgl_detected"); else if (!fractal.webcl) showCard("no_webgl");
+  showCard("mouse_reference");
+  showCard("user_guide");
+  showCard("contact_form");
+
+  //Tab help cards
+  showCard("parameters_help");
+  showCard("formula_help");
+  showCard("colour_help");
 }
 
 //Forced reset - used when upgrading
@@ -187,10 +247,10 @@ function handleKey(event) {
 function sendEmail() {
   var formdata = new FormData();
   formdata.append("email", $('email').value); 
-  formdata.append("subject", "http://fract.ured.me feedback form");
+  formdata.append("subject", "[http://fract.ured.me contact form]");
   formdata.append("message", $('message_body').value);
   progress("Sending email...");
-  ajaxPost("ss/mailer.php", formdata, progressDone, updateProgress);
+  ajaxPost("ss/email.php", formdata, progressDone, updateProgress);
 }
 
 function loadHelp() {
@@ -215,6 +275,14 @@ function hashChanged() {
   }
 }
 
+function switchGallery(force) {
+  if (force != 1 && (force == 0 || state.mode == 0)) {
+    hideGallery();
+    fractal.applyChanges();
+  } else
+    showGallery();
+}
+
 function showGallery(id) {
   if (!id) {
     id = state.gallery ? state.gallery : "#examples";
@@ -224,10 +292,10 @@ function showGallery(id) {
   }
   if (state.gallery) {
     $(state.gallery).className = '';
-    $S('note' + state.gallery).display = 'none';
+    $S('about' + state.gallery).display = 'none';
   }
   $(id).className = 'selected';
-  $S('note' + id).display = 'block';
+  $S('about' + id).display = 'block';
   state.gallery = id;
   state.mode = 0;
   loadGallery();
@@ -238,10 +306,11 @@ function loadGallery(offset) {
     setAll('none', 'render');  //hide render mode menu options
   $S('fractal-canvas').display = "none";
   if (offset == undefined) offset = state.offset;
-  var w = $('gallery').clientWidth; //window.innerWidth - 334;
-  var h = $('gallery').clientHeight; //window.innerHeight - 27;
+  var w = $('gallery').clientWidth;
+  var h = $('gallery').clientHeight;
   //$S('gallery').width = w + "px";
   //$S('gallery').height = h + "px";
+  if (state.offline) return;  //Skip load
 
   type = state.gallery.substr(1);
   //$('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
@@ -259,9 +328,36 @@ function hideGallery() {
   $S('fractal-canvas').display = "block";
   setAll('block', 'render');  //Unhide render mode menu options
   setAll(state.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
-  //Switch to parameters
-  if (state.mode == 0 && selectedTab == $('tab_info')) showPanel('params');;
   state.mode = 1;
+}
+
+function showCard(id) {
+  if (!state.cards[id])
+    toggleCard(id);
+  else {
+    //Populate manager card
+    var manage = $("manage_info");
+    manage.style.display = 'block';
+    var input = document.createElement("input");
+    input.id = key + '_enable';
+    input.type = "button";
+    input.setAttribute("onclick", 'toggleCard("' + id + '"); this.parentNode.removeChild(this);');
+    input.style.display = "block";
+    input.value = id.replace(/[_#]/g,' ').toTitleCase();
+    manage.appendChild(input);
+  }
+}
+
+function toggleCard(el) { 
+  var card;
+  if (typeof el == 'string')
+    card = $(el);
+  else
+    card = el.parentNode;
+  toggle(card, 'block');
+  state.cards[card.id] = (card.style.display == 'none');
+  if (state.cards[card.id]) showCard(card.id); //Populate replace button
+  state.saveStatus();
 }
 
 //session JSON received
@@ -293,7 +389,7 @@ function sessionGet(data) {
       var list = JSON.parse(data);
       for (var i=0; i<list.length; i++) {
         var label = list[i].date + "\n" + list[i].description;
-        var item = addMenuItem(menu, label, "loadSession(" + list[i].id + ")", null, true);
+        var item = addMenuItem(menu, label, "menu(); loadSession(" + list[i].id + ")", null, true);
         if (state.session == list[i].id) selectMenuItem(item, "deleteSelectedState();");
       }
       checkMenuHasItems(menu);
@@ -305,7 +401,6 @@ function sessionGet(data) {
 }
 
 function restoreFractal(restored) {
-  hideGallery();
   var lines = restored.split("\n"); // split on newlines
   var name = lines[0];
   lines.splice(0,1);
@@ -319,6 +414,7 @@ function restoreFractal(restored) {
     $('name').value = name;
   }
   progress();
+  hideGallery();
 }
 
 function setAntiAlias(val) {
@@ -362,7 +458,7 @@ function addMenuDelete(span, onclick) {
   btn.value = " X ";
   btn.className = "right";
   //btn.className = "right loggedin";
-  btn.setAttribute("onclick", onclick + " event.stopPropagation();");
+  btn.setAttribute("onclick", onclick + "; event.stopPropagation();");
   span.appendChild(btn);
 }
 
@@ -463,10 +559,6 @@ function performTask(number, numToProcess, processItem) {
   var items = [];
   for (var key in fractals) {
     items[pos] = fractals[key];
-    if (state.legacy) { //CONVERT ALL
-      fractal.load(fractals[key].source, true);
-      fractals[key].source = fractal.toStringNoFormulae();
-    }
     pos++;
   }
   pos = 0;
@@ -667,7 +759,7 @@ function populateScripts() {
   removeChildren(menu);
   for (var key in localStorage) {
     if (key.indexOf("scripts/") != 0) continue;
-    var item = addMenuItem(menu, key.substr(8), "editScript('" + key + "');");
+    var item = addMenuItem(menu, key.substr(8), "menu(); editScript('" + key + "');");
     addMenuDelete(item, "delete localStorage['" + key + "']; populateScripts();");
   }
   checkMenuHasItems(menu);
@@ -711,6 +803,31 @@ function thumbnail(type, size, args) {
   var result = thumb.toDataURL("image/jpeg")
   thumb.style.visibility='hidden';
   //*/
+  return result;
+}
+
+function thumbnailQuick(type, width, height, args) {
+  //Thumbnail image gen, quick method
+  if (type == undefined) type = "jpeg";
+  if (args == undefined && type == "jpeg") args = 75;
+  var canvas = $("fractal-canvas");
+
+  if (canvas.clientWidth < 1 && canvas.clientHeight < 1)
+    return "";
+
+  if (!width) width = 32;
+  if (!height) height = canvas.clientHeight * (width / canvas.clientWidth);
+
+  // Thumb generated by browser in canvas, badly aliased?
+  var thumb = $("thumb");
+  thumb.width = width;
+  thumb.height = height;
+  thumb.style.visibility='visible';
+  var context = thumb.getContext('2d');  
+  context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
+  var result = thumb.toDataURL("image/" + type, args)
+  thumb.style.visibility='hidden';
+
   return result;
 }
 
@@ -1007,7 +1124,7 @@ function loadFormulaeList(data) {
     var list = JSON.parse(data);
     for (var i=0; i<list.length; i++) {
       var label = list[i].date + "\n" + list[i].name;
-      var onclick = "loadFormulaSet(" + list[i].id + ")";
+      var onclick = "menu(); loadFormulaSet(" + list[i].id + ")";
       var item;
       if (list[i]["public"] == "1")
         item = addMenuItem(menu1, label, onclick);
@@ -1106,21 +1223,25 @@ function showPanel(name)
   return false;
 }
 
-function toggleParams(force) {
+function toggleParams(on) {
   var sidebar = $("left");
   var main = $("main");
-  on = force;
-  if (on == undefined) on = (sidebar.style.display == 'none');
   if (on) {
-    sidebar.style.display = '';
-    main.style.left = '334px';
-    $('toolsbtn').innerHTML = "Hide Tools &uarr;"
+    sidebar.style.display = 'block';
+    if (window.innerWidth < 500)
+      main.style.display = 'none';
+    else
+      main.style.left = sidebar.clientWidth + "px";
+    $S('hidetools').display = 'block'
+    $S('showtools').display = 'none'
   } else {
+    main.style.display = 'block';
     sidebar.style.display = 'none';
-    main.style.left = '1px';
-    $('toolsbtn').innerHTML = "Show Tools &darr;"
+    main.style.left = '0px';
+    $S('hidetools').display = 'none'
+    $S('showtools').display = 'block'
   }
-  if (force == undefined) autoResize(document["inputs"].elements["autosize"].checked);
+  autoResize(document["inputs"].elements["autosize"].checked);
 }
 
 function toggleFullscreen(newval) {
@@ -1130,7 +1251,7 @@ function toggleFullscreen(newval) {
     //Use new html5 full screen API
     if (typeof(newval) == 'boolean' && newval == true) {
       requestFullScreen("main");
-      main.style.top = '-1px';  //-1 because chrome sucks
+      main.style.top = '-1px';  //-1 because chrome is shit
       main.style.left = '0px';
       if (!document["inputs"].elements["autosize"].checked)
         main.style.overflow = "auto";
@@ -1139,19 +1260,10 @@ function toggleFullscreen(newval) {
       if (!isFullScreen()) {
         main.style.overflow = "visible";
         main.style.top = '27px';
-        main.style.left = showparams ? '334px' : '1px';
+        main.style.left = showparams ? $S("left").clientWidth + 'px' : '1px';
       }
     }
   }
-}
-
-//Show/hide on click
-function toggle(id) {
-  var el = $(id);
-  if (el.style.display == 'block')
-    el.style.display = 'none';
-  else
-    el.style.display = 'block';
 }
 
 function popup(text) {
@@ -1229,30 +1341,14 @@ function logout() {
 /////////////////////////////////////////////////////////////////////////
 //Event handling
 function doResize() {
-  //Hide title if window too small
-  print(window.innerWidth);
-  if (window.innerWidth < 990) {
-    $S('title').display = "none";
-    $S('title2').display = "block";
-  } else {
-    $S('title').display = "block";
-    $S('title2').display = "none";
-  }
-
-  //Too small for palette, need an alternative but hide for now
-  if (window.innerWidth < 850)
-    $S('controls').display = "none";
-  else
-    $S('controls').display = "block";
-
-  //Mobile browser size, default to hide tools
-  if (window.innerWidth < 450) {
-    if (!state.small) {
-      state.small = true;
-      toggleParams(false);
-    }
-  } else
-    state.small = false;
+  var sidebar = $("left");
+  var main = $("main");
+  if (window.innerWidth >= 500) {
+    main.style.display = 'block';
+    if (sidebar.style.display == 'block')
+      main.style.left = sidebar.clientWidth + "px";
+  } else if (main.offsetLeft > 0)
+    main.style.display = 'none';
 
   if (state.mode == 0)
     loadGallery();
@@ -1451,9 +1547,9 @@ function importFile(source, filename, date) {
         filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
       } else {
         //Pre 0.7, 0.78+ files have version=
-        if (state.legacy || date && date < new Date(2012,9,1))
-          fractal.loadOld(source);
-        else
+        //if (!date && date < new Date(2012,9,1))
+        //  fractal.loadOld(source);
+        //else
           fractal.load(source);
         //if (/version=\(/g.exec(source))
       }
