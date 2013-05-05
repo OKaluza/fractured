@@ -17,7 +17,7 @@ function State(version) {
   this.baseurl = "";
   this.locator = null;
   this.output = true;
-  this.small = false; //Mobile mode, width < 450
+  this.cards = {};
 
   //Defaults in case no saved settings
   this.fractal = null;
@@ -47,6 +47,7 @@ function State(version) {
     this.renderer = data.renderer;
     this.platform = data.platform;
     this.device = data.device;
+    this.cards = data.cards ? data.cards : {};
     if (this.debug) this.debugOn();
   }
 }
@@ -74,6 +75,7 @@ State.prototype.saveStatus = function() {
   data.renderer = this.renderer;
   data.platform = this.platform;
   data.device = this.device;
+  data.cards = this.cards;
   localStorage["fractured.current"] = JSON.stringify(data);
 }
 
@@ -154,8 +156,11 @@ State.prototype.save = function() {
     localStorage["fractured.fractals"] = JSON.stringify(fractals);
     localStorage["fractured.palettes"] = JSON.stringify(palettes);
     //Save current fractal (as default)
-    localStorage["fractured.active"] = fractal;
-    localStorage["fractured.name"] = $('name').value;
+    if (fractal.thumb) {
+      localStorage["fractured.active"] = fractal;
+      localStorage["fractured.thumbnail"] = fractal.thumb;
+      localStorage["fractured.name"] = $('name').value;
+    }
   } catch(e) {
     alert('error: ' + e);
   }
@@ -210,9 +215,10 @@ State.prototype.load = function() {
   populateFractals();
   populateScripts();
 
-  //Show an indicator, assumes 5mb of local storage
+  //Show an indicator, assumes 5K char limit or 2.5K in WebKit
+  var isWebKit = /AppleWebKit/.test(navigator.userAgent);
   var size = JSON.stringify(localStorage).length;
-  var indic = size / 5000000;
+  var indic = size / (isWebKit ? 2500000 : 5000000);
   $S('indicator').width = (350 * indic) + 'px';
   return true;
 }
@@ -258,11 +264,17 @@ State.prototype.lastFractal = function() {
   if (source) {
     fractal.load(source, true); //Don't display immediately
     $('name').value = localStorage["fractured.name"];
+    if (localStorage["fractured.thumbnail"])
+      $('lastimage').src = localStorage["fractured.thumbnail"];
+    else
+      $S('lastimage').display = 'none';
+    return true;
   } else {
     //Load & draw default palettes
     loadPalette(0);
-    fractal.applyChanges();
+    fractal.updatePalette();
   }
+  return false;
 }
 
 

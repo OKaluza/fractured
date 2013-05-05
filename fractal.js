@@ -165,6 +165,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
     this.renderer = WEBGL;
     $("webcl").disabled = true;
     $("fp64").disabled = true;
+    $("webcl_list").disabled = true;
   }
 
   if (this.renderer >= WEBCL) {
@@ -183,6 +184,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
       this.webcl.init(this.canvas, this.renderer > WEBCL, 8);
       this.webclMenu();
       this.webgl = null;
+      $("webcl_list").disabled = false;
     } catch(e) {
       //WebCL init failed, fallback to WebGL
       var error = e;
@@ -192,6 +194,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
       this.renderer = WEBGL;
       $("webcl").disabled = true;
       $("fp64").disabled = true;
+      $("webcl_list").disabled = true;
     }
   }
 
@@ -201,7 +204,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
       this.webgl = new WebGL(this.canvas);
       this.gl = this.webgl.gl;
       this.webgl.init2dBuffers();
-      setAll('none', 'webcl');  //hide CL menu options
+      $("webcl_list").disabled = true;
     } catch(e) {
       //WebGL init failed
       var error = e;
@@ -211,6 +214,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
             "http://get.webgl.org/troubleshooting</a> for more information.");
       this.webgl = null;
       this.renderer = NONE;
+      $("webgl").disabled = true;
     }
   }
 
@@ -233,17 +237,18 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
 
 Fractal.prototype.webclMenu = function() {
   this.pfstrings = "";
-  setAll('block', 'webcl');  //show menu options
   //Clear & repopulate list
-  var menu = $('platforms');
-  removeChildren(menu);
+  //var menu = $('platforms');
+  //removeChildren(menu);
+  var select = $("webcl_list");
+  select.options.length = 0;
   for (var p=0; p<this.webcl.platforms.length; p++) {
     var plat = this.webcl.platforms[p];
     var pfname = plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
     this.pfstrings += "+" + /^[^\s]*/.exec(pfname)[0];
     var devices = plat.getDevices(WebCL.CL_DEVICE_TYPE_ALL);
     for (var d=0; d < devices.length; d++, i++) {
-      var name = pfname + " : " + devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME);
+      var name = devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME) + ' (' + pfname + ')';
       var dtype = devices[d].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
       if (dtype == WebCL.CL_DEVICE_TYPE_CPU)
         this.pfstrings += "-C"; 
@@ -251,18 +256,23 @@ Fractal.prototype.webclMenu = function() {
         this.pfstrings += "-G";
       else
         this.pfstrings += "-O";
-      var onclick = "fractal.webclSet(" + p + "," + d + ");";
-      var item = addMenuItem(menu, name, onclick);
-      if (p == state.platform && d == state.device) selectMenuItem(item);
+      //var onclick = "menu(); fractal.webclSet(" + p + "," + d + ");";
+      //var item = addMenuItem(menu, name, onclick);
+      //if (p == state.platform && d == state.device) selectMenuItem(item);
+      select.options[select.length] = new Option(name, JSON.stringify({"pfid" : p, "devid" : d}));
+      if (p == state.platform && d == state.device) select.selectedIndex = select.length-1;
     }
   }
-  checkMenuHasItems(menu);
+  //checkMenuHasItems(menu);
+  if (select.selectedIndex < 0) select.selectedIndex = 0;
 }
 
-Fractal.prototype.webclSet = function(pfid, devid) {
+//Fractal.prototype.webclSet = function(pfid, devid) {
+Fractal.prototype.webclSet = function(valstr) {
+  var val = JSON.parse(valstr);
   //Init with new selection
-  state.platform = pfid;
-  state.device = devid;
+  state.platform = val.pfid;
+  state.device = val.devid;
   this.setRenderer('main', this.renderer);
 
   //Redraw if updating
@@ -503,7 +513,9 @@ Fractal.prototype.load = function(source, noapply) {
   if (!this.webgl && !this.webcl) return;
   //Strip leading : from old data
   source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
-  if (state.legacy && source.indexOf("version=") < 0) return this.loadOld(source, noapply);
+  if (state.debug && source.indexOf("version=") < 0
+      && confirm("No version found in fractal source. Load fractal in compatibility mode?"))
+    return this.loadOld(source, noapply);
   //Reset everything...
   this.resetDefaults();
   this.formulaDefaults();
@@ -740,11 +752,17 @@ Fractal.prototype.loadOld = function(source, noapply) {
         if (!category in this.choices) {print("INVALID CATEGORY: " + category); continue;}
         //Skip formula loading in old files...must have correct formula loaded already
         var key = formulaKey(category, name, false);
+        //Formula not existing and not imported?
         if (!this.choices[category].exists(name)) {
-          alert("Formula not found: " + name);
-          return;
-        } else
-          this.choices[category].select(name);
+          //Last resort is strip off any _(#) additions to get base formula
+          var pos = name.lastIndexOf("_");
+          if (pos > 0) name = name.substr(0, pos);
+          if (!this.choices[category].exists(name)) {
+            alert("Formula not found: " + name);
+            return;
+          }
+        }
+        this.choices[category].select(name);
       } else {
         print("Unrecognised parameter: " + line);
       }
@@ -1149,13 +1167,6 @@ Fractal.prototype.resetZoom = function() {
 }
 
 Fractal.prototype.sizeCanvas = function() {
-  //This sanity check necessary for now as sizeCanvas is 
-  //sometimes called when canvas still hidden (so width/height=0)
-  if (this.canvas.style.display == 'none') {
-    debug("sizeCanvas: skipped, canvas hidden");
-    return;
-  }
-
   var width = this.width;
   var height = this.height;
   if (!width || !height) {
@@ -1172,6 +1183,13 @@ Fractal.prototype.sizeCanvas = function() {
     document.documentElement.style.overflow = "auto";
     this.canvas.style.width = width + "px";
     this.canvas.style.height = height + "px";
+  }
+
+  //This sanity check necessary for now as sizeCanvas is 
+  //sometimes called when canvas still hidden (so width/height=0)
+  if (width < 32 || height < 32) {
+    debug("sizeCanvas: skipped, width/height too small: " + width + " x " + height);
+    return;
   }
 
   if (width != this.canvas.width || height != this.canvas.height) {
@@ -1191,13 +1209,19 @@ Fractal.prototype.sizeCanvas = function() {
   }
 }
 
-//Apply any changes to parameters or formula selections and redraw
-Fractal.prototype.applyChanges = function(antialias, notime) {
+Fractal.prototype.updatePalette = function() {
   if (!this.webgl && !this.webcl) return;
   //Update palette texture
   var canvas = $('gradient');
   colours.get(canvas);
   if (this.webgl) this.webgl.updateTexture(this.webgl.gradientTexture, canvas);
+}
+
+//Apply any changes to parameters or formula selections and redraw
+Fractal.prototype.applyChanges = function(antialias, notime) {
+  if (!this.webgl && !this.webcl) return;
+  //Update palette texture
+  this.updatePalette();
 
   //Resize canvas if size settings changed
   if (document["inputs"].elements["autosize"].checked) {
@@ -1472,11 +1496,20 @@ Fractal.prototype.timeAction = function(action) {
   window.requestAnimationFrame(logTime);
 }
 
+function ondrawn() {
+  //Call the user-defined ondraw function
+  if (fractal.ondraw) fractal.ondraw();
+  //Save last drawn thumbnail
+  var thumb = thumbnailQuick("jpeg", 80, 0, 85);
+  if (thumb) fractal.thumb = thumb;
+  hideGallery();  //Always hide the gallery now
+}
+
 Fractal.prototype.draw = function(antialias, notime) {
   if (!antialias) antialias = this.antialias;
   var timer = null;
   if (!notime)
-    timer = new Timer(this.ondraw);
+    timer = new Timer(ondrawn);
 
   //Set canvas size
   this.sizeCanvas();
@@ -1605,7 +1638,7 @@ Fractal.prototype.click = function(event, mouse) {
       this.selectPoint(point, true);
     } else {
       //No redraw
-      return false;
+      return true;
     }
   }
 
@@ -1622,7 +1655,8 @@ Fractal.prototype.down = function(event, mouse) {
   //Stop any current render
   this.stop();
   clearPreviewJulia();
-  return false;
+  //return false;
+  return true;
 }
 
 Fractal.prototype.up = function(event, mouse) {
@@ -1694,7 +1728,8 @@ Fractal.prototype.move = function(event, mouse) {
 Fractal.prototype.wheel = function(event, mouse) {
   this.stop();
   if (!this.preview && event.shiftKey) {
-    $('rotate').value = parseReal($('rotate').value, 1) + event.spin * 10;
+    //$('rotate').value = parseReal($('rotate').value, 1) + event.spin * 10;
+    $('iterations').value = parseInt($('iterations').value) + event.spin;
     //Accumulate spin before applying changes
     //First clear any existing timer
     if (this.timer) clearTimeout(this.timer);
@@ -1842,6 +1877,7 @@ function togglePreview() {
 //Based on: http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
 function touchHandler(event)
 {
+    print(event.type + " - " + event.touches.length + " touches");
   var touches = event.changedTouches,
       first = touches[0],
       type = "",
@@ -1917,11 +1953,11 @@ function touchHandler(event)
 
     //Prevent default where requested
     prevent = !first.target.dispatchEvent(simulatedEvent);
+    event.preventDefault();
   }
 
-
-  if (prevent || scaling)
-    event.preventDefault();
+  //if (prevent || scaling)
+  //  event.preventDefault();
 }
 
 

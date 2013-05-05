@@ -29,6 +29,8 @@
     if (!window.WebGLRenderingContext) throw "No browser WebGL support";
 
     var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+    //Opera bug: if this is not set images are upside down
+    if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
     // Try to grab the standard context. If it fails, fallback to experimental.
     try {
       this.gl = canvas.getContext("webgl", options) || canvas.getContext("experimental-webgl", options);

@@ -14,7 +14,7 @@ codemirror=release/codemirror_$(VERSION).js
 codemirrorstyle=release/codemirror_$(VERSION).css
 
 #Sources
-SCRIPTS = colourPicker.js gradient.js parameter.js formulae.js index.js state.js automation.js utils.js ajax.js mouse.js html5slider.js parser.js fractal.js colour.js webgl.js webcl.js 
+SCRIPTS = colourPicker.js gradient.js parameter.js formulae.js index.js state.js automation.js utils.js ajax.js mouse.js html5slider.js fractal.js colour.js webgl.js webcl.js 
 CMSCRIPTS = $(wildcard codemirror/lib/*.js) codemirror/mode/clike/clike.js codemirror/mode/javascript/javascript.js
 
 all: release $(fractured) $(codemirror) $(codemirrorstyle) $(docs) $(includes) $(formulae)
@@ -39,7 +39,8 @@ $(fractured): $(SCRIPTS) gl-matrix.js
 	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fractured-index.js
 	$(COMP)/tmp/fractured-index.js $(FLAGS)/tmp/fractured-compressed.js
 	$(COMP)gl-matrix.js $(FLAGS)/tmp/gl-matrix-min.js
-	cat /tmp/fractured-compressed.js /tmp/gl-matrix-min.js > $(fractured)
+	$(COMP)parser.js $(FLAGS)/tmp/parser-min.js
+	cat /tmp/fractured-compressed.js /tmp/gl-matrix-min.js /tmp/parser-min.js > $(fractured)
 
 $(codemirror): $(CMSCRIPTS)
 	cat $(CMSCRIPTS) > /tmp/codemirror-index.js

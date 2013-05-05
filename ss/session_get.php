@@ -75,6 +75,8 @@
   {
     /* No session */
     echo '!No session';
+    /* Hack, read from this variable or it gets lost? optimised out? */
+    print($_SESSION["info"]);
     exit();
   }
 

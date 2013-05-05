@@ -57,7 +57,20 @@ function isFullScreen() {
 //JQuery style lookup by id and style
 function $(v,o) { return((typeof(o)=='object'?o:document).getElementById(v)); }
 function $S(o) { o=$(o); if(o) return(o.style); }
-function toggle(v) { var d = $S(v).display; if (d == 'none' || !d) $S(v).display='block'; else $S(v).display='none'; }
+
+function toggle(v, def) { 
+  var el = v;
+  if (!def) def = 'block' //Default
+  if (typeof(v) == 'string') el = $(v);
+  var s = el.style;
+  var d = s.display;
+  if (!d)
+    s.display = def;
+  else if (d == 'none') 
+    s.display = 'block';
+  else
+    s.display = 'none';
+}
 
 function typeOf(value) {
   var s = typeof value;

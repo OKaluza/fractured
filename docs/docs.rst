@@ -14,7 +14,7 @@
 Fractured - `User Guide <http://fract.ured.me/docs_VERSION.html>`_
 ==========================================================================
 | Fractured | Fractal art studio | Version VERSION
-| |copy| Owen Kaluza, 2012
+| |copy| Owen Kaluza, 2013
 
 .. contents:: `Table of contents`
 
@@ -23,12 +23,12 @@ Introduction
 Fractured is a GPU accelerated fractal exploration application written in HTML,CSS,Javascript and WebGL_ / WebCL_\*.
 It is designed to work as a stand-alone app, but there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
 
-I wrote it because I was interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
-Now many lost weekends and evenings later it seems to finally have turned into a fairly complete thing, does what I needed it to and maybe someone else will find it useful.
+I started working on it (years ago now) because I was interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
+Now many lost weekends and evenings later it seems to finally have turned into a fairly complete thing and does what I needed it to.
 
 \*There's also experimental WebCL_ support which allows CPU rendering and double precision mode where possible. It will only work with the Nokia Firefox plugin_ for now but when the standard solidifies a bit I'll make sure it runs with other implementations.
   
-*(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) kaluza.id.au)*
+*(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)*
 
 Acknowledgments
 ---------------
@@ -49,14 +49,14 @@ Requirements
 - Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin_. 
 - **Note: Windows** in windows Chrome and Firefox do WebGL rendering via conversion to DirectX shaders (`Angle <http://code.google.com/p/angleproject/>`_), this is a workaround for poor quality windows OpenGL graphics drivers and is a bit unreliable at times. For best results where possible I recommend using native OpenGL rendering, this has to be enabled in your browser manually. In Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop *(in recent versions of Chrome it appears Native OpenGL support is broken, until this is fixed you are stuck with Angle!)*.
 - **Note: Safari** if not enabled, WebGL can be switched on  by going into preferences -> advanced, show develop menu. Then select Enable WebGL on the Develop menu.
-- **Note: Opera** As of Opera 12.12 the WebGL implementation works with Fractured though it must first be enabled by setting "Enable WebGL" to 1 in opera:config.
+- **Note: Opera** As of Opera 12.12 the WebGL implementation works with Fractured though it must first be enabled by setting "Enable WebGL" to 1 in opera:config. *(Opera Windows no longer seems to work with Fractured, in fact it will crash the browser!)*
 - *Note* My development platform is Linux, Firefox, NVidia. I've tested as many other platforms as I've been able to but if haven't covered every browser/platform combination.
 
 Workspace
 =========
 What you are looking at on first loading the app: a workspace showing a selection of example fractals and the following user interface:
 
-- *Top Menu* containing the [Studio], |fractal| Fractal, |formula| Formula, |image| Image, |palette| Palette and |settings| Settings menus and the [|draw| Draw] button
+- *Top Menu* containing the [|draw| Studio], |fractal| Fractal, |formula| Formula, |image| Image, |palette| Palette and |settings| Settings menus.
 - *Palette* an editable gradient colour palette and background colour selection
 - *Tools* the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Log]
 - *Main Display* occupies the rest of the available browser window, initially showing an image gallery, switching to display the rendered fractal image (when in rendering mode).
@@ -65,8 +65,6 @@ What you are looking at on first loading the app: a workspace showing a selectio
 Main Display
 ------------
 The main window area is initially occupied by an image/fractal gallery, this is the welcome screen. When you render a fractal image it will switch to rendering mode and the fractal image will be displayed here.
-
-To switch to rendering mode immediately, hit the [Draw] button.
 
 Welcome screen
 ~~~~~~~~~~~~~~
@@ -128,7 +126,7 @@ A colour picker box appears whenever you click to add or edit a colour on the gr
 
 Tools
 -----
-The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the "Tools" area.
+The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the "Tools" area. The arrow icon at the top can be used to quickly hide and show this area.
 
 Many of the parameters in this area can be adjusted using the mouse scroll wheel.
 
@@ -137,7 +135,7 @@ Many of the parameters in this area can be adjusted using the mouse scroll wheel
 
 Parameters
 ~~~~~~~~~~
-The first is the Parameters tab. This shows basic details of the fractal display, common to all fractal renderings regardless of chosen formula. All of these fields can be edited and changing most of them will modify the way the fractal is rendered. To redraw the fractal after changing a value, press the [Draw] button on the Top Menu. 
+The first is the Parameters tab. This shows basic details of the fractal display, common to all fractal renderings regardless of chosen formula. All of these fields can be edited and changing most of them will modify the way the fractal is rendered. The fractal will be redrawn after you finish editing the value of a field. 
 The fields are:
 
 - *Name* a name for the fractal, used when saving
@@ -183,16 +181,8 @@ There are also entries for *None* - disabling colouring in the selected area, an
 
 Info
 ~~~~
-Here there is a *Local storage usage* indicator showing how much of the available local storage allocation is available, this is filled by storing fractals and when exceeded no more will be able to be saved. Currently it is based on an assumption of 5MB local storage space.
-
-Then there are 3 renderer buttons, two of which will be unavailable unless you have the WebCL plugin installed.
-When supported you can use them to switch between the following renderers:
-
-- **WebGL** fractals are computed in a GLSL shader using WebGL, single precision only.
-- **WebCL** fractals are computed in an OpenCL kernel and then drawn to a 2D canvas, single precision.
-- **WebCL fp64** as WebCL but utilising the 64-bit floating point extensions when available for double precision fractal computation.
-
-...followed by the documentation file you're now reading.
+This tab contains various information notes, the content of which won't be described here as they are self-explanatory.
+All these notes can be closed using the X icon in the top right corner. The last card in the info tab is a list of closed notes which allows you to re-open them if desired.
 
 Log
 ~~~
@@ -211,9 +201,9 @@ Some of the items are also only visible when logged in.
 
 Going from right to left we have:
 
-Draw
-~~~~
-|draw| This button redraws the current fractal, changes to fractal parameters in the *tools* area are not usually applied instantly and you must press this button to redraw the fractal display.
+Tools Arrow
+~~~~~~~~~~~
+- *Hide/Show Tools* this arrow button hides or shows the *tools* area from the window, allowing more room for the fractal display.
 
 Settings
 ~~~~~~~~
@@ -223,7 +213,6 @@ Settings
 - *Scripts* (experimental feature, not yet properly documented) allows you to write scripts that control the fractal display. New Script creates a new script entry in the list and opens the editor. Pressing the [Run] button in the editor window runs the script.
 - *Rebuild Thumbnails* redraw and save all stored fractal thumbnail images.
 - *Show Preview* enables or disables the Julia set preview window.
-- *Hide/Show Tools* hides or shows the *tools* area from the window, allowing more room for the fractal display.
 - *Full Screen* enter full screen mode.
 
 Palette
@@ -390,11 +379,15 @@ As operators can't be overloaded in GLSL, for mathematically correct results wit
 
 *eg: if z is a complex number*::
 
-  z = z*(1.5,-1);       -- incorrect, component-wise vector multiplication
-  z = mul(z,(1.5,-1));  -- correct, complex multiplication
+  z = z*(1.5,-1);       
+    - incorrect, component-wise vector multiplication
+  z = mul(z,(1.5,-1));  
+    - correct, complex multiplication
 
-  z = z + (1,0);        -- correct, adds 1.0 only to the real part of z
-  z = z + 1.0;          -- incorrect, adds 1.0 to both components of z
+  z = z + (1,0);        
+    - correct, adds 1.0 only to the real part of z
+  z = z + 1.0;          
+    - incorrect, adds 1.0 to both components of z
 
 If writing equations directly into the formula code you must also be careful to always put a decimal point in real number constants, eg: 1. or 1.0 instead of just 1 or you will get type errors from the GLSL compiler when using them with complex or real number variables, another reason to use the expression parser instead...
 

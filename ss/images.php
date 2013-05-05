@@ -52,33 +52,14 @@
     $imgpage = 18;  //Images per page
     if (isset($_GET['width']) && isset($_GET['height']))
     {
-      $w = floor(($_GET['width']-10) / $thumb);
-      $h = floor(($_GET['height']-110) / $thumb);
+      $w = floor(($_GET['width']) / $thumb);
+      $h = floor(($_GET['height']-150) / $thumb);
       if ($w < 1) $w = 1;
       if ($h < 1) $h = 1;
       $imgpage = $w * $h;
     }
   }
 
-  echo '<ul class="navigation">';
-
-  if ($offset == 0)
-    echo '<li class="left"><span>Back</span></li>';
-  else
-    echo '<li class="left"><a href="javascript:loadGallery(' . ($offset - $imgpage) . ');">Back</a></li>';
-  
-  if ($offset + $imgpage >= $totimg)
-    echo '<li class="left"><span>Next</span></li>';
-  else
-    echo '<li class="left"><a href="javascript:loadGallery(' . ($offset + $imgpage) . ');">Next</a></li>';
-
-  echo '</ul>';
-
-  if ($type == "shared" || $type == "images")
-    echo "<a href='/ss/rss.php?type=$type'><img src='media/rss.png'></a>";
-
-  echo '<div class="clear"></div>';
-  echo '<div class="gap"></div>';
 
   for($x=$offset; $x < $offset + $imgpage; $x++)
   {
@@ -99,9 +80,37 @@
     echo "<div class='float' style='width: $thumb; height: $thumb;'>";
     echo "<a href='$url'>$img</a></div>\n";
   }
+  echo '<div class="clear"></div>';
+
+  //Display nav buttons
+  echo '<ul class="navigation">';
+
+  if ($offset == 0)
+    echo '<li class="left"><span>Back</span></li>';
+  else
+    echo '<li class="left"><a href="javascript:loadGallery(' . ($offset - $imgpage) . ');">Back</a></li>';
+  
+  if ($offset + $imgpage >= $totimg)
+    echo '<li class="left"><span>Next</span></li>';
+  else
+    echo '<li class="left"><a href="javascript:loadGallery(' . ($offset + $imgpage) . ');">Next</a></li>';
+
+  echo '</ul>';
 
   //Display page jump links
   echo '<div class="ginfo">';
+
+  if ($type == "shared" || $type == "images")
+    echo "<a href='/ss/rss.php?type=$type'><img src='media/rss.png'></a>";
+
+  if ($totimg > 0) 
+  {
+    echo ' Images ';
+    $last = $offset + $imgpage;
+    if ($last > $totimg) {$last = $totimg;}
+    echo $offset + 1 . " to $last  of $totimg... "; 
+  }
+
   if ($totimg > $imgpage)
   {
     echo 'Page: ';
@@ -116,15 +125,6 @@
         echo '<a href="javascript:loadGallery(' . $pageoffset . ');">' . $page . "</a>\n";
     }
   }
-
-  if ($totimg > 0) 
-  {
-    echo ' ... Images ';
-    $last = $offset + $imgpage;
-    if ($last > $totimg) {$last = $totimg;}
-    echo $offset + 1 . " to $last  of $totimg"; 
-  }
   echo '</div>';
-
 ?>
 
