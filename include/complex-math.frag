@@ -114,12 +114,13 @@ complex cube(in complex z)
 
 complex cpow(in complex base, in complex exponent)
 {
-  //Simpler version?
-  real r = cabs(base);
-  real t = arg(base);
-  real a = pow(r,exponent.x)*exp(-exponent.y*t);
-  real b = exponent.x*t + exponent.y*log(r);
-  return C(a*cos(b), a*sin(b));
+  if (base.x == 0.0 && base.y == 0.0) return C(0,0);
+  real re =  log(cabs(base));
+  real im =  arg(base);
+  real re2 = (re*exponent.x) - (im*exponent.y);
+  real im2 = (re*exponent.y) + (im*exponent.x);
+  real scalar = exp(re2);
+  return C(scalar * cos(im2), scalar * sin(im2));
 }
 
 complex cexp(in complex z) 
