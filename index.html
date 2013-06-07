@@ -30,6 +30,7 @@
 <script type="text/javascript" src="gl-matrix.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
 <script type="text/javascript" src="webcl.js"></script>
+<script type="text/javascript" src="libwebcl.js"></script>
 <!-- @-->
 
 <!--script type="text/javascript" src="fractured_VERSION.js"></script-->
@@ -226,8 +227,8 @@
           <p>When available, <i>WebCL fp64</i> uses double precision calculations allowing deeper fractal zooms, but will be slower to draw.</p>
           <p><b>OpenCL platforms and devices:</b>
           <select id="webcl_list" style="width: 100%; font-size: 9pt;" onchange="fractal.webclSet(this.value);">
-          </p>
           </select>
+          </p>
         </div>
 
         <div class="card" id="no_webcl">
@@ -297,7 +298,7 @@
           <p>This is an experimental project and I'm still working on supporting various device/browser combinations where possible so if you have any problems, questions or feedback don't hesitate to use this form to contact me. If I can get over my social media avoidance I'll also use <a href="https://twitter.com/OwKal">twitter</a> to post updates and monitor <a href="https://twitter.com/search/fractured">#fractured</a> for any feedback or suggestions.</p>
           <div id="emailform">
             <p>E-mail:</p>
-            <input type="text" id="email" />
+            <input type="email" id="email" />
             <p>Message:</p>
             <textarea id="message_body"></textarea></p>
             <input type="button" value="Send" onclick="sendEmail();">

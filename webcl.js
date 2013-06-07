@@ -1,4 +1,10 @@
   /**
+   * OpenCL: WebCL interface object
+   * manage WebCL context, building OpenCL kernels and rendering fractals
+   * (c) Owen Kaluza 2012
+   */
+
+  /**
    * @constructor
    */
   function OpenCL(pid, devid) {
@@ -41,6 +47,34 @@
     if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
       this.fp64 = true; //Initial state of flag shows availability of fp64 support
     debug("WebCL ready, extensions: " + extensions);
+  }
+
+  OpenCL.prototype.populateDevices = function(select) {
+    //Clear & repopulate platforms+devices select list
+    if (!select || !select.options) return;
+    this.pfstrings = "";  //Info about available devices for debugging
+    select.options.length = 0;
+    for (var p=0; p<this.platforms.length; p++) {
+      var plat = this.platforms[p];
+      var pfname = plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
+      //Store debugging info about platforms found
+      this.pfstrings += "+" + /^[^\s]*/.exec(pfname)[0];
+      var devices = plat.getDevices(WebCL.CL_DEVICE_TYPE_ALL);
+      for (var d=0; d < devices.length; d++) {
+        var name = devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME) + ' (' + pfname + ')';
+        select.options[select.length] = new Option(name, JSON.stringify({"pfid" : p, "devid" : d}));
+        if (p == this.pid && d == this.devid) select.selectedIndex = select.length-1;
+        //Store debugging info about devices found
+        var dtype = devices[d].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
+        if (dtype == WebCL.CL_DEVICE_TYPE_CPU)
+          this.pfstrings += "-C"; 
+        else if (dtype == WebCL.CL_DEVICE_TYPE_GPU)
+          this.pfstrings += "-G";
+        else
+          this.pfstrings += "-O";
+      }
+    }
+    if (select.selectedIndex < 0) select.selectedIndex = 0;
   }
 
   OpenCL.prototype.init = function(canvas, fp64, threads) {
@@ -138,9 +172,9 @@
     return declare;
   }
 
-  OpenCL.prototype.draw = function(fractal, antialias) {
+  OpenCL.prototype.draw = function(fractal, antialias, background) {
     if (!this.k_sample) return; //Sanity checks
-    if (this.global[0] <= 0 || this.global[1] <- 0) return;
+    if (this.global[0] <= 0 || this.global[1] <= 0) return;
     if (this.timer) {clearTimeout(this.timer); this.timer = null;}
     if (antialias == undefined) antialias = 1;
     this.antialias = antialias;
@@ -159,14 +193,13 @@
       this.inBuffer[5] = fractal.selected.re;
       this.inBuffer[6] = fractal.selected.im;
       //Background
-      var background = colours.palette.background;
       this.inBuffer[7] = background.red/255.0;
       this.inBuffer[8] = background.green/255.0;
       this.inBuffer[9] = background.blue/255.0;
       this.inBuffer[10] = background.alpha;
 
       this.k_sample.setKernelArg(3, antialias, WebCL.types.INT);
-      this.k_sample.setKernelArg(4, fractal.julia, WebCL.types.INT);
+      this.k_sample.setKernelArg(4, (fractal.julia) ? 1 : 0, WebCL.types.INT);
       this.k_sample.setKernelArg(5, fractal.iterations, WebCL.types.INT);
       this.k_sample.setKernelArg(6, this.viewport.width, WebCL.types.INT);
       this.k_sample.setKernelArg(7, this.viewport.height, WebCL.types.INT);
