@@ -124,7 +124,7 @@ Fractal.prototype.infoString = function() {
   if (this.webcl) {
     info += "C";
     if (this.webcl.fp64) info += "D";
-    if (this.pfstrings) info += this.pfstrings;
+    if (this.webcl.pfstrings) info += this.webcl.pfstrings;
   }
   debug("INFO: " + info);
   return info;
@@ -182,7 +182,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
       $("fp64").disabled = !this.webcl.fp64;
       debug(state.platform + " : " + state.device + " --> " + this.canvas.width + "," + this.canvas.height);
       this.webcl.init(this.canvas, this.renderer > WEBCL, 8);
-      this.webclMenu();
+      this.webcl.populateDevices($("webcl_list"));
       this.webgl = null;
       $("webcl_list").disabled = false;
     } catch(e) {
@@ -233,38 +233,6 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   print("Mode set to " + renderer_names[this.renderer+1]);
   state.renderer = this.renderer;
   state.saveStatus();
-}
-
-Fractal.prototype.webclMenu = function() {
-  this.pfstrings = "";
-  //Clear & repopulate list
-  //var menu = $('platforms');
-  //removeChildren(menu);
-  var select = $("webcl_list");
-  select.options.length = 0;
-  for (var p=0; p<this.webcl.platforms.length; p++) {
-    var plat = this.webcl.platforms[p];
-    var pfname = plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
-    this.pfstrings += "+" + /^[^\s]*/.exec(pfname)[0];
-    var devices = plat.getDevices(WebCL.CL_DEVICE_TYPE_ALL);
-    for (var d=0; d < devices.length; d++, i++) {
-      var name = devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME) + ' (' + pfname + ')';
-      var dtype = devices[d].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
-      if (dtype == WebCL.CL_DEVICE_TYPE_CPU)
-        this.pfstrings += "-C"; 
-      else if (dtype == WebCL.CL_DEVICE_TYPE_GPU)
-        this.pfstrings += "-G";
-      else
-        this.pfstrings += "-O";
-      //var onclick = "menu(); fractal.webclSet(" + p + "," + d + ");";
-      //var item = addMenuItem(menu, name, onclick);
-      //if (p == state.platform && d == state.device) selectMenuItem(item);
-      select.options[select.length] = new Option(name, JSON.stringify({"pfid" : p, "devid" : d}));
-      if (p == state.platform && d == state.device) select.selectedIndex = select.length-1;
-    }
-  }
-  //checkMenuHasItems(menu);
-  if (select.selectedIndex < 0) select.selectedIndex = 0;
 }
 
 //Fractal.prototype.webclSet = function(pfid, devid) {
@@ -1220,6 +1188,8 @@ Fractal.prototype.updatePalette = function() {
 //Apply any changes to parameters or formula selections and redraw
 Fractal.prototype.applyChanges = function(antialias, notime) {
   if (!this.webgl && !this.webcl) return;
+  //Only redraw when visible
+  if (this.canvas.offsetWidth < 1 || this.canvas.offsetHeight < 1) return;
   //Update palette texture
   this.updatePalette();
 
@@ -1519,7 +1489,7 @@ Fractal.prototype.draw = function(antialias, notime) {
     this.renderWebGL(antialias);
   } else if (this.renderer >= WEBCL && this.webcl) {
     this.webcl.time = timer;
-    this.webcl.draw(this, antialias);
+    this.webcl.draw(this, antialias, colours.palette.background);
   } else
     alert("No renderer!");
 }
@@ -1549,7 +1519,7 @@ Fractal.prototype.renderViewport = function(x, y, w, h) {
   } else if (this.renderer >= WEBCL && this.webcl) {
     this.webcl.time = null; //Disable timer
     this.webcl.setViewport(x, y, w, h);
-    this.webcl.draw(this, this.antialias);
+    this.webcl.draw(this, this.antialias, colours.palette.background);
     //this.webcl.setViewport(0, 0, this.canvas.width, this.canvas.height);
   }
   colours.palette.background.alpha = alpha;  //Restore alpha
@@ -1877,7 +1847,7 @@ function togglePreview() {
 //Based on: http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
 function touchHandler(event)
 {
-    print(event.type + " - " + event.touches.length + " touches");
+  //debug(event.type + " - " + event.touches.length + " touches");
   var touches = event.changedTouches,
       first = touches[0],
       type = "",
