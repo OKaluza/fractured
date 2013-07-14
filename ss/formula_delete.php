@@ -2,18 +2,18 @@
   include("session.php");
   include("connect.php");
 
-  $user = $_SESSION["user_id"];
-  $fid = $_GET['id'];
-
-  if (isset($fid))
+  try
   {
-    $query = sprintf("DELETE FROM formula WHERE id = '$fid' AND user_id = '$user';");
-    //echo $query;
-    $result = $mysql->query($query);
-    if (!$result) die('Invalid query: ' . $mysql->error);
+    $query = $db->prepare("DELETE FROM formula WHERE id = :id AND user_id = :user");
+    $query->execute(array(':id' => $_GET['id'], ':user' => $_SESSION["user_id"]));
+    $query->closeCursor();
+  }
+  catch(PDOException $e)
+  {
+    echo $e->getMessage();
   }
 
-  $mysql->close();
+  $db = null;
 
   exit();
 ?>

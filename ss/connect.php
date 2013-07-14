@@ -1,7 +1,17 @@
 <?php	
 	//Make a connection to the database server
-  $mysql = new mysqli("localhost", "ozone_user", "resu", "ozone_main");
+  $hostname = "localhost";
+  $username = "ozone_user";
+  $password = "resu!234";
+  $dbname = "ozone_main";
 
-  if ($mysql->connect_error)
-    die('mysqli connect failed: ' . $mysql->connect_error);
+  try
+  {
+    $db = new PDO("mysql:host=$hostname;dbname=$dbname", $username, $password);
+    //$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  }
+  catch(PDOException $e)
+  {
+    echo $e->getMessage();
+  }
 ?>

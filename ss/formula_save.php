@@ -2,45 +2,42 @@
   include("session.php");
   include("connect.php");
 
-  $user = $_SESSION["user_id"];
-  $name = $_POST["name"];
-  $public = $_POST["public"];
   $fid = $_POST["formulae"];
+  $query;
+  $params = array(
+    ':user' => $_SESSION["user_id"],
+    ':date' => date("Y-m-d H:i:s"),
+    ':data' => $_POST["data"],
+    ':public' => isset($_POST["public"]) ? $_POST["public"] : 0
+    );
 
-  if (!$desc) $desc = '';
+  if ($params[':user'] <= 0) exit();
 
-  if ($user <= 0) exit();
-
-  //Get submitted details
-  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with real_escape_string anyway)
-  if(get_magic_quotes_gpc()) {
-    $name = $mysql->real_escape_string(stripslashes($name));
-    $data = stripslashes($_POST["data"]);
-  } else {
-    $name = $mysql->real_escape_string($name);
-    $data = $_POST["data"];
-  }
-  $data = $mysql->real_escape_string($data);
-  $mysqldate = date("Y-m-d H:i:s");
-
-  if (!$fid)
+  try
   {
-    $query = "INSERT INTO formula (user_id, date, name, data, public) values('$user', '$mysqldate', '$name', '$data', '$public');";
-    $result = $mysql->query($query);
-
-    if (!$result) die('Invalid query: ' . $mysql->error);
-
-    //New session inserted, save id
-    $fid = $mysql->insert_id;
+    if (!$fid)
+    {
+      $params[':name'] = $_POST["name"];
+      $query = $db->prepare("INSERT INTO formula (user_id, date, name, data, public) values(:user, :date, :name, :data, :public)");
+      //If new record inserted, save id
+      if ($query->execute($params) && $query->rowCount())
+        $fid = $db->lastInsertId();
+      else
+        die('Insert failed');
+    }
+    else
+    {
+      $params[':id'] = $fid;
+      $query = $db->prepare("UPDATE formula SET date = :date, data = :data, public = :public WHERE id = :id AND user_id = :user");
+      if (!$query->execute($params))
+        die('Update failed');
+    }
   }
-  else
+  catch(PDOException $e)
   {
-    $query = "UPDATE formula SET date = '$mysqldate', data = '$data', public = '$public' WHERE id = '$fid' AND user_id = '$user';";
-    $result = $mysql->query($query);
-    if (!$result) die('Invalid query: ' . $mysql->error);
+    echo $e->getMessage();
   }
-//echo $query;
 
-  $mysql->close();
+  $query->closeCursor();
   echo $fid;
 ?>

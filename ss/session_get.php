@@ -22,11 +22,10 @@
     //Retrieve specific ID or list?
     if (isset($_GET['id']))
     {
-      $query = "SELECT * FROM session WHERE user_id = '$user' AND id = '{$_GET['id']}';";
-      $result = $mysql->query($query);
-      if( $result->num_rows)
+      $query = $db->prepare("SELECT * FROM session WHERE user_id = :user AND id = :id");
+      if ($query->execute(array(':id' => $_GET['id'], ':user' => $user)) && $query->rowCount())
       {
-        $row = $result->fetch_assoc();
+        $row = $query->fetch(PDO::FETCH_ASSOC);
         $data = $row["data"];
         //Return the first row result JSON (should only be one)
         // serve it as javascript
@@ -37,11 +36,11 @@
         //header("Last-Modified: Mon, 22 Oct 2012 00:00:00 GMT");
         $size = $row["size"];
         //Temporary fix for empty size:
-        if ($size == 0 && $data[0] != '{') {$data = gzinflate($data); $size = strlen($data);}
-        header("Content-Length: ".$size); //set header length - original size
+        //if ($size == 0 && $data[0] != '{') {$data = gzinflate($data); $size = strlen($data);}
         //Gzipped?
         if ($data[0] != '{')
         {
+          //$size = strlen(gzinflate(substr($data,10,-8)));
           if (stripos($_SERVER["HTTP_ACCEPT_ENCODING"], 'gzip') !== false)
             header('Content-Encoding: gzip');
           else
@@ -49,23 +48,28 @@
             //Need to strip header because we used gzencode()
             $data = gzinflate(substr($data,10,-8));
         }
+        //Progress correct in ff, fails in chrome
+        //header("Content-Length: ".$size); //set header length
+        //This works in chrome but kills progress bar blows out in firefox
+        header("Content-Length: ".strlen($data)); //set header length
           
         echo $data;
       }
     } else {
-      $query = "SELECT * FROM session WHERE user_id = '$user';";
-      $result = $mysql->query( $query );
+      $query = $db->prepare("SELECT * FROM session WHERE user_id = :user");
+      if (!$query->execute(array(':user' => $user)))
+        die('Query failed');
+
       // Fetch each row of the results into array $row
       echo '[';
       $count = 0;
-      while ($row = $result->fetch_array())
+      while ($row = $query->fetch(PDO::FETCH_ASSOC))
       {
         if ($count > 0) echo ',';
         $count++;
-        $datetime = strtotime($row["date"]);
-        $mysqldate = date("Y/m/d", $datetime);
+        $date = date("Y/m/d", strtotime($row["date"]));
         echo '{"id": "'. $row["id"] . '",';
-        echo ' "date": "'. $mysqldate . '",';
+        echo ' "date": "'. $date . '",';
         echo ' "description": "'. $row["description"] . '"}';
       }
       echo ']';
@@ -81,9 +85,8 @@
   }
 
   //Close to free resources
-  $mysql->close();
-  
-  exit();
+  $query->closeCursor();
+  $db = null;
 ?>
 
 

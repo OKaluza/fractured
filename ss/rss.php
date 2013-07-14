@@ -7,13 +7,13 @@
   $type = $_GET["type"];
   if ($type == "shared")
   {
-    $query = "SELECT name,locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
+    $query = $db->prepare("SELECT name,locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC");
     $title = "Recent Fractals";
     $desc = "Newly shared fractals";
   }
   else if ($type == "images")
   {
-    $query = "SELECT name,url FROM image ORDER BY date DESC;";
+    $query = $db->prepare("SELECT name,url FROM image ORDER BY date DESC");
     $title = "Recent Images";
     $desc = "Newly shared images";
   } else {
@@ -21,7 +21,8 @@
     exit();
   }
 
-  $getFeed = $mysql->query($query)or die($mysql->error);
+  if (!$query->execute())
+    die ('Unable to run query');
 
   // Output XML (RSS)
   echo '<?xml version="1.0" encoding="ISO-8859-1" ?>
@@ -41,7 +42,7 @@
 
   echo "\n<atom:link href='{$root}rss.php?type={$type}' rel='self' type='application/rss+xml' />\n";
 
-  while($rssFeed = $getFeed->fetch_array()) {
+  while($rssFeed = $query->fetch(PDO::FETCH_ASSOC)) {
     if ($type == "shared")
       $link = $root . $rssFeed['locator'];
     else if ($type == "images")
@@ -57,3 +58,7 @@
          "</item>\n";
   }
   echo "</channel></rss>";
+
+  //Close to free resources
+  $query->closeCursor();
+  $db = null;

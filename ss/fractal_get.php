@@ -2,19 +2,17 @@
   include("session.php");
   include("connect.php");
 
-  $query = "SELECT * FROM fractal WHERE locator = '{$_GET['id']}';";
-  $result = $mysql->query( $query );
-  if( $result->num_rows)
+  $query = $db->prepare("SELECT * FROM fractal WHERE locator = :id");
+  if ($query->execute(array(':id' => $_GET['id'])) && $query->rowCount())
   {
-    $row = $result->fetch_assoc();
+    $row = $query->fetch(PDO::FETCH_ASSOC);
     //Return the first row result JSON (should only be one)
     echo $row["name"] . "\n" . $row["source"];
   }
 
   //Close to free resources
-  $mysql->close();
-
-  exit();
+  $query->closeCursor();
+  $db = null;
 ?>
 
 
