@@ -2,18 +2,18 @@
   include("session.php");
   include("connect.php");
 
-  $user = $_SESSION["user_id"];
-  $session = $_GET['id'];
-
-  if (isset($session))
+  try
   {
-    $query = sprintf("DELETE FROM session WHERE id = '$session' AND user_id = '$user';");
-    //echo $query;
-    $result = $mysql->query($query);
-    if (!$result) die('Invalid query: ' . $mysql->error);
+    $query = $db->prepare("DELETE FROM session WHERE id = :id AND user_id = :user");
+    $query->execute(array(':id' => $_GET['id'], ':user' => $_SESSION["user_id"]));
+    $query->closeCursor();
+  }
+  catch(PDOException $e)
+  {
+    echo $e->getMessage();
   }
 
-  $mysql->close();
+  $db = null;
 
   exit();
 ?>

@@ -3,43 +3,43 @@
   include("session.php");
 
   $type = $_GET["type"];
-  $user = $_SESSION["user_id"];
   $thumb = 160; //Thumb size + margin
   $str = "images";
   if ($type == "images" || $type == "myimages")
     $thumb = 100;
 
   if ($type == "examples")
-    $query = "SELECT locator FROM fractal WHERE user_id = -1 ORDER BY date;";
+    $query = $db->prepare("SELECT locator FROM fractal WHERE user_id = -1 ORDER BY date");
   else if ($type == "shared")
-    $query = "SELECT locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC;";
+    $query = $db->prepare("SELECT locator FROM fractal WHERE user_id > 0 and public = 1 ORDER BY date DESC");
   else if ($type == "myshared")
-    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 1 ORDER BY date;";
+    $query = $db->prepare("SELECT locator FROM fractal WHERE user_id = :user and public = 1 ORDER BY date");
   else if ($type == "myuploads")
-    $query = "SELECT locator FROM fractal WHERE user_id = '$user' and public = 0 ORDER BY date;";
+    $query = $db->prepare("SELECT locator FROM fractal WHERE user_id = :user and public = 0 ORDER BY date");
   else if ($type == "images")
-    $query = "SELECT url,thumb FROM image ORDER BY date DESC;";
+    $query = $db->prepare("SELECT url,thumb FROM image ORDER BY date DESC");
   else if ($type == "myimages")
-    $query = "SELECT url,thumb FROM image WHERE user_id = '$user' ORDER BY date;";
+    $query = $db->prepare("SELECT url,thumb FROM image WHERE user_id = :user ORDER BY date");
   else
     exit();
 
-  $result = $mysql->query( $query );
-  if (!$result) die ('Unable to run query:'.$mysql->error);
-  $totimg = $result->num_rows;
+  if (!$query->execute(array(':user' => $_SESSION["user_id"])))
+    die ('Unable to run query');
+  $totimg = $query->rowCount();
   $imgpage = 0;
   if ($totimg > 0) 
   {
     $links = array();
     $thumbs = array();
-    while ($row = $result->fetch_array(MYSQLI_NUM))
+    while ($row = $query->fetch(PDO::FETCH_NUM))
     {
       $links[] = $row[0];
       if ($thumb == 100) $thumbs[] = $row[1];
     }
 
     //Close to free resources
-    $mysql->close();
+    $query->closeCursor();
+    $db = null;
 
     if (isset($_GET['offset']))
       $offset = $_GET['offset'];

@@ -48,26 +48,13 @@
   }
 
   $user = $_SESSION["user_id"];
-  $desc = isset($_POST["description"]) ? $_POST["description"] : '';
-  $public = isset($_POST["public"]) ? $_POST["public"] : 0;
 
   //Allow no logged in user only
   if ($user <= 0) exit();
 
-  //Get submitted details
-  //(check magic quotes escaping setting first and strip slashes if any as we are escaping with real_escape_string anyway)
-  if(get_magic_quotes_gpc()) {
-    $desc = $mysql->real_escape_string(stripslashes($desc));
-    $data = stripslashes($_POST["source"]);
-    $thumb = stripslashes(base64_decode($_POST["thumbnail"]));
-  } else {
-    $desc = $mysql->real_escape_string($desc);
-    $data = $_POST["source"];
-    $thumb = base64_decode($_POST["thumbnail"]);
-  }
-  $data = $mysql->real_escape_string($data);
-
-  $mysqldate = date("Y-m-d H:i:s");
+  $thumb = base64_decode($_POST["thumbnail"]);
+  $public = isset($_POST["public"]) ? $_POST["public"] : 0;
+  $query;
 
   //Insert in loop in case (unlikely) of microtime clash
   for ($count=0; $count<100; $count++) 
@@ -77,15 +64,21 @@
     //Create a 7 digit base62 hash
     //Max = 3579346000000, /1000 = 3579346000 = runs out of digits on Fri, 04 Jun 2083
     //Could change to /100 = 35793460000 = Sat, 02 Apr 3104, but more likely to get time collisions on inserts
-    if (isset($_POST['locator']))
-      $locator = $_POST['locator'];
-    else
+    $locator = $_POST['locator'];
+    if (!isset($locator))
       $locator = udihash($inttime, 7);
 
-    $query = "INSERT INTO fractal (locator, user_id, date, name, source, public) values('$locator', '$user', '$mysqldate', '$desc', '$data', '$public');";
+    $params = array(
+      ':locator' => $locator,
+      ':user' => $user,
+      ':date' => date("Y-m-d H:i:s"),
+      ':name' => $_POST["description"],
+      ':source' => $_POST["source"],
+      ':public' => $public
+      );
 
-    $result = $mysql->query($query);
-    if ($result == 1) //Loop until insert successful
+    $query = $db->prepare("INSERT INTO fractal (locator, user_id, date, name, source, public) values(:locator, :user, :date, :name, :source, :public)");
+    if ($query->execute($params) && $query->rowCount()) //Loop until insert successful
     {
       writeThumb($public, $locator, $thumb);
       break;
@@ -93,22 +86,20 @@
     else if (isset($_POST['locator']))
     {
       //Update allowed if locator set and user_id matches
-      $query = "UPDATE fractal SET date = '$mysqldate', name = '$desc', source = '$data', public = '$public' WHERE locator = '$locator' AND user_id = '$user';";
-      $result = $mysql->query($query);
-      if ($mysql->affected_rows < 1) {
-        echo "Zero rows affected, Permission denied, is this your fractal?";
+      $query = $db->prepare("UPDATE fractal SET date = :date, name = :name, source = :source, public = :public WHERE locator = :locator AND user_id = :user");
+      if (!$query->execute($params) || $query->rowCount() < 1) {
+        echo "Update failed, is this your fractal?";
         exit();
       }
-      if (!$result) die('Invalid query: ' . $mysql->error);
       writeThumb($public, $locator, $thumb);
       break;
     }
     //echo $ftime . "," . $inttime . "," . $locator . "<br>";
-    //echo $mysql->error;
     usleep(1000);  //Wait for 1 millisecond
   }
 
-  $mysql->close();
+  $query->closeCursor();
+  $db = null;
   $loc = "http://{$_SERVER['SERVER_NAME']}/$locator";
   echo $loc;
   exit();

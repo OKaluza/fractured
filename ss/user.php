@@ -14,15 +14,10 @@
     exit();
   }
 
-  //write the SQL statement and save it into a variable
-  $query = "SELECT * FROM user WHERE openid = '$openid';";
-
-  //query the database and save it into a variable
-  $result = $mysql->query( $query );
-  
-  if($result->num_rows)
+  $query = $db->prepare("SELECT * FROM user WHERE openid = :id");
+  if ($query->execute(array(':id' => $openid)) && $query->rowCount())
   {
-    $row = $result->fetch_assoc();
+    $row = $query->fetch(PDO::FETCH_ASSOC);
     $_SESSION['user_id'] = $row["id"];
     $_SESSION['name'] = $row["name"];
     $_SESSION['email'] = $row["email"];
@@ -30,18 +25,14 @@
   }
   else
   {
-    $email_ = $_SESSION["email"];
-    $name_ = $_SESSION["name"];
-    if (!isset($name_))
-      $name_ = strtok($email_, "@");
-
     //Insert new user record
-    $query = "INSERT INTO user (openid, name, email) 
-                VALUES ('$openid', '$name_', '$email_');";
-    $result = $mysql->query($query);
+    $query = $db->prepare("INSERT INTO user (openid, name, email) VALUES (:openid, :name, :email)");
+    $query->BindValue(':openid', $openid);
+    $query->BindValue(':name', isset($_SESSION["name"]) ? $_SESSION["name"] : strtok($email_, "@"));
+    $query->BindValue(':email', $_SESSION["email"]);
     //Once new user inserted, save id
-    if ($result == 1)
-      $_SESSION['user_id'] = $mysql->insert_id;
+    if ($query->execute() && $query->rowCount() == 1)
+      $_SESSION['user_id'] = $db->lastInsertId();
     else
       $_SESSION['error'] = "Database error";
   }
@@ -51,7 +42,8 @@
   $_SESSION['useragent'] = $_SERVER['HTTP_USER_AGENT'];
 
   //Close to free resources
-  $mysql->close();
+  $query->closeCursor();
+  $db = null;
 
   header("Location: /");
   
