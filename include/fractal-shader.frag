@@ -25,7 +25,7 @@ void main()
   rgba colour = background;
 
   //Init fractal
-  point = coord + C(offset.x*pixelsize, offset.y*pixelsize);
+  point = coord + C(offset.x, offset.y);
 
   ---INIT---
 
