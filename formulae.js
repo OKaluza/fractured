@@ -60,6 +60,7 @@ FormulaEntry.prototype.equals = function(source2) {
   return (strip(this.source) == strip(source2));
 }
 
+//This re-creates the fractal formulae list and dropdowns
 function importFormulaList(data) {
   formula_list = {};
   //Clear existing
@@ -88,6 +89,7 @@ function importFormulaList(data) {
     }
   } catch(e) {
     alert('ImportFormulaList error: ' + e);
+    formula_list = null;
   }
 
   //Set selected defaults

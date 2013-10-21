@@ -35,6 +35,7 @@ real cabs(in complex z)
 
 real arg(in complex z)
 {
+  if (z.x == 0.0) return 0.0;
   return atan2(z.y,z.x);
 }
 
@@ -55,13 +56,17 @@ complex mul(in complex a, in complex b)
 
 complex div(in complex z, in complex w)
 {
-  return C(dot(z,w), z.y*w.x - z.x*w.y) / dot(w,w);
+  real d = norm(w);
+  if (d == 0.0) return C(0,0);	//Safe version
+  return C(dot(z,w), z.y*w.x - z.x*w.y) / d;
 }
 
 complex inv(in complex z)
 {
   //1.0 / z
-  return conj(z) / norm(z);
+  real d = norm(z);
+  if (d == 0.0) return C(0,0);	//Safe version
+  return conj(z) / d;
 }
 
 real lnr(in real r)

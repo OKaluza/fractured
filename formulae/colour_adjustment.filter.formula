@@ -8,7 +8,7 @@
 
 filter:
   //Brightness adjust
-  real alpha = colour.a;
+  real alpha = colour.w;
   colour += @brightness;
   //Saturation & Contrast adjust
   const rgba LumCoeff = rgba(0.2125, 0.7154, 0.0721, 0.0);
@@ -16,5 +16,5 @@ filter:
   rgba intensity = rgba(dot(colour, LumCoeff));
   colour = mix(intensity, colour, @saturation);
   colour = mix(AvgLumin, colour, @contrast);
-  colour.a = alpha;
+  colour.w = alpha;
 
