@@ -5,7 +5,7 @@
   /**
    * @constructor
    */
-  function MouseEventHandler(click, wheel, move, down, up, leave) {
+  function MouseEventHandler(click, wheel, move, down, up, leave, pinch) {
     //All these functions should take (event, mouse)
     this.click = click;
     this.wheel = wheel;
@@ -13,6 +13,7 @@
     this.down = down;
     this.up = up;
     this.leave = leave;
+    this.pinch = pinch;
   }
 
   /**
@@ -46,6 +47,10 @@
     element.onmouseout = handleMouseLeave;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
+    //Touch events! testing...
+    element.addEventListener("touchstart", touchHandler, true);
+    element.addEventListener("touchmove", touchHandler, true);
+    element.addEventListener("touchend", touchHandler, true);
     //To disable context menu
     element.oncontextmenu = function() { return false; }
   }
@@ -151,7 +156,7 @@
     if (mouse.handler.down) action = mouse.handler.down(event, mouse);
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action;
+    event.returnValue = action; //IE
   }
 
   //Default handlers for up & down, call specific handlers on element
@@ -173,7 +178,7 @@
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action;
+    event.returnValue = action; //IE
   }
 
   function handleMouseMove(event) {
@@ -198,7 +203,7 @@
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action;
+    event.returnValue = action; //IE
   }
  
   function wheelSpin(event) {
@@ -226,7 +231,7 @@
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action;
+    event.returnValue = action; //IE
   } 
 
   function handleMouseLeave(event) {
@@ -238,6 +243,86 @@
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action;
+    event.returnValue = action; //IE
   } 
+
+  //Basic touch event handling
+  //Based on: http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
+  //Pinch handling all by OK
+  function touchHandler(event)
+  {
+    //debug(event.type + " - " + event.touches.length + " touches");
+    var touches = event.changedTouches,
+        first = touches[0],
+        simulate = null,  //Mouse event to simulate
+        prevent = false,
+        mouse = getMouse(event);
+
+    switch(event.type)
+    {
+      case "touchstart":
+        if (event.touches.length == 2) {
+          mouse.isdown = false; //Ignore first pinch touchdown being processed as mousedown
+          mouse.scaling = 0;
+        } else
+          simulate = "mousedown";
+        break;
+      case "touchmove":
+        if (mouse.scaling != null && event.touches.length == 2) {
+          var dist = Math.sqrt(
+            (event.touches[0].pageX-event.touches[1].pageX) * (event.touches[0].pageX-event.touches[1].pageX) +
+            (event.touches[0].pageY-event.touches[1].pageY) * (event.touches[0].pageY-event.touches[1].pageY));
+
+          if (mouse.scaling > 0) {
+            event.distance = (dist - mouse.scaling);
+            if (mouse.handler.pinch) action = mouse.handler.pinch(event, mouse);
+            //If handler returns false, prevent default action
+            var action = true;
+            if (!action && event.preventDefault) event.preventDefault();  // Firefox
+            event.returnValue = action; //IE
+          } else
+            mouse.scaling = dist;
+        } else
+          simulate = "mousemove";
+        break;
+      case "touchend":
+        if (mouse.scaling != null) {
+          //Pinch sends two touch start/end,
+          //only turn off scaling after 2nd touchend
+          if (mouse.scaling == 0)
+            mouse.scaling = null;
+          else
+            mouse.scaling = 0;
+        } else
+          simulate = "mouseup";
+        break;
+      default:
+        return;
+    }
+    if (event.touches.length > 1) //Avoid processing multiple touch except pinch zoom
+      simulate = null;
+
+    //Passes other events on as simulated mouse events
+    if (simulate) {
+      //print(event.type + " - " + event.touches.length + " touches");
+
+      //initMouseEvent(type, canBubble, cancelable, view, clickCount, 
+      //           screenX, screenY, clientX, clientY, ctrlKey, 
+      //           altKey, shiftKey, metaKey, button, relatedTarget);
+      var simulatedEvent = document.createEvent("MouseEvent");
+      simulatedEvent.initMouseEvent(simulate, true, true, window, 1, 
+                                first.screenX, first.screenY, 
+                                first.clientX, first.clientY, false, 
+                                false, false, false, 0/*left*/, null);
+
+      //Prevent default where requested
+      prevent = !first.target.dispatchEvent(simulatedEvent);
+      event.preventDefault();
+    }
+
+    //if (prevent || scaling)
+    //  event.preventDefault();
+
+  }
+
 

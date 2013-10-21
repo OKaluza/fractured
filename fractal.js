@@ -147,10 +147,6 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   this.canvas.className = "checkerboard";
   this.canvas.mouse = new Mouse(this.canvas, this);
   this.canvas.mouse.setDefault();
-  //Touch events! testing...
-  this.canvas.addEventListener("touchstart", touchHandler, true);
-  this.canvas.addEventListener("touchmove", touchHandler, true);
-  this.canvas.addEventListener("touchend", touchHandler, true);
 
   //Remove existing canvas if any
   var pelement = $(parentid)
@@ -477,13 +473,15 @@ Fractal.prototype.loadPalette = function(source) {
 }
 
 //Load fractal from file
-Fractal.prototype.load = function(source, noapply) {
+Fractal.prototype.load = function(source, checkversion, noapply) {
   if (!this.webgl && !this.webcl) return;
   //Strip leading : from old data
   source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
-  if (state.debug && source.indexOf("version=") < 0
-      && confirm("No version found in fractal source. Load fractal in compatibility mode?"))
+  //Only prompt for old fractals when loaded from file or stored, not restored or from server
+  if (state.debug && checkversion && source.indexOf("version=") < 0
+      && confirm("No version found in fractal source. Load fractal in compatibility mode?")) {
     return this.loadOld(source, noapply);
+  }
   //Reset everything...
   this.resetDefaults();
   this.formulaDefaults();
@@ -1843,91 +1841,19 @@ function togglePreview() {
   }
 }
 
-//Basic touch event handling
-//Based on: http://ross.posterous.com/2008/08/19/iphone-touch-events-in-javascript/
-function touchHandler(event)
-{
-  //debug(event.type + " - " + event.touches.length + " touches");
-  var touches = event.changedTouches,
-      first = touches[0],
-      type = "",
-      process = true,
-      prevent = false,
-      mouse = getMouse(event);
 
-  switch(event.type)
-  {
-    case "touchstart":
-      type = "mousedown";
-      if (event.touches.length == 2) {
-        mouse.isdown = false; //Ignore first pinch touchdown being processed as mousedown
-        mouse.scaling = 0;
-        process = false;
-      }
-      break;
-    case "touchmove":
-      type="mousemove";
-      if (mouse.scaling != null && event.touches.length == 2) {
-        var dist = Math.sqrt(
-          (event.touches[0].pageX-event.touches[1].pageX) * (event.touches[0].pageX-event.touches[1].pageX) +
-          (event.touches[0].pageY-event.touches[1].pageY) * (event.touches[0].pageY-event.touches[1].pageY));
-
-        if (mouse.scaling > 0) {
-          var diff = (dist - mouse.scaling);
-          var zoom;
-          if (diff > 0)
-            zoom = 1.0 + (diff * 0.005);
-          else
-            zoom = 1/(1.0 + diff * -0.005);
-          //print(diff + ' --> ' + zoom);
-          fractal.applyZoom(zoom);
-          fractal.copyToForm();
-          fractal.draw();
-          //Hide select box
-          var select = $('select');
-          select.style.display = 'none';
-        } else
-          mouse.scaling = dist;
-      }
-      break;
-    case "touchend":
-      type="mouseup";
-      if (mouse.scaling != null) {
-        //Pinch sends two touch start/end,
-        //only turn off scaling after 2nd touchend
-        if (mouse.scaling == 0)
-          mouse.scaling = null;
-        else
-          mouse.scaling = 0;
-      }
-      break;
-    default:
-      return;
-  }
-  if (mouse.scaling != null) //Ignore other touch start events while zooming
-    process = false;
-  if (event.touches.length > 1) //Avoid processing multiple touch except pinch zoom
-    process = false;
-
-  if (process) {
-    //print(event.type + " - " + event.touches.length + " touches");
-
-    //initMouseEvent(type, canBubble, cancelable, view, clickCount, 
-    //           screenX, screenY, clientX, clientY, ctrlKey, 
-    //           altKey, shiftKey, metaKey, button, relatedTarget);
-    var simulatedEvent = document.createEvent("MouseEvent");
-    simulatedEvent.initMouseEvent(type, true, true, window, 1, 
-                              first.screenX, first.screenY, 
-                              first.clientX, first.clientY, false, 
-                              false, false, false, 0/*left*/, null);
-
-    //Prevent default where requested
-    prevent = !first.target.dispatchEvent(simulatedEvent);
-    event.preventDefault();
-  }
-
-  //if (prevent || scaling)
-  //  event.preventDefault();
+Fractal.prototype.pinch = function(event, mouse) {
+  var zoom;
+  if (event.distance > 0)
+    zoom = 1.0 + (event.distance * 0.001);
+  else
+    zoom = 1/(1.0 + event.distance * -0.001);
+  //print(diff + ' --> ' + zoom);
+  fractal.applyZoom(zoom);
+  fractal.copyToForm();
+  fractal.draw();
+  //Hide select box
+  var select = $('select');
+  select.style.display = 'none';
 }
-
 

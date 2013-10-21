@@ -38,6 +38,8 @@
         //New style: position=value
         this.colours.push(new ColourPos(pair[1], pair[0]));
     }
+    //Sort by position (fix out of order entries in old palettes)
+    this.colours.sort(function(a,b){return a.position - b.position});
 
     //Check for all-transparent palette and fix
     var opaque = false;
