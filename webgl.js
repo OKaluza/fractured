@@ -28,7 +28,10 @@
 
     if (!window.WebGLRenderingContext) throw "No browser WebGL support";
 
-    var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+    //Antialias, optional?
+    //var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+    //var antialias = gl.getContextAttributes().antialias; //Query and set built in aa lower??
+    var options = { premultipliedAlpha: false, preserveDrawingBuffer: true};
     //Opera bug: if this is not set images are upside down
     if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
     // Try to grab the standard context. If it fails, fallback to experimental.
@@ -40,6 +43,10 @@
     }
     this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     if (!this.gl) throw "Failed to get context";
+
+    //Handle context loss/restore (experimental as I have not found a way of testing this!)
+    canvas.addEventListener("webglcontextlost", function(event) {event.preventDefault(); print("CONTEXT LOST")}, false);
+    canvas.addEventListener("webglcontextrestored", function() {fractal.webgl = null; fractal.switchMode(WEBGL);}, false);
   }
 
   WebGL.prototype.setMatrices = function() {
@@ -47,6 +54,13 @@
     this.gl.uniformMatrix4fv(this.program.mvMatrixUniform, false, this.modelView.matrix);
     //Perspective matrix
     this.gl.uniformMatrix4fv(this.program.pMatrixUniform, false, this.perspective.matrix);
+    //Normal matrix
+    if (this.program.nMatrixUniform) {
+      var nMatrix = mat4.create(this.modelView.matrix);
+      mat4.inverse(nMatrix);
+      mat4.transpose(nMatrix);
+      this.gl.uniformMatrix4fv(this.program.nMatrixUniform, false, nMatrix);
+    }
   }
 
   WebGL.prototype.draw2d = function(antialias) {
@@ -70,17 +84,18 @@
 
     this.setMatrices();
 
+    this.gl.enable(this.gl.BLEND);
     if (antialias > 1) {
       //Draw and blend multiple passes for anti-aliasing
-      this.gl.enable(this.gl.BLEND);
       this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
       this.blendinc = 0;
 
       this.j = 0;
       this.k = 0;
       this.antialias = antialias;
+      //this.pass();
       var that = this;
-      this.pass();
+      window.requestAnimationFrame(function () {that.pass();});
 
     } else {
       //Draw, single pass
@@ -126,7 +141,9 @@
     this.gl.blendColor(0, 0, 0, blendval);
     //print(blendval);
     this.blendinc += 1.0/(this.antialias*this.antialias);
-    this.gl.uniform2f(this.program.uniforms['offset'], this.j/this.antialias-0.5, this.k/this.antialias-0.5);
+    var pixelX = 2.0 / (fractal.position.zoom * this.viewport.width);
+    var pixelY = 2.0 / (fractal.position.zoom * this.viewport.height);
+    this.gl.uniform2f(this.program.uniforms['offset'], pixelX * (this.j/this.antialias-0.5), pixelY * (this.k/this.antialias-0.5));
     //Draw!
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
 
@@ -142,7 +159,8 @@
         this.pass();  //Don't draw incrementally when timers disabled
       else {
         var that = this;
-        this.timer = setTimeout(function () {that.pass();}, 10);
+        //this.timer = setTimeout(function () {that.pass();}, 10);
+        window.requestAnimationFrame(function () {that.pass();});
       }
     } else {
       this.timer = null;
@@ -240,7 +258,7 @@
   }
 
   WebGL.prototype.setPerspective = function(fovy, aspect, znear, zfar) {
-    this.perspective.matrix = makePerspective(fovy, aspect, znear, zfar);
+    this.perspective.matrix = mat4.perspective(fovy, aspect, znear, zfar);
   }
 
   WebGL.prototype.use = function(program) {
@@ -317,6 +335,7 @@
       this.uniforms[uniforms[i]] = this.gl.getUniformLocation(this.program, uniforms[i]);
     this.mvMatrixUniform = this.gl.getUniformLocation(this.program, "uMVMatrix");
     this.pMatrixUniform = this.gl.getUniformLocation(this.program, "uPMatrix");
+    this.nMatrixUniform = this.gl.getUniformLocation(this.program, "uNMatrix");
   }
 
   /**

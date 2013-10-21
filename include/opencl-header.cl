@@ -94,7 +94,10 @@ __kernel void sample(
   complex dims = (complex)(width, height);
   complex coord = origin + convert(pos, size, zoom, rotation);
 
-  complex offset = (complex)((real)j/(real)antialias-0.5, (real)k/(real)antialias-0.5);
+  real pixelX = 2.0 / (zoom * width);
+  real pixelY = 2.0 / (zoom * height);
+  complex offset = (complex)(pixelX * ((real)j/(real)antialias-0.5), 
+                             pixelY * ((real)k/(real)antialias-0.5));
   rgba pixel = calcpixel(iterations, coord, offset, julia, pixelsize, 
                      dims, origin, selected, palette, background, input);
 
