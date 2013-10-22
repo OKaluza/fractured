@@ -35,6 +35,16 @@
 
 <!--script type="text/javascript" src="fractured_VERSION.js"></script-->
 
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-43643531-2', 'ured.me');
+  ga('send', 'pageview');
+</script>
+
 </head>
 
 <body onload="appInit();" id="body">
@@ -209,6 +219,16 @@
       </nav>
 
       <div class="panel scroll" id="panel_info" style="display: block">
+        <div class="card" id="new_version">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Fractured VERSION Released:</h3>
+          <ul>
+            <li>There is now support for <a href="https://github.com/SRA-SiliconValley/webkit-webcl">Webkit-WebCL</a> using <a href="https://github.com/alerock/libwebcl">libwebcl.js</a> wrapper, thanks heaps to Alexandre Rocha and Marcelo Morais for helping with this. The <a href="http://webcl.nokiaresearch.com">Nokia WebCL</a> firefox plugin is also still supported of course.</li>
+            <li>Fix some formula library problems and colour adjustment shader not handling transparency.</li>
+            <li>Other minor bug fixes in layout and resizing</li>
+          </ul>
+        </div>
+
         <div class="card" id="previous_fractal">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Previous Fractal:</h3>
@@ -234,7 +254,7 @@
         <div class="card" id="no_webcl">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>No WebCL Support</h3>
-          <p>You don't appear to have the <a href="http://webcl.nokiaresearch.com">Nokia WebCL</a> firefox plugin.</p>
+          <p>You don't appear to have a working WebCL implementation, such as the <a href="http://webcl.nokiaresearch.com">Nokia WebCL</a> firefox plugin or <a href="https://github.com/SRA-SiliconValley/webkit-webcl">Webkit-WebCL</a>.</p>
           <p>The default WebGL renderer is generally faster but only if your graphics card (GPU) is up to the task. WebCL on the other hand can use the CPU or GPU and where available allows double-precision support for deeper fractal zooms.</p>
         </div>
 
@@ -295,7 +315,7 @@
         <div class="card" id="contact_form">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Feedback</h3>
-          <p>This is an experimental project and I'm still working on supporting various device/browser combinations where possible so if you have any problems, questions or feedback don't hesitate to use this form to contact me. If I can get over my social media avoidance I'll also use <a href="https://twitter.com/OwKal">twitter</a> to post updates and monitor <a href="https://twitter.com/search/fractured">#fractured</a> for any feedback or suggestions.</p>
+          <p>This is an experimental project and I'm still working on supporting various device/browser combinations where possible so if you have any problems, questions or feedback don't hesitate to use this form to contact me.</p>
           <div id="emailform">
             <p>E-mail:</p>
             <input type="email" id="email" />

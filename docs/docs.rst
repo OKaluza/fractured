@@ -9,6 +9,7 @@
 .. _WebGL: http://www.khronos.org/webgl
 .. _WebCL: http://www.khronos.org/webcl
 .. _plugin: http://webcl.nokiaresearch.com
+.. _Webkit-WebCL: https://github.com/SRA-SiliconValley/webkit-webcl
 
 ==========================================================================
 Fractured - `User Guide <http://fract.ured.me/docs_VERSION.html>`_
@@ -26,7 +27,7 @@ It is designed to work as a stand-alone app, but there are a number of additiona
 I started working on it (years ago now) because I was interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos.
 Now many lost weekends and evenings later it seems to finally have turned into a fairly complete thing and does what I needed it to.
 
-\*There's also experimental WebCL_ support which allows CPU rendering and double precision mode where possible. It will only work with the Nokia Firefox plugin_ for now but when the standard solidifies a bit I'll make sure it runs with other implementations.
+\*There's also experimental WebCL_ support which allows CPU rendering and double precision mode where possible. It shoud work with the Nokia Firefox plugin_ and Webkit-WebCL_.
   
 *(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)*
 
@@ -38,6 +39,7 @@ Acknowledgments
 - Vector and Matrix library: glMatrix https://github.com/toji/gl-matrix
 - Learning WebGL http://learningwebgl.com for WebGL tutorials
 - WebCL tutorials: Nokia Research WebCL http://webcl.nokiaresearch.com (particular thanks to Tomi Aarnio from Nokia for helping me get WebCL working correctly on CPU platforms). 
+- The libwebcl.js wrapper https://github.com/alerock/libwebcl to support Webkit-WebCL (thanks heaps to Alexandre Rocha and Marcelo Morais for helping with this).
 - WebCL Examples <http://www.ibiblio.org/e-notes/webcl/webcl.htm>.
 - Some fractal formulae based on those in Gnofract http://gnofract4d.sourceforge.net/ and UltraFractal http://www.ultrafractal.com
 - My colour picker css design is based on one from `ColorJack.com <http://www.colorjack.com/software/dhtml+color+picker.html>`_.
@@ -46,7 +48,7 @@ Requirements
 ------------
 - A modern browser supporting WebGL, confirmed working with Firefox, Chrome & Safari.
 - A graphics card with up to date drivers that support OpenGL. (Unless using WebCL: the better your graphics card, the faster it will render fractals).
-- Experimental WebCL support is also available, using the Nokia Research Firefox WebCL plugin_. 
+- Experimental WebCL support is also available. 
 - **Note: Windows** in windows Chrome and Firefox do WebGL rendering via conversion to DirectX shaders (`Angle <http://code.google.com/p/angleproject/>`_), this is a workaround for poor quality windows OpenGL graphics drivers and is a bit unreliable at times. For best results where possible I recommend using native OpenGL rendering, this has to be enabled in your browser manually. In Firefox: set webgl.prefer-native-gl to true in about:config, in Chrome: run with arguments: –use-gl=desktop *(in recent versions of Chrome it appears Native OpenGL support is broken, until this is fixed you are stuck with Angle!)*.
 - **Note: Safari** if not enabled, WebGL can be switched on  by going into preferences -> advanced, show develop menu. Then select Enable WebGL on the Develop menu.
 - **Note: Opera** As of Opera 12.12 the WebGL implementation works with Fractured though it must first be enabled by setting "Enable WebGL" to 1 in opera:config. *(Opera Windows no longer seems to work with Fractured, in fact it will crash the browser!)*

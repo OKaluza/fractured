@@ -62,6 +62,7 @@ function toggle(v, def) {
   var el = v;
   if (!def) def = 'block' //Default
   if (typeof(v) == 'string') el = $(v);
+  if (!el) {alert("Element " + v + " not found "); return;}
   var s = el.style;
   var d = s.display;
   if (!d)
