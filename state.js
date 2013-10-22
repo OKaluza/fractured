@@ -7,6 +7,9 @@ function State(version) {
   if (!this.supported()) throw "Error initialising state: Local storage not supported";
   this.upgrademsg = "<a href='javascript:resetReload()'>click here" + 
                     "</a> to complete update by reloading from server"; 
+  //Property list to save
+  this.props = ['version', 'fractal', 'session', 'formulae', 'antialias', 'debug', 
+                'renderer', 'platform', 'device', 'cards', 'active', 'name', 'thumbnail'];
   this.version = version;
   this.loggedin = false;
   this.offline = null;
@@ -27,28 +30,30 @@ function State(version) {
   this.debug = false;
   this.renderer = WEBCL;  //Try WebCL first if avail
   this.platform = this.device = 0;
+  this.active = this.thumbnail = null;
 
-  //Persistent settings:
-  var source = localStorage["fractured.current"];
-  if (source) {
-    var data = JSON.parse(source);
-    if (this.version != data.version) {
-      //Updated - save new version and force reload!
-      data.version = this.version;
-      localStorage["fractured.current"] = JSON.stringify(data);
-      popup("New version <b>" + data.version + "</b>: Application upgraded<br>" + this.upgrademsg);
-    }
-    this.fractal = data.fractal;
-    if (typeof this.fractal != 'string') this.fractal = null;
-    this.session = data.session;
-    this.formulae = data.formulae;
-    this.antialias = data.antialias;
-    this.debug = data.debug;
-    this.renderer = data.renderer;
-    this.platform = data.platform;
-    this.device = data.device;
-    this.cards = data.cards ? data.cards : {};
-    if (this.debug) this.debugOn();
+  //Load persistent settings from storage
+  this.loadStatus();
+
+  if (!this.cards) this.cards = {};
+  if (this.debug) this.debugOn();
+
+  //Legacy
+  if (typeof this.fractal != 'string') this.fractal = null;
+  if (!this.active) {
+    this.active = localStorage["fractured.active"];
+    delete localStorage["fractured.active"];
+  }
+  if (!this.thumbnail) {
+    this.thumbnail = localStorage["fractured.thumbnail"];
+    delete localStorage["fractured.thumbnail"];
+  }
+
+  if (this.version != version) {
+    //Updated - save new version and force reload!
+    this.version = version;
+    this.saveStatus();
+    popup("New version <b>" + this.version + "</b>: Application upgraded<br>" + this.upgrademsg);
   }
 }
 
@@ -65,18 +70,17 @@ State.prototype.clearStatus = function() {
 }
 
 State.prototype.saveStatus = function() {
-  var data = {};
-  data.version = this.version;
-  data.fractal = this.fractal;
-  data.session = this.session;
-  data.formulae = this.formulae;
-  data.antialias = this.antialias;
-  data.debug = this.debug;
-  data.renderer = this.renderer;
-  data.platform = this.platform;
-  data.device = this.device;
-  data.cards = this.cards;
-  localStorage["fractured.current"] = JSON.stringify(data);
+  localStorage["fractured.current"] = JSON.stringify(this, this.props);
+}
+
+State.prototype.loadStatus = function() {
+  //Persistent settings:
+  var source = localStorage["fractured.current"];
+  if (source) {
+    var data = JSON.parse(source);
+    for (key in data)
+      this[key] = data[key];
+  }
 }
 
 State.prototype.debugOn = function() {
@@ -155,11 +159,12 @@ State.prototype.save = function() {
     localStorage["fractured.formulae"] = JSON.stringify(formula_list);
     localStorage["fractured.fractals"] = JSON.stringify(fractals);
     localStorage["fractured.palettes"] = JSON.stringify(palettes);
-    //Save current fractal (as default)
+    //Save current fractal if changed (as default)
     if (fractal.thumb) {
-      localStorage["fractured.active"] = fractal;
-      localStorage["fractured.thumbnail"] = fractal.thumb;
-      localStorage["fractured.name"] = $('name').value;
+      this.active = fractal.toString();
+      this.thumbnail = fractal.thumb;
+      this.fractal = $('name').value;
+      this.saveStatus();
     }
   } catch(e) {
     alert('error: ' + e);
@@ -178,6 +183,7 @@ State.prototype.reset = function(noconfirm) {
     this.formulae = 0;
     this.fractal = null;
     fractals = {};
+    this.saveStatus(); //Restore settings
   }
 }
 
@@ -243,7 +249,7 @@ State.prototype.read = function(data) {
     return;
   }
   //Replace session id, not saved in state data
-  this.saveStatus();
+  this.saveStatus(); //Restore settings
   sessionGet(readURL('ss/session_get.php')); //Get updated list...
   this.load();  //load the state data
   progress();
@@ -260,12 +266,11 @@ State.prototype.toString = function() {
 
 State.prototype.lastFractal = function() {
   //Load current fractal (as default)
-  var source = localStorage["fractured.active"];
-  if (source) {
-    fractal.load(source, true); //Don't display immediately
-    $('name').value = localStorage["fractured.name"];
-    if (localStorage["fractured.thumbnail"])
-      $('lastimage').src = localStorage["fractured.thumbnail"];
+  if (this.active) {
+    fractal.load(this.active, true); //Don't display immediately
+    $('name').value = this.fractal;
+    if (this.thumbnail)
+      $('lastimage').src = this.thumbnail;
     else
       $S('lastimage').display = 'none';
     return true;

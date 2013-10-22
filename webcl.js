@@ -29,14 +29,23 @@
       throw "No OpenCL drivers available"
     }
 
-    if(this.platforms.length<1) throw "No OpenCL platforms found!";
+    if (this.platforms.length<1) throw "No OpenCL platforms found!";
 
+    //Alternative createContext with list of devices...
+    this.devices = this.platforms[this.pid].getDevices(WebCL.CL_DEVICE_TYPE_ALL);
+    //this.devices = this.platforms[this.pid].getDevices(WebCL.CL_DEVICE_TYPE_GPU);
+    //this.devices = this.platforms[this.pid].getDevices(WebCL.CL_DEVICE_TYPE_CPU);
+    if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
     //Create the context
+    this.ctx = WebCL.createContext([WebCL.CL_CONTEXT_PLATFORM, this.platforms[this.pid]],
+                                   [this.devices[this.devid]]);
+    //this.ctx = WebCL.createContext();
+    /*/Create the context
     this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
                                             this.platforms[this.pid]],
-                                            WebCL.CL_DEVICE_TYPE_DEFAULT);
+                                            WebCL.CL_DEVICE_TYPE_ALL);
     this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
-    if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
+    if (this.devid >= this.devices.length) this.devid = this.devices.length-1;*/
 
     debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + " (" + this.pid + ")" +  
                 " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME) + " (" + this.devid + ")");
@@ -47,6 +56,8 @@
     if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
       this.fp64 = true; //Initial state of flag shows availability of fp64 support
     debug("WebCL ready, extensions: " + extensions);
+    //Get max threads
+    this.maxsize = this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE);
   }
 
   OpenCL.prototype.populateDevices = function(select) {
@@ -56,7 +67,7 @@
     select.options.length = 0;
     for (var p=0; p<this.platforms.length; p++) {
       var plat = this.platforms[p];
-      var pfname = plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
+      var pfname = '#' + (p+1) + ' ' + plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
       //Store debugging info about platforms found
       this.pfstrings += "+" + /^[^\s]*/.exec(pfname)[0];
       var devices = plat.getDevices(WebCL.CL_DEVICE_TYPE_ALL);
@@ -82,6 +93,12 @@
     this.ctx2d = canvas.getContext("2d");
     this.gradientcanvas = document.getElementById('gradient');
     this.threads = threads;
+    //Check thread size
+    if (threads*threads > this.maxsize) {
+      this.threads = Math.floor(Math.sqrt(this.maxsize));
+      debug("#too many threads " + threads + " ( " + (threads*threads) + ") --> max size: " + this.maxsize);
+      debug("#Adjusted to " + this.threads + " ( " + (this.threads*this.threads) + ") --> max size: " + this.maxsize);
+    }
     this.setPrecision(fp64);
     this.format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
     this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
@@ -134,6 +151,7 @@
     //Adjust global size to at least [width][height], ensuring is a multiple of work-group size
     this.local = [this.threads, this.threads];
     this.global = [this.getGlobalSize(width, this.threads), this.getGlobalSize(height, this.threads)];
+    debug("Global size " + this.global + " threads " + this.threads + " ( " + (this.threads*this.threads) + ") --> max size: " + this.maxsize);
     if (this.global[0] <= 0 || this.global[1] <- 0) return;
 
     //If width and height changed, recreate output buffer
@@ -227,13 +245,19 @@
     this.k_sample.setKernelArg(8, this.j, WebCL.types.INT);
     this.k_sample.setKernelArg(9, this.k, WebCL.types.INT);
     //debug("Dims: " + this.global.length + " Global: " + JSON.stringify(this.global) + " Local: " + JSON.stringify(this.local));
-    this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
-    //this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, [], []);
+    try {
+      this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
+    } catch (e) {  //Some devices/implementations don't like the local size specified
+      this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, [], []);
+    }
 
     //Combine
     this.k_average.setKernelArg(2, this.j*this.antialias+this.k+1, WebCL.types.INT);
-    this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
-    //this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, [], []);
+    try {
+      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
+    } catch (e) {  //Some devices/implementations don't like the local size specified
+      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, [], []);
+    }
 
     this.queue.enqueueReadImage(this.output, false, [0,0,0], 
          [this.global[0],this.global[1],1], 0, 0, this.outImage.data, []);

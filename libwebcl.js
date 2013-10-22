@@ -120,8 +120,6 @@
         API['CL_PLATFORM_EXTENSIONS'] = 0x904;
         API['CL_DEVICE_EXTENSIONS'] = 0x1030;
 
-        console.log("WebCL :", nativeWebCL);
-
         return API;
     })();
 
@@ -206,7 +204,16 @@
                 }
 
                 for (var j in deviceTypes) {
-                    nativeDevices = nativePlatform.getDevices(deviceTypes[j]);
+
+                    try {
+                        nativeDevices = nativePlatform.getDevices(deviceTypes[j]);
+                    } catch (e) {
+                        //if (e !== nativeWeCL.DEVICE_NOT_FOUND) {
+                        if (e.name !== "DEVICE_NOT_FOUND") {
+                            throw e;
+                        }
+                    }
+
                     for (var i in nativeDevices) {
                         var isAvailable = nativeDevices[i].getInfo(nativeWebCL.DEVICE_AVAILABLE);
                         if (isAvailable === true) {
@@ -214,6 +221,10 @@
                             devices.push(availableDevice);
                         }
                     }
+                }
+
+                if (!devices.length) {
+                    throw nativeWebCL.DEVICE_NOT_FOUND;
                 }
 
                 return devices;
@@ -322,7 +333,6 @@
             try {
                 var nativeQueue = nativeContext.createCommandQueue(hostDevice.getNative(),
                         properties);
-                console.log("New CommandQueue for", hostDevice.name);
                 return new WebCLCommandQueue(nativeQueue);
             } catch (e) {
                 console.log("PARAMS: hostDevice = ", hostDevice,
@@ -570,8 +580,6 @@
 
                 var gws = new Int32Array(globalWorkSize);
                 var lws = new Int32Array(localWorkSize);
-
-                console.log("gws", [gws], "lws", [lws]);
 
                 nativeCmdQueue.enqueueNDRangeKernel(hostKernel.getNative(),
                         null, gws, lws);

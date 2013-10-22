@@ -407,6 +407,10 @@ ParameterSet.prototype.toCode = function() {
   //First scan and save real/complex params for replacement when parsing expressions
   savevars = {};
   for (key in this) {
+    if (this[key].uniform) { //Don't replace uniform params or will still recompile!
+      savevars[key] = '@' + key;
+      continue;
+    }
     if (this[key].type == 'real') savevars[key] = this[key].value;
     if (this[key].type == 'complex') {
       if (this[key].value.im == 0)

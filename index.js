@@ -1,5 +1,6 @@
 //TODO:
 //Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
+//RESIZE BUG: View gallery, resize window several times, click mandelbrot
 
 //Globals
 var state;    //Local storage
@@ -190,6 +191,7 @@ function appInit() {
 
   loadScript("/codemirror_---VERSION---.js", "");
 
+  showCard("new_version");
   if (loaded) showCard("previous_fractal");
   showCard("local_storage");
   if (!$("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
@@ -203,6 +205,11 @@ function appInit() {
   showCard("formula_help");
   showCard("colour_help");
 }
+
+function snapshot() {
+  var bb = new Blob([document.documentElement.outerHTML], {type: 'text/plain'});
+  window.open(window.URL.createObjectURL(bb));
+};
 
 //Forced reset - used when upgrading
 function resetReload() {
@@ -304,7 +311,7 @@ function showGallery(id) {
 function loadGallery(offset) {
   $S('gallery').display = "block";
     setAll('none', 'render');  //hide render mode menu options
-  $S('fractal-canvas').display = "none";
+  //$S('fractal-canvas').display = "none";
   if (offset == undefined) offset = state.offset;
   var w = $('gallery').clientWidth;
   var h = $('gallery').clientHeight;
@@ -325,7 +332,7 @@ function fillGallery(html) {
 function hideGallery() {
   //Hide gallery, show fractal
   $S('gallery').display = "none";
-  $S('fractal-canvas').display = "block";
+  //$S('fractal-canvas').display = "block";
   setAll('block', 'render');  //Unhide render mode menu options
   setAll(state.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
   state.mode = 1;
@@ -354,6 +361,7 @@ function toggleCard(el) {
     card = $(el);
   else
     card = el.parentNode;
+  if (!card) {alert("Element " + el + " not found "); return;}
   toggle(card, 'block');
   state.cards[card.id] = (card.style.display == 'none');
   if (state.cards[card.id]) showCard(card.id); //Populate replace button
@@ -602,7 +610,7 @@ function regenerateThumbs() {
   var step = Math.ceil(count/25);
   performTask(count, step,
     function (f) {
-      fractal.load(f.source, true);
+      fractal.load(f.source, false, true);
       $("width").value = $("height").value = 32;
       document["inputs"].elements["autosize"].checked = false;
       fractal.applyChanges(4, true);
@@ -623,7 +631,7 @@ function populateFractals() {
 function selectedFractal(name) {
   hideGallery();
   fractalMenuSelect(name);
-  fractal.load(fractals[name].source);
+  fractal.load(fractals[name].source, true);
   $('name').value = name;
   //Generate thumbnails on select!
   if (!fractals[name].thumbnail) {
@@ -1229,13 +1237,13 @@ function toggleParams(on) {
   if (on) {
     sidebar.style.display = 'block';
     if (window.innerWidth < 500)
-      main.style.display = 'none';
+      ;//main.style.display = 'none';
     else
       main.style.left = sidebar.clientWidth + "px";
     $S('hidetools').display = 'block'
     $S('showtools').display = 'none'
   } else {
-    main.style.display = 'block';
+    //main.style.display = 'block';
     sidebar.style.display = 'none';
     main.style.left = '0px';
     $S('hidetools').display = 'none'
@@ -1260,7 +1268,7 @@ function toggleFullscreen(newval) {
       if (!isFullScreen()) {
         main.style.overflow = "visible";
         main.style.top = '27px';
-        main.style.left = showparams ? $S("left").clientWidth + 'px' : '1px';
+        main.style.left = showparams ? $("left").clientWidth + 'px' : '1px';
       }
     }
   }
@@ -1344,11 +1352,11 @@ function doResize() {
   var sidebar = $("left");
   var main = $("main");
   if (window.innerWidth >= 500) {
-    main.style.display = 'block';
+    //main.style.display = 'block';
     if (sidebar.style.display == 'block')
       main.style.left = sidebar.clientWidth + "px";
-  } else if (main.offsetLeft > 0)
-    main.style.display = 'none';
+  } //else if (main.offsetLeft > 0)
+    //main.style.display = 'none';
 
   if (state.mode == 0)
     loadGallery();
@@ -1524,7 +1532,7 @@ function importFile(source, filename, date) {
     try {
       var parsed = JSON.parse(source);
       if (!parsed) {alert("Invalid data"); return;}
-      if (parsed["fractured.name"]) {
+      if (parsed["fractured.fractals"]) {
         //Session state
         debug("Import: SESSION");
         state.read(parsed);
@@ -1550,7 +1558,7 @@ function importFile(source, filename, date) {
         //if (!date && date < new Date(2012,9,1))
         //  fractal.loadOld(source);
         //else
-          fractal.load(source);
+          fractal.load(source, true);
         //if (/version=\(/g.exec(source))
       }
       //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
