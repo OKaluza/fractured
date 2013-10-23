@@ -278,6 +278,7 @@
       else {
         var that = this;
         this.timer = setTimeout(function () {that.pass();}, 10);
+        //window.requestAnimationFrame(function () {that.pass();});
       }
     } else {
       this.timer = null;

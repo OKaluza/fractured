@@ -93,9 +93,7 @@
       this.j = 0;
       this.k = 0;
       this.antialias = antialias;
-      //this.pass();
-      var that = this;
-      window.requestAnimationFrame(function () {that.pass();});
+      this.pass();
 
     } else {
       //Draw, single pass
@@ -159,8 +157,8 @@
         this.pass();  //Don't draw incrementally when timers disabled
       else {
         var that = this;
-        //this.timer = setTimeout(function () {that.pass();}, 10);
-        window.requestAnimationFrame(function () {that.pass();});
+        this.timer = setTimeout(function () {that.pass();}, 10);
+        //window.requestAnimationFrame(function () {that.pass();});
       }
     } else {
       this.timer = null;

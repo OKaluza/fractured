@@ -208,7 +208,6 @@
                     try {
                         nativeDevices = nativePlatform.getDevices(deviceTypes[j]);
                     } catch (e) {
-                        //if (e !== nativeWeCL.DEVICE_NOT_FOUND) {
                         if (e.name !== "DEVICE_NOT_FOUND") {
                             throw e;
                         }

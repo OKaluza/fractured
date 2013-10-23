@@ -1,6 +1,6 @@
 //TODO:
 //Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
-//RESIZE BUG: View gallery, resize window several times, click mandelbrot
+//Resize bug?
 
 //Globals
 var state;    //Local storage
@@ -310,8 +310,12 @@ function showGallery(id) {
 
 function loadGallery(offset) {
   $S('gallery').display = "block";
-    setAll('none', 'render');  //hide render mode menu options
+
+  //Disable scrollbars instead of hiding canvas (some implementations don't like hidden canvas)
+  document.documentElement.style.overflow = "hidden";
   //$S('fractal-canvas').display = "none";
+
+  setAll('none', 'render');  //hide render mode menu options
   if (offset == undefined) offset = state.offset;
   var w = $('gallery').clientWidth;
   var h = $('gallery').clientHeight;
@@ -332,15 +336,18 @@ function fillGallery(html) {
 function hideGallery() {
   //Hide gallery, show fractal
   $S('gallery').display = "none";
-  //$S('fractal-canvas').display = "block";
   setAll('block', 'render');  //Unhide render mode menu options
   setAll(state.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
   state.mode = 1;
+  //Re-enable scrollbars (unless fit-to-window)
+  if (!document["inputs"].elements["autosize"].checked)
+    document.documentElement.style.overflow = "auto";
+  //$S('fractal-canvas').display = "block";
 }
 
 function showCard(id) {
   if (!state.cards[id])
-    toggleCard(id);
+    toggleCard(id, true);
   else {
     //Populate manager card
     var manage = $("manage_info");
@@ -355,7 +362,7 @@ function showCard(id) {
   }
 }
 
-function toggleCard(el) { 
+function toggleCard(el, nosave) { 
   var card;
   if (typeof el == 'string')
     card = $(el);
@@ -365,7 +372,7 @@ function toggleCard(el) {
   toggle(card, 'block');
   state.cards[card.id] = (card.style.display == 'none');
   if (state.cards[card.id]) showCard(card.id); //Populate replace button
-  state.saveStatus();
+  if (!nosave) state.saveStatus();
 }
 
 //session JSON received

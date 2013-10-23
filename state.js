@@ -70,7 +70,12 @@ State.prototype.clearStatus = function() {
 }
 
 State.prototype.saveStatus = function() {
-  localStorage["fractured.current"] = JSON.stringify(this, this.props);
+  var savedata = {};
+  for (i in this.props) {
+    var key = this.props[i];
+    savedata[key] = this[key];
+  }
+  localStorage["fractured.current"] = JSON.stringify(savedata);
 }
 
 State.prototype.loadStatus = function() {
@@ -78,8 +83,10 @@ State.prototype.loadStatus = function() {
   var source = localStorage["fractured.current"];
   if (source) {
     var data = JSON.parse(source);
-    for (key in data)
+    for (i in this.props) {
+      var key = this.props[i];
       this[key] = data[key];
+    }
   }
 }
 
@@ -267,7 +274,7 @@ State.prototype.toString = function() {
 State.prototype.lastFractal = function() {
   //Load current fractal (as default)
   if (this.active) {
-    fractal.load(this.active, true); //Don't display immediately
+    fractal.load(this.active, false, true); //Don't display immediately
     $('name').value = this.fractal;
     if (this.thumbnail)
       $('lastimage').src = this.thumbnail;
