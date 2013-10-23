@@ -9,7 +9,7 @@ precision highp float;
 
 //Initialisers
 #define C complex
-#define R real
+#define R(VAL) real(VAL)
 
 //Uniform data
 uniform complex offset;
@@ -36,14 +36,14 @@ rgba gradient(float mu)
 varying complex coord;
 
 //Maths Functions only required for GLSL, predefined in OpenCL
-#define PI  R(3.141592654)
-#define E   R(2.718281828)
+#define PI  3.141592654
+#define E   2.718281828
 
 #define atan2(a,b) atan(a,b)
 
 //Hacks for opera to fix faulty recursive call detection
-#define round_(x) R(int(x + (x < 0.0 ? -0.5 : 0.5)))
-#define trunc_(x) R(int(x))
+#define round_(x) real(int(x + (x < 0.0 ? -0.5 : 0.5)))
+#define trunc_(x) real(int(x))
 
 real trunc(in real x)
 {
@@ -111,4 +111,3 @@ real atanh(in real x)
 {
   return (log(1.0+x) - log(1.0-x)) / 2.0;
 }
-
