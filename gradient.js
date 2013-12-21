@@ -134,6 +134,7 @@ GradientEditor.prototype.click = function(event, mouse) {
   {
     //Slider moved, update texture
     mouse.slider = null;
+    this.palette.sort(); //Fix any out of order colours
     this.update();
     return false;
   }
@@ -216,6 +217,7 @@ GradientEditor.prototype.cycle = function(inc) {
     if (x >= 1.0) x -= 1.0;
     this.palette.colours[i].position = x;
   }
+  this.palette.sort(); //Fix any out of order colours
   this.update();
 }
 

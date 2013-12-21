@@ -89,14 +89,34 @@ Script.prototype.update = function() {
 
 function runScript(filename) {
   //Run an animation script
+  var script;
+
+  //Resume?
+  if (filename) {
+    script = new Script(localStorage[filename]);
+  } else {
+    if (!state.paused) return;
+    script = state.paused;
+  }
   state.output = false;
-  var script = new Script(localStorage[filename])
+  state.paused = false;
+  $S('script_controls').display = 'block';
+  $("resume").disabled = true;
+  $("pause").disabled = false;
 
   function next() {
     script.step();
     //Update & redraw (without timers or incremental drawing)
+    $("steps").innerHTML = script.count + " / " + script.steps;
     fractal.applyChanges(null, true);
     if (state.recording) window.outputFrame(); 
+    if (state.paused) {
+      //Save in state until resumed
+      state.paused = script;
+      $("resume").disabled = false;
+      $("pause").disabled = true;
+      return;
+    }
     //Next step...
     if (script.count < script.steps) {
       script.count++;
@@ -107,9 +127,11 @@ function runScript(filename) {
     } else {
       state.output = true;
       print("Script finished");
+      $S('script_controls').display = 'none';
     }
   }
 
   next();
 }
+
 

@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="ISO-8859-1">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=0" />
 
 <title>Fractured | Fractal Studio</title>
@@ -119,7 +119,7 @@
             <li class="render"><span onclick="menu(); storeFractal();">Store</span></li>
             <li class="loggedin render"><span onclick="menu(); uploadFractalFile();">Upload</span></li>
             <li class="render"><span onclick="menu(); exportFractalFile();">Export</span></li>
-            <!--li class="render"><span onclick="menu(); packFractal();">Save As URL</span></li-->
+            <li class="render"><span onclick="menu(); packFractal();">URL Encode</span></li>
             <li><hr></li>
             <li>
               <div id="fractals" class="selectlist">
@@ -219,6 +219,13 @@
       </nav>
 
       <div class="panel scroll" id="panel_info" style="display: block">
+        <div class="card" id="script_controls">
+          <h3>Script Running:</h3>
+          <input type="button" id="pause" value="pause" onClick="state.paused = true;">
+          <input type="button" id="resume" value="resume" disabled="true" onClick="runScript();">
+          <span id="steps"></span>
+        </div>
+
         <div class="card" id="new_version">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Fractured VERSION Released:</h3>
