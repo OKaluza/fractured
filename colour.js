@@ -39,7 +39,8 @@
         this.colours.push(new ColourPos(pair[1], pair[0]));
     }
     //Sort by position (fix out of order entries in old palettes)
-    this.colours.sort(function(a,b){return a.position - b.position});
+    //this.colours.sort(function(a,b){return a.position - b.position});
+    this.sort();
 
     //Check for all-transparent palette and fix
     var opaque = false;
@@ -55,10 +56,14 @@
     }
   }
 
+  Palette.prototype.sort = function() {
+    this.colours.sort(function(a,b){return a.position - b.position});
+  }
+
   Palette.prototype.newColour = function(position, colour) {
     var col = new ColourPos(colour, position);
     this.colours.push(col);
-    this.colours.sort(function(a,b){return a.position - b.position});
+    this.sort();
     for (var i = 1; i < this.colours.length-1; i++)
       if (this.colours[i].position == position) return i;
     return -1;

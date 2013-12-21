@@ -19,8 +19,8 @@ function ajaxReadFile(filename, callback, nocache, progress)
       if (progress) setProgress(recvd / total * 100);
     }
 
-    if(http.readyState == 4) {
-      if(http.status == 200) {
+    if (http.readyState == 4) {
+      if (http.status == 200) {
         if (progress) setProgress(100);
         debug("RECEIVED: " + filename);
         if (callback)
@@ -105,8 +105,8 @@ function ajaxPost(url, params, callback, progress, headers)
 
   http.onreadystatechange = function()
   { 
-    if(http.readyState == 4)
-      if(http.status == 200) {
+    if (http.readyState == 4) {
+      if (http.status == 200) {
         if (progress) setProgress(100);
         debug("POST: " + url);
         if (callback)
@@ -117,6 +117,7 @@ function ajaxPost(url, params, callback, progress, headers)
         else
           print("Ajax Post Error: returned status code " + http.status + " " + http.statusText);
       }
+    }
   }
 
   http.open("POST", url, true); 
