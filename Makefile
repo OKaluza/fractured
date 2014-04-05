@@ -1,4 +1,4 @@
-VERSION = 0.83
+VERSION = 0.84
 COMP = java -jar compiler-latest/compiler.jar --js=
 FLAGS = --js_output_file=
 #COMP = cp 
