@@ -60,66 +60,15 @@ function appInit() {
     popup(e);
     return;
   }
+
   //Force offline mode when loaded locally
   if (window.location.href.indexOf("file://") == 0) state.offline = true;
   if (!navigator.onLine) state.offline = true;
-  showPanel('info');
-  var urlq = decodeURI(window.location.href);
-  var h = urlq.indexOf("#");
-  if (h > 0) urlq = urlq.substring(0, h);
-  var query;
-  if (urlq.indexOf("?") > 0) {
-    var parts = urlq.split("?"); //whole querystring before and after ?
-    query = parts[1]; 
-    //Strip stupid trailing /
-    if (query.charAt(query.length-1) == "/") query = query.substr(0, query.length-1);
-    state.baseurl = parts[0];
-  } else {
-    if (urlq.indexOf("file:///") == 0)
-       state.baseurl = urlq;
-    else {
-      //URL rewriting
-      var pos = urlq.lastIndexOf("/");
-      query = urlq.substr(pos+1);
-      state.baseurl = urlq.substr(0, pos);
-    }
-  }
-  if (!query && location.hash && !$(location.hash)) {
-    //Convert #id to query if not a section tag
-    query = location.hash.substr(1);
-  }
-  var restored = "";
-  var flickr = false;
-  if (query) {
-    var list = query.split("&");
-    for (var i=0; i<list.length; i++) {
-      if (list[i].indexOf('debug') >= 0) {
-        //debug mode enabled, show extra menus
-        state.debugOn();
-        state.saveStatus();
-      } else if (list[i].indexOf('flickr') >= 0) {
-        flickr = true; //Skip gallery display
-      } else if (list[i].indexOf('reset') >= 0) {
-        state.resetFormulae();
-      } else if (list[i].length > 20) {
-        //Load fractal from base64 packed url
-        try {
-          restored = window.atob(list[i]);
-        } catch(e) {
-          print(e);
-          restored = "";
-        }
-      } else if (!state.offline && list[i].length > 3) {
-        //Load fractal from hash ID
-        restored = list[i];
-      }
-    }
-  }
-  debug("Base URL: " + state.baseurl);
-  debug("Query options: " + query);
 
-  //Strip commands from url
-  window.history.pushState("", "", state.baseurl);
+  //Read query string
+  var query = getQuery();
+  //Strip initial commands from base url
+  window.history.replaceState("", "", state.baseurl);
 
   //Colour editing and palette management
   colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();});
@@ -143,12 +92,12 @@ function appInit() {
   //Event handling
   document.onkeydown = handleKey;
   window.onresize = autoResize;
-  window.onhashchange = hashChanged;
   window.onmozfullscreenchange = toggleFullscreen
   window.onfullscreenchange = toggleFullscreen
   $('main').onwebkitfullscreenchange = toggleFullscreen;
   if (window.opera) window.onunload = beforeUnload;
   window.onbeforeunload = beforeUnload;
+  window.onpopstate = historyStateChange;
 
   //Form mouse wheel
   var forms = ["param_inputs", "fractal_inputs", "colour_inputs"];
@@ -163,27 +112,17 @@ function appInit() {
   //Restore last fractal settings/palette if any
   var loaded = state.lastFractal();
 
-  //Load from URL/address
-  if (restored.length) {
-    if (restored.length > 30) {
-      restoreFractal(restored);   //Restore from URL
-    } else {
-      loadUrl(restored); //Load from hash
-    }
-  } else if (loaded) {
-    //Previous viewing restored
-    if (flickr) {
-      //Upload when draw finished
-      fractal.ondraw = uploadFlickr;
-      hideGallery();
-      fractal.applyChanges();
-    } else {
-    //hideGallery();
-    //fractal.applyChanges();
-    //Display last viewed card...
+  //Load query (returns true if requested to skip gallery display)
+  var skip = parseQuery(query);
 
-    }
+  if (loaded && skip) {
+    //Previous viewing restored
+    hideGallery();
+    fractal.applyChanges();
   }
+
+  //Initial tab panel
+  showPanel('info');
 
   //No fractal loaded? Display gallery
   if (state.mode == 0)
@@ -194,8 +133,9 @@ function appInit() {
   showCard("new_version");
   if (loaded) showCard("previous_fractal");
   showCard("local_storage");
+  showCard("render_mode");
   if (!$("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
-  if (fractal.webgl) showCard("webgl_detected"); else if (!fractal.webcl) showCard("no_webgl");
+  if (!$("webgl").disabled) showCard("webgl_detected"); else if ($("webcl").disabled) showCard("no_webgl");
   showCard("mouse_reference");
   showCard("user_guide");
   showCard("contact_form");
@@ -204,6 +144,98 @@ function appInit() {
   showCard("parameters_help");
   showCard("formula_help");
   showCard("colour_help");
+}
+
+function getQuery() {
+  var urlq = decodeURI(window.location.href);
+  var h = urlq.indexOf("#");
+  if (h > 0) urlq = urlq.substring(0, h);
+  var query = "";
+  if (urlq.indexOf("?") > 0) {
+    var parts = urlq.split("?"); //whole querystring before and after ?
+    query = parts[1]; 
+    //Strip stupid trailing /
+    if (query.charAt(query.length-1) == "/") query = query.substr(0, query.length-1);
+    state.baseurl = parts[0];
+  } else {
+    if (urlq.indexOf("file:///") == 0)
+       state.baseurl = urlq;
+    else {
+      //URL rewriting
+      var pos = urlq.lastIndexOf("/");
+      query = urlq.substr(pos+1);
+      state.baseurl = urlq.substr(0, pos);
+    }
+  }
+  if (!query && location.hash && !$(location.hash)) {
+    //Convert #id to query if not a section tag
+    query = location.hash.substr(1);
+  }
+
+  return query;
+}
+
+function parseQuery(query, loaded) {
+  var restored = "";
+  var skip = false;
+  if (query) {
+    var list = query.split("&");
+    for (var i=0; i<list.length; i++) {
+      if (list[i].indexOf('debug') >= 0) {
+        //debug mode enabled, show extra menus
+        state.debugOn();
+        state.saveStatus();
+      } else if (list[i].indexOf('flickr') >= 0) {
+        skip = true; //Skip gallery display
+        //Upload when draw finished
+        fractal.ondraw = uploadFlickr;
+      } else if (list[i].indexOf('reset') >= 0) {
+        state.resetFormulae();
+      } else if (list[i].length > 20) {
+        //Load fractal from base64 packed url
+        try {
+          restored = window.atob(list[i]);
+        } catch(e) {
+          print(e);
+          restored = "";
+        }
+      } else if (!state.offline && list[i].length > 3) {
+        //Load fractal from hash ID
+        restored = list[i];
+      }
+    }
+  }
+  debug("Base URL: " + state.baseurl);
+  debug("Query options: " + query);
+
+  //Load from URL/address
+  if (restored.length && restored.indexOf('.html') < 0) {
+    if (restored.length > 30)
+      restoreFractal(restored);   //Restore from URL
+    else
+      loadUrl(restored); //Load from hash
+  }
+
+  return skip;
+}
+
+function historyStateChange(event) {
+  //Location state changed (back/forward button)
+  if (!event.state) {
+    debug("Restore State... " + location.hash); 
+    var glist = ["#examples", "#shared", "#myshared", "#myuploads", "#images", "#myimages"];
+    if (glist.indexOf(location.hash) >= 0)
+      showGallery(location.hash);
+    else if (location.hash)
+      loadUrl(location.hash.substr(1));
+    else
+      showGallery();
+  } else {
+    var data = window.atob(event.state);
+    debug("Restoring State: " + data.length);
+    if (data)
+      restoreFractal(data);   //Restore from state data
+  }
 }
 
 function snapshot() {
@@ -219,12 +251,15 @@ function resetReload() {
 
 //Load from a locator hash
 function loadUrl(locator) {
+  if (state.offline || locator.indexOf('.html') >= 0) return;
   state.locator = locator;
   fractal.clear();
   progress("Loading fractal...");
   ajaxReadFile('ss/fractal_get.php?id=' + state.locator, restoreFractal, false);
   //Set address
-  window.history.pushState("", "", state.baseurl + "/" + state.locator);
+  //window.history.pushState("", "", state.baseurl + "/" + state.locator);
+  //window.history.pushState(state.locator, "", state.locator);
+  //fractal.saveState(state.locator);
 }
 
 function loadScript(filename, onload) {
@@ -270,18 +305,6 @@ function loadHelp() {
     } );
 }
 
-function hashChanged() {
-  if ($(location.hash))
-    showGallery(location.hash);
-  else {
-    //Remove other hash
-    debug(location.hash);
-    history.pushState("", document.title, 
-                      window.location.pathname
-                      + window.location.search);
-  }
-}
-
 function switchGallery(force) {
   if (force != 1 && (force == 0 || state.mode == 0)) {
     hideGallery();
@@ -293,7 +316,7 @@ function switchGallery(force) {
 function showGallery(id) {
   if (!id) {
     id = state.gallery ? state.gallery : "#examples";
-    window.history.pushState("", "", state.baseurl);
+    //window.history.pushState("", "", state.baseurl);
   } else  {
     state.offset = 0;
   }
@@ -420,13 +443,20 @@ function restoreFractal(restored) {
   var name = lines[0];
   lines.splice(0,1);
   var data = lines.join('\n');
+  //This hack stops saving state on draw
+  state.output = false;
   if (name == "[Palette]") {
     state.lastFractal();  //Restore last if any
     colours.read(data);
     fractal.applyChanges();
   } else {
+    fractal.name = name;
     fractal.load(data);
-    $('name').value = name;
+  }
+  //Restore output state
+  state.output = true;
+  if (location.hash) {
+    fractal.saveState(true);
   }
   progress();
   hideGallery();
@@ -448,6 +478,11 @@ function setAntiAliasMenu() {
   $('aa2').className = fractal.antialias == 2 ? 'selected_item' : '';
   $('aa3').className = fractal.antialias == 3 ? 'selected_item' : '';
   $('aa4').className = fractal.antialias > 3 ? 'selected_item' : '';
+}
+
+function setDelayTimer() {
+  var val = prompt('Enter timer delay in milliseconds', state.timers);
+  if (val != null) state.timers = val;
 }
 
 //Menu management functions...
@@ -535,7 +570,7 @@ function fractalMenuAdd(name) {
   var menu = $('fractals');
   var source = fractals[name].source;
   var img = fractalMenuThumb(name);
-  var item = addMenuItem(menu, name, "selectedFractal('" + name + "')", img, true)
+  var item = addMenuItem(menu, name.substr(0, 18), "selectedFractal('" + name + "')", img, true)
   if (state.fractal == name) selectMenuItem(item, "deleteFractal('" + name + "');");
   item.id = "fractalmenu_" + next_id;  //Set entry id
   fractals[name].id = item.id;
@@ -638,8 +673,8 @@ function populateFractals() {
 function selectedFractal(name) {
   hideGallery();
   fractalMenuSelect(name);
+  fractal.name = name;
   fractal.load(fractals[name].source, true);
-  $('name').value = name;
   //Generate thumbnails on select!
   if (!fractals[name].thumbnail) {
     fractals[name].thumbnail = thumbnail();
@@ -648,6 +683,7 @@ function selectedFractal(name) {
 
 function newFractal() {
     hideGallery();
+  fractal.name = "unnamed"
   fractal.resetDefaults();
   fractal.formulaDefaults();
   fractal.copyToForm();
@@ -662,7 +698,7 @@ function storeFractal() {
   if (state.fractal) {
     //Save existing
     var name = state.fractal;
-    if (name == $('name').value && fractals[name]) {
+    if (name == fractal.name && fractals[name]) {
       if (confirm('Overwrite "' + name + '"?')) {
         try {
           fractals[name].source = source;
@@ -678,7 +714,7 @@ function storeFractal() {
 
   //Save new
   //Get name and check list for dupes
-  var name = $('name').value;
+  var name = fractal.name;
   if (!name) name = "unnamed";
   var add = 0;
   var checkstr = name;
@@ -692,7 +728,7 @@ function storeFractal() {
     fractals[name] = new FractalEntry(source);
     fractalMenuAdd(name);
     fractalMenuSelect(name);
-    $('name').value = name;
+    fractal.name = name;
   } catch(e) {
     //data wasn’t successfully saved due to quota exceed so throw an error
     alert('error! ' + e);
@@ -797,27 +833,36 @@ function thumbnail(type, size, args) {
   if (type == undefined) type = "jpeg";
   if (args == undefined && type == "jpeg") args = 75;
   if (size == undefined) size = 32; //40;
-  var canvas = $("fractal-canvas"),
-     oldh = fractal.height,
-     oldw = fractal.width;
-  fractal.width = fractal.height = size;
-  fractal.draw(4, true);
+  var canvas = $("fractal-canvas");
 
-  var result = canvas.toDataURL("image/" + type, args)
+  if (fractal.renderer != SERVER) {
+    //Thumb generated by re-render at thumbnail size
+    var oldh = fractal.height,
+        oldw = fractal.width;
+    fractal.width = fractal.height = size;
+    fractal.draw(4, true);
 
-  fractal.width = oldw;
-  fractal.height = oldh;
-  fractal.draw();
+    var result = canvas.toDataURL("image/" + type, args)
 
-  /*/
-  // Thumb generated by browser in canvas, badly aliased?
-  var thumb = $("thumb");
-  thumb.style.visibility='visible';
-  var context = thumb.getContext('2d');  
-  context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
-  var result = thumb.toDataURL("image/jpeg")
-  thumb.style.visibility='hidden';
-  //*/
+    fractal.width = oldw;
+    fractal.height = oldh;
+    fractal.draw();
+  } else {
+    //Thumb generated by browser in canvas, badly aliased
+    //Always use this method when rendering on server
+    var thumb = $("thumb");
+    thumb.style.visibility='visible';
+    var context = thumb.getContext('2d');
+    thumb.width = thumb.height = size;
+    //Maintain aspect ratio
+    if (canvas.width > canvas.height)
+      thumb.height = size * (canvas.height/canvas.width);
+    else if (canvas.height > canvas.width)
+      thumb.width = size * (canvas.width/canvas.height);
+    context.drawImage(canvas, 0, 0, thumb.width, thumb.height);
+    var result = thumb.toDataURL("image/jpeg")
+    thumb.style.visibility='hidden';
+  }
   return result;
 }
 
@@ -894,7 +939,7 @@ function uploadFractalFile(pub) {
   }
   if (pub == undefined) pub = confirm("Share this fractal publicly after uploading?");
   formdata.append("public", Number(pub));
-  formdata.append("description", $('name').value);
+  formdata.append("description", fractal.name);
   formdata.append("thumbnail", thumbnail("jpeg", 150).substring(23));
   formdata.append("source", fractal.toString());
   progress("Uploading fractal to server...");
@@ -908,7 +953,7 @@ function fractalUploaded(url) {
 }
 
 function packFractal() {
-  var data = window.btoa($('name').value + "\n" + fractal.toString());
+  var data = window.btoa(fractal.name + "\n" + fractal.toString());
   packURL(data);
 }
 
@@ -965,7 +1010,7 @@ function exportStateFile() {
 
 function exportFractalFile() {
   source = fractal.toString();
-  exportFile($('name').value + ".fractal", "text/fractal-source", source);
+  exportFile(fractal.name + ".fractal", "text/fractal-source", source);
 }
 
 function exportFormulaFile(filename, type, source) {
@@ -981,7 +1026,7 @@ function exportFormulaSet() {
 
 function exportPaletteFile() {
   source = colours.palette + "";
-  exportFile($('name').value + ".palette", "text/palette", source);
+  exportFile(fractal.name + ".palette", "text/palette", source);
 }
 
 function exportImage(type, args) {
@@ -1056,9 +1101,9 @@ function uploadImgur() {
  
   var fd = new FormData();
   fd.append("image", data);
-  fd.append("title", $('name').value);
+  fd.append("title", fractal.name);
   fd.append("description", "Created using Fractured Studio http://fract.ured.me");
-  fd.append("name", $('name').value + ".jpg");
+  fd.append("name", fractal.name + ".jpg");
   fd.append("key", "70f934afb26ec9a9b9dc50ac1df2b40f");
  
   var onload = function(response) {
@@ -1079,7 +1124,7 @@ function uploadImgur() {
     //...save in our db
     var formdata = new FormData();
     formdata.append("url", 'http://i.imgur.com/' + data.data.id + '.jpg');
-    formdata.append("description", $('name').value);
+    formdata.append("description", fractal.name);
     formdata.append("thumbnail", 'http://i.imgur.com/' + data.data.id + 's.jpg');
     formdata.append("info", response);
     ajaxPost("ss/image_save.php", formdata);
@@ -1101,9 +1146,9 @@ function uploadFlickr() {
  
   var fd = new FormData();
   fd.append("photo", data);
-  fd.append("title", $('name').value);
+  fd.append("title", fractal.name);
   fd.append("description", "Created using <a href='http://fract.ured.me'>Fractured Studio (fract.ured.me)</a>");
-  fd.append("tags", $('name').value);
+  fd.append("tags", fractal.name);
   fd.append("public", 1);
   fd.append("friend", 1);
   fd.append("family", 1);
@@ -1115,7 +1160,7 @@ function uploadFlickr() {
     //...save in our db
     var formdata = new FormData();
     formdata.append("url", data.url);
-    formdata.append("description", $('name').value);
+    formdata.append("description", fractal.name);
     formdata.append("thumbnail", data.thumb);
     formdata.append("info", response);
     ajaxPost("ss/image_save.php", formdata);
@@ -1310,7 +1355,7 @@ function popup(text) {
 
 function progress(text) {
   var el = $('progress');
-  if (text == undefined || el.style.display == 'block') {
+  if (text == undefined) {
     el.style.display = 'none';
     //setTimeout("$('progress').style.display = 'none';", 150);
   } else {
@@ -1557,9 +1602,9 @@ function importFile(source, filename, date) {
       //Fractal file
       debug("Import: FRACTAL");
       hideGallery();
+      fractal.name = filename.substr(0, filename.lastIndexOf('.')) || filename;
       if (filename.indexOf(".ini") > -1) {
         fractal.iniLoader(source);
-        filename = filename.substr(0, filename.lastIndexOf('.')) || filename;
       } else {
         //Pre 0.7, 0.78+ files have version=
         //if (!date && date < new Date(2012,9,1))
@@ -1569,7 +1614,6 @@ function importFile(source, filename, date) {
         //if (/version=\(/g.exec(source))
       }
       //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
-      $('name').value = filename.substr(0, filename.lastIndexOf('.')) || filename;
     } else if (source.indexOf('Background=') == 0) {
       //Palette
       debug("Import: PALETTE");

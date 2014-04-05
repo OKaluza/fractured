@@ -75,7 +75,8 @@
       $url = '#' . $links[$x]; #"javascript:loadUrl('" . $links[$x] . "')";
       if (!file_exists(".." . $filename))
         $filename = "/thumbs/" . md5($links[$x]) . ".jpg";
-	    $img = '<img src="' . $filename . '" onmousedown="loadUrl(\'' . $links[$x] . '\');"/>';
+	    //$img = '<img src="' . $filename . '" onmousedown="loadUrl(\'' . $links[$x] . '\');"/>';
+	    $img = '<img src="' . $filename . '"/>';
     }
     echo "<div class='float' style='width: $thumb; height: $thumb;'>";
     echo "<a href='$url'>$img</a></div>\n";

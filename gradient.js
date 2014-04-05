@@ -1,7 +1,7 @@
 /**
  * @constructor
  */
-function GradientEditor(canvas, callback) {
+function GradientEditor(canvas, callback, nopicker) {
   this.canvas = canvas;
   this.callback = callback;
   this.changed = true;
@@ -12,7 +12,8 @@ function GradientEditor(canvas, callback) {
   var self = this;
   function saveColour(val) {self.save(val);}
   function abortColour() {self.cancel();}
-  this.picker = new ColourPicker(saveColour, abortColour);
+  if (!nopicker)
+    this.picker = new ColourPicker(saveColour, abortColour);
 
   //Create default palette object
   this.palette = new Palette();
@@ -199,7 +200,7 @@ GradientEditor.prototype.wheel = function(event, mouse) {
   this.spin += 0.01 * event.spin;
   //this.cycle(0.01 * event.spin);
   var this_ = this;
-  this.timer = setTimeout(function() {this_.cycle(this_.spin); this_.spin = 0;}, 150);
+  this.timer = setTimeout(function() {this_.cycle(this_.spin); this_.spin = 0;}, state.timers);
 }
 
 GradientEditor.prototype.leave = function(event, mouse) {
