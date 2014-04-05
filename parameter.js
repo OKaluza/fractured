@@ -245,8 +245,10 @@ Param.prototype.declare = function(key) {
   //Return GLSL const/uniform declaration for this parameter
   var comment = this.label ? "//" + this.label + "\n" : "";
   var declaration = "";
-  key = '@' + key;
-  type = this.type;
+  var key = '@' + key;
+  var type = this.type;
+  var isconst = true;
+  var expr = this.value;
 
   switch (this.typeid)
   {
@@ -255,43 +257,58 @@ Param.prototype.declare = function(key) {
     case 0: //Integer
       if (Math.abs(this.value) > 65535) alert("Integer value out of range +/-65535");
     case -1: //Boolean
-      declaration =  "const " + type + " " + key + " = " + this.value + ";\n";
+      //declaration =  "const " + type + " " + key + " = " + this.value + ";\n";
       break;
     case 8: //range
       type = "real";
     case 1: //real
-      strval = "" + this.value;
+      expr = "" + this.value;
       //Add .0 if integer, unless in scientific notation
-      if (strval.split('.')[1] == undefined && strval.indexOf('e') < 0)
-        strval += ".0";
-      declaration = "const " + type + " " + key + " = " + strval + ";\n";
+      if (expr.split('.')[1] == undefined && expr.indexOf('e') < 0)
+        expr += ".0";
+      //declaration = "const " + type + " " + key + " = " + strval + ";\n";
       break;
     case 2: //complex
       //return "complex(" + realStr(this.value.re) + "," + realStr(this.value.im) + ")";
-      declaration = "const " + type + " " + key + " = C(" + this.value.re + "," + this.value.im + ");\n";
+      //declaration = "const " + type + " " + key + " = C(" + this.value.re + "," + this.value.im + ");\n";
+      expr = "C(" + this.value.re + "," + this.value.im + ")";
       break;
     case 4: //Function name
+      isconst = false;
       if (type == 'real_function' && rfreg.test(this.value))
-        declaration = "#define " + key + "(args) _" + this.value + "(args)\n";
+        //declaration = "#define " + key + "(args) _" + this.value + "(args)\n";
+        expr = "(args) _" + this.value + "(args)";
       else
-        declaration = "#define " + key + "(args) " + this.value + "(args)\n";
+        //declaration = "#define " + key + "(args) " + this.value + "(args)\n";
+        expr = "(args) " + this.value + "(args)";
       break;
     case 5: //RGBA colour
-      declaration = "const " + type + " " + key + " = " + this.value.rgbaGLSL() + ";\n";
+      //declaration = "const " + type + " " + key + " = " + this.value.rgbaGLSL() + ";\n";
+      expr = this.value.rgbaGLSL();
       break;
     case 6: //Expression
-      declaration = "#define " + key + " " + parseExpression(this.value) + "\n";
+      isconst = false;
+      //declaration = "#define " + key + " " + parseExpression(this.value) + "\n";
+      expr = " " + parseExpression(this.value);
       break;
     case 7: //Define list
-      declaration = "#define " + key + " " + this.value + "\n";
+      isconst = false;
+      //declaration = "#define " + key + " " + this.value + "\n";
+      expr = " " + this.value;
       break;
   }
+
+  //Write the declaration
+  if (isconst)
+    declaration = "const " + type + " " + key + " = " + expr + ";\n";
+  else
+    declaration = "#define " + key + expr + "\n";
 
   if (this.uniform) {
     //WebCL: "uniforms' passed in input[] array
     if (fractal.renderer > WEBGL && fractal.webcl)
       declaration = fractal.webcl.setInput(this, type, key);
-    else
+    else if (fractal.renderer == WEBGL) //Don't use uniform vars for server renderer
       declaration = "uniform " + type + " " + key + ";\n";
   }
   return comment + declaration;

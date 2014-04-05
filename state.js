@@ -20,6 +20,7 @@ function State(version) {
   this.baseurl = "";
   this.locator = null;
   this.output = true;
+  this.timers = 350;  //Delay update timers (ms)
   this.cards = {};
 
   //Defaults in case no saved settings
@@ -49,7 +50,7 @@ function State(version) {
     delete localStorage["fractured.thumbnail"];
   }
 
-  if (this.version != version) {
+  if (version && this.version != version) {
     //Updated - save new version and force reload!
     this.version = version;
     this.saveStatus();
