@@ -1,5 +1,11 @@
 //--- GLSL specific header ----------------------------------------
+#ifdef GL_ES
+#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
+#else
+precision mediump float;
+#endif
+#endif
 #define GLSL
 
 #define set_result(c) gl_FragColor = c;
@@ -27,10 +33,7 @@ complex selected = selected_; //Allow transform
 //Palette lookup mu = [0,1]
 //#define gradient(mu) texture2D(palette, vec2(mu, 0.0))
 //Use a function as Opera fails on above define
-rgba gradient(float mu)
-{
-  return texture2D(palette, vec2(mu, 0.0));
-}
+rgba gradient(float mu) {return texture2D(palette, vec2(mu, 0.0));}
 
 //Current complex coordinate
 varying complex coord;
@@ -45,32 +48,11 @@ varying complex coord;
 #define round_(x) real(int(x + (x < 0.0 ? -0.5 : 0.5)))
 #define trunc_(x) real(int(x))
 
-real trunc(in real x)
-{
-  return trunc_(x);
-  //return real(int(x));
-}
-
-real round(in real x)
-{
-  return round_(x);
-  //return real(int(x + (x < 0.0 ? -0.5 : 0.5)));
-}
-
-real log10(in real r)
-{
-  return log(r) / log(10.0);
-}
-
-complex round(in complex z)
-{
-  return complex(round_(z.x), round_(z.y));
-}
-
-complex trunc(in complex z)
-{
-  return complex(trunc_(z.x), trunc_(z.y));
-}
+real trunc(in real x) {return trunc_(x); /*return real(int(x));*/}
+real round(in real x) {return round_(x); /*return real(int(x + (x < 0.0 ? -0.5 : 0.5)));*/}
+real log10(in real r) {return log(r) / log(10.0);}
+complex round(in complex z) {return complex(round_(z.x), round_(z.y));}
+complex trunc(in complex z) {return complex(trunc_(z.x), trunc_(z.y));}
 
 // Hyperbolic Sine (e^x - e^-x) / 2
 real sinh(in real x)
@@ -95,19 +77,9 @@ real tanh(in real x)
 }
 
 // Hyperbolic arc sine log(x+sqrt(1+x^2))
-real asinh(in real x)
-{
-  return log(x + sqrt(1.0+x*x));
-}
-
+real asinh(in real x) {return log(x + sqrt(1.0+x*x));}
 // Hyperbolic arc cosine 2log(sqrt((x+1)/2) + sqrt((x-1)/2))
-real acosh(in real x)
-{
-  return 2.0 * log(sqrt(0.5*x+0.5) + sqrt(0.5*x-0.5));
-}
+real acosh(in real x) {return 2.0 * log(sqrt(0.5*x+0.5) + sqrt(0.5*x-0.5));}
+// Hyperbolic arc tangent (log (1+x) - log (1-x))/2
+real atanh(in real x) {return (log(1.0+x) - log(1.0-x)) / 2.0;}
 
-// Hyperbolic arc tangent (log (1+x) - log (1-x))/2 
-real atanh(in real x)
-{
-  return (log(1.0+x) - log(1.0-x)) / 2.0;
-}
