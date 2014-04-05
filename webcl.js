@@ -11,25 +11,25 @@
     if (devid == undefined) devid = 0;
     this.pid = pid;
     this.devid = devid;
-    this.fp64 = false;
+    this.fp64avail = this.fp64 = false;
     this.timer = null;
     this.resetInput();
 
-    var cl = window.WebCL;
-    if (!cl) throw "No WebCL interface";
-    if (!cl.getPlatforms) throw "Unknown WebCL interface";
+    if (!window.webcl) throw "No WebCL interface";
+    if (!webcl.getPlatforms) throw "Unknown WebCL interface";
     try {
-      //cl.getPlatforms();
-      //Get & select platforms, devices
-      this.platforms = WebCL.getPlatformIDs();
-      if (this.pid == undefined || this.pid >= this.platforms.length)
-        this.pid = 0;
+      this.platforms = webcl.getPlatforms();
     } catch (e) {
       print("detectCL exception: " + e);
       throw "No OpenCL drivers available"
     }
 
+    //Get & select default platforms, devices (if not supplied)
     if (this.platforms.length<1) throw "No OpenCL platforms found!";
+    if (!this.pid || this.pid >= this.platforms.length) this.pid = 0;
+    this.devices = this.platforms[this.pid].getDevices(WebCL.DEVICE_TYPE_ALL);
+    if (this.devices.length<1) throw "No OpenCL devices found!";
+    if (!this.devid) this.devid = 0;
 
     //Alternative createContext with list of devices...
     this.devices = this.platforms[this.pid].getDevices(WebCL.CL_DEVICE_TYPE_ALL);
@@ -37,27 +37,20 @@
     //this.devices = this.platforms[this.pid].getDevices(WebCL.CL_DEVICE_TYPE_CPU);
     if (this.devid >= this.devices.length) this.devid = this.devices.length-1;
     //Create the context
-    this.ctx = WebCL.createContext([WebCL.CL_CONTEXT_PLATFORM, this.platforms[this.pid]],
-                                   [this.devices[this.devid]]);
-    //this.ctx = WebCL.createContext();
-    /*/Create the context
-    this.ctx = WebCL.createContextFromType ([WebCL.CL_CONTEXT_PLATFORM, 
-                                            this.platforms[this.pid]],
-                                            WebCL.CL_DEVICE_TYPE_ALL);
-    this.devices = this.ctx.getContextInfo(WebCL.CL_CONTEXT_DEVICES);
-    if (this.devid >= this.devices.length) this.devid = this.devices.length-1;*/
-
-    debug("Using: " + this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_NAME) + " (" + this.pid + ")" +  
-                " - " + this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_NAME) + " (" + this.devid + ")");
+    //this.ctx = webcl.createContext({devices : this.devices, platform : this.platforms[this.pid]});
+    this.ctx = webcl.createContext(this.devices);
+    
+    debug("Using: " + this.platforms[this.pid].getInfo(WebCL.PLATFORM_NAME) + " (" + this.platforms[this.pid] + ")" +  
+                " - " + this.devices[this.devid].getInfo(WebCL.DEVICE_NAME) + " (" + this.devices[this.devid] + ")");
 
     //Check for double precision support
-    var extensions = this.platforms[this.pid].getPlatformInfo(WebCL.CL_PLATFORM_EXTENSIONS);
-    extensions += " " + this.devices[this.devid].getDeviceInfo(cl.CL_DEVICE_EXTENSIONS);
+    var extensions = this.platforms[this.pid].getInfo(WebCL.PLATFORM_EXTENSIONS);
+    extensions += " " + this.devices[this.devid].getInfo(WebCL.DEVICE_EXTENSIONS);
     if (/cl_khr_fp64|cl_amd_fp64/i.test(extensions))
-      this.fp64 = true; //Initial state of flag shows availability of fp64 support
+      this.fp64avail = true; //Availability of fp64 support
     debug("WebCL ready, extensions: " + extensions);
     //Get max threads
-    this.maxsize = this.devices[this.devid].getDeviceInfo(WebCL.CL_DEVICE_MAX_WORK_GROUP_SIZE);
+    this.maxsize = this.devices[this.devid].getInfo(WebCL.DEVICE_MAX_WORK_GROUP_SIZE);
   }
 
   OpenCL.prototype.populateDevices = function(select) {
@@ -67,19 +60,19 @@
     select.options.length = 0;
     for (var p=0; p<this.platforms.length; p++) {
       var plat = this.platforms[p];
-      var pfname = '#' + (p+1) + ' ' + plat.getPlatformInfo(WebCL.CL_PLATFORM_NAME);
+      var pfname = '#' + (p+1) + ' ' + plat.getInfo(WebCL.PLATFORM_NAME);
       //Store debugging info about platforms found
       this.pfstrings += "+" + /^[^\s]*/.exec(pfname)[0];
-      var devices = plat.getDevices(WebCL.CL_DEVICE_TYPE_ALL);
+      var devices = plat.getDevices(WebCL.DEVICE_TYPE_ALL);
       for (var d=0; d < devices.length; d++) {
-        var name = devices[d].getDeviceInfo(WebCL.CL_DEVICE_NAME) + ' (' + pfname + ')';
-        select.options[select.length] = new Option(name, JSON.stringify({"pfid" : p, "devid" : d}));
+        var name = devices[d].getInfo(WebCL.DEVICE_NAME) + ' (' + pfname + ')';
+        select.options[select.length] = new Option(name, JSON.stringify({"platform" : p, "device" : d}));
         if (p == this.pid && d == this.devid) select.selectedIndex = select.length-1;
         //Store debugging info about devices found
-        var dtype = devices[d].getDeviceInfo(WebCL.CL_DEVICE_TYPE);
-        if (dtype == WebCL.CL_DEVICE_TYPE_CPU)
+        var dtype = devices[d].getInfo(WebCL.DEVICE_TYPE);
+        if (dtype == WebCL.DEVICE_TYPE_CPU)
           this.pfstrings += "-C"; 
-        else if (dtype == WebCL.CL_DEVICE_TYPE_GPU)
+        else if (dtype == WebCL.DEVICE_TYPE_GPU)
           this.pfstrings += "-G";
         else
           this.pfstrings += "-O";
@@ -90,7 +83,6 @@
 
   OpenCL.prototype.init = function(canvas, fp64, threads) {
     this.canvas = canvas;
-    this.ctx2d = canvas.getContext("2d");
     this.gradientcanvas = document.getElementById('gradient');
     this.threads = threads;
     //Check thread size
@@ -100,16 +92,36 @@
       debug("#Adjusted to " + this.threads + " ( " + (this.threads*this.threads) + ") --> max size: " + this.maxsize);
     }
     this.setPrecision(fp64);
-    this.format = {channelOrder:WebCL.CL_RGBA, channelDataType:WebCL.CL_UNSIGNED_INT8};
-    this.palette = this.ctx.createImage2D(WebCL.CL_MEM_READ_ONLY, this.format, this.gradientcanvas.width, 1, 0);
+
+    /*var w = this.devices[this.devid].getInfo(WebCL.DEVICE_IMAGE2D_MAX_WIDTH);
+    var h = this.devices[this.devid].getInfo(WebCL.DEVICE_IMAGE2D_MAX_HEIGHT);
+    var sizes = this.devices[this.devid].getInfo(WebCL.DEVICE_MAX_WORK_ITEM_SIZES);
+    debug("DEVICE IMAGE MAX: " + w + " x " + h);
+    debug("DEVICE MAX SIZES: " + JSON.stringify(sizes));*/
+
+    //Setup image format descriptor
+    this.format = {
+      channelOrder : WebCL.RGBA,
+      channelDataType : WebCL.UNSIGNED_INT8,
+      width : this.gradientcanvas.width,
+      height : 1,
+      rowPitch: 0
+    }
+    //debug(JSON.stringify(this.format));
+    //var webCLImageDescriptor = this.ctx.getSupportedImageFormats(WebCL.MEM_READ_ONLY, this.gradientcanvas.width, 1);
+    //this.format = {width:this.gradientcanvas.width, height:1, channelOrder:webCLImageDescriptor[0].channelOrder, channelType:webCLImageDescriptor[0].channelType};
+
+    //this.palette = this.ctx.createImage(WebCL.MEM_READ_ONLY, this.format, this.format.width, this.format.height, 0);
+    this.palette = this.ctx.createImage(WebCL.MEM_READ_ONLY, this.format);
     this.queue = this.ctx.createCommandQueue(this.devices[this.devid], 0);
+    this.ctx2d = canvas.getContext("2d");
     this.setViewport(0, 0, canvas.width, canvas.height);
   }
 
   OpenCL.prototype.setPrecision = function(fp64) {
-    this.fp64 = (fp64 == true && this.fp64);
+    this.fp64 = (fp64 == true && this.fp64avail);
     this.inBuffer = this.fp64 ? new Float64Array(256) : new Float32Array(256);
-    this.input = this.ctx.createBuffer(WebCL.CL_MEM_READ_ONLY, this.inBuffer.byteLength);
+    this.input = this.ctx.createBuffer(WebCL.MEM_READ_ONLY, this.inBuffer.byteLength);
   }
 
   OpenCL.prototype.buildProgram = function(kernelSrc) {
@@ -117,24 +129,24 @@
     if (!this.ctx) return;
     if (this.fp64) kernelSrc = "#define FP64\n" + kernelSrc;
 
-    this.program = this.ctx.createProgramWithSource(kernelSrc);
+    this.program = this.ctx.createProgram(kernelSrc);
     try {
       var options = "-cl-no-signed-zeros -cl-mad-enable -cl-fast-relaxed-math"
-      this.program.buildProgram([this.devices[this.devid]], options);
-      debug("<hr>" + this.program.getProgramBuildInfo(this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_LOG) + "<hr>");
+      this.program.build([this.devices[this.devid]], options);
+      debug("<hr>" + this.program.getBuildInfo(this.devices[this.devid], WebCL.PROGRAM_BUILD_LOG) + "<hr>");
     } catch(e) {
       throw "Failed to build WebCL program. Error "
-            + this.program.getProgramBuildInfo(this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_STATUS)
+            + this.program.getBuildInfo(this.devices[this.devid], WebCL.PROGRAM_BUILD_STATUS)
             + ":  " 
-            + this.program.getProgramBuildInfo(this.devices[this.devid], WebCL.CL_PROGRAM_BUILD_LOG);
+            + this.program.getBuildInfo(this.devices[this.devid], WebCL.PROGRAM_BUILD_LOG);
     }
     this.k_sample = this.program.createKernel("sample");
-    this.k_sample.setKernelArg(0, this.palette);
-    this.k_sample.setKernelArg(2, this.input);
-    if (this.temp) this.k_sample.setKernelArg(1, this.temp);
+    this.k_sample.setArg(0, this.palette);
+    this.k_sample.setArg(2, this.input);
+    if (this.temp) this.k_sample.setArg(1, this.temp);
     this.k_average = this.program.createKernel("average");
-    if (this.output) this.k_average.setKernelArg(0, this.output);
-    if (this.temp) this.k_average.setKernelArg(1, this.temp);
+    if (this.output) this.k_average.setArg(0, this.output);
+    if (this.temp) this.k_average.setArg(1, this.temp);
   }
 
   //Calculates global work size given problem size and thread count
@@ -157,11 +169,14 @@
     //If width and height changed, recreate output buffer
     if (!this.viewport || this.viewport.width != width || this.viewport.height != height) {
       this.viewport = new Viewport(x, y, width, height);
-      this.output = this.ctx.createImage2D(WebCL.CL_MEM_WRITE_ONLY, this.format, this.global[0], this.global[1], 0);
-      this.temp = this.ctx.createBuffer(WebCL.CL_MEM_READ_WRITE, this.global[0]*this.global[1]*4*4);
-      if (this.k_sample) this.k_sample.setKernelArg (1, this.temp);
-      if (this.k_average) this.k_average.setKernelArg(0, this.output);
-      if (this.k_average) this.k_average.setKernelArg(1, this.temp);
+      this.format.width = this.global[0];
+      this.format.height = this.global[1];
+      this.output = this.ctx.createImage(WebCL.MEM_WRITE_ONLY, this.format);
+      //this.output = this.ctx.createImage(WebCL.MEM_WRITE_ONLY, this.format, this.format.width, this.format.height, 0);
+      this.temp = this.ctx.createBuffer(WebCL.MEM_READ_WRITE, this.global[0]*this.global[1] * 4*4);
+      if (this.k_sample) this.k_sample.setArg (1, this.temp);
+      if (this.k_average) this.k_average.setArg(0, this.output);
+      if (this.k_average) this.k_average.setArg(1, this.temp);
     } else {
       this.viewport.x = x;
       this.viewport.y = y;
@@ -216,15 +231,17 @@
       this.inBuffer[9] = background.blue/255.0;
       this.inBuffer[10] = background.alpha;
 
-      this.k_sample.setKernelArg(3, antialias, WebCL.types.INT);
-      this.k_sample.setKernelArg(4, (fractal.julia) ? 1 : 0, WebCL.types.INT);
-      this.k_sample.setKernelArg(5, fractal.iterations, WebCL.types.INT);
-      this.k_sample.setKernelArg(6, this.viewport.width, WebCL.types.INT);
-      this.k_sample.setKernelArg(7, this.viewport.height, WebCL.types.INT);
+      this.k_sample.setArg(3, new Int32Array([antialias]));
+      this.k_sample.setArg(4, new Int32Array([(fractal.julia) ? 1 : 0]));
+      this.k_sample.setArg(5, new Int32Array([fractal.iterations]));
+      this.k_sample.setArg(6, new Int32Array([this.viewport.width]));
+      this.k_sample.setArg(7, new Int32Array([this.viewport.height]));
 
-      this.queue.enqueueWriteBuffer(this.input, false, 0, this.inBuffer.byteLength, this.inBuffer, []);
+      this.queue.enqueueWriteBuffer(this.input, false, 0, this.inBuffer.byteLength, this.inBuffer);
 
-      this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], gradient.width*4, 0, gradient.data, []);
+      //this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], 0, 0, gradient.data, []);
+      //this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], 0, gradient.data)
+      this.queue.enqueueWriteImage(this.palette, false, [0,0], [gradient.width,1], 0, gradient.data);
 
       // Init ND-range
       debug("WebCL: Global (" + this.global[0] + "x" + this.global[1] + 
@@ -235,33 +252,43 @@
       this.pass();
 
     } catch(e) {
-      alert(e.message);
+      alert("Draw: " + e.message);
       throw e;
     }
   }
 
   OpenCL.prototype.pass = function() {
     //debug("Antialias pass ... " + this.j + " - " + this.k);
-    this.k_sample.setKernelArg(8, this.j, WebCL.types.INT);
-    this.k_sample.setKernelArg(9, this.k, WebCL.types.INT);
+    this.k_sample.setArg(8, new Int32Array([this.j]));
+    this.k_sample.setArg(9, new Int32Array([this.k]));
     //debug("Dims: " + this.global.length + " Global: " + JSON.stringify(this.global) + " Local: " + JSON.stringify(this.local));
     try {
-      this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, this.local, []);
+      this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, null, this.global, this.local);
     } catch (e) {  //Some devices/implementations don't like the local size specified
-      this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, [], this.global, [], []);
+      this.queue.enqueueNDRangeKernel(this.k_sample, this.global.length, null, this.global);
     }
 
     //Combine
-    this.k_average.setKernelArg(2, this.j*this.antialias+this.k+1, WebCL.types.INT);
+    this.k_average.setArg(2, new Int32Array([this.j*this.antialias+this.k+1]));
     try {
-      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, this.local, []);
+      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, null, this.global, this.local);
     } catch (e) {  //Some devices/implementations don't like the local size specified
-      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, [], this.global, [], []);
+      this.queue.enqueueNDRangeKernel(this.k_average, this.global.length, null, this.global);
     }
 
-    this.queue.enqueueReadImage(this.output, false, [0,0,0], 
-         [this.global[0],this.global[1],1], 0, 0, this.outImage.data, []);
+    //  var outBuffer = new Float32Array(this.global[0]*this.global[1]*4);
+    //  this.queue.enqueueReadBuffer(this.temp, false, 0, outBuffer.byteLength, outBuffer);
+
+    this.queue.enqueueReadImage(this.output, false, [0,0],
+         [this.global[0],this.global[1]], 0, this.outImage.data);
+         //[this.global[0],this.global[1],1], 0, 0, this.outImage.data, []);
+
+    //Run everything
     this.queue.finish();
+
+    //alert(outBuffer[0] + "," + outBuffer[1] + "," + outBuffer[2] + "," + outBuffer[3] + "," + outBuffer[4]);
+    //alert(this.outImage.data.byteLength);
+    //alert(this.outImage.data[0] + "," + this.outImage.data[1] + "," + this.outImage.data[2] + "," + this.outImage.data[3] + "," + this.outImage.data[4]);
 
     this.ctx2d.putImageData(this.outImage, this.viewport.x, this.viewport.y);
 
@@ -286,4 +313,8 @@
     }
   }
 
+  OpenCL.prototype.free = function() {
+    if (this.ctx)
+      this.ctx.releaseAll();
+  }
 

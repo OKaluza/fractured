@@ -1,4 +1,3 @@
-precision highp float;
 attribute vec3 aVertexPosition;
 uniform mat4 uMVMatrix;
 varying vec2 coord;

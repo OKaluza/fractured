@@ -30,7 +30,6 @@
 <script type="text/javascript" src="gl-matrix.js"></script>
 <script type="text/javascript" src="webgl.js"></script>
 <script type="text/javascript" src="webcl.js"></script>
-<script type="text/javascript" src="libwebcl.js"></script>
 <!-- @-->
 
 <!--script type="text/javascript" src="fractured_VERSION.js"></script-->
@@ -177,6 +176,7 @@
                 <li><span id="recordOff" class="selected_item" onclick="menu(); recordStop();">Off</span></li>
               </ul>
             </li>
+            <li><span onclick="menu(); setDelayTimer();">Set Delay Timer</span></li>
             <li><span class="fly" tabindex="1" onclick="menu(this, 1);">Scripts</span>
               <ul class="dd listmenu">
                 <li><span onclick="menu(); editScript()">New Script</span></li>
@@ -230,9 +230,8 @@
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Fractured VERSION Released:</h3>
           <ul>
-            <li>There is now support for <a href="https://github.com/SRA-SiliconValley/webkit-webcl">Webkit-WebCL</a> using the <a href="https://github.com/alerock/libwebcl">libwebcl.js</a> wrapper, thanks heaps to Alexandre Rocha and Marcelo Morais for helping with this. The <a href="http://webcl.nokiaresearch.com">Nokia WebCL</a> firefox plugin is also still supported of course.</li>
-            <li>Fix some formula library problems and colour adjustment shader not handling transparency.</li>
-            <li>Other minor bug fixes in layout and resizing</li>
+            <li>WebCL support for the updated Nokia WebCL plugin fixed.</li>
+            <li>History: browser back/forward buttons can be used to view fractal history.</li>
           </ul>
         </div>
 
@@ -244,13 +243,20 @@
           the fractal you had displayed last time you used this site.</p>
         </div>
 
-        <div class="card" id="webcl_detected">
+        <div class="card" id="render_mode">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
-          <h3>WebCL Detected</h3>
+          <h3>Rendering Mode</h3>
           Select rendering mode below. Setting will be remembered.</p>
+          <!--input type="button" id="server" value="Server" onClick="fractal.switchMode(SERVER);"-->
           <input type="button" id="webgl" value="WebGL" onClick="fractal.switchMode(WEBGL);">
           <input type="button" id="webcl" value="WebCL" onClick="fractal.switchMode(WEBCL);">
           <input type="button" id="fp64" value="WebCL fp64" onClick="fractal.switchMode(WEBCL64);">
+          </select>
+        </div>
+
+        <div class="card" id="webcl_detected">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>WebCL Detected</h3>
           <p>When available, <i>WebCL fp64</i> uses double precision calculations allowing deeper fractal zooms, but will be slower to draw.</p>
           <p><b>OpenCL platforms and devices:</b>
           <select id="webcl_list" style="width: 100%; font-size: 9pt;" onchange="fractal.webclSet(this.value);">
@@ -268,7 +274,7 @@
         <div class="card" id="webgl_detected">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>WebGL</h3>
-          <p>Your system appears to support the default WebGL fractal renderer, you should be able to view fractals with no problems.<br> Warning: flaws in WebGL implementations on <i>Firefox for Android</i> and <i>Opera for Windows</i> can cause this site to crash your browser/device.</p>
+          <p>Your system appears to support the default WebGL fractal renderer, you should be able to view fractals with no problems.</p>
         </div>
 
         <div class="card" id="no_webgl">
@@ -359,7 +365,7 @@
         <form id="param_inputs" name="inputs" onmousedown="handleFormMouseDown(event)">
           <div class="row">
             <label>Name</label>
-            <span class="field"><input type="text" id="name" name="description" value="unnamed">
+            <span class="field"><input type="text" id="name" name="description" value="unnamed"  onkeypress="fractal.name = this.value;" onchange="fractal.name = this.value;">
             </span>
           </div>
           <div class="row">

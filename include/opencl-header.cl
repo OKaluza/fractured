@@ -33,12 +33,7 @@ complex C(in real x, in real y) { complex z; z.x = x; z.y = y; return z; }
 
 //Palette lookup mu = [0,1]
 __constant sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;
-#define gradient(mu) read_palette(palette, mu)
-rgba read_palette(image2d_t palette, float mu)
-{
-  uint4 p = read_imageui(palette, sampler, (float2)(mu, 0.0));
-  return (rgba)(p.x/255.0, p.y/255.0, p.z/255.0, p.w/255.0); 
-}
+#define gradient(mu) read_imagef(palette, sampler, (float2)(mu, 0.0))
 
 #define CALCPIXEL rgba calcpixel(int iterations, complex coord, complex offset, bool julia, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background, __global real* input)
 
@@ -110,5 +105,5 @@ __kernel void average(write_only image2d_t output, __global float4* temp, int pa
   int2 pos = (int2)(get_global_id(0), get_global_id(1));
   rgba pixel = temp[get_global_id(1)*get_global_size(0)+get_global_id(0)];
   pixel /= (rgba)passes;
-  write_imageui(output, (int2)(pos.x, pos.y), (uint4)(255*pixel.x,255*pixel.y,255*pixel.z,255*pixel.w));
+  write_imagef(output, pos, pixel);
 }

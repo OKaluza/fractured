@@ -1434,6 +1434,7 @@ function autoResize(newval) {
 function beforeUnload(event) {
   //This event works in webkit but doesn't allow interaction, always save for now
   state.save();
+  if (fractal.webcl) fractal.webcl.free();
   return null; //"beforeUnload";
 }
 
