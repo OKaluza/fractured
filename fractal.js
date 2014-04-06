@@ -228,7 +228,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   //Render mode, If not set, use WebGL if available
   this.renderer = mode;
   if (this.renderer == undefined) this.renderer = WEBGL;
-  if (window.webcl == undefined && this.renderer > WEBGL) this.renderer = WEBGL;
+  //if (window.webcl == undefined && this.renderer > WEBGL) this.renderer = WEBGL;
 
   //WebCL local renderer
   if (this.renderer >= WEBCL) {
@@ -250,7 +250,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
       //WebCL init failed, fallback to WebGL
       var error = e;
       if (e.message) error = e.message;
-      popup("WebCL could not be initialised (" + error + ")<br>Try <a href='http://webcl.nokiaresearch.com/'>webcl.nokiaresearch.com</a> for more information.");
+      //popup("WebCL could not be initialised (" + error + ")<br>Try <a href='http://webcl.nokiaresearch.com/'>webcl.nokiaresearch.com</a> for more information.");
       this.webcl = null;
       this.renderer = WEBGL;
     }
@@ -276,7 +276,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   }
 
   //Server side renderer
-  var serv_url; // = "http://..."
+  var serv_url; //= "http://...;
   
   if (this.renderer == SERVER && serv_url) {
     //this.webgl = null;
@@ -300,10 +300,10 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   $("fp64").disabled = false;
   $("webcl_list").disabled = true;
   if (!this.webcl) {
-    if (window.webcl == undefined) {
+    //if (window.webcl == undefined) {
       $("webcl").disabled = true;
       $("fp64").disabled = true;
-    }
+    //}
   } else {
     $("fp64").disabled = !this.webcl.fp64avail;
     this.webcl.populateDevices($("webcl_list"));
@@ -426,6 +426,7 @@ Fractal.prototype.resetDefaults = function() {
 }
 
 Fractal.prototype.formulaDefaults = function() {
+  //# UI
   for (category in this.choices)
     this.choices[category].reselect(0);
   this.choices['outside_colour'].reselect(1); //Exception for default!
@@ -1225,6 +1226,7 @@ Fractal.prototype.iniLoader = function(source) {
 
 
 Fractal.prototype.loadParams = function() {
+  //# UI
   //debug("loadParams<hr>");
   //Parse param fields from formula code
   for (category in this.choices)
@@ -1341,6 +1343,7 @@ Fractal.prototype.applyChanges = function(antialias, notime) {
 
 //Update form controls with fractal data
 Fractal.prototype.copyToForm = function() {
+  //# UI
   //debug("copyToForm<hr>");
   document["inputs"].elements["name"].value = this.name;
   document["inputs"].elements["width"].value = this.width;
@@ -1577,6 +1580,7 @@ Fractal.prototype.timeAction = function(action) {
 }
 
 function ondrawn() {
+  //# UI
   //Call the user-defined ondraw function
   if (fractal.ondraw) fractal.ondraw();
   //Save last drawn thumbnail

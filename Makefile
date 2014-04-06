@@ -41,16 +41,15 @@ release:
 clean:
 	-rm -r release
 
-$(fractured): $(SCRIPTS) gl-matrix.js parser.js libwebcl.js
+$(fractured): $(SCRIPTS) gl-matrix.js parser.js
 	cat $(SCRIPTS) > /tmp/fractured-index.js
 	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fractured-index.js
 	$(COMP)/tmp/fractured-index.js $(FLAGS)/tmp/fractured-compressed.js
 	#Modules that require separate compilation
 	$(COMP)gl-matrix.js $(FLAGS)/tmp/gl-matrix-min.js
 	$(COMP)parser.js $(FLAGS)/tmp/parser-min.js
-	$(COMP)libwebcl.js $(FLAGS)/tmp/libwebcl-min.js
 	#Combine into final bundle
-	cat /tmp/fractured-compressed.js /tmp/gl-matrix-min.js /tmp/parser-min.js /tmp/libwebcl-min.js > $(fractured)
+	cat /tmp/fractured-compressed.js /tmp/gl-matrix-min.js /tmp/parser-min.js > $(fractured)
 
 $(codemirror): $(CMSCRIPTS)
 	cat $(CMSCRIPTS) > /tmp/codemirror-index.js

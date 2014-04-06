@@ -230,8 +230,9 @@
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Fractured VERSION Released:</h3>
           <ul>
-            <li>WebCL support for the updated Nokia WebCL plugin fixed.</li>
+            <li>WebCL support for the updated Nokia Firefox plugin now fixed.</li>
             <li>History: browser back/forward buttons can be used to view fractal history.</li>
+            <li>Pause/resume for scripting, general bug fixes</li>
           </ul>
         </div>
 
@@ -247,7 +248,7 @@
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Rendering Mode</h3>
           Select rendering mode below. Setting will be remembered.</p>
-          <!--input type="button" id="server" value="Server" onClick="fractal.switchMode(SERVER);"-->
+          <input type="button" id="server" value="Server" onClick="fractal.switchMode(SERVER);">
           <input type="button" id="webgl" value="WebGL" onClick="fractal.switchMode(WEBGL);">
           <input type="button" id="webcl" value="WebCL" onClick="fractal.switchMode(WEBCL);">
           <input type="button" id="fp64" value="WebCL fp64" onClick="fractal.switchMode(WEBCL64);">
@@ -268,7 +269,7 @@
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>No WebCL Support</h3>
           <p>You don't appear to have a working WebCL implementation, such as the <a href="http://webcl.nokiaresearch.com">Nokia WebCL</a> firefox plugin or <a href="https://github.com/SRA-SiliconValley/webkit-webcl">Webkit-WebCL</a>.</p>
-          <p>The default WebGL renderer is generally faster but only if your graphics card (GPU) is up to the task. WebCL on the other hand can use the CPU or GPU and where available allows double-precision support for deeper fractal zooms.</p>
+          <p>The default WebGL renderer is generally faster but only if your graphics card (GPU) is up to the task. WebCL can use the CPU or GPU and where available allows double-precision support for deeper fractal zooms.</p>
         </div>
 
         <div class="card" id="webgl_detected">
