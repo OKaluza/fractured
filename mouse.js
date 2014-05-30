@@ -1,5 +1,6 @@
 
   var defaultMouse;
+  var dragMouse; //Global drag tracking
 
   //Handler class from passed functions
   /**
@@ -147,6 +148,7 @@
       mouse.lastY = mouse.absoluteY;
     }
     mouse.isdown = true;
+    dragMouse = mouse;
     mouse.button = event.button;
     //Set document move & up event handlers to this.mouse object's
     document.mouse = mouse;
@@ -157,6 +159,7 @@
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action; //IE
+    return action;
   }
 
   //Default handlers for up & down, call specific handlers on element
@@ -169,31 +172,37 @@
       mouse.update(event);
       if (mouse.handler.click) action = mouse.handler.click(event, mouse);
       mouse.isdown = false;
+      dragMouse = null;
       mouse.button = null;
       mouse.dragged = false;
     }
-    if (mouse.handler.up) mouse.handler.up(event, mouse);
+    if (mouse.handler.up) action = action && mouse.handler.up(event, mouse);
     //Restore default mouse on document
     document.mouse = defaultMouse;
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action; //IE
+    return action;
   }
 
   function handleMouseMove(event) {
-    var mouse = getMouse(event);
+    //Use previous mouse if dragging
+    var mouse = dragMouse ? dragMouse : getMouse(event);
+    //if (dragMouse) console.log(mouse.element.id);
     //var mouse = document.mouse;
     if (!mouse || mouse.disabled) return true;
     mouse.update(event);
     mouse.deltaX = mouse.absoluteX - mouse.lastX;
     mouse.deltaY = mouse.absoluteY - mouse.lastY;
     var action = true;
-    if (mouse.handler.move) action = mouse.handler.move(event, mouse);
 
     //Set dragged flag if moved more than limit
     if (!mouse.dragged && mouse.isdown && Math.abs(mouse.deltaX) + Math.abs(mouse.deltaY) > 3)
       mouse.dragged = true;
+
+    if (mouse.handler.move)
+      action = mouse.handler.move(event, mouse);
 
     if (mouse.moveUpdate) {
       //Constant update of last position
@@ -204,6 +213,7 @@
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action; //IE
+    return action;
   }
  
   function wheelSpin(event) {
@@ -232,6 +242,7 @@
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action; //IE
+    return action;
   } 
 
   function handleMouseLeave(event) {
@@ -239,11 +250,12 @@
     if (!mouse || mouse.disabled) return true;
 
     var action = true;
-    if (mouse.handler.leave) mouse.handler.leave(event, mouse);
+    if (mouse.handler.leave) action = mouse.handler.leave(event, mouse);
 
     //If handler returns false, prevent default action
     if (!action && event.preventDefault) event.preventDefault();  // Firefox
     event.returnValue = action; //IE
+    return action;
   } 
 
   //Basic touch event handling
@@ -312,8 +324,8 @@
       var simulatedEvent = document.createEvent("MouseEvent");
       simulatedEvent.initMouseEvent(simulate, true, true, window, 1, 
                                 first.screenX, first.screenY, 
-                                first.clientX, first.clientY, false, 
-                                false, false, false, 0/*left*/, null);
+                                first.clientX, first.clientY, event.ctrlKey, 
+                                event.altKey, event.shiftKey, event.metaKey, 0 /*left*/, null);
 
       //Prevent default where requested
       prevent = !first.target.dispatchEvent(simulatedEvent);
