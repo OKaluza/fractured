@@ -216,7 +216,7 @@
 
       //Copy parameter variables to input buffer
       for (var i=0; i<fractal.paramvars.length; i++)
-        this.paramBuffer[11+i] = fractal.paramvvars[i];
+        this.paramBuffer[11+i] = fractal.paramvars[i];
 
       this.queue.enqueueWriteBuffer(this.params, false, 0, this.paramBuffer.byteLength, this.paramBuffer);
 
