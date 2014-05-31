@@ -3,6 +3,7 @@ var WEBGL = 0;
 var WEBCL = 1;
 var WEBCL64 = 2;
 var SERVER = -1;
+var newline = /\r\n?|\n/;
 
 var sectionnames = {"fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour", "filter" : "Filter"}
 
@@ -64,7 +65,7 @@ Server.prototype.post = function(image) {
     if (http.status == 200) {
       if (image) {
         setProgress(100);
-        var canvas = $("fractal-canvas");
+        var canvas = $("main-fractal-canvas");
         var context = canvas.getContext("2d"); 
         var img = new Image();
         img.onload = function(e) {
@@ -167,19 +168,44 @@ function LineOffset(category, section, value) {
 /**
  * @constructor
  */
-function Fractal(parentid) {
+function Fractal(parentid, colours, ui) {
   //Construct a new default fractal object
-  this.setRenderer(parentid, state.renderer);
-
+  this.element = $(parentid);
   //Set canvas size
-  this.sizeCanvas();
-
-  this.antialias = state.antialias;
+  //this.sizeCanvas();
+  this.paramvars = [];
   this.preview = null;
   this.name = "";
+  this.ui = ui;
+  this.select = document.createElement("div");
+  this.select.id = "select";
+  this.select.className = "select";
+  this.element.appendChild(this.select);
+  //Object with Palette class and read/get functions can be provided (eg: GradientEditor)
+  if (colours) {
+    this.colours = colours;
+  } else {
+    //Default is just a wrapper for a palette object
+    this.colours = {
+        "palette" : new Palette(),
+        "read" : function(source) {this.palette = new Palette(source);},
+        "get"  : function(canvas) {this.palette.draw(canvas, false);}
+      };
+  }
+  //Texture canvas
+  this.gradient = document.createElement("canvas");
+  this.gradient.width = 2048;
+  this.gradient.height = 1;
 }
 
-Fractal.prototype.init = function() {
+Fractal.prototype.init = function(state) {
+  //Use passed state object or create one
+  if (!state) state = {};
+  this.state = state;
+
+  //Initialise the renderer
+  this.setRenderer(this.state.renderer);
+
   //Set the default fractal options
   this.resetDefaults();
   this.copyToForm();
@@ -203,27 +229,27 @@ Fractal.prototype.switchMode = function(mode) {
   if (mode == SERVER && this.renderer == SERVER) return;
   if (mode == WEBGL && this.webgl) return;
   //Recreate canvas & fractal
-  this.setRenderer('main', mode);
-  if (sources["generated.source"]) {
-    sources["generated.source"] = "";     //Force rebuild
-    sources["server.source"] = "";
+  this.setRenderer(mode);
+  if (this.cache) {
+    this.cache = null;  //Force rebuild
+    this.servercache = null;
     this.applyChanges();
   }
 }
 
-Fractal.prototype.setRenderer = function(parentid, mode) {
+Fractal.prototype.setRenderer = function(mode) {
   //Create new canvas
   this.canvas = document.createElement("canvas");
-  this.canvas.id = "fractal-canvas"
+  this.canvas.id = this.element.id + "-fractal-canvas";
   this.canvas.className = "checkerboard";
+  this.canvas.style.width = this.canvas.style.height = "100%";
   this.canvas.mouse = new Mouse(this.canvas, this);
   this.canvas.mouse.setDefault();
 
   //Remove existing canvas if any
-  var pelement = $(parentid)
-  var ccanvas = $("fractal-canvas");
-  if (ccanvas) pelement.removeChild(ccanvas);
-  pelement.appendChild(this.canvas);
+  var ccanvas = $(this.canvas.id);
+  if (ccanvas) this.element.removeChild(ccanvas);
+  this.element.appendChild(this.canvas);
 
   //Render mode, If not set, use WebGL if available
   this.renderer = mode;
@@ -235,7 +261,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
     //Init WebCL
     if (this.webcl) this.webcl.free();
     try {
-      this.webcl = new OpenCL(state.platform, state.device);  //Use existing settings
+      this.webcl = new OpenCL(this.state.platform, this.state.device);  //Use existing settings
 
       if (this.renderer > WEBCL && !this.webcl.fp64avail) {
         popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> " + 
@@ -243,14 +269,14 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
         this.renderer = WEBCL;
       }
 
-      debug(state.platform + " : " + state.device + " --> " + this.canvas.width + "," + this.canvas.height);
-      this.webcl.init(this.canvas, this.renderer > WEBCL, 8);
+      debug(this.state.platform + " : " + this.state.device + " --> " + this.canvas.width + "," + this.canvas.height);
+      this.webcl.init(this.canvas, this.renderer > WEBCL, 8, this.gradient);
       this.webgl = undefined;
     } catch(e) {
       //WebCL init failed, fallback to WebGL
       var error = e;
       if (e.message) error = e.message;
-      //popup("WebCL could not be initialised (" + error + ")<br>Try <a href='http://webcl.nokiaresearch.com/'>webcl.nokiaresearch.com</a> for more information.");
+      if (mode >= WEBGL) popup("WebCL could not be initialised (" + error + ")");
       this.webcl = null;
       this.renderer = WEBGL;
     }
@@ -260,7 +286,7 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   if (this.renderer == WEBGL) {
     try {
       //Init WebGL
-      this.webgl = new WebGL(this.canvas);
+      this.webgl = new WebGL(this.canvas, this);
       this.gl = this.webgl.gl;
       this.webgl.init2dBuffers();
     } catch(e) {
@@ -281,73 +307,73 @@ Fractal.prototype.setRenderer = function(parentid, mode) {
   if (this.renderer == SERVER && serv_url) {
     //this.webgl = null;
     //this.webcl = null;
-    //this.server = new Server("http://home.ozone.id.au:8080");
     this.server = new Server(serv_url);
-    //this.server = new Server("http://users.monash.edu.au/~okaluza/proxy.php?url=");
-    //this.server = new Server("http://localhost:8080");
-  } else if (this.webgl) {
-    //Control mode (TODO: need way to enable this, should not be on by default!!!)
-    //this.server = new Server("http://localhost:8080", "/update");
-    this.server = null;
+  } else if (this.webgl && serv_url) {
+    //Control mode
+    this.server = new Server(serv_url, "/update");
   }
 
   //#Update UI
-  //(reset all to enabled, 
-  //shouldn't be necessary but this state seems not to be cleared sometimes)
-  $("server").disabled = false;
-  $("webgl").disabled = false;
-  $("webcl").disabled = false;
-  $("fp64").disabled = false;
-  $("webcl_list").disabled = true;
-  if (!this.webcl) {
-    //if (window.webcl == undefined) {
-      $("webcl").disabled = true;
-      $("fp64").disabled = true;
-    //}
-  } else {
-    $("fp64").disabled = !this.webcl.fp64avail;
-    this.webcl.populateDevices($("webcl_list"));
-    if (this.renderer >= WEBCL) $("webcl_list").disabled = false;
-  }
-  if (!window.WebGLRenderingContext || this.webgl === null) {
-    $("webgl").disabled = true;
-  }
-  if (!serv_url) {
-    $("server").disabled = true;
-  }
+  if (this.ui) {
+    //(reset all to enabled, 
+    //shouldn't be necessary but this state seems not to be cleared sometimes)
+    $("server").disabled = false;
+    $("webgl").disabled = false;
+    $("webcl").disabled = false;
+    $("fp64").disabled = false;
+    $("webcl_list").disabled = true;
+    if (!this.webcl) {
+      if (window.webcl == undefined || !webcl.getPlatforms) {
+        $("webcl").disabled = true;
+        $("fp64").disabled = true;
+      }
+    } else {
+      $("fp64").disabled = !this.webcl.fp64avail;
+      this.webcl.populateDevices($("webcl_list"));
+      if (this.renderer >= WEBCL) $("webcl_list").disabled = false;
+    }
+    if (!window.WebGLRenderingContext || this.webgl === null) {
+      $("webgl").disabled = true;
+    }
+    if (!serv_url) {
+      $("server").disabled = true;
+    }
 
-  //Style buttons
-  $("server").className = "";
-  $("webgl").className = "";
-  $("webcl").className = "";
-  $("fp64").className = "";
-  if (this.renderer == SERVER) 
-    $("server").className = "activemode";
-  else if (this.renderer == WEBGL) 
-    $("webgl").className = "activemode";
-  else if (this.renderer == WEBCL64 && this.webcl.fp64)
-    $("fp64").className = "activemode";
-  else if (this.renderer == WEBCL)
-    $("webcl").className = "activemode";
+    //Style buttons
+    $("server").className = "";
+    $("webgl").className = "";
+    $("webcl").className = "";
+    $("fp64").className = "";
+    if (this.renderer == SERVER) 
+      $("server").className = "activemode";
+    else if (this.renderer == WEBGL) 
+      $("webgl").className = "activemode";
+    else if (this.renderer == WEBCL64 && this.webcl.fp64)
+      $("fp64").className = "activemode";
+    else if (this.renderer == WEBCL)
+      $("webcl").className = "activemode";
 
-  var renderer_names = ["Server", "WebGL", "WebCL", "WebCL fp64"];
-  print("Mode set to " + renderer_names[this.renderer+1]);
-  state.renderer = this.renderer;
-  state.saveStatus();
+    var renderer_names = ["Server", "WebGL", "WebCL", "WebCL fp64"];
+    print("Mode set to " + renderer_names[this.renderer+1]);
+
+    //Save last used renderer in state
+    this.state.renderer = this.renderer;
+    this.state.saveStatus();
+  }
 }
 
 //Fractal.prototype.webclSet = function(pfid, devid) {
 Fractal.prototype.webclSet = function(valstr) {
   var val = JSON.parse(valstr);
   //Init with new selection
-  state.platform = val.platform;
-  state.device = val.device;
-  this.setRenderer('main', this.renderer);
+  this.state.platform = val.platform;
+  this.state.device = val.device;
+  this.setRenderer(this.renderer);
 
   //Redraw if updating
-  if (sources["generated.source"]) {
+  if (this.cache) {
     //Invalidate shader cache
-    sources["generated.source"] = '';
+    this.cache = null;
     this.applyChanges();
   }
 }
@@ -359,7 +385,7 @@ Fractal.prototype.precision = function(val) {
 
 //Actions
 Fractal.prototype.restoreLink = function() {
-  return '<a href="javascript:fractal.restore('+ this.position.print() + ', new Complex'+ this.selected + ', ' + fractal.julia + ');">@</a> '; 
+  return '<a href="javascript:fractal.restore('+ this.position.print() + ', new Complex'+ this.selected + ', ' + this.julia + ');">@</a> '; 
 }
 
 Fractal.prototype.restore = function(im, re, rotate, zoom, selected, julia) {
@@ -375,21 +401,25 @@ Fractal.prototype.setOrigin = function(point) {
   //Adjust centre position
   this.position.re += point.re;
   this.position.im += point.im;
-  print(this.restoreLink() + "Origin: re: " + this.precision(this.position.re) + " im: " + this.precision(this.position.im));
+  //print(this.restoreLink() + "Origin: re: " + this.precision(this.position.re) + " im: " + this.precision(this.position.im));
 }
 
 Fractal.prototype.applyZoom = function(factor) {
   //Adjust zoom
   this.position.zoom *= factor;
-  print(this.restoreLink() + "Zoom: " + this.precision(this.position.zoom));
+  //print(this.restoreLink() + "Zoom: " + this.precision(this.position.zoom));
 }
 
 Fractal.prototype.selectPoint = function(point, log) {
   //Julia set switch
   if (point && !this.julia) {
     this.julia = true;
-    $("xSelect").value = this.selected.re = this.position.re + point.re;
-    $("ySelect").value = this.selected.im = this.position.im + point.im;
+    this.selected.re = this.position.re + point.re;
+    this.selected.im = this.position.im + point.im;
+    if (this.ui) {
+      $("xSelect").value = this.selected.re;
+      $("ySelect").value = this.selected.im;
+    }
   } else {
     this.julia = false;
   }
@@ -398,13 +428,6 @@ Fractal.prototype.selectPoint = function(point, log) {
   var tempPos = this.position.clone();
   this.position = this.savePos.clone();
   this.savePos = tempPos;
-
-  if (log) {
-    if (this.julia) 
-      print(this.restoreLink() + "Julia set @ (" + this.precision(this.selected.re) + ", " + this.precision(this.selected.im) + ")");
-    else
-      print(this.restoreLink() + "Mandelbrot set switch");
-  }
 }
 
 Fractal.prototype.resetDefaults = function() {
@@ -422,11 +445,12 @@ Fractal.prototype.resetDefaults = function() {
 
   //#Reset default params
   for (category in this.choices)
-    this.choices[category] = new Formula(category);
+    this.choices[category] = new FormulaSelection(category);
 }
 
 Fractal.prototype.formulaDefaults = function() {
   //# UI
+  if (!this.ui) return;
   for (category in this.choices)
     this.choices[category].reselect(0);
   this.choices['outside_colour'].reselect(1); //Exception for default!
@@ -513,7 +537,8 @@ Fractal.prototype.toStringMinimal = function() {
 
 Fractal.prototype.paramString = function(fixedsize) {
   //Return fractal parameters as a string
-  var code = "[fractal]\nversion=" + state.version + "\n";
+  var code = "[fractal]\n";
+  if (this.state.version) code += "version=" + this.state.version + "\n";
   if (fixedsize) {
     code += "width=" + this.canvas.clientWidth + "\n" +
             "height=" + this.canvas.clientHeight + "\n";
@@ -530,6 +555,8 @@ Fractal.prototype.paramString = function(fixedsize) {
   //Formula selections
   for (category in this.choices)
     code += category + "=" + this.choices[category].selected + "\n";
+
+  if (!fixedsize && this.savePos) code += "\n[preview]\n" + this.savePos + "\n";
 
   return code;
 }
@@ -562,12 +589,12 @@ Fractal.prototype.formulaSourceString = function() {
 
 Fractal.prototype.paletteString = function() {
   //Return active palette as a string
-  return "\n[palette]\n" + colours.palette;
+  return "\n[palette]\n" + this.colours.palette;
 }
 
 Fractal.prototype.loadPalette = function(source) {
   //Parse out palette section only, works with old and new file formats
-  var lines = source.split("\n"); // split on newlines
+  var lines = source.split(newline); // split on newlines
   var buffer = "";
   var section = "";
   for (var i = 0; i < lines.length; i++) {
@@ -577,7 +604,7 @@ Fractal.prototype.loadPalette = function(source) {
     else if (section.toLowerCase() == "palette")
       buffer += lines[i] + "\n";
   }
-  colours.read(buffer);
+  this.colours.read(buffer);
 }
 
 //Load fractal from file
@@ -586,7 +613,7 @@ Fractal.prototype.load = function(source, checkversion, noapply) {
   //Strip leading : from old data
   source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
   //Only prompt for old fractals when loaded from file or stored, not restored or from server
-  if (state.debug && checkversion && source.indexOf("version=") < 0
+  if (this.state.debug && checkversion && source.indexOf("version=") < 0
       && confirm("No version found in fractal source. Load fractal in compatibility mode?")) {
     return this.loadOld(source, noapply);
   }
@@ -598,7 +625,7 @@ Fractal.prototype.load = function(source, checkversion, noapply) {
   //3. Load code for each selected formula
   //4. For each formula, load formula params into params[formula]
   //5. Load palette
-  var lines = source.split("\n"); // split on newlines
+  var lines = source.split(newline); // split on newlines
   var section = "";
   var curparam = null;
 
@@ -614,7 +641,7 @@ Fractal.prototype.load = function(source, checkversion, noapply) {
           if (lines[j][0] == "[") break;
           buffer += lines[j] + "\n";
         }
-        colours.read(buffer);
+        this.colours.read(buffer);
         i = j-1;
       }
       continue;
@@ -624,6 +651,15 @@ Fractal.prototype.load = function(source, checkversion, noapply) {
 
     ///Remove this some day
     if (section == "params.base") section = "fractal";
+
+    if (section == "preview") {
+      //Saved preview/julia settings
+      var pair = line.split("=");
+      if (pair[0] == "origin")
+        this.savePos.set(pair[1]);
+      else if (pair[0] == "zoom" || pair[0] == "rotate")
+        this.savePos[pair[0]] = parseReal(pair[1]);
+    }
 
     if (section == "fractal") {
       //parse into attrib=value pairs
@@ -753,7 +789,7 @@ Fractal.prototype.loadOld = function(source, noapply) {
 
     var saved = {}; //Another patch addition, remove once all converted
 
-  var lines = source.split("\n"); // split on newlines
+  var lines = source.split(newline); // split on newlines
   var section = "";
   var curparam = null;
 
@@ -769,7 +805,7 @@ Fractal.prototype.loadOld = function(source, noapply) {
           if (lines[j][0] == "[") break;
           buffer += lines[j] + "\n";
         }
-        colours.read(buffer);
+        this.colours.read(buffer);
         i = j-1;
       }
       continue;
@@ -931,7 +967,7 @@ Fractal.prototype.iniLoader = function(source) {
     return "none";  //Fallback
   }
 
-  var lines = source.split("\n"); // split on newlines
+  var lines = source.split(newline); // split on newlines
   var section = "";
 
   var paletteSource = "";
@@ -1062,8 +1098,8 @@ Fractal.prototype.iniLoader = function(source) {
   }
 
   //Process the palette data
-  colours.read(paletteSource);
-  if (state.legacy) colours.palette.background.alpha = 1.0;
+  this.colours.read(paletteSource);
+  if (this.state.legacy) this.colours.palette.background.alpha = 1.0;
   
   if (saved["smooth"]) {
     //Really old
@@ -1227,6 +1263,7 @@ Fractal.prototype.iniLoader = function(source) {
 
 Fractal.prototype.loadParams = function() {
   //# UI
+  if (!this.ui) return;
   //debug("loadParams<hr>");
   //Parse param fields from formula code
   for (category in this.choices)
@@ -1252,8 +1289,10 @@ Fractal.prototype.sizeCanvas = function() {
     width = this.canvas.clientWidth;
     height = this.canvas.clientHeight;
     //#Update UI
-    $("width").value = width;
-    $("height").value = height;
+    if (this.ui) {
+      $("width").value = width;
+      $("height").value = height;
+    }
     //Disable scrollbars when using autosize
   } else { //Enable scrollbars
     document.documentElement.style.overflow = "auto";
@@ -1288,62 +1327,60 @@ Fractal.prototype.sizeCanvas = function() {
 Fractal.prototype.updatePalette = function() {
   if (!this.webgl && !this.webcl) return;
   //Update palette texture
-  var canvas = $('gradient');
-  colours.get(canvas);
-  if (this.webgl) this.webgl.updateTexture(this.webgl.gradientTexture, canvas);
+  this.colours.get(this.gradient);
+  if (this.webgl) this.webgl.updateTexture(this.webgl.gradientTexture, this.gradient);
 }
 
 //Apply any changes to parameters or formula selections and redraw
 Fractal.prototype.applyChanges = function(antialias, notime) {
-  /*if (this.noui) {
-    //#Fixed shader source, no control UI
-    this.generated = new Generator(this, this.renderer >= WEBCL && this.webcl, notime);
-    this.generated.update(this.source);
-    this.draw(antialias, notime);
-    return;
-  }*/
-
   //if (!this.webgl && !this.webcl) return;
   //Only redraw when visible
   if (this.canvas.offsetWidth < 1 || this.canvas.offsetHeight < 1) return;
   //Update palette texture
   this.updatePalette();
 
-  //Resize canvas if size settings changed
-  if (document["inputs"].elements["autosize"].checked) {
-    //Clear so draw() gets size from window
-    this.width = 0;
-    this.height = 0;
-  } else {
-    //Use size from form
-    this.width = parseInt($("width").value);
-    this.height = parseInt($("height").value);
+  if (this.ui) {
+    //Resize canvas if size settings changed
+    if (document["inputs"].elements["autosize"].checked) {
+      //Clear so draw() gets size from window
+      this.width = 0;
+      this.height = 0;
+    } else {
+      //Use size from form
+      this.width = parseInt($("width").value);
+      this.height = parseInt($("height").value);
+    }
+
+    this.iterations = parseReal($("iterations").value);
+    this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
+    this.position = new Aspect(parseReal($("xOrigin").value), parseReal($("yOrigin").value),
+                               parseReal($("rotate").value), parseReal($("zoom").value));
+    this.selected = new Complex(parseReal($("xSelect").value), parseReal($("ySelect").value));
+
+    //Limit rotate to range [0-360)
+    if (this.position.rotate < 0) this.position.rotate += 360;
+    this.position.rotate %= 360;
+    document["inputs"].elements["rotate"].value = this.position.rotate;
+
+    //Copy form values to defined parameters
+    for (category in this.choices)
+      this.choices[category].currentParams.setFromForm();
   }
 
-  this.iterations = parseReal($("iterations").value);
-  this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
-  this.position = new Aspect(parseReal($("xOrigin").value), parseReal($("yOrigin").value),
-                             parseReal($("rotate").value), parseReal($("zoom").value));
-  this.selected = new Complex(parseReal($("xSelect").value), parseReal($("ySelect").value));
+  //Has anything actually changed (parameters)?
+  if (this.paramcache != this.toString) {
+    //Update shader code & redraw
+    this.generated = new Generator(this, notime);
+    this.draw(antialias, notime);
 
-  //Limit rotate to range [0-360)
-  if (this.position.rotate < 0) this.position.rotate += 360;
-  this.position.rotate %= 360;
-  document["inputs"].elements["rotate"].value = this.position.rotate;
-
-  //Copy form values to defined parameters
-  for (category in this.choices)
-    this.choices[category].currentParams.setFromForm();
-
-  //Update shader code & redraw
-  this.generated = new Generator(this, this.renderer >= WEBCL && this.webcl, notime);
-  this.generated.generate();
-  this.draw(antialias, notime);
+    this.paramcache = this.toString();
+  }
 }
 
 //Update form controls with fractal data
 Fractal.prototype.copyToForm = function() {
   //# UI
+  if (!this.ui) return;
   //debug("copyToForm<hr>");
   document["inputs"].elements["name"].value = this.name;
   document["inputs"].elements["width"].value = this.width;
@@ -1368,52 +1405,74 @@ Fractal.prototype.copyToForm = function() {
 /**
  * @constructor
  */
-function Generator(fractal, webcl, notime) {
+function Generator(fractal, notime) {
   this.fractal = fractal;
-  this.webcl = webcl;
+  this.webcl = fractal.renderer >= WEBCL && fractal.webcl;
   this.webgl = (fractal.webgl ? true : false);
   this.notime = notime;
   this.source = "";
-}
-
-Generator.prototype.headers = function() {
-  //Add headers + core code template
-  var headers = "";
-  if (this.webcl) {
-    //OpenCL kernel
-    this.fractal.webcl.resetInput();
-    headers += sources["include/opencl-header.cl"];
-  } else {
-    //GLSL shader
-    headers += sources["include/glsl-header.frag"];
-  }
-
-  headers += sources["include/complex-math.frag"]; 
-
-  //Insert at beginning of source
-  headers += "\n#define MAXITER " + (100 * Math.ceil(this.fractal.iterations / 100)) + "\n";
-  if (this.fractal.choices["inside_colour"].selected == "same")
-    headers += "\n#define outside_set true\n";
-  else
-    headers += "\n#define outside_set escaped || converged\n";
-  this.headerlen = headers.split("\n").length;
-  this.source = headers + this.source;
+  this.generate();
 }
 
 //Create shader from source components
 Generator.prototype.generate = function() {
-  this.source = sources["include/fractal-shader.frag"]; 
+  //Generate language agnostic core code from templates
+  this.generateCore();
+
+  //Insert into code template for target language
+  var targetsrc = "";
+  if (this.webcl)
+    //OpenCL kernel
+    targetsrc = sources["include/opencl-template.cl"];
+  else
+    //GLSL shader
+    targetsrc = sources["include/glsl-template.frag"];
+
+  //Insert the complex maths library
+  targetsrc = targetsrc.replace(/---LIBRARY---/, sources["include/complex.library"]);
+  
+  //Calculate offset of code before core body
+  this.headerlen = targetsrc.substr(0, targetsrc.indexOf("---CODE---")).split(newline).length;
+
+  //Insert the code body
+  targetsrc = targetsrc.replace(/---CODE---/, this.source);
+
+  //WebCL target modifications...
+  if (this.webcl) {
+    //Switch to C-style casts for OpenCL
+    targetsrc = targetsrc.replace(/complex\(/g, "C(");
+    targetsrc = targetsrc.replace(/real\(/g, "(real)(");
+    targetsrc = targetsrc.replace(/float\(/g, "(float)(");
+    targetsrc = targetsrc.replace(/int\(/g, "(int)(");
+    targetsrc = targetsrc.replace(/rgba\(/g, "(rgba)(");
+  }
+
+  //Recompile
+  this.compile(targetsrc);
+}
+
+//Create shader core source components
+Generator.prototype.generateCore = function() {
+  //Insert at beginning of source
+  this.source = "  #define outside_set escaped || converged\n";
+  if (this.fractal.choices["inside_colour"].selected == "same")
+    this.source = "  #define outside_set true\n";  //Force same colouring code
+  this.source += "  #define MAXITER " + (100 * Math.ceil(this.fractal.iterations / 100)) + "\n";
+
+  //Main code template body
+  this.source += sources["include/fractal.template"]; 
+
   //Get formula selections
   this.selections = {};
   for (category in this.fractal.choices)
-    this.selections[category] = this.fractal.choices[category].getParsedFormula();
+    this.selections[category] = this.fractal.choices[category].getParsedFormula(this.fractal);
 
   //Replace ---SECTION--- in template with formula code
   this.offsets = [];
   var alltypes = ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour", "filter"];
   this.templateInsert("DATA", "data", alltypes, 2);
-  this.templateInsert("INIT", "init", alltypes, 2);
-  this.templateInsert("RESET", "reset", alltypes, 2);
+  this.templateInsert("INIT", "init", alltypes, 0);
+  this.templateInsert("RESET", "reset", alltypes, 0);
   this.templateInsert("PRE_TRANSFORM", "transform", ["pre_transform"], 4);
   this.templateInsert("ZNEXT", "znext", ["fractal"], 2);
   this.templateInsert("POST_TRANSFORM", "transform", ["post_transform"], 4);
@@ -1423,8 +1482,8 @@ Generator.prototype.generate = function() {
   this.templateInsert("INSIDE_CALC", "calc", ["inside_colour"], 4);
   this.templateInsert("OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
   this.templateInsert("INSIDE_COLOUR", "result", ["inside_colour"], 2);
-  this.templateInsert("FILTER", "filter", ["filter"], 2);
-  this.offsets.push(new LineOffset("(end)", "(end)", this.source.split("\n").length));
+  this.templateInsert("FILTER", "filter", ["filter"], 0);
+  this.offsets.push(new LineOffset("(end)", "(end)", this.source.split(newline).length));
 
   //Replace any (x,y) constants with complex(x,y)
   //(where x,y can be a numeric constant)
@@ -1434,20 +1493,6 @@ Generator.prototype.generate = function() {
   this.source = this.source.replace(creg, "$1C($2,$5)");
 
   this.source = this.source.replace(/ident/g, ""); //Strip ident() calls
-
-  //Switch to C-style casts for OpenCL
-  if (this.webcl) {
-    this.source = this.source.replace(/complex\(/g, "C(");
-    this.source = this.source.replace(/real\(/g, "(real)(");
-    this.source = this.source.replace(/float\(/g, "(float)(");
-    this.source = this.source.replace(/int\(/g, "(int)(");
-    this.source = this.source.replace(/rgba\(/g, "(rgba)(");
-  }
-
-  //Insert headers
-  this.headers();
-  //Recompile
-  this.compile();
 }
 
 Generator.prototype.templateInsert = function(marker, section, sourcelist, indent) {
@@ -1458,8 +1503,10 @@ Generator.prototype.templateInsert = function(marker, section, sourcelist, inden
 
   //Save the line offset where inserted
   var match = regex.exec(this.source);
-  var offset = this.source.slice(0, match.index).split("\n").length;
-  //debug("<br>" + section + "-->" + marker + " STARTING offset == " + offset);
+  if (!match) return;
+  var offset = this.source.slice(0, match.index).split(newline).length;
+  //alert(offset + "\n" + this.source.slice(0, match.index));
+  //debug(section + "-->" + marker + " STARTING offset == " + offset);
 
   //Get sources
   for (s in sourcelist) {
@@ -1467,17 +1514,15 @@ Generator.prototype.templateInsert = function(marker, section, sourcelist, inden
     var code = this.selections[sourcelist[s]][section];
     if (!code) continue;
 
-    //Replace spaces at line beginnings with specified indent
-    //source = source.replace(/^\s*/gm, spaces);
-    var reg = /^\s*/gm;
-    var match;
-    while (match = reg.exec(code)) {
-      code = code.slice(0, reg.lastIndex) + spaces + code.slice(reg.lastIndex, code.length);
-      reg.lastIndex += indent;
+    //Insert spaces at line beginnings to specified indent
+    var lines = code.split(newline); // split on newlines
+    code = "";
+    for (var i = 0; i < lines.length; i++) {
+      code += spaces + lines[i] + "\n"; 
     }
 
     //Save offset for this section from this formula selection
-    this.offsets.push(new LineOffset(sourcelist[s], section, offset + source.split("\n").length - 1));
+    this.offsets.push(new LineOffset(sourcelist[s], section, offset + source.split(newline).length - 1));
     //debug(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
 
     //Concatentate to final code to insert at marker position
@@ -1488,19 +1533,15 @@ Generator.prototype.templateInsert = function(marker, section, sourcelist, inden
   this.source = this.source.replace(regex, source);
 }
 
-Generator.prototype.update = function(source) {
-  //Replacement source and recompile
-  this.source = source;
-  this.compile();
-}
-
 //Rebuild from source
-Generator.prototype.compile = function() {
+Generator.prototype.compile = function(targetsrc) {
   //Only recompile if data has changed!
-  if (sources["generated.source"] != this.source) {
+  if (this.fractal.cache != targetsrc) {
+    //Cache final source
+    this.fractal.cache = sources["generated.source"] = targetsrc;
+
     //Save for debugging
     var timer = new Timer();
-    sources["generated.source"] = this.source;
 
     //Compile the shader using WebGL or WebCL
     //Any build errors will cause exceptions
@@ -1509,29 +1550,31 @@ Generator.prototype.compile = function() {
       if (this.webcl) {
         error_regex = /[^-](\d+):/;
         //error_regex = /:(\d+):/;
-        this.fractal.webcl.buildProgram(this.source);
+        this.fractal.webcl.buildProgram(targetsrc);
       } else if (this.webgl) {
-        this.fractal.updateShader(this.source);
+        this.fractal.updateShader(targetsrc);
       }
       if (!this.notime) timer.print("Compile");
     } catch (e) {
       this.parseErrors(e, error_regex);
     }
-
   } else
     debug("Shader build skipped, no changes");
 }
 
 Generator.prototype.parseErrors = function(errors, regex) {
   //Parse errors using supplied regex to find line number
+  popup();
   var match = regex.exec(errors);
   var found = false;
   if (match) {
     var lineno = parseInt(match[1]) - this.headerlen + 1; //Subtract header length
+    //console.log("ERROR: " + lineno + " offset: " + this.headerlen);
     var last = null
     for (i in this.offsets) {
       if (last) {
-        //debug("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + " from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
+        //debug("CAT: " + this.offsets[last].category + "SECTION: " + this.offsets[last].section + 
+        //" from: " + this.offsets[last].value + " to " + (this.offsets[i].value-1));
         if (lineno >= this.offsets[last].value && lineno < this.offsets[i].value) {
           var section = this.offsets[last].section;
           //Adjust the line number
@@ -1539,9 +1582,11 @@ Generator.prototype.parseErrors = function(errors, regex) {
           lineno += this.fractal.choices[this.offsets[last].category].lineoffsets[section];
           var key = formulaKey(this.offsets[last].category, this.fractal.choices[this.offsets[last].category].selected);
           if (key) {
-            alert("Error on line number: " + (isNaN(lineno) ? "??" : lineno) +  "\nSection: " + section + "\nof " + 
-                  sectionnames[this.offsets[last].category] + " formula: " + 
-                  (key ? formula_list[key].label : "?") + "\n--------------\n" + errors);
+            popup("<b>Error</b>: line number: <b>" + (isNaN(lineno) ? "??" : lineno) + "</b><br>" + 
+                  "Section: <i>" + section + "</i><br>" + 
+                  sectionnames[this.offsets[last].category] + 
+                  " formula: " + (key ? formula_list[key].label : "?") + 
+                  "<hr><code style='font-family: monospace;'>" + errors.substr(0,511) + "</code>");
             found = true;
           }
           break;
@@ -1550,17 +1595,20 @@ Generator.prototype.parseErrors = function(errors, regex) {
       last = i;
     }
   }
-  if (!found) alert(errors);  //Otherwise show raw error
+  if (!found) {
+    //Otherwise show raw error
+    popup("<b>Error</b>:<hr><code style='font-family: monospace;'>" + errors.substr(0,511) + "</code>");
+  }
 }
 
 Fractal.prototype.updateShader = function(source) {
   //Compile the WebGL shader
   this.program = new WebGLProgram(this.gl, sources["include/shader2d.vert"], source);
   //Restore uniforms/attributes for fractal program
-  var uniforms = ["palette", "offset", "iterations", "julia", "origin", "selected_", "dims", "pixelsize", "background"];
+  var uniforms = ["palette", "offset", "iterations", "julia", "origin", "selected_", "dims", "pixelsize", "background", "params"];
   this.program.setup(["aVertexPosition"], uniforms);
   //Get HLSL source if available
-  if (state.debug) {
+  if (this.state.debug) {
     var angle = this.gl.getExtension("WEBGL_debug_shaders");
     if (angle) sources["generated.hlsl"] = angle.getTranslatedShaderSource(this.program.fshader);
   }
@@ -1581,7 +1629,9 @@ Fractal.prototype.timeAction = function(action) {
 
 function ondrawn() {
   //# UI
+  if (!this.ui) return;
   //Call the user-defined ondraw function
+    //TODO: USES GLOBAL!
   if (fractal.ondraw) fractal.ondraw();
   //Save last drawn thumbnail
   var thumb = thumbnailQuick("jpeg", 80, 0, 85);
@@ -1590,10 +1640,17 @@ function ondrawn() {
 }
 
 Fractal.prototype.draw = function(antialias, notime) {
-  if (!antialias) antialias = this.antialias;
   var timer = null;
-  if (!notime && state.timers > 0)
+  if (!notime && this.state.timers > 0)
     timer = new Timer(ondrawn);
+
+  this.drawCore(antialias, timer);
+
+  this.saveState();
+}
+
+Fractal.prototype.drawCore = function(antialias, timer) {
+  if (!antialias) antialias = this.state.antialias;
 
   //Set canvas size
   this.sizeCanvas();
@@ -1603,26 +1660,24 @@ Fractal.prototype.draw = function(antialias, notime) {
     this.renderWebGL(antialias);
   } else if (this.renderer >= WEBCL && this.webcl) {
     this.webcl.time = timer;
-    this.webcl.draw(this, antialias, colours.palette.background);
+    this.webcl.draw(this, antialias, this.colours.palette.background);
   } 
 
   if (this.server) this.serverRender(antialias);
-
-  fractal.saveState();
 }
 
 Fractal.prototype.saveState = function(replace) {
   //Note: should never do this when animating!
-  if (!state.output) return;
+  if (!this.state.output) return;
 
   //Opera doesn't support onbeforeunload, so save state now
-  if (window.opera && state.output) state.save();
+  if (window.opera && this.state.output) this.state.save();
 
   //Experimental: history state push on change
-  var data = fractal.name + "\n" + fractal.toStringNoFormulae();
+  var data = this.name + "\n" + this.toStringNoFormulae();
   if (replace || !history.state) {
     debug("Replaced State: " + data.length + " # " + history.length);
-    window.history.replaceState(window.btoa(data), "", state.baseurl);
+    window.history.replaceState(window.btoa(data), "", this.state.baseurl);
   } else {
     debug("Saved State: " + data.length + " # " + history.length);
     window.history.pushState(window.btoa(data), "");
@@ -1631,15 +1686,15 @@ Fractal.prototype.saveState = function(replace) {
 
 Fractal.prototype.serverRender = function(antialias) {
   //Send shader & params to remote server
-  if (!antialias) antialias = this.antialias;
+  if (!antialias) antialias = this.state.antialias;
   var src = this.paramString(true) + "antialias=" + antialias + "\n" + 
             "\n[description]\n" + this.name + "\n" + 
-            this.paletteString() + "\n[shader]\n" + sources["generated.source"];
+            this.paletteString() + "\n[shader]\n" + this.cache;
             //"\n[description]\n" + this.name + "\n" + 
   //Check re-render required...
-  if (sources["server.source"] != src) {
+  if (this.servercache != src) {
     this.server.draw(src);
-    sources["server.source"] = src;
+    this.servercache = src;
   }
 }
 
@@ -1654,46 +1709,49 @@ Fractal.prototype.clear = function() {
 }
 
 Fractal.prototype.renderViewport = function(x, y, w, h) {
-  var alpha = colours.palette.background.alpha; //Save bg alpha
-  colours.palette.background.alpha = 1.0;
+  /*if (this.server) {
+    this.serverRender();
+    return;
+  }*/
+
+  var alpha = this.colours.palette.background.alpha; //Save bg alpha
+  this.colours.palette.background.alpha = 1.0;
   if (this.webgl) {
+    //Render viewport content on remote server...
     this.webgl.time = null; //Disable timer
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     this.webgl.viewport = new Viewport(x, y, w, h);
     this.gl.enable(this.gl.SCISSOR_TEST);
     this.gl.scissor(x, y, w, h);
-    this.renderWebGL(this.antialias);
+    this.renderWebGL(this.state.antialias);
     this.webgl.viewport = new Viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.disable(this.gl.SCISSOR_TEST);
-
-    //Render viewport content on remote server!
-    if (this.server) this.serverRender();
 
   } else if (this.renderer >= WEBCL && this.webcl) {
     this.webcl.time = null; //Disable timer
     this.webcl.setViewport(x, y, w, h);
-    this.webcl.draw(this, this.antialias, colours.palette.background);
-    //this.webcl.setViewport(0, 0, this.canvas.width, this.canvas.height);
+    this.webcl.draw(this, this.state.antialias, this.colours.palette.background);
+    this.webcl.setViewport(0, 0, this.canvas.width, this.canvas.height);
   }
-  colours.palette.background.alpha = alpha;  //Restore alpha
+  this.colours.palette.background.alpha = alpha;  //Restore alpha
 }
 
 Fractal.prototype.renderWebGL = function(antialias) {
   if (!this.program || !this.program.uniforms) return;
+    //debug("USE: " + objectId(this.program));
   this.webgl.use(this.program);
 
   //Uniform variables
   this.gl.uniform1i(this.program.uniforms["iterations"], this.iterations);
   this.gl.uniform1i(this.program.uniforms["julia"], this.julia);
-  this.gl.uniform4fv(this.program.uniforms["background"], colours.palette.background.rgbaGL());
+  this.gl.uniform4fv(this.program.uniforms["background"], this.colours.palette.background.rgbaGL());
   this.gl.uniform2f(this.program.uniforms["origin"], this.position.re, this.position.im);
   this.gl.uniform2f(this.program.uniforms["selected_"], this.selected.re, this.selected.im);
   this.gl.uniform2f(this.program.uniforms["dims"], this.webgl.viewport.width, this.webgl.viewport.height);
   this.gl.uniform1f(this.program.uniforms["pixelsize"], this.position.pixelSize(this.webgl.viewport));
 
-  //#Parameter uniforms...
-  for (category in this.choices)
-    this.choices[category].currentParams.setUniforms(this.gl, this.program.program, category);
+  //Parameter uniforms...
+  this.gl.uniform1fv(this.program.uniforms["params"], new Float32Array(this.paramvars));
 
   //Gradient texture
   this.gl.activeTexture(this.gl.TEXTURE0);
@@ -1733,24 +1791,22 @@ Fractal.prototype.stop = function() {
 }
 
 Fractal.prototype.click = function(event, mouse) {
-  var select = $("select");
-
   //Convert mouse coords into fractal coords
   var point = this.position.convert(mouse.x, mouse.y, mouse.element);
 
   //Selection box? Ignore if too small a region selected
-  if (select.style.display == 'block' && select.w > 5 && select.h > 5) {
+  if (this.select.style.display == 'block' && this.select.w > 5 && this.select.h > 5) {
     //Get element offset in document
     //var offset = findElementPos(mouse.element);
     //Convert coords to position relative to element
     //select.x -= offset[0];
     //select.y -= offset[1];
     //Get centre of selection in fractal coords
-    var centre = this.position.convert(select.x + select.w/2, select.y + select.h/2, mouse.element);
+    var centre = this.position.convert(this.select.x + this.select.w/2, this.select.y + this.select.h/2, mouse.element);
     //Adjust centre position to match mouse left click
     this.setOrigin(centre);
     //Adjust zoom by factor of element width to selection
-    this.applyZoom(mouse.element.width / select.w);
+    this.applyZoom(mouse.element.width / this.select.w);
   } else if (event.button == 0) {
     //Adjust centre position to match mouse left click
     this.setOrigin(point);
@@ -1765,7 +1821,7 @@ Fractal.prototype.click = function(event, mouse) {
     }
   }
 
-  select.style.display = 'none';
+  this.select.style.display = 'none';
   this.copyToForm();
   this.draw();
   return true;
@@ -1777,30 +1833,32 @@ Fractal.prototype.down = function(event, mouse) {
   //document.activeElement.blur()
   //Stop any current render
   this.stop();
-  clearPreviewJulia();
+  this.clearPreview();
   //return false;
   return true;
 }
 
 Fractal.prototype.up = function(event, mouse) {
-  clearPreviewJulia();
+  this.clearPreview();
   return true;
 }
 
 Fractal.prototype.move = function(event, mouse) {
   //Mouseover processing
     mouse.point = new Aspect(0, 0, 0, 0);
-  if (!fractal || state.mode == 0) return true;
+  if (!this.state || this.state.mode == 0) return true;
   if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
   {
     //Convert mouse coords into fractal coords
     mouse.point = this.position.convert(mouse.x, mouse.y, mouse.element);
-    mouse.coord = new Aspect(mouse.point.re + this.position.re, mouse.point.im + this.position.im, 0, 0);
-    $("coords").innerHTML = "&nbsp;re: " + this.precision(mouse.coord.re) + " im: " + this.precision(mouse.coord.im);
+    mouse.coord = new Complex(mouse.point.re + this.position.re, mouse.point.im + this.position.im);
+    if (this.ui)
+      $("coords").innerHTML = "&nbsp;re: " + this.precision(mouse.coord.re) + " im: " + this.precision(mouse.coord.im);
 
     //Constantly updated mini julia set rendering
     if (this.preview && !this.julia) {
-      drawPreviewJulia();
+      this.selected = mouse.coord;
+      this.drawPreview();
       return;
     }
   }
@@ -1808,44 +1866,43 @@ Fractal.prototype.move = function(event, mouse) {
   if (!mouse.isdown) return true;
 
   //Right & middle buttons: drag to scroll
-  if (mouse.button > 0) {
+  if (mouse.button > 0 && this.ui) {
     // Set the scroll position
     if (isFullScreen()) {
-      $('main').scrollLeft -= mouse.deltaX;
-      $('main').scrollTop -= mouse.deltaY;
+      this.element.scrollLeft -= mouse.deltaX;
+      this.element.scrollTop -= mouse.deltaY;
     } else
       window.scrollBy(-mouse.deltaX, -mouse.deltaY);
     return true;
   }
 
   //Drag processing
-  var select = $("select");
-  var main = $("main");
-  select.style.display = 'block';
+  this.select.style.display = 'block';
 
   //Constrain selection size to canvas aspect ratio
-  select.w = Math.abs(mouse.deltaX)
-  var ratio = mouse.element.width / select.w;
-  select.h = mouse.element.height / ratio;
+  this.select.w = Math.abs(mouse.deltaX)
+  var ratio = mouse.element.width / this.select.w;
+  this.select.h = mouse.element.height / ratio;
 
   if (mouse.deltaX < 0)
-    select.x = mouse.x;
+    this.select.x = mouse.x;
   else
-    select.x = mouse.x - select.w;
+    this.select.x = mouse.x - this.select.w;
 
-  var offset = findElementPos(main);
+  var offset = findElementPos(this.element);
   if (mouse.deltaY < 0)
-    select.y = mouse.lastY - select.h - offset[1];
+    this.select.y = mouse.lastY - this.select.h - offset[1];
   else
-    select.y = mouse.lastY - offset[1];
+    this.select.y = mouse.lastY - offset[1];
 
   //Copy to style to set positions
-  select.style.left = select.x + "px";
-  select.style.top = select.y + "px";
-  select.style.width = select.w + "px";
-  select.style.height = select.h + "px";
+  this.select.style.left = this.select.x + "px";
+  this.select.style.top = this.select.y + "px";
+  this.select.style.width = this.select.w + "px";
+  this.select.style.height = this.select.h + "px";
 
-  $("coords").innerHTML = select.style.width + "," + select.style.height;
+  if (this.ui)
+    $("coords").innerHTML = this.select.style.width + "," + this.select.style.height;
 }
 
 Fractal.prototype.wheel = function(event, mouse) {
@@ -1858,8 +1915,8 @@ Fractal.prototype.wheel = function(event, mouse) {
     if (this.timer) clearTimeout(this.timer);
     //Set timer
     document.body.style.cursor = "wait";
-    this.timer = setTimeout('fractal.applyChanges(); document.body.style.cursor = "default";', state.timers);
-
+    var that = this;
+    this.timer = setTimeout(function () {that.applyChanges(); document.body.style.cursor = "default";}, this.state.timers);
   } else {
     // Zoom
     var zoom;
@@ -1872,136 +1929,137 @@ Fractal.prototype.wheel = function(event, mouse) {
 
     if (this.preview) {
        this.savePos.zoom *= zoom;
-       drawPreviewJulia();
-    } else if (state.timers <= 1) {
+       this.drawPreview();
+    } else if (this.state.timers <= 1) {
       //Instant update
-      fractal.applyZoom(zoom);
+      this.applyZoom(zoom);
       //Update form fields
-      fractal.copyToForm();
-      fractal.draw();
+      this.copyToForm();
+      this.draw();
     } else {
       //Zoom box processing
-      var select = $("select");
-      var el = this.canvas; //$("el");
-
-      if (select.timer) clearTimeout(select.timer);
-      if (!select.zoom) select.zoom = 1.0;
-      if (!select.mouse) {
+      if (this.select.timer) clearTimeout(this.select.timer);
+      if (!this.select.zoom) this.select.zoom = 1.0;
+      if (!this.select.mouse) {
         //Handle wheel events on select element too
-        select.mouse = mouse;
-        select.onmousewheel = handleMouseWheel;
-        if (select.addEventListener) select.addEventListener("DOMMouseScroll", handleMouseWheel, false);
+        this.select.mouse = mouse;
+        this.select.onmousewheel = handleMouseWheel;
+        if (this.select.addEventListener) this.select.addEventListener("DOMMouseScroll", handleMouseWheel, false);
       }
-      select.zoom *= zoom;
+      this.select.zoom *= zoom;
 
       //Constrain selection size to mouse.element aspect ratio
-      var z = select.zoom;
+      var z = this.select.zoom;
       if (z > 1.0) {
         z = 1.0 / z;
-        select.w = el.offsetWidth * z;
-        select.h = el.offsetHeight * z;
-        select.x = 0.5*(el.offsetWidth - select.w);
-        select.y = 0.5*(el.offsetHeight - select.h);
+        this.select.w = this.canvas.offsetWidth * z;
+        this.select.h = this.canvas.offsetHeight * z;
+        this.select.x = 0.5*(this.canvas.offsetWidth - this.select.w);
+        this.select.y = 0.5*(this.canvas.offsetHeight - this.select.h);
       } else {
-        select.style.background = "transparent";
-        select.style.borderColor = "#EECC11";
-        select.x = select.y = 0;
-        select.w = el.offsetWidth * z;
-        select.h = el.offsetHeight * z;
-        select.style.borderLeftWidth = Math.round(0.5 * (el.offsetWidth - select.w)) + "px";
-        select.style.borderRightWidth = select.style.borderLeftWidth;
-        select.style.borderTopWidth = Math.round(0.5 * (el.offsetHeight - select.h)) + "px";
-        select.style.borderBottomWidth = select.style.borderTopWidth;
+        this.select.style.background = "transparent";
+        this.select.style.borderColor = "#EECC11";
+        this.select.x = this.select.y = 0;
+        this.select.w = this.canvas.offsetWidth * z;
+        this.select.h = this.canvas.offsetHeight * z;
+        this.select.style.borderLeftWidth = Math.round(0.5 * (this.canvas.offsetWidth - this.select.w)) + "px";
+        this.select.style.borderRightWidth = this.select.style.borderLeftWidth;
+        this.select.style.borderTopWidth = Math.round(0.5 * (this.canvas.offsetHeight - this.select.h)) + "px";
+        this.select.style.borderBottomWidth = this.select.style.borderTopWidth;
       }
 
       //Copy to style to set positions
-      select.style.left = select.x + "px";
-      select.style.top = select.y + "px";
-      select.style.width = select.w + "px";
-      select.style.height = select.h + "px";
-      select.style.display = 'block';
+      this.select.style.left = this.select.x + "px";
+      this.select.style.top = this.select.y + "px";
+      this.select.style.width = this.select.w + "px";
+      this.select.style.height = this.select.h + "px";
+      this.select.style.display = 'block';
 
       //Set timer
       document.body.style.cursor = "wait";
-      select.timer = setTimeout('selectZoom();', state.timers);
+      var that = this;
+      this.select.timer = setTimeout(function () {that.selectZoom();}, this.state.timers);
     }
   }
 
   return false;
 }
 
-function selectZoom() {
+Fractal.prototype.selectZoom = function() {
   //Zoom box processing
-  var select = $('select');
-  select.timer = null;
+  this.select.timer = null;
   document.body.style.cursor = "default";
-  fractal.applyZoom(select.zoom);
+  this.applyZoom(this.select.zoom);
   //Update form fields
-  fractal.copyToForm();
-  fractal.applyChanges();
-  select.zoom = null;
-  select.style.display = 'none';
-  select.style.background = "#EECC11";
-  select.style.borderColor = "#596380";
-  select.style.borderWidth = "1px";
+  this.copyToForm();
+  this.applyChanges();
+  this.select.zoom = null;
+  this.select.style.display = 'none';
+  this.select.style.background = "#EECC11";
+  this.select.style.borderColor = "#596380";
+  this.select.style.borderWidth = "1px";
 }
+
 /////////////////////////////////////////////////////////////////////////
 //Julia set preview window
-function drawPreviewJulia() {
-  var canvas = $("fractal-canvas");
-  mouse = canvas.mouse;
+Fractal.prototype.drawPreview = function() {
+  this.preview.julia = true;
+  this.preview.selected = new Complex(this.selected.re, this.selected.im);
+  this.preview.position = this.savePos; //.clone();
 
-  fractal.preview.point = mouse.point;
-  fractal.preview.x = mouse.x;
-  fractal.preview.y = fractal.webgl ? canvas.height - mouse.y : mouse.y;
-  fractal.preview.w = 250;
-  fractal.preview.h = Math.round(250 * canvas.height / canvas.width);
-  if (mouse.x > canvas.width - fractal.preview.w) fractal.preview.x -= fractal.preview.w;
-  if (fractal.webgl && mouse.y < canvas.height - fractal.preview.h) fractal.preview.y -= fractal.preview.h; 
-  if (fractal.webcl && mouse.y > canvas.height - fractal.preview.h) fractal.preview.y -= fractal.preview.h; 
-
-  fractal.selectPoint(fractal.preview.point);
-  fractal.renderViewport(fractal.preview.x, fractal.preview.y, fractal.preview.w, fractal.preview.h);
-  fractal.selectPoint();
+  this.preview.drawCore();
 }
 
-function clearPreviewJulia() {
-  if (!fractal.preview) return;
+Fractal.prototype.clearPreview = function() {
+  if (!this.preview) return;
   $('previewbtn').innerHTML = "Show Preview"
-  var canvas = $("fractal-canvas");
-  clearTimeout(fractal.preview.timeout);
+  clearTimeout(this.preview.timeout);
   document.mouse.moveUpdate = false;
-    $S("fractal-canvas").backgroundImage = $S("palette").backgroundImage; //"url('media/bg.png')";
-    $S("background").display = "none";
-  $("background").src = "";
-  fractal.preview = null;
-  if (fractal.webcl) fractal.webcl.setViewport(0, 0, canvas.width, canvas.height);
-  fractal.draw();
+  this.preview.win.close();
+  //this.preview.move = null;
+  this.preview = null;
 }
 
-function showPreviewJulia() {
-  //Save frame image (used for julia preview background)
-  fractal.imagedata = fractal.canvas.toDataURL("image/png");
-  fractal.preview = {};
-  //WebGL implicitly clears the canvas, unless preserveDrawingBuffer requested 
-  //(which apparently is a performance problem on some platforms) so copy fractal
-  //image into background while rendering julia set previews
-  $("background").src = fractal.imagedata;
-  $S("background").display = "block";
-  $S("fractal-canvas").backgroundImage = "none";
+Fractal.prototype.showPreview = function() {
   document.mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
-  drawPreviewJulia();
+  if (!this.preview) {
+    this.preview = new Fractal('preview');
+    this.preview.win = new MoveWindow('previewWindow');
+    this.preview.init(this.state);
+    this.preview.state.timers = 0; //Instant updates
+    //this.preview.load(this.toStringMinimal());
+    this.preview.load(this.toStringNoFormulae());
+
+    //this.preview.resetZoom();
+    this.preview.width = this.preview.height = 0; //Fit to container
+  } else
+    this.preview.load(this.toStringMinimal());
+
+  if (this.preview.win) {
+    this.preview.win.open(100, 100);
+    //that = this;
+    //this.preview.move = function(event, mouse) {
+    //  return that.preview.win.move(event, that.preview.win.mouse);
+    //};
+    //this.preview.click = null; //function() {return true;};
+    this.preview.down = null; //function() {return true;};
+    this.preview.up = null; //function() {return true;};
+  }
+
+  //this.preview.selected = Point(this.preview.point);
+  //this.preview.generated = new Generator(this.preview, true);
+  this.preview.applyChanges();
+  this.drawPreview();
 }
 
-function togglePreview() {
-  if (fractal.preview || fractal.julia) {
-    clearPreviewJulia();
+Fractal.prototype.togglePreview = function() {
+  if (this.preview || this.julia) {
+    this.clearPreview();
   } else {
-    showPreviewJulia();
+    this.showPreview();
     $('previewbtn').innerHTML = "Show Preview &#10003;"
   }
 }
-
 
 Fractal.prototype.pinch = function(event, mouse) {
   var zoom;
@@ -2010,11 +2068,10 @@ Fractal.prototype.pinch = function(event, mouse) {
   else
     zoom = 1/(1.0 + event.distance * -0.001);
   //print(diff + ' --> ' + zoom);
-  fractal.applyZoom(zoom);
-  fractal.copyToForm();
-  fractal.draw();
+  this.applyZoom(zoom);
+  this.copyToForm();
+  this.draw();
   //Hide select box
-  var select = $('select');
-  select.style.display = 'none';
+  if (this.select) this.select.style.display = 'none';
 }
 

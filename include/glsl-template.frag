@@ -6,7 +6,6 @@ precision highp float;
 precision mediump float;
 #endif
 #endif
-#define GLSL
 
 #define set_result(c) gl_FragColor = c;
 #define real float
@@ -15,7 +14,8 @@ precision mediump float;
 
 //Initialisers
 #define C complex
-#define R(VAL) real(VAL)
+#define R real
+//#define R(VAL) real(VAL)
 
 //Uniform data
 uniform complex offset;
@@ -27,6 +27,8 @@ uniform complex origin;
 uniform complex selected_;
 uniform sampler2D palette;
 uniform rgba background;
+
+uniform real params[64];
 
 complex selected = selected_; //Allow transform
 
@@ -83,3 +85,9 @@ real acosh(in real x) {return 2.0 * log(sqrt(0.5*x+0.5) + sqrt(0.5*x-0.5));}
 // Hyperbolic arc tangent (log (1+x) - log (1-x))/2
 real atanh(in real x) {return (log(1.0+x) - log(1.0-x)) / 2.0;}
 
+---LIBRARY---
+
+void main()
+{
+  ---CODE---
+}

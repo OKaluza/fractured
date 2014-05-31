@@ -13,7 +13,6 @@
     this.devid = devid;
     this.fp64avail = this.fp64 = false;
     this.timer = null;
-    this.resetInput();
 
     if (!window.webcl) throw "No WebCL interface";
     if (!webcl.getPlatforms) throw "Unknown WebCL interface";
@@ -81,9 +80,9 @@
     if (select.selectedIndex < 0) select.selectedIndex = 0;
   }
 
-  OpenCL.prototype.init = function(canvas, fp64, threads) {
+  OpenCL.prototype.init = function(canvas, fp64, threads, gradient) {
     this.canvas = canvas;
-    this.gradientcanvas = document.getElementById('gradient');
+    this.gradientcanvas = gradient;
     this.threads = threads;
     //Check thread size
     if (threads*threads > this.maxsize) {
@@ -120,8 +119,8 @@
 
   OpenCL.prototype.setPrecision = function(fp64) {
     this.fp64 = (fp64 == true && this.fp64avail);
-    this.inBuffer = this.fp64 ? new Float64Array(256) : new Float32Array(256);
-    this.input = this.ctx.createBuffer(WebCL.MEM_READ_ONLY, this.inBuffer.byteLength);
+    this.paramBuffer = this.fp64 ? new Float64Array(128) : new Float32Array(128);
+    this.params = this.ctx.createBuffer(WebCL.MEM_READ_ONLY, this.paramBuffer.byteLength);
   }
 
   OpenCL.prototype.buildProgram = function(kernelSrc) {
@@ -142,7 +141,7 @@
     }
     this.k_sample = this.program.createKernel("sample");
     this.k_sample.setArg(0, this.palette);
-    this.k_sample.setArg(2, this.input);
+    this.k_sample.setArg(2, this.params);
     if (this.temp) this.k_sample.setArg(1, this.temp);
     this.k_average = this.program.createKernel("average");
     if (this.output) this.k_average.setArg(0, this.output);
@@ -183,28 +182,6 @@
     }
   }
 
-  OpenCL.prototype.resetInput = function() {
-    //End index of built-in inputs
-    this.incount = 11;
-  }
-
-  OpenCL.prototype.setInput = function(param, type, name) {
-    //Set input values and return a declaration/initialisation for the kernel
-    var declare = type + " " + name;
-
-    if (param.typeid == 2) {
-      this.inBuffer[this.incount] = param.value.re;
-      declare += " = complex(input[" + (this.incount++);
-      this.inBuffer[this.incount] = param.value.im;
-      declare += "],input[" + (this.incount++) + "]);\n";
-    } else {
-      this.inBuffer[this.incount] = param.value;
-      declare += " = (" + type + ")input[" + (this.incount++) + "];\n";
-    }
-
-    return declare;
-  }
-
   OpenCL.prototype.draw = function(fractal, antialias, background) {
     if (!this.k_sample) return; //Sanity checks
     if (this.global[0] <= 0 || this.global[1] <= 0) return;
@@ -218,18 +195,18 @@
       var gradient = ctx_g.getImageData(0, 0, this.gradientcanvas.width, 1);
 
       //Pass additional args
-      this.inBuffer[0] = fractal.position.zoom;
-      this.inBuffer[1] = fractal.position.rotate;
-      this.inBuffer[2] = fractal.position.pixelSize(this.canvas);
-      this.inBuffer[3] = fractal.position.re;
-      this.inBuffer[4] = fractal.position.im;
-      this.inBuffer[5] = fractal.selected.re;
-      this.inBuffer[6] = fractal.selected.im;
+      this.paramBuffer[0] = fractal.position.zoom;
+      this.paramBuffer[1] = fractal.position.rotate;
+      this.paramBuffer[2] = fractal.position.pixelSize(this.canvas);
+      this.paramBuffer[3] = fractal.position.re;
+      this.paramBuffer[4] = fractal.position.im;
+      this.paramBuffer[5] = fractal.selected.re;
+      this.paramBuffer[6] = fractal.selected.im;
       //Background
-      this.inBuffer[7] = background.red/255.0;
-      this.inBuffer[8] = background.green/255.0;
-      this.inBuffer[9] = background.blue/255.0;
-      this.inBuffer[10] = background.alpha;
+      this.paramBuffer[7] = background.red/255.0;
+      this.paramBuffer[8] = background.green/255.0;
+      this.paramBuffer[9] = background.blue/255.0;
+      this.paramBuffer[10] = background.alpha;
 
       this.k_sample.setArg(3, new Int32Array([antialias]));
       this.k_sample.setArg(4, new Int32Array([(fractal.julia) ? 1 : 0]));
@@ -237,7 +214,11 @@
       this.k_sample.setArg(6, new Int32Array([this.viewport.width]));
       this.k_sample.setArg(7, new Int32Array([this.viewport.height]));
 
-      this.queue.enqueueWriteBuffer(this.input, false, 0, this.inBuffer.byteLength, this.inBuffer);
+      //Copy parameter variables to input buffer
+      for (var i=0; i<fractal.paramvars.length; i++)
+        this.paramBuffer[11+i] = fractal.paramvvars[i];
+
+      this.queue.enqueueWriteBuffer(this.params, false, 0, this.paramBuffer.byteLength, this.paramBuffer);
 
       //this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], 0, 0, gradient.data, []);
       //this.queue.enqueueWriteImage(this.palette, false, [0,0,0], [gradient.width,1,1], 0, gradient.data)

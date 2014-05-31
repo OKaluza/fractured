@@ -1,3 +1,51 @@
+/**
+ * Draggable window class *
+ * @constructor
+ */
+function MoveWindow(id) {
+  //Mouse processing:
+  if (!id) return;
+  this.element = $(id);
+  if (!this.element) {alert("No such element: " + id); return null;}
+  this.mouse = new Mouse(this.element, this);
+  this.mouse.moveUpdate = true;
+  this.element.mouse = this.mouse;
+}
+
+MoveWindow.prototype.open = function(x, y) {
+  //Show the window
+  var style = this.element.style;
+
+  if (x<0) x=0;
+  if (y<0) y=0;
+  if (x != undefined) style.left = x + "px";
+  if (y != undefined) style.top = y + "px";
+  style.display = 'block';
+
+  //Correct if outside window width/height
+  var w = this.element.offsetWidth,
+      h = this.element.offsetHeight;
+  if (x + w > window.innerWidth - 20)
+    style.left=(window.innerWidth - w - 20) + 'px';
+  if (y + h > window.innerHeight - 20)
+    style.top=(window.innerHeight - h - 20) + 'px';
+  //console.log("Open " + this.element.id + " " + style.left + "," + style.top + " : " + style.display);
+}
+
+MoveWindow.prototype.close = function() {
+  this.element.style.display = 'none';
+}
+
+MoveWindow.prototype.move = function(e, mouse) {
+  //console.log("Move: " + mouse.isdown);
+  if (!mouse.isdown) return;
+  if (mouse.button > 0) return; //Process left drag only
+  //Drag position
+  var style = mouse.element.style;
+  style.left = parseInt(style.left) + mouse.deltaX + 'px';
+  style.top = parseInt(style.top) + mouse.deltaY + 'px';
+}
+
 /* Originally based on : */
 /* DHTML Color Picker, Programming by Ulyses, ColorJack.com (Creative Commons License) */
 /* http://www.dynamicdrive.com/dynamicindex11/colorjack/index.htm */
@@ -10,6 +58,9 @@ function clamp(val, min, max) {return Math.max(min, Math.min(max, val));}
  * @constructor
  */
 function ColourPicker(savefn, abortfn) {
+  // call base class constructor
+  MoveWindow.call(this, "picker"); 
+
   this.savefn = savefn;
   this.abortfn = abortfn;
   this.size=170.0; //H,S & V range in pixels
@@ -18,11 +69,6 @@ function ColourPicker(savefn, abortfn) {
   this.picked={H:360, S:100, V:100, A:1.0};
   this.max={'H':360,'S':100,'V':100, 'A':1.0};
   this.colour = new Colour();
-
-  //Mouse processing:
-  this.mouse = new Mouse($("picker"), this);
-  this.mouse.moveUpdate = true;
-  $("picker").mouse = this.mouse;
 
   //Load hue strip
   var i, html='', bgcol, opac;
@@ -41,24 +87,15 @@ function ColourPicker(savefn, abortfn) {
   $('Omodel').innerHTML=html;
 }
 
+//Inherits from MoveWindow
+ColourPicker.prototype = new MoveWindow;
+ColourPicker.prototype.constructor = MoveWindow;
+
 ColourPicker.prototype.pick = function(colour, x, y) {
   //Show the picker, with selected colour
   this.update(colour.HSVA());
-  if ($S('picker').display == 'block') return;
-
-  if (x<0) x=0;
-  if (y<0) y=0;
-  $S('picker').left=x+'px';
-  $S('picker').top=y+'px';
-  $S('picker').display='block';
-
-  //Correct if outside window width/height
-  var w = $('picker').offsetWidth,
-      h = $('picker').offsetHeight;
-  if (x + w > window.innerWidth - 20)
-    $S('picker').left=(window.innerWidth - w - 20) + 'px';
-  if (y + h > window.innerHeight - 20)
-    $S('picker').top=(window.innerHeight - h - 20) + 'px';
+  if (this.element.style.display == 'block') return;
+  MoveWindow.prototype.open.call(this, x, y);
 }
 
 //Mouse event handling
@@ -86,11 +123,12 @@ ColourPicker.prototype.move = function(e, mouse) {
   if (mouse.button > 0) return; //Process left drag only
 
   if (mouse.elementId == 'picker' || mouse.elementId == 'pickCUR' || mouse.elementId == 'pickRGB') {
-    //Drag position
+    //Call base class function
+    MoveWindow.prototype.move.call(this, e, mouse);
+    /*/Drag position
     var ds=$S('picker');
     ds.left = parseInt(ds.left) + mouse.deltaX + 'px';
-    ds.top = parseInt(ds.top) + mouse.deltaY + 'px';
-    return;
+    ds.top = parseInt(ds.top) + mouse.deltaY + 'px';*/
   } else if (mouse.elementId=='SV') 
     this.setSV(mouse);
   else if (mouse.elementId == 'Hslide' || mouse.elementClass=='hue')

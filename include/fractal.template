@@ -1,15 +1,4 @@
-//--- Main program ------------------------------------------------
-#ifdef OPENCL
-CALCPIXEL
-{
-#endif
-
----DATA---
-
-#ifdef GLSL
-void main()
-{
-#endif
+  ---DATA---
 
   //Globals
   complex z, c;
@@ -103,5 +92,4 @@ void main()
 
   //Set final colour
   set_result(colour);
-}
 

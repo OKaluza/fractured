@@ -19,19 +19,20 @@
   /**
    * @constructor
    */
-  function WebGL(canvas) {
+  function WebGL(canvas, fractal) {
     this.program = null;
     this.modelView = new ViewMatrix();
     this.perspective = new ViewMatrix();
     this.textures = [];
     this.timer = null;
+    this.fractal = fractal;
 
     if (!window.WebGLRenderingContext) throw "No browser WebGL support";
 
     //Antialias, optional?
     //var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
     //var antialias = gl.getContextAttributes().antialias; //Query and set built in aa lower??
-    var options = { premultipliedAlpha: false, preserveDrawingBuffer: true};
+    var options = {premultipliedAlpha: false, preserveDrawingBuffer: true};
     //Opera bug: if this is not set images are upside down
     if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
     // Try to grab the standard context. If it fails, fallback to experimental.
@@ -45,6 +46,7 @@
     if (!this.gl) throw "Failed to get context";
 
     //Handle context loss/restore (experimental as I have not found a way of testing this!)
+    //TODO: uses global!
     canvas.addEventListener("webglcontextlost", function(event) {event.preventDefault(); print("CONTEXT LOST")}, false);
     canvas.addEventListener("webglcontextrestored", function() {fractal.webgl = null; fractal.switchMode(WEBGL);}, false);
   }
@@ -139,8 +141,8 @@
     this.gl.blendColor(0, 0, 0, blendval);
     //print(blendval);
     this.blendinc += 1.0/(this.antialias*this.antialias);
-    var pixelX = 2.0 / (fractal.position.zoom * this.viewport.width);
-    var pixelY = 2.0 / (fractal.position.zoom * this.viewport.height);
+    var pixelX = 2.0 / (this.fractal.position.zoom * this.viewport.width);
+    var pixelY = 2.0 / (this.fractal.position.zoom * this.viewport.height);
     this.gl.uniform2f(this.program.uniforms['offset'], pixelX * (this.j/this.antialias-0.5), pixelY * (this.k/this.antialias-0.5));
     //Draw!
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);

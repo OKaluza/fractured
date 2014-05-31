@@ -186,7 +186,7 @@
               </ul>
             </li>
             <li><span onclick="menu(); regenerateThumbs();">Rebuild Thumbnails</span></li>
-            <li class="render"><span id="previewbtn" onclick="menu(); togglePreview();">Show Preview</span></li>
+            <li class="render"><span id="previewbtn" onclick="menu(); fractal.togglePreview();">Show Preview</span></li>
             <li class="render"><span onclick="menu(); toggleFullscreen(true);">Full Screen</span></li>
           </ul>
         </li>
@@ -226,7 +226,7 @@
           <span id="steps"></span>
         </div>
 
-        <div class="card" id="new_version">
+        <div class="card" id="new_version_VERSION">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Fractured VERSION Released:</h3>
           <ul>
@@ -375,31 +375,35 @@
           </div>
           <div class="row">
             <label>Size</label>
-            <span class="field"><input type="number" id="width" value="600" onchange="fractal.applyChanges();"></span><span class="field"><input type="number" id="height" value="600" onchange="fractal.applyChanges();"></span>
+            <span class="field"><input type="number" id="width" value="600"></span><span class="field"><input type="number" id="height" value="600"></span>
           </div>
 
           <div class="row">
             <label>Zoom</label>
-            <span class="field"><input type="number" id="zoom" value="0.5" step="0.01" min="0.00000000001" onchange="fractal.applyChanges();"></span>
+            <span class="field"><input type="number" id="zoom" step="any"></span>
             <input type="button" value="Reset" onclick="fractal.resetZoom()">
           </div>
           <div class="row">
             <label>Rotate&#176;</label>
-            <span class="field"><input type="number" id="rotate" value="0.0" min="0" max="360" onchange="fractal.applyChanges();"></span>
+            <span class="field"><input type="number" id="rotate" value="0.0" min="0" max="360" step="0.1"></span>
           </div>
           <div class="row">
-            <label>Origin</label><span class="field"><input type="number" id="xOrigin" value="0.0" step="0.1" onchange="fractal.applyChanges();"></span><span class="field"><input type="number" id="yOrigin" value="0.0" step="0.1"></span>
+            <label>Origin</label>
+            <span class="field"><input type="text" id="xOrigin" value="0.0"></span>
+            <span class="field"><input type="text" id="yOrigin" value="0.0"></span>
           </div>
           <div class="row">
-            <label>Selected</label><span class="field"><input type="number" id="xSelect" value="0.0" step="0.1" onchange="fractal.applyChanges();"></span><span class="field"><input type="number" id="ySelect" value="0.0" step="0.1"></span>
+            <label>Selected</label>
+            <span class="field"><input type="text" id="xSelect" value="0.0"></span>
+            <span class="field"><input type="text" id="ySelect" value="0.0"></span>
           </div>
           <div class="row">
             <label for="julia">Julia</label>
-            <span class="field"><input type="checkbox" id="julia" checked="unchecked" onchange="fractal.applyChanges();"></span>
+            <span class="field"><input type="checkbox" id="julia" checked="unchecked"></span>
           </div>
           <div class="row">
             <label for="iterations">Iterations</label>
-            <span class="field"><input type="number" id="iterations" onchange="fractal.applyChanges();"></span>
+            <span class="field"><input type="text" id="iterations"></span>
           </div>
 
 
@@ -429,7 +433,7 @@
         <form id="fractal_inputs" onmousedown="handleFormMouseDown(event)">
         <p>Fractal</p>
         <div class="field">
-          <select id="fractal_formula" class="formula" onchange="fractal.choices['fractal'].select(this.value); fractal.applyChanges();">
+          <select id="fractal_formula" class="formula" onchange="fractal.choices['fractal'].select(this.value);">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('fractal');">
@@ -440,7 +444,7 @@
 
         <p>Pre-Transform</p>
         <div class="field">
-          <select id="pre_transform_formula" class="formula" onchange="fractal.choices['pre_transform'].select(this.value); fractal.applyChanges();">
+          <select id="pre_transform_formula" class="formula" onchange="fractal.choices['pre_transform'].select(this.value);">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -452,7 +456,7 @@
 
         <p>Post-Transform</p>
         <div class="field">
-          <select id="post_transform_formula" class="formula" onchange="fractal.choices['post_transform'].select(this.value); fractal.applyChanges();">
+          <select id="post_transform_formula" class="formula" onchange="fractal.choices['post_transform'].select(this.value);">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -487,7 +491,7 @@
         <form id="colour_inputs" onmousedown="handleFormMouseDown(event)">
         <p>Outside Colour</p>
         <div class="field">
-          <select id="outside_colour_formula" class="formula" onchange="fractal.choices['outside_colour'].select(this.value); fractal.applyChanges();">
+          <select id="outside_colour_formula" class="formula" onchange="fractal.choices['outside_colour'].select(this.value);">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
@@ -497,7 +501,7 @@
         </div>
         <p>Inside Colour</p>
         <div class="field">
-          <select id="inside_colour_formula" class="formula" onchange="fractal.choices['inside_colour'].select(this.value); fractal.applyChanges();">
+          <select id="inside_colour_formula" class="formula" onchange="fractal.choices['inside_colour'].select(this.value);">
           </select>
           <div class="formula_buttons">
             <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
@@ -508,7 +512,7 @@
 
         <p>Filter</p>
         <div class="field">
-          <select id="filter_formula" class="formula" onchange="fractal.choices['filter'].select(this.value); fractal.applyChanges();">
+          <select id="filter_formula" class="formula" onchange="fractal.choices['filter'].select(this.value);">
             <option value="none"></option>
           </select>
           <div class="formula_buttons">
@@ -565,7 +569,6 @@
       </div>
     </div>
     <img id="background" class="checkerboard" src="">
-    <div id="select"></div>
 
   </section>
 
@@ -573,7 +576,6 @@
   <!-- Hidden -->
   <div id="hidden" style="display: none">
         <a id="dummylink" href="#">Dummy</a>
-    <canvas id="gradient" width="2048" height="1"></canvas>
     <canvas id="thumb" width="32" height=32"></canvas>
 
     <form name="exporter" action="ss/savefile.php" method="post">
@@ -606,10 +608,10 @@
   </div>
 
   <!-- Colour picker -->
-  <div id="picker">
+  <div id="picker" class="window">
     <div id="pickCURBG" class="checkerboard"><div id="pickCUR"></div></div>
     <div id="pickRGB" onclick="colours.picker.updateString()">R: 255 G: 255 B: 255</div>
-    <div id="pickCLOSE">X</div>
+    <div id="pickCLOSE" class="CLOSE">X</div>
     <div id="pickOK">OK</div><br>
     <div id="SV">
      <div id="SVslide"></div>
@@ -622,6 +624,13 @@
      <div id="Omodel" class="sliderBG"></div>
      <div id="Oslide" class="sliderControl"></div>
     </div>
+  </div>
+
+  <div id="previewWindow" class="window">
+    <div id="previewCLOSE" class="CLOSE" onclick="fractal.clearPreview();">X</div>
+    <div id="previewTitle" class="left">Preview</div>
+    <div id="preview"></div>
+    <hr>
   </div>
 
 </body>

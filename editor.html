@@ -87,7 +87,7 @@ var formula;
 
     //Editing compiled shader source?
     if (filename == "generated.source") {
-      window.opener.fractal.generated.update(code.value);
+      window.opener.fractal.generated.compile(code.value);
     } else {
       //Save, reselect, rebuild
       if (type) {
@@ -96,7 +96,7 @@ var formula;
       } else {
         window.opener.sources[filename] = code.value;
       }
-      window.opener.fractal.rebuild();
+      window.opener.fractal.generated.generate();
     }
     window.opener.fractal.draw();
   }
