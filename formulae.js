@@ -177,37 +177,49 @@ function filenameToName(filename) {
 /**
  * @constructor
  */
-function Formula(category) {
+function FormulaSelection(category) {
   this.category = category;
   this.params = {};
   this.defaultparams = {};
   this.lineoffsets = {};
-  this.reselect();
+
+  this.sel = $(this.category + '_formula');
+
+  if (!this.sel) {
+    //Create hidden select to hold data
+    this.sel = document.createElement('select');
+    this.sel.style = "display: none";
+    this.sel.id = this.category + '_formula';
+    document.body.appendChild(this.sel);
+    //Add default selection
+    addToSelect(category, "none", "");
+    this.select("none");
+  } else {
+    this.reselect();
+  }
 }
 
-Formula.prototype.exists = function(value) {
+FormulaSelection.prototype.exists = function(value) {
   //Check a formula name is a valid selection
-  var sel = $(this.category + '_formula');
-  sel.value = value;
-  return sel.value == value;
+  this.sel.value = value;
+  return this.sel.value == value;
 }
 
-Formula.prototype.reselect = function(idx) {
+FormulaSelection.prototype.reselect = function(idx) {
   //Select, by index from select control if present and idx provided
-  var sel = $(this.category + '_formula');
   var name = 'default';
   //Formula categories may have a select element, in which case use it
-  if (sel) {
+  if (this.sel) {
     if (idx != undefined)
-      sel.selectedIndex = idx;
+      this.sel.selectedIndex = idx;
     //TODO: BETTER ERROR HANDLING: This means a formula that is no longer present was selected
-    if (sel.selectedIndex < 0) {alert(this.category + " : Invalid selection!"); return;}
-    name = sel.options[sel.selectedIndex].value;
+    if (this.sel.selectedIndex < 0) {alert(this.category + " : Invalid selection! " + idx); return;}
+    name = this.sel.options[this.sel.selectedIndex].value;
   }
   this.select(name);
 }
 
-Formula.prototype.select = function(name) {
+FormulaSelection.prototype.select = function(name) {
   //Formula selected, parse it's parameters
   if (name) this.selected = name;
   else name = this.selected;  //Re-selecting current
@@ -215,8 +227,8 @@ Formula.prototype.select = function(name) {
 
   //Delete any existing dynamic form fields
   var element = $(this.category + "_params");
-  if (!element) alert("Element is null! " + this.category + " - " + name);
-  removeChildren(element);
+  //if (!element) alert("Element is null! " + this.category + " - " + name);
+  if (element) removeChildren(element);
 
   //Save existing param set
   var oldparams = this.params[name];
@@ -239,17 +251,17 @@ Formula.prototype.select = function(name) {
     //Copy previous values
     this.params[name].restoreValues(oldparams, this.defaultparams[name]);
     //Update the fields
-    this.params[name].createFields(this.category, name);
+    if (element)
+      this.params[name].createFields(this.category, name);
   }
   //debug("Set [" + this.category + "] formula to [" + this.selected + "]"); // + " =====> " + this.currentParams.toString());
-     //consoleTrace();
 }
 
-Formula.prototype.getkey = function() {
+FormulaSelection.prototype.getkey = function() {
   return formulaKey(this.category, this.selected);
 }
 
-Formula.prototype.getSource = function() {
+FormulaSelection.prototype.getSource = function() {
   //if (this.selected == "none") return "";
   if (this.selected == "none" || this.selected == "same") return "";
   var key = this.getkey();
@@ -268,7 +280,7 @@ Formula.prototype.getSource = function() {
   return "";
 }
 
-Formula.prototype.getCodeSections = function() {
+FormulaSelection.prototype.getCodeSections = function() {
   var code = this.getSource();
   var section = "data";
   var sections = {"init" : "", "reset" : "", "znext" : "", "escaped" : "", "converged" : "", "calc" : "", "result" : "", "transform" : "", "filter" : ""};
@@ -341,7 +353,7 @@ Formula.prototype.getCodeSections = function() {
   return sections;
 }
 
-Formula.prototype.getParsedFormula = function() {
+FormulaSelection.prototype.getParsedFormula = function(fractal) {
   //Get formula definition
   var sections = this.getCodeSections();
   var data = sections["data"];
@@ -357,7 +369,7 @@ Formula.prototype.getParsedFormula = function() {
 
   //Get the parameter declaration code
   //(This also saves values of parameters in savevars[] array)
-  var params = this.currentParams.toCode();
+  var params = this.currentParams.toCode(fractal);
   if (this.category == "fractal") fractal_savevars = savevars;
 
   //Strip out param definitions, replace with declarations
@@ -380,7 +392,7 @@ Formula.prototype.getParsedFormula = function() {
   return sections;
 }
 
-Formula.prototype.parseExpressions = function(code) {
+FormulaSelection.prototype.parseExpressions = function(code) {
   //Parse all \...\ enclosed sections as expressions
   var reg = /\\([\s\S]*?)\\/gm;
   var match;

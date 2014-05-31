@@ -109,11 +109,6 @@ canvas {
   border: none; 
 }
 
-canvas#fractal-canvas {
-  width: 100%;
-  height: 100%;
-}
-
 canvas#palette {
   width: 572px;
   height: 28px;
@@ -135,7 +130,7 @@ canvas#thumb {width: 32px; height: 32px;}
 #backgroundCUR { float: left; width: 28px; height: 28px;}
 
 /* Image area selection */
-#select {
+.select {
   display: none;
   z-index: 20;
   position:absolute;
@@ -153,8 +148,11 @@ canvas#thumb {width: 32px; height: 32px;}
   width:300px;
   top:50%; left:50%;
   margin:-40px 0 0 -150px; /* [-(height/2)px 0 0 -(width/2)px] */
-  display:none; z-index: 100; border: none; 
-  padding: 5px; overflow-y: auto;
+  display:none; 
+  z-index: 100;
+  border: none; 
+  padding: 5px;
+  overflow-y: auto;
   background: #ffe;
   border-radius: 5px 5px 5px 5px;
   box-shadow: 3px 3px 2px #222;
@@ -226,7 +224,7 @@ canvas#thumb {width: 32px; height: 32px;}
 section, header, aside, nav, article {display: block;}
 
 header { 
-  z-index: 50;
+  z-index: 100;
   margin: 0 auto;
   height: 30px;
   width:100%;
@@ -256,7 +254,7 @@ nav#menu {float: left;}
   padding-left:2px;
   padding-top:1px;
   position:relative;
-  z-index:2;
+  z-index: 102;
 }
 
 #mainmenu {
@@ -403,13 +401,13 @@ nav#menu {float: left;}
 {
   left: -32px;
   top:28px;
-  z-index: 3;
+  z-index: 103;
 }
 #nav ul.dd li ul
 { 
   left: -32px;
   top:28px;
-  z-index: 4;
+  z-index: 104;
   width: auto;
 }
 }
@@ -517,20 +515,35 @@ aside {
   right: 0px;
 }
 
-/* colourPicker.js picker */
-#picker { 
-  display:none; top: 58px; z-index: 100; 
-  background: #0d0d0d; color: #aaa; cursor: move; 
-  font-family: arial; font-size: 11px; 
-  padding: 7px 10px 11px 10px; 
-  position: fixed; width: 229px; 
+/* colourPicker.js */
+.window { 
+  display: none;
+  z-index: 50; 
+  padding: 6px; 
+  position: fixed; 
   border-radius: 5px; border: 1px solid #444;
+  background: #0d0d0d; color: #aaa; cursor: move; 
   box-shadow: 3px 3px 2px #222;
+  font-family: arial; font-size: 11px; 
+}
+
+#previewWindow { 
+  top: 100px; left: 200px;
+}
+
+#preview { 
+  width: 400px; height: 400px;
+}
+
+#picker { 
+  top: 58px; 
+  padding: 7px 10px 11px 10px; 
+  width: 229px; 
 }
 
 #pickRGB { float: left; position: relative; top: -1px; }
 #pickOK { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; }
-#pickCLOSE { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; }
+.CLOSE { float: right; cursor: pointer; margin: 0 8px 3px; color: #fff; }
 #pickRGB:hover,#pickCLOSE:hover,#pickOK:hover { color: #FFD000;  }
 
 #pickCURBG { float: left; width: 12px; height: 12px; margin-right: 3px;  }

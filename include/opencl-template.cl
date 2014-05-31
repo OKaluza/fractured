@@ -1,5 +1,4 @@
 //--- OpenCL specific header --------------------------------------
-#define OPENCL
 #ifdef FP64
 //Double precision
 #pragma OPENCL EXTENSION cl_khr_fp64: enable
@@ -17,12 +16,14 @@
 #define discard return (rgba)(0)
 
 //Initialisers
+#define C (complex)
+#define R (real)
 //#define C(x,y) (complex)(x,y)
 //Initialise complex,
 //really strange problem when using (complex)(x,y) (eg: for power, passed to cpow() )
 //setting components seems to work around it... (problem on NVIDIA Only)
-complex C(in real x, in real y) { complex z; z.x = x; z.y = y; return z; }
-#define R(x) (real)(x)
+//complex C(in real x, in real y) { complex z; z.x = x; z.y = y; return z; }
+//#define R(x) (real)(x)
 
 //Maths functions with alternate names
 #define mod(a,b) fmod((real)a,(real)b)
@@ -34,11 +35,24 @@ complex C(in real x, in real y) { complex z; z.x = x; z.y = y; return z; }
 //Palette lookup mu = [0,1]
 __constant sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;
 #define gradient(mu) read_imagef(palette, sampler, (float2)(mu, 0.0))
-
-#define CALCPIXEL rgba calcpixel(int iterations, complex coord, complex offset, bool julia, real pixelsize, complex dims, complex origin, complex selected, image2d_t palette, rgba background, __global real* input)
-
 #define set_result(c) return clamp(c, 0.0f, 1.0f);
-CALCPIXEL;  //Prototype
+
+---LIBRARY---
+
+rgba calcpixel(int iterations, 
+               complex coord,
+               complex offset,
+               bool julia,
+               real pixelsize,
+               complex dims,
+               complex origin,
+               complex selected,
+               image2d_t palette,
+               rgba background,
+               __global real* params)
+{
+  ---CODE---
+}
 
 complex rotate2d(complex v, real angle)
 {
@@ -69,7 +83,7 @@ complex convert(int2 pos, int2 size, real zoom, real rotation)
 __kernel void sample(
     read_only image2d_t palette, 
     __global float4* temp,
-    __global real* input, 
+    __global real* params, 
     int antialias,
     int julia,
     int iterations,
@@ -77,12 +91,12 @@ __kernel void sample(
     int height,
     int j, int k)
 {
-  real zoom = input[0];
-  real rotation = input[1];
-  real pixelsize = input[2];
-  complex origin = (complex)(input[3],input[4]);
-  complex selected = (complex)(input[5],input[6]);
-  rgba background = (rgba)(input[7],input[8],input[9],input[10]);
+  real zoom = params[0];
+  real rotation = params[1];
+  real pixelsize = params[2];
+  complex origin = (complex)(params[3],params[4]);
+  complex selected = (complex)(params[5],params[6]);
+  rgba background = (rgba)(params[7],params[8],params[9],params[10]);
 
   int2 pos = (int2)(get_global_id(0), get_global_id(1));
   int2 size = (int2)(width, height);
@@ -94,7 +108,7 @@ __kernel void sample(
   complex offset = (complex)(pixelX * ((real)j/(real)antialias-0.5), 
                              pixelY * ((real)k/(real)antialias-0.5));
   rgba pixel = calcpixel(iterations, coord, offset, julia, pixelsize, 
-                     dims, origin, selected, palette, background, input);
+                     dims, origin, selected, palette, background, &params[11]);
 
   if (j==0 && k==0) temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] = (rgba)(0);
   temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] += pixel;
@@ -107,3 +121,4 @@ __kernel void average(write_only image2d_t output, __global float4* temp, int pa
   pixel /= (rgba)passes;
   write_imagef(output, pos, pixel);
 }
+

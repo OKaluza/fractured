@@ -17,10 +17,10 @@ def process(cat, formulae):
 #Create includes_.json
 if "include" in sys.argv[1]:
   sources = { 
-  "include/glsl-header.frag" : "",
-  "include/opencl-header.cl" : "",
-  "include/fractal-shader.frag" : "",
-  "include/complex-math.frag" : "",
+  "include/glsl-template.frag" : "",
+  "include/opencl-template.cl" : "",
+  "include/complex.library" : "",
+  "include/fractal.template" : "",
   "include/shader2d.vert" : "",
   "generated.source" : ""
   }

@@ -90,6 +90,7 @@ Script.prototype.update = function() {
 function runScript(filename) {
   //Run an animation script
   var script;
+  var timer = new Timer();
 
   //Resume?
   if (filename) {
@@ -126,7 +127,7 @@ function runScript(filename) {
         next();
     } else {
       state.output = true;
-      print("Script finished");
+      timer.print("Script");
       $S('script_controls').display = 'none';
     }
   }

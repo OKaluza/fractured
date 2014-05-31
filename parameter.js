@@ -13,6 +13,7 @@ var complexfunctions = ["", "abs", "acos", "cacos", "cacosh", "asin", "casin", "
 var bailfunctions = ["arg", "cabs", "norm", "imag", "manhattan", "real"];
 //atan2=arg, cmag=|z|=norm, recip=inv, log=ln, exp=cexp, all trig fns (sin=csin, cos=ccos, tan=ctan..
 
+
 //Complex number type
 /**
  * @constructor
@@ -241,7 +242,7 @@ Param.prototype.parse = function(value) {
   //debug(this.label + " parsed as " + this.type + " value = " + this.value);
 }
 
-Param.prototype.declare = function(key) {
+Param.prototype.declare = function(key, fractal) {
   //Return GLSL const/uniform declaration for this parameter
   var comment = this.label ? "//" + this.label + "\n" : "";
   var declaration = "";
@@ -301,16 +302,22 @@ Param.prototype.declare = function(key) {
   //Write the declaration
   if (isconst)
     declaration = "const " + type + " " + key + " = " + expr + ";\n";
+  else if (this.uniform) {
+    //uniforms passed as params[] array - save values and get indices
+    declaration = type + " " + key;
+    if (this.typeid == 2) {
+      declaration += " = complex(params[" + fractal.paramvars.length;
+      fractal.paramvars.push(this.value.re);
+      declaration += "],params[" + fractal.paramvars.length + "]);\n";
+      fractal.paramvars.push(this.value.im);
+    } else {
+      declaration += " = " + type + "(params[" + fractal.paramvars.length + "]);\n";
+      fractal.paramvars.push(this.value);
+    }
+  }
   else
     declaration = "#define " + key + expr + "\n";
 
-  if (this.uniform) {
-    //WebCL: "uniforms' passed in input[] array
-    if (fractal.renderer > WEBGL && fractal.webcl)
-      declaration = fractal.webcl.setInput(this, type, key);
-    else if (fractal.renderer == WEBGL) //Don't use uniform vars for server renderer
-      declaration = "uniform " + type + " " + key + ";\n";
-  }
   return comment + declaration;
 }
 
@@ -418,11 +425,12 @@ ParameterSet.prototype.setFromForm = function() {
   }
 }
 
-ParameterSet.prototype.toCode = function() {
+ParameterSet.prototype.toCode = function(fractal) {
   //Return GLSL code defining parameters
   var code = "";
   //First scan and save real/complex params for replacement when parsing expressions
   savevars = {};
+  fractal.paramvars = [];
   for (key in this) {
     if (this[key].uniform) { //Don't replace uniform params or will still recompile!
       savevars[key] = '@' + key;
@@ -436,12 +444,13 @@ ParameterSet.prototype.toCode = function() {
         savevars[key] = this[key].value.toString();
     }
   }
+
   //Generate the declaration
   for (key in this)
   {
     if (typeof(this[key]) == 'object') {
       //debug(key + " = " + this[key].value);
-      code += this[key].declare(key);
+      code += this[key].declare(key, fractal);
     }
   }
   return code;
@@ -572,7 +581,6 @@ ParameterSet.prototype.createFields = function(category, name) {
     //Create the input fields
     this[key].input = null;
     var input;
-    var onchange = "fractal.applyChanges();"
     switch (this[key].typeid)
     {
       case -1: //Boolean
@@ -600,8 +608,8 @@ ParameterSet.prototype.createFields = function(category, name) {
           input.setAttribute("step", this[key].step);
           input.numval = document.createElement("span");
           input.numval.innerHTML = parseReal(this[key].value).toFixed(2);
-          onchange = "this.numval.innerHTML = parseReal(this.value).toFixed(2);" + onchange;
-          input.setAttribute("onchange", onchange);
+          //??
+          input.setAttribute("onchange", "this.numval.innerHTML = parseReal(this.value).toFixed(2); return true;");
           spanin.appendChild(input.numval);
         }
         break;
@@ -660,7 +668,8 @@ ParameterSet.prototype.createFields = function(category, name) {
             matchBrackets: true,
             lineWrapping: true
           });
-          input.on("blur", function() {fractal.applyChanges();});
+          //input.on("blur", onchange);
+          //input.on("blur", handleFormChange);
         } else {
           input = document.createElement("textarea");
           input.value = this[key].value;
@@ -677,12 +686,12 @@ ParameterSet.prototype.createFields = function(category, name) {
         spanin.appendChild(input);
         break;
     }
-    //Instant update... (on for all now draw button removed)
+    /*/Instant update... (on for all now draw button removed)
     if (this[key].typeid == 2) {
       input[0].setAttribute("onchange", onchange);
       input[1].setAttribute("onchange", onchange);
     } else if (input.setAttribute)
-      input.setAttribute("onchange", onchange);
+      input.setAttribute("onchange", onchange);*/
     //Save the field element
     this[key].input = input;
   }
@@ -691,32 +700,5 @@ ParameterSet.prototype.createFields = function(category, name) {
   var clr = document.createElement("div");
   clr.className = "clear gap";
   parambox.appendChild(clr);
-}
-
-//Set field values as uniforms
-ParameterSet.prototype.setUniforms = function(gl, program, category) {
-  for (key in this)
-  {
-    if (typeof(this[key]) != 'object') continue;
-    if (!this[key].uniform) continue;
-
-    var uniform = gl.getUniformLocation(program, category + "_" + key);
-
-    switch (this[key].typeid)
-    {
-      case 0: //Integer
-        gl.uniform1i(uniform, this[key].value);
-        break;
-      case 1: //real
-      case 8: //range
-        gl.uniform1f(uniform, this[key].value);
-        break;
-      case 2: //complex (2xreal)
-        gl.uniform2f(uniform, this[key].value.re, this[key].value.im);
-        break;
-      default:
-        alert("Error: can't create uniform parameter except for int/real/complex types");
-    }
-  }
 }
 
