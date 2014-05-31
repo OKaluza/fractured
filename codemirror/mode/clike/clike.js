@@ -28,6 +28,12 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       state.tokenize = tokenString(ch);
       return state.tokenize(stream, state);
     }
+    if (ch == ".") {
+      //Swizzle - glsl/fractal addition
+      if (stream.eatWhile(/[xyzw]/)) {
+        return "number";
+      }
+    }
     if (/[\[\]{}\(\),;\:\.]/.test(ch)) {
       curPunc = ch;
       return null;
@@ -68,7 +74,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     if (modifiers.propertyIsEnumerable(cur)) return "modifier";
     if (labels.propertyIsEnumerable(cur)) return "label";
     if (types.propertyIsEnumerable(cur)) return "type";
-    if (stdlib.propertyIsEnumerable(cur)) return "stdlib";
+    if (stdlib.propertyIsEnumerable(cur))return "stdlib";
     if (stdvar.propertyIsEnumerable(cur)) return "stdvar";
     return "variable";
   }
@@ -323,11 +329,11 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     blockKeywords: words("do else for if switch while"),
     atoms: words("true false PI E"),
     modifiers: words("attribute const in inout out varying uniform"),
-    labels: words("init: reset: znext: escaped: converged: transform: calc: result: filter:"),
+    labels: words("main: functions: init: reset: znext: escaped: converged: transform: calc: result: filter:"),
     types: words("bool bvec2 bvec3 bvec4 float int ivec2 ivec3 ivec4 mat2 mat3 mat4 " + 
       "sampler1D sampler1DShadow sampler2D sampler2DShadow sampler3D samplerCube " + 
       "vec2 vec3 vec4 void struct " + 
-      "complex real rgba C R" + //Custom types for fractals 
+      "complex real rgba " + //Custom types for fractals 
       "list real_function complex_function bailout_function expression define"),
     stdlib: words("abs acos all any asin atan " +
       "ceil clamp cos cross dFdx dFdy " +
@@ -350,7 +356,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       "cosh tanh sinh acosh atanh asinh cexp csin ccos ctan casin cacos " + 
       "catan csinh ccosh ctanh casinh cacosh catanh csqrt equals " + 
       "trunc round flip imag cln clog10"),
-    stdvar: words("z c z_1 z_2 point coord selected limit count escaped converged colour alpha" +
+    stdvar: words("z c z_1 z_2 point coord selected limit count escaped converged colour alpha " +
       "offset julia pixelsize dims origin selected_ palette background antialias " +
       "gl_BackColor gl_BackLightModelProduct gl_BackLightProduct " +
       "gl_BackMaterial gl_BackSecondaryColor gl_ClipPlane gl_ClipVertex " +
