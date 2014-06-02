@@ -1,8 +1,6 @@
 //TODO:
 //Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
 //Resize bug?
-//Save last not working??
-//Parameter changes not rebuilding
 
 //Globals
 var state;    //Local storage
@@ -1443,9 +1441,11 @@ function autoResize(newval) {
   //If value passed, setting autoSize, otherwise responding to resize event
   if (typeof(newval) == 'boolean') {
     debug("Autosize " + newval);
-    if (newval!=undefined) {
+    if (newval != undefined) {
       //Update width/height immediately
       doResize();
+      document["inputs"].elements["width"].disabled = newval;
+      document["inputs"].elements["height"].disabled = newval;
     }
   } else {
     rztimeout = setTimeout(doResize, 150);
@@ -1521,7 +1521,7 @@ function handleFormKeyUp(event) {
   //Update step
   if (event.target.type == 'number') {
     setFormFieldStep(event.target);
-    fractal.applyChanges();
+    //fractal.applyChanges();
   }
 }
 

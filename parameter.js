@@ -587,6 +587,7 @@ ParameterSet.prototype.createFields = function(category, name) {
     //Create the input fields
     this[key].input = null;
     var input;
+    var onchange = "setFormFieldStep(this); fractal.applyChanges();"
     switch (this[key].typeid)
     {
       case -1: //Boolean
@@ -605,12 +606,8 @@ ParameterSet.prototype.createFields = function(category, name) {
         input.id = category + '_' + key;
         input.value = this[key].value;
         spanin.appendChild(input);
-        if (this[key].typeid == 0)
-          input.type = "number";
-        else if (this[key].typeid == 1)
-          //Use text type for real numbers until precision bug fixed in firefox
-          input.type = "text";
-        else if (this[key].typeid == 8) {
+        input.type = "number";
+        if (this[key].typeid == 8) {
           input.type = "range";
           input.numval = document.createElement("span");
           input.numval.innerHTML = parseReal(this[key].value).toFixed(2);
@@ -625,16 +622,16 @@ ParameterSet.prototype.createFields = function(category, name) {
       case 2: //complex (2xreal)
         input = [null, null];
         input[0] = document.createElement("input");
-        //input[0].type = "number";
-        input[0].type = "text";
+        input[0].type = "number";
+        //input[0].type = "text";
         input[0].id = category + '_' + key + '_0';
         input[0].setAttribute("step", this[key].step);
         input[0].value = this[key].value.re;
         spanin.appendChild(input[0]);
         //Create second field
         input[1] = document.createElement("input");
-        //input[1].type = "number";
-        input[1].type = "text";
+        input[1].type = "number";
+        //input[1].type = "text";
         input[1].id = category + '_' + key + '_1';
         input[1].setAttribute("step", this[key].step);
         input[1].value = this[key].value.im;
@@ -674,13 +671,12 @@ ParameterSet.prototype.createFields = function(category, name) {
             value: this[key].value,
             mode: "text/x-glsl",
             theme: "fracturedlight",
-            indentUnit: 2,
-            tabSize: 2,
             matchBrackets: true,
-            lineWrapping: true
+            lineWrapping: true,
+            extraKeys: { Tab: false,}
           });
-          //input.on("blur", onchange);
-          //input.on("blur", handleFormChange);
+          input.on("blur", onchange);
+          input.on("blur", handleFormChange);
         } else {
           input = document.createElement("textarea");
           input.value = this[key].value;
@@ -697,12 +693,17 @@ ParameterSet.prototype.createFields = function(category, name) {
         spanin.appendChild(input);
         break;
     }
-    /*/Instant update... (on for all now draw button removed)
+    //Instant update... (on for all now draw button removed)
     if (this[key].typeid == 2) {
       input[0].setAttribute("onchange", onchange);
       input[1].setAttribute("onchange", onchange);
-    } else if (input.setAttribute)
-      input.setAttribute("onchange", onchange);*/
+      setFormFieldStep(input[0]);
+      setFormFieldStep(input[1]);
+    } else if (input.setAttribute) {
+      input.setAttribute("onchange", onchange);
+      if (input.type == "number")
+        setFormFieldStep(input);
+    }
     //Save the field element
     this[key].input = input;
   }
