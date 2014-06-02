@@ -20,7 +20,6 @@ if "include" in sys.argv[1]:
   "include/glsl-template.frag" : "",
   "include/opencl-template.cl" : "",
   "include/complex.library" : "",
-  "include/fractal.template" : "",
   "include/shader2d.vert" : "",
   "generated.source" : ""
   }
@@ -37,6 +36,7 @@ if "formulae" in sys.argv[1]:
 
   p = re.compile('[^\w()]+')
 
+  process("core", ["Default"])
   process("fractal", ["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Cactus","Phoenix"])
   process("transform", ["Inverse","Functions"])
   process("colour", ["Default","Smooth","Exponential Smoothing","Triangle","Orbit Traps","Gaussian Integers","Hot and Cold"])

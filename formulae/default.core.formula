@@ -1,3 +1,9 @@
+//Default formula core
+//Test param
+@test = real(1);
+
+main:
+
   ---DATA---
 
   //Globals
@@ -76,8 +82,7 @@
     }
   }
 
-  //Defined as: escaped || converged (or: true, when using same colour for both)
-  if (outside_set)
+  if (escaped || converged)
   {
     //Outside colour: normalised colour index [0,1]
     ---OUTSIDE_COLOUR---
