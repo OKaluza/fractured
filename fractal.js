@@ -384,10 +384,6 @@ Fractal.prototype.precision = function(val) {
 }
 
 //Actions
-Fractal.prototype.restoreLink = function() {
-  return '<a href="javascript:fractal.restore('+ this.position.print() + ', new Complex'+ this.selected + ', ' + this.julia + ');">@</a> '; 
-}
-
 Fractal.prototype.restore = function(im, re, rotate, zoom, selected, julia) {
   //Restore position settings to a previous state
   this.position = new Aspect(im, re, rotate, zoom);
@@ -401,16 +397,14 @@ Fractal.prototype.setOrigin = function(point) {
   //Adjust centre position
   this.position.re += point.re;
   this.position.im += point.im;
-  //print(this.restoreLink() + "Origin: re: " + this.precision(this.position.re) + " im: " + this.precision(this.position.im));
 }
 
 Fractal.prototype.applyZoom = function(factor) {
   //Adjust zoom
   this.position.zoom *= factor;
-  //print(this.restoreLink() + "Zoom: " + this.precision(this.position.zoom));
 }
 
-Fractal.prototype.selectPoint = function(point, log) {
+Fractal.prototype.selectPoint = function(point) {
   //Julia set switch
   if (point && !this.julia) {
     this.julia = true;
@@ -1397,10 +1391,10 @@ Fractal.prototype.copyToForm = function() {
   for (category in this.choices)
     $(category + '_formula').value = this.choices[category].selected;
   //No width or height? Set autosize, otherwise disable
-  if (this.width == 0 || this.height == 0)
-    document["inputs"].elements["autosize"].checked = true;
-  else
-    document["inputs"].elements["autosize"].checked = false;
+  var autosize = (this.width == 0 || this.height == 0);
+  document["inputs"].elements["autosize"].checked = autosize;
+  document["inputs"].elements["width"].disabled = autosize;
+  document["inputs"].elements["height"].disabled = autosize;
 }
 
 /**
@@ -1635,10 +1629,7 @@ Fractal.prototype.timeAction = function(action) {
 }
 
 function ondrawn() {
-  //# UI
-  if (!this.ui) return;
   //Call the user-defined ondraw function
-    //TODO: USES GLOBAL!
   if (fractal.ondraw) fractal.ondraw();
   //Save last drawn thumbnail
   var thumb = thumbnailQuick("jpeg", 80, 0, 85);
@@ -1648,7 +1639,8 @@ function ondrawn() {
 
 Fractal.prototype.draw = function(antialias, notime) {
   var timer = null;
-  if (!notime && this.state.timers > 0)
+  //OnDrawn callback relies on UI elements (for thumbnail)
+  if (this.ui && !notime && this.state.timers > 0)
     timer = new Timer(ondrawn);
 
   this.drawCore(antialias, timer);
@@ -1817,7 +1809,7 @@ Fractal.prototype.click = function(event, mouse) {
   } else if (event.button == 0) {
     if (event.ctrlKey)
       //Switch to julia set at selected point (alternative for single button mice)
-      this.selectPoint(point, true);
+      this.selectPoint(point);
     else
       //Adjust centre position to match mouse left click
       this.setOrigin(point);
@@ -1825,7 +1817,7 @@ Fractal.prototype.click = function(event, mouse) {
     //Right-click, not dragging
     if (event.button == 2 && !mouse.dragged) {
       //Switch to julia set at selected point
-      this.selectPoint(point, true);
+      this.selectPoint(point);
     } else {
       //No redraw
       return true;
