@@ -23,6 +23,7 @@
 .cm-s-fracturedlight span.cm-local {color: #633;}
 
 .cm-s-fracturedlight .CodeMirror-matchingbracket {text-decoration: underline; color: black !important;}
+.cm-s-elegant .CodeMirror-activeline-background {background: #e8f2ff !important;}
 
 /* Dark version */
 .cm-s-fractureddark { background: #312922; color: beige; }
@@ -48,6 +49,7 @@
 .cm-s-fractureddark span.cm-local {color: seagreen; }
 
 .cm-s-fractureddark .CodeMirror-matchingbracket {text-decoration: underline; color: white !important;}
+.cm-s-elegant .CodeMirror-activeline-background {background: #e8f2ff !important;}
 
 /* Unused? */
 .cm-s-fractured span.cm-def {color: white;}
