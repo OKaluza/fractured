@@ -361,6 +361,8 @@
           <li><b>Selected:</b> fractal coordinate selected for Julia sets</li>
           <li><b>Iterations:</b> maximum iterations to perform (increase for more detail)</li>
           </ul>
+          <p><b>Core Formula:</b> core formula, default built from template selections in Formula &amp; Colour tabs.<br>
+          Creating or editing this formula allows complete control over fractal algorithm</p>
         </div>
 
         <form id="param_inputs" name="inputs" onmousedown="handleFormMouseDown(event)">
@@ -409,6 +411,19 @@
 
           <div class="clear"></div>
           <div class="gap"></div>
+
+          <p>Core Formula</p>
+          <div class="field">
+            <select id="core_formula" class="formula" onchange="fractal.choices['core'].select(this.value);">
+            </select>
+            <div class="formula_buttons">
+              <input type="button" value="Edit" onclick="fractal.editFormula('core');">
+              <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('core');">
+              <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('core');">
+            </div>
+          </div>
+          <div class="gap"></div>
+          <div id="core_params" width="100%"></div>
 
         </form>
 

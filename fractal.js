@@ -5,7 +5,7 @@ var WEBCL64 = 2;
 var SERVER = -1;
 var newline = /\r\n?|\n/;
 
-var sectionnames = {"fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour", "filter" : "Filter"}
+var sectionnames = {"core" : "Core", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour", "filter" : "Filter"}
 
 var savevars = {};
 var fractal_savevars = {};
@@ -302,7 +302,7 @@ Fractal.prototype.setRenderer = function(mode) {
   }
 
   //Server side renderer
-  var serv_url; //= "http://...;
+  var serv_url;
   
   if (this.renderer == SERVER && serv_url) {
     //this.webgl = null;
@@ -441,7 +441,8 @@ Fractal.prototype.resetDefaults = function() {
   this.julia = false;
   this.iterations = 100;
 
-  this.choices = {"fractal" : null, "pre_transform" : null, "post_transform" : null, "outside_colour" : null, "inside_colour" : null, "filter" : null};
+  this.choices = {"core" : null, "fractal" : null, "pre_transform" : null, "post_transform" : null,
+                  "outside_colour" : null, "inside_colour" : null, "filter" : null};
 
   //#Reset default params
   for (category in this.choices)
@@ -1430,6 +1431,9 @@ Generator.prototype.generate = function() {
 
   //Insert the complex maths library
   targetsrc = targetsrc.replace(/---LIBRARY---/, sources["include/complex.library"]);
+
+  //Insert any additional functions defined
+  targetsrc = targetsrc.replace(/---FUNCTIONS---/, this.selections["core"]["functions"] || "");
   
   //Calculate offset of code before core body
   this.headerlen = targetsrc.substr(0, targetsrc.indexOf("---CODE---")).split(newline).length;
@@ -1444,6 +1448,7 @@ Generator.prototype.generate = function() {
     targetsrc = targetsrc.replace(/real\(/g, "(real)(");
     targetsrc = targetsrc.replace(/float\(/g, "(float)(");
     targetsrc = targetsrc.replace(/int\(/g, "(int)(");
+    targetsrc = targetsrc.replace(/bool\(/g, "(bool)(");
     targetsrc = targetsrc.replace(/rgba\(/g, "(rgba)(");
   }
 
@@ -1454,35 +1459,37 @@ Generator.prototype.generate = function() {
 //Create shader core source components
 Generator.prototype.generateCore = function() {
   //Insert at beginning of source
-  this.source = "  #define outside_set escaped || converged\n";
-  if (this.fractal.choices["inside_colour"].selected == "same")
-    this.source = "  #define outside_set true\n";  //Force same colouring code
-  this.source += "  #define MAXITER " + (100 * Math.ceil(this.fractal.iterations / 100)) + "\n";
-
-  //Main code template body
-  this.source += sources["include/fractal.template"]; 
+  this.source = "#define MAXITER " + (100 * Math.ceil(this.fractal.iterations / 100)) + "\n";
 
   //Get formula selections
   this.selections = {};
-  for (category in this.fractal.choices)
+  this.fractal.paramvars = [];  //Clear uniform values array
+  for (category in this.fractal.choices) {
     this.selections[category] = this.fractal.choices[category].getParsedFormula(this.fractal);
+  }
+
+  //Main code template body
+  this.offsets = [];
+  //this.source += sources["include/fractal.template"]; 
+  this.source += "---DATA---\n---CORE---\n"; 
+  this.source = this.templateInsert(this.source, "DATA", "data", ["core"], 0);
+  this.source = this.templateInsert(this.source, "CORE", "main", ["core"], 0);
 
   //Replace ---SECTION--- in template with formula code
-  this.offsets = [];
   var alltypes = ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour", "filter"];
-  this.templateInsert("DATA", "data", alltypes, 2);
-  this.templateInsert("INIT", "init", alltypes, 0);
-  this.templateInsert("RESET", "reset", alltypes, 0);
-  this.templateInsert("PRE_TRANSFORM", "transform", ["pre_transform"], 4);
-  this.templateInsert("ZNEXT", "znext", ["fractal"], 2);
-  this.templateInsert("POST_TRANSFORM", "transform", ["post_transform"], 4);
-  this.templateInsert("ESCAPED", "escaped", ["fractal"], 2);
-  this.templateInsert("CONVERGED", "converged", ["fractal"], 2);
-  this.templateInsert("OUTSIDE_CALC", "calc", ["outside_colour"], 4);
-  this.templateInsert("INSIDE_CALC", "calc", ["inside_colour"], 4);
-  this.templateInsert("OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
-  this.templateInsert("INSIDE_COLOUR", "result", ["inside_colour"], 2);
-  this.templateInsert("FILTER", "filter", ["filter"], 0);
+  this.source = this.templateInsert(this.source, "DATA", "data", alltypes, 2);
+  this.source = this.templateInsert(this.source, "INIT", "init", alltypes, 0);
+  this.source = this.templateInsert(this.source, "RESET", "reset", alltypes, 0);
+  this.source = this.templateInsert(this.source, "PRE_TRANSFORM", "transform", ["pre_transform"], 4);
+  this.source = this.templateInsert(this.source, "ZNEXT", "znext", ["fractal"], 2);
+  this.source = this.templateInsert(this.source, "POST_TRANSFORM", "transform", ["post_transform"], 4);
+  this.source = this.templateInsert(this.source, "ESCAPED", "escaped", ["fractal"], 2);
+  this.source = this.templateInsert(this.source, "CONVERGED", "converged", ["fractal"], 2);
+  this.source = this.templateInsert(this.source, "OUTSIDE_CALC", "calc", ["outside_colour"], 4);
+  this.source = this.templateInsert(this.source, "INSIDE_CALC", "calc", ["inside_colour"], 4);
+  this.source = this.templateInsert(this.source, "OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
+  this.source = this.templateInsert(this.source, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
+  this.source = this.templateInsert(this.source, "FILTER", "filter", ["filter"], 0);
   this.offsets.push(new LineOffset("(end)", "(end)", this.source.split(newline).length));
 
   //Replace any (x,y) constants with complex(x,y)
@@ -1495,16 +1502,16 @@ Generator.prototype.generateCore = function() {
   this.source = this.source.replace(/ident/g, ""); //Strip ident() calls
 }
 
-Generator.prototype.templateInsert = function(marker, section, sourcelist, indent) {
-  var source = "//***" + marker + "***\n";
+Generator.prototype.templateInsert = function(source, marker, section, sourcelist, indent) {
+  var newsource = "//***" + marker + "***\n";
   var regex = new RegExp("---" + marker + "---");
   var spaces = "          ";
   spaces = spaces.substr(0, indent);
 
   //Save the line offset where inserted
-  var match = regex.exec(this.source);
-  if (!match) return;
-  var offset = this.source.slice(0, match.index).split(newline).length;
+  var match = regex.exec(source);
+  if (!match) return source; //No section defined for this template
+  var offset = source.slice(0, match.index).split(newline).length;
   //alert(offset + "\n" + this.source.slice(0, match.index));
   //debug(section + "-->" + marker + " STARTING offset == " + offset);
 
@@ -1522,15 +1529,15 @@ Generator.prototype.templateInsert = function(marker, section, sourcelist, inden
     }
 
     //Save offset for this section from this formula selection
-    this.offsets.push(new LineOffset(sourcelist[s], section, offset + source.split(newline).length - 1));
+    this.offsets.push(new LineOffset(sourcelist[s], section, offset + newsource.split(newline).length - 1));
     //debug(section + " --> " + sourcelist[s] + " offset == " + this.offsets[this.offsets.length-1].value);
 
     //Concatentate to final code to insert at marker position
-    source += code + "\n";
+    newsource += code + "\n";
   }
 
   //Replaces a template section with the passed source
-  this.source = this.source.replace(regex, source);
+  return source.replace(regex, newsource);
 }
 
 //Rebuild from source
@@ -1808,9 +1815,13 @@ Fractal.prototype.click = function(event, mouse) {
     //Adjust zoom by factor of element width to selection
     this.applyZoom(mouse.element.width / this.select.w);
   } else if (event.button == 0) {
-    //Adjust centre position to match mouse left click
-    this.setOrigin(point);
-  } else if (event.button > 0) {
+    if (event.ctrlKey)
+      //Switch to julia set at selected point (alternative for single button mice)
+      this.selectPoint(point, true);
+    else
+      //Adjust centre position to match mouse left click
+      this.setOrigin(point);
+  } else if (event.button > 0 || event.ctrlKey) {
     //Right-click, not dragging
     if (event.button == 2 && !mouse.dragged) {
       //Switch to julia set at selected point
@@ -2007,7 +2018,11 @@ Fractal.prototype.drawPreview = function() {
   this.preview.selected = new Complex(this.selected.re, this.selected.im);
   this.preview.position = this.savePos; //.clone();
 
-  this.preview.drawCore();
+  //if (pwin) this.preview = pwin.fractal;
+  if (pwin)
+    pwin.enqueue(this.preview.toStringNoFormulae());
+  else
+    this.preview.drawCore();
 }
 
 Fractal.prototype.clearPreview = function() {
@@ -2022,6 +2037,7 @@ Fractal.prototype.clearPreview = function() {
 
 Fractal.prototype.showPreview = function() {
   document.mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
+  //if (pwin) this.preview = pwin.fractal;
   if (!this.preview) {
     this.preview = new Fractal('preview');
     this.preview.win = new MoveWindow('previewWindow');
@@ -2075,3 +2091,13 @@ Fractal.prototype.pinch = function(event, mouse) {
   if (this.select) this.select.style.display = 'none';
 }
 
+var pwin;
+function openPopup() {
+  //w = window.open("preview.html", "view1", "toolbar=no,scrollbars=no,location=no,statusbar=no,menubar=no,resizable=1,width=500,height=500");
+  //pwin = window.open("preview.html", "view1", "menubar=yes,resizable=1,width=500,height=500");
+  pwin = window.open("preview.html", "view1", "resizable=1,width=500,height=500");
+}
+
+function closePopup() {
+  pwin = null;
+}

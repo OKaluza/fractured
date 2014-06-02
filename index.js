@@ -1,6 +1,8 @@
 //TODO:
 //Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
 //Resize bug?
+//Save last not working??
+//Parameter changes not rebuilding
 
 //Globals
 var state;    //Local storage
@@ -106,6 +108,7 @@ function appInit() {
     if (element.addEventListener) element.addEventListener("DOMMouseScroll", handleFormMouseWheel, false);
     element.onmousewheel = handleFormMouseWheel;
     element.onchange = handleFormChange;
+    element.onkeyup = handleFormKeyUp;
   }
 
   setAntiAliasMenu();
@@ -1271,6 +1274,9 @@ function showPanel(name)
     $(panels[i]).style.display = (panel == panels[i]) ? 'block':'none';
 
   //Update edit fields
+  if (panel == "panel_params") {
+    fractal.choices["core"].reselect();
+  }
   if (panel == "panel_formula") {
     fractal.choices["fractal"].reselect();
     fractal.choices["pre_transform"].reselect();
@@ -1343,7 +1349,6 @@ function popup(text) {
   */
   var el = $('popup');
   if (!el) {
-    //Dynamically create popup message if not provided in current page
     var popdiv = document.createElement('div');
     popdiv.className = 'popup';
     var popclose = document.createElement('div');
@@ -1496,8 +1501,33 @@ function handleFormEnter(event) {
   return true;
 }
 
+function setFormFieldStep(target) {
+  //Update step
+  var dpt = target.value.indexOf(".");
+  var len = target.value.length; //Last digit
+  if (len > 0 && dpt >= 0) {
+    //Decimal point found
+    var lsd = len - dpt - 1;
+    debug(target.value + " LEN " + len + " DPT " + dpt + " LSD " + lsd);
+    target.step = Math.pow(10, -lsd);
+  } else {
+    //No decimal
+    target.step = 1;
+  }
+  debug(target.id + " step set to " + target.step);
+}
+
+function handleFormKeyUp(event) {
+  //Update step
+  if (event.target.type == 'number') {
+    setFormFieldStep(event.target);
+    fractal.applyChanges();
+  }
+}
+
 function handleFormChange(event) {
   //Redraw
+    debug(event.target.id + " = " + event.target.value);
   fractal.applyChanges();
   return true;
 }
@@ -1515,39 +1545,31 @@ function handleFormMouseWheel(event) {
       field.value = parseReal(field.value) + parseReal(field.step) * event.spin;
       field.onchange();
     } else  {
-      //If any of modifier keys held, scroll digit under mouse pointer
+      //Scroll digit under mouse pointer or last digit if none
       var pos;
       var dpt = field.value.indexOf(".");
-      if (event.shiftKey || event.altKey || event.ctrlKey) {
-        //Get mouse position relative to field
-        var coord = mousePageCoord(event);
-        elementRelativeCoord(field, coord)
-        //Calculate the digit position the mouse is above
-        //...for each digit in field
-        pos = field.value.length;
-        for (var i=1; i<=field.value.length; i++) {
-          var txt=field.value.substr(0,i);
-          var test = $("fonttest");
-          test.innerHTML = txt;
-          var width = (test.clientWidth + 1);
-          var digit = field.value.substr(i-1, 1);
-          //print(i + " : (" + txt + ") " + width);
-          //Mouse over and is digit?
-          if (coord[0] < width && /[0-9]/.test(digit)) {
-            pos = i;
-            field.style.cursor = "none";  //Hide cursor so can see digit below
-            break;
-          }
+
+      //Get mouse position relative to field
+      var coord = mousePageCoord(event);
+      elementRelativeCoord(field, coord)
+      //Calculate the digit position the mouse is above
+      //...for each digit in field
+      pos = field.value.length;
+      for (var i=1; i<=field.value.length; i++) {
+        var txt=field.value.substr(0,i);
+        var test = $("fonttest");
+        test.innerHTML = txt;
+        var width = (test.clientWidth + 1);
+        var digit = field.value.substr(i-1, 1);
+        //print(i + " : (" + txt + ") " + width);
+        //Mouse over and is digit?
+        if (coord[0] < width && /[0-9]/.test(digit)) {
+          pos = i;
+          field.style.cursor = "none";  //Hide cursor so can see digit below
+          break;
         }
-        //print("Mouse: " + coord[0] + " digit: " + pos);
-      } else {
-        //Always scroll units when no modifiers pressed
-        dpt = field.value.indexOf(".");
-        if (dpt > 0)
-          pos = dpt; //Place before decimal
-        else
-          pos = field.value.length; //Last digit
       }
+      //print("Mouse: " + coord[0] + " digit: " + pos);
 
       //Find decimal point and calculate decimal places
       var places = 0;

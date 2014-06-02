@@ -24,7 +24,9 @@ function FormulaEntry(type, label, source, name) {
   if (!source) {
     //Default sources for new formulae
     var def;
-    if (type == 'fractal')
+    if (type == 'core')
+      source = formula_list["core/default"].source;
+    else if (type == 'fractal')
       source = formula_list["fractal/mandelbrot"].source;
     else if (type == 'transform')
       source = formula_list["transform/functions"].source;
@@ -64,6 +66,7 @@ FormulaEntry.prototype.equals = function(source2) {
 function importFormulaList(data) {
   formula_list = {};
   //Clear existing
+  $("core_formula").options.length = 0;
   $("fractal_formula").options.length = 0;
   $("pre_transform_formula").options.length = 0;
   $("post_transform_formula").options.length = 0;
@@ -75,14 +78,25 @@ function importFormulaList(data) {
   addToSelect("post_transform", "none", "");
   addToSelect("outside_colour", "none", "");
   addToSelect("inside_colour", "none", "");
-  addToSelect("inside_colour", "same", "As above");
+  //addToSelect("inside_colour", "same", "As above");
   addToSelect("filter", "none", "");
+
+  //Dummy entry for same colour
+  var f = new FormulaEntry("colour", "As Above", "\ncalc:\nif (i==limit-1) escaped = true;\n", "same");
 
   //Create proper FormulaEntry objects from JSON data
   try {
     var parsed = JSON.parse(data);
+
+    //Backwards compat/conversion!!! (load from defaults if no core formula)
+    if (!parsed["core/default"]) {
+      var temp = JSON.parse(readURL('/formulae_' + state.version + '.json', false));
+      parsed["core/default"] = temp["core/default"];
+    }
+
     //Run through the list and add to select lists
     for (key in parsed) {
+      if (parsed[key].name == "same") continue;
       //formula_list[key] = new FormulaEntry();
       var f = new FormulaEntry(parsed[key].type, parsed[key].label, parsed[key].source, parsed[key].name);
       //debug(formula_list[key].constructor.name);
@@ -92,7 +106,12 @@ function importFormulaList(data) {
     formula_list = null;
   }
 
+  //CONVERSION... moved from sources to core formula
+  //if ($("core_formula").options.length == 0)
+  //  var f = new FormulaEntry("core", "Default", sources["include/fractal.template"], "default");
+
   //Set selected defaults
+  $('core_formula').value = varDefault(selected['core'], $("core_formula").options[0].value);
   $('fractal_formula').value = varDefault(selected['fractal'], $("fractal_formula").options[0].value);
   $('pre_transform_formula').value = varDefault(selected['pre_transform'], "none");
   $('post_transform_formula').value = varDefault(selected['post_transform'], "none");
@@ -103,12 +122,13 @@ function importFormulaList(data) {
 
 function addSelectEntry(entry) {
   if (entry.type.indexOf("colour") > -1) {
-    entry.field = addToSelect("outside_colour", entry.name, entry.label);
+    if (entry.name != "same")
+      entry.field = addToSelect("outside_colour", entry.name, entry.label);
     entry.field = addToSelect("inside_colour", entry.name, entry.label);
   } else if (entry.type.indexOf("transform") > -1) {
     entry.field = addToSelect("pre_transform", entry.name, entry.label);
     entry.field = addToSelect("post_transform", entry.name, entry.label);
-  } else if (entry.type.indexOf("fractal") > -1 || entry.type.indexOf("filter") > -1) {
+  } else { //if (entry.type.indexOf("fractal") > -1 || entry.type.indexOf("filter") > -1) {
     entry.field = addToSelect(entry.type, entry.name, entry.label);
   }
 }
@@ -121,7 +141,7 @@ function addToSelect(type, name, label) {
 }
 
 function saveSelections() {
-  var selects = ["fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour", "filter"];
+  var selects = ["core", "fractal", "pre_transform", "post_transform", "outside_colour", "inside_colour", "filter"];
   selected = {};
   for (s in selects) {
     var selname = selects[s] + "_formula";
@@ -263,13 +283,16 @@ FormulaSelection.prototype.getkey = function() {
 
 FormulaSelection.prototype.getSource = function() {
   //if (this.selected == "none") return "";
-  if (this.selected == "none" || this.selected == "same") return "";
+  if (this.selected == "none") return "";
+  //Force escape flagged when using same colouring algorithm
+  //if (this.selected == "same") return "result:\nif (i==limit-1) escaped = true;\n";
   var key = this.getkey();
   if (!key) return "";
   if (formula_list[key]) {
     //TEMPORARY HACK FOR OLD ESCAPE/CONVERGE TESTS and LOGE == LN
-    var source = formula_list[key].source.replace(/if \((.*)\) break;/g, "converged = ($1);");
-    var source = source.replace("loge", "ln");
+    //var source = formula_list[key].source.replace(/if \((.*)\) break;/g, "converged = ($1);");
+    var source = formula_list[key].source;
+    source = source.replace("loge", "ln");
     if (source != formula_list[key].source) {
       formula_list[key].source = source;
       alert("LOGE=>LN\n" + source);
@@ -283,7 +306,7 @@ FormulaSelection.prototype.getSource = function() {
 FormulaSelection.prototype.getCodeSections = function() {
   var code = this.getSource();
   var section = "data";
-  var sections = {"init" : "", "reset" : "", "znext" : "", "escaped" : "", "converged" : "", "calc" : "", "result" : "", "transform" : "", "filter" : ""};
+  var sections = {"main" : "", "init" : "", "reset" : "", "znext" : "", "escaped" : "", "converged" : "", "calc" : "", "result" : "", "transform" : "", "filter" : ""};
   var match;
   var lastIdx = 0;
   var reg = /^([a-z]+):/gm;

@@ -134,6 +134,7 @@ Param.prototype.parse = function(value) {
       break;
     case 'int':
       this.typeid = 0;
+      this.step = 1;
       if (typeof(value) == 'number')
         this.value = value | 0; //Bitwise ops convert to integers
       if (typeof(value) == 'string')
@@ -141,6 +142,7 @@ Param.prototype.parse = function(value) {
       break;
     case 'real':
       this.typeid = 1;
+      this.step = "any";
       if (typeof(value) == 'number')
         this.value = value;
       if (typeof(value) == 'string') {
@@ -151,6 +153,7 @@ Param.prototype.parse = function(value) {
       break;
     case 'complex':
       this.typeid = 2;
+      this.step = "any";
       if (typeof(value) == 'number')
         this.value = new Complex(value, 0);
       if (typeof(value) == 'object') {
@@ -229,8 +232,8 @@ Param.prototype.parse = function(value) {
       var num = 0;
       var items = value.split(",");
       this.value = 0.0;
-      this.min = 0.0;
-      this.max = 1.0;
+      //this.min = Number.MIN_VALUE;
+      //this.max = Number.MAX_VALUE;
       this.step = 0.05;
       if (items.length > 0) this.value = parseReal(items[0]);
       if (items.length > 1) this.min = parseReal(items[1]);
@@ -300,9 +303,7 @@ Param.prototype.declare = function(key, fractal) {
   }
 
   //Write the declaration
-  if (isconst)
-    declaration = "const " + type + " " + key + " = " + expr + ";\n";
-  else if (this.uniform) {
+  if (this.uniform) {
     //uniforms passed as params[] array - save values and get indices
     declaration = type + " " + key;
     if (this.typeid == 2) {
@@ -315,6 +316,8 @@ Param.prototype.declare = function(key, fractal) {
       fractal.paramvars.push(this.value);
     }
   }
+  else if (isconst)
+    declaration = "const " + type + " " + key + " = " + expr + ";\n";
   else
     declaration = "#define " + key + expr + "\n";
 
@@ -430,7 +433,7 @@ ParameterSet.prototype.toCode = function(fractal) {
   var code = "";
   //First scan and save real/complex params for replacement when parsing expressions
   savevars = {};
-  fractal.paramvars = [];
+  //fractal.paramvars = [];
   for (key in this) {
     if (this[key].uniform) { //Don't replace uniform params or will still recompile!
       savevars[key] = '@' + key;
@@ -523,6 +526,9 @@ ParameterSet.prototype.restoreValues = function(other, defaults) {
 ParameterSet.prototype.createFields = function(category, name) {
   //Now processed whenever showPanel called and only displays fields in active panel
   switch (category) {
+    case "core":
+      if (selectedTab != $('tab_params')) return;
+      break;
     case "fractal":
     case "pre_transform":
     case "post_transform":
@@ -597,35 +603,40 @@ ParameterSet.prototype.createFields = function(category, name) {
       case 8: //range
         input = document.createElement("input");
         input.id = category + '_' + key;
-        input.type = "number";
         input.value = this[key].value;
         spanin.appendChild(input);
-        if (this[key].typeid == 1) input.setAttribute("step", 0.1);
-        if (this[key].typeid == 8) {
+        if (this[key].typeid == 0)
+          input.type = "number";
+        else if (this[key].typeid == 1)
+          //Use text type for real numbers until precision bug fixed in firefox
+          input.type = "text";
+        else if (this[key].typeid == 8) {
           input.type = "range";
-          input.setAttribute("min", this[key].min);
-          input.setAttribute("max", this[key].max);
-          input.setAttribute("step", this[key].step);
           input.numval = document.createElement("span");
           input.numval.innerHTML = parseReal(this[key].value).toFixed(2);
-          //??
+          //Update text value label onchange
           input.setAttribute("onchange", "this.numval.innerHTML = parseReal(this.value).toFixed(2); return true;");
           spanin.appendChild(input.numval);
         }
+        if (this[key].min) input.setAttribute("min", this[key].min);
+        if (this[key].max) input.setAttribute("max", this[key].max);
+        if (this[key].step) input.setAttribute("step", this[key].step);
         break;
       case 2: //complex (2xreal)
         input = [null, null];
         input[0] = document.createElement("input");
-        input[0].type = "number";
+        //input[0].type = "number";
+        input[0].type = "text";
         input[0].id = category + '_' + key + '_0';
-        input[0].setAttribute("step", 0.1);
+        input[0].setAttribute("step", this[key].step);
         input[0].value = this[key].value.re;
         spanin.appendChild(input[0]);
         //Create second field
         input[1] = document.createElement("input");
-        input[1].type = "number";
+        //input[1].type = "number";
+        input[1].type = "text";
         input[1].id = category + '_' + key + '_1';
-        input[1].setAttribute("step", 0.1);
+        input[1].setAttribute("step", this[key].step);
         input[1].value = this[key].value.im;
         spanin.appendChild(input[1]);
         break;
