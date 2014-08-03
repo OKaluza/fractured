@@ -1,7 +1,4 @@
 //Default formula core
-//Test param
-@test = real(1);
-
 main:
 
   ---DATA---
