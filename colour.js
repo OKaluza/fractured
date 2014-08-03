@@ -188,13 +188,19 @@
   function ColourPos(colour, pos) {
     //Stores colour as rgba and position as real [0,1]
     this.position = parseFloat(pos);
-    if (colour) {
-      if (typeof(colour) == 'object')
-        this.colour = colour;
-      else
-        this.colour = new Colour(colour);
+    //Detect out of range...
+    if (this.position >= 0 && this.position <= 1) {
+      if (colour) {
+        if (typeof(colour) == 'object')
+          this.colour = colour;
+        else
+          this.colour = new Colour(colour);
+      } else {
+        this.colour = new Colour("#000000");
+      }
     } else {
-      this.colour = new Colour("#000000");
+      throw( "Invalid Colour Position: " + pos);
+      return null;
     }
   }
   

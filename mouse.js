@@ -20,7 +20,7 @@
   /**
    * @constructor
    */
-  function Mouse(element, handler) {
+  function Mouse(element, handler, enableContext) {
     this.element = element;
     //Custom handler for mouse actions...
     //requires members: click(event, mouse), move(event, mouse) and wheel(event, mouse)
@@ -40,6 +40,7 @@
     this.spin = 0;
     //Option settings...
     this.moveUpdate = false;  //Save mouse move origin once on mousedown or every move
+    this.enableContext = enableContext ? true : false;
 
     // for mouse scrolling in Firefox
     if (element.addEventListener) element.addEventListener("DOMMouseScroll", handleMouseWheel, false);
@@ -53,7 +54,7 @@
     element.addEventListener("touchmove", touchHandler, true);
     element.addEventListener("touchend", touchHandler, true);
     //To disable context menu
-    element.oncontextmenu = function() { return false; }
+    element.oncontextmenu = function() {return this.mouse.enableContext;}
   }
 
   Mouse.prototype.setDefault = function() {
@@ -157,8 +158,7 @@
     var action = true;
     if (mouse.handler.down) action = mouse.handler.down(event, mouse);
     //If handler returns false, prevent default action
-    if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action; //IE
+    if (!action && event.preventDefault) event.preventDefault();
     return action;
   }
 
@@ -181,16 +181,13 @@
     document.mouse = defaultMouse;
 
     //If handler returns false, prevent default action
-    if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action; //IE
+    if (!action && event.preventDefault) event.preventDefault();
     return action;
   }
 
   function handleMouseMove(event) {
     //Use previous mouse if dragging
     var mouse = dragMouse ? dragMouse : getMouse(event);
-    //if (dragMouse) console.log(mouse.element.id);
-    //var mouse = document.mouse;
     if (!mouse || mouse.disabled) return true;
     mouse.update(event);
     mouse.deltaX = mouse.absoluteX - mouse.lastX;
@@ -211,8 +208,7 @@
     }
 
     //If handler returns false, prevent default action
-    if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action; //IE
+    if (!action && event.preventDefault) event.preventDefault();
     return action;
   }
  
@@ -240,8 +236,7 @@
     if (mouse.handler.wheel) action = mouse.handler.wheel(event, mouse);
 
     //If handler returns false, prevent default action
-    if (!action && event.preventDefault) event.preventDefault();  // Firefox
-    event.returnValue = action; //IE
+    if (!action && event.preventDefault) event.preventDefault();
     return action;
   } 
 
@@ -253,7 +248,7 @@
     if (mouse.handler.leave) action = mouse.handler.leave(event, mouse);
 
     //If handler returns false, prevent default action
-    if (!action && event.preventDefault) event.preventDefault();  // Firefox
+    if (!action && event.preventDefault) event.preventDefault();
     event.returnValue = action; //IE
     return action;
   } 

@@ -41,9 +41,9 @@
         if ($data[0] != '{')
         {
           //$size = strlen(gzinflate(substr($data,10,-8)));
-          if (stripos($_SERVER["HTTP_ACCEPT_ENCODING"], 'gzip') !== false)
-            header('Content-Encoding: gzip');
-          else
+          //if (stripos($_SERVER["HTTP_ACCEPT_ENCODING"], 'gzip') !== false)
+          //  header('Content-Encoding: gzip');
+          //else
             // client does not accept gzipped data
             //Need to strip header because we used gzencode()
             $data = gzinflate(substr($data,10,-8));

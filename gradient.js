@@ -1,7 +1,7 @@
 /**
  * @constructor
  */
-function GradientEditor(canvas, callback, nopicker) {
+function GradientEditor(canvas, callback, nopicker, scrollable) {
   this.canvas = canvas;
   this.callback = callback;
   this.changed = true;
@@ -9,6 +9,7 @@ function GradientEditor(canvas, callback, nopicker) {
   this.editing = null;
   this.element = null;
   this.spin = 0;
+  this.scrollable = scrollable;
   var self = this;
   function saveColour(val) {self.save(val);}
   function abortColour() {self.cancel();}
@@ -128,8 +129,7 @@ GradientEditor.prototype.click = function(event, mouse) {
   }
 
   //Use non-scrolling position
-  mouse.x = mouse.clientx;
-  mouse.x = mouse.clientx;
+  if (!this.scrollable) mouse.x = mouse.clientx;
 
   if (mouse.slider != null)
   {
@@ -146,6 +146,7 @@ GradientEditor.prototype.click = function(event, mouse) {
     var ypos = findElementPos(pal)[1]+30;
 
     //Get selected colour
+    //In range of a colour pos +/- 0.5*slider width?
     var i = this.palette.inRange(mouse.x, this.palette.slider.width, pal.width);
     if (i >= 0) {
       if (event.button == 0) {
@@ -172,8 +173,7 @@ GradientEditor.prototype.move = function(event, mouse) {
   if (!mouse.isdown) return true;
 
   //Use non-scrolling position
-  mouse.x = mouse.clientx;
-  mouse.x = mouse.clientx;
+  if (!this.scrollable) mouse.x = mouse.clientx;
 
   if (mouse.slider == null) {
     //Colour slider dragged on?

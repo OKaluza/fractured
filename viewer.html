@@ -1,0 +1,57 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Fractured | viewer</title>
+<meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1" />
+
+<script type="text/javascript" src="fractured_VERSION.js"></script>
+
+<style type="text/css">
+html, body { padding: 0; margin: 0; }
+
+.select {
+  display: none;
+  z-index: 20;
+  position:absolute;
+  border:1px solid #596380;
+  background: #EECC11;
+  opacity: 0.3;
+}
+
+.checkerboard {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAIElEQVQ4jWP4TwAcOHAAL2YYNWBYGEBIASEwasCwMAAALvidroqDalkAAAAASUVORK5CYII=");}
+
+</style>
+
+
+<script type="text/javascript">
+var formula_list = {};
+var sources;
+var fractal;
+var rztimeout;
+
+function load() {
+  sources = JSON.parse(readURL('/includes_0.85.json', false));
+  fractal = new Fractal('main');
+  fractal.init({"antialias" : 3, "timers" : 150});
+  //fractal.init({"antialias" : 3, "renderer" : WEBCL64, "platform" : 1, "timers" : 150});
+
+  var urlq = decodeURI(window.location.href);
+  if (urlq.indexOf("?") > 0) {
+    var query = urlq.split("?"); //whole querystring before and after ?
+    fractal.load(window.atob(query[1]));
+  }
+  window.onresize = autoResize;
+}
+
+function autoResize(newval) {
+  if (rztimeout) clearTimeout(rztimeout);
+  rztimeout = setTimeout(function() {fractal.applyChanges();}, 150);
+}
+</script>
+
+</head>
+
+<body onload="load()">
+
+<div id="main"></div>
+
+</body></html>
