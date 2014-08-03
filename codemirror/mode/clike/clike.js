@@ -466,7 +466,8 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
         stream.eatWhile(/[\w\$_@]/);
         return "param";
       },
-    modeProps: {fold: ["brace", "include"]}
+      modeProps: {fold: ["brace", "include"]}
+    }
   });
 
 });
