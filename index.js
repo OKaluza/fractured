@@ -1,6 +1,9 @@
 //TODO:
 //Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
 //Resize bug?
+//WebCL error when not installed
+//Switch to WebGL from WebCL still renders slow in WebCL
+//Fractals sometimes erroneously saved as unnamed
 
 //Globals
 var state;    //Local storage
@@ -74,7 +77,7 @@ function appInit() {
   colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();});
 
   //Fractal & canvas
-  fractal = new Fractal('main', colours, true);
+  fractal = new Fractal('main', colours, true, true);
 
   if (!state.offline) {
     //Session restore:
@@ -1503,17 +1506,31 @@ function handleFormEnter(event) {
 
 function setFormFieldStep(target) {
   //Update step
-  var dpt = target.value.indexOf(".");
+  if (!target.value) return;
+  var exp = target.value.toLowerCase().indexOf('e');
+  var dpt = target.value.indexOf('.');
   var len = target.value.length; //Last digit
-  if (len > 0 && dpt >= 0) {
+  //debug(target.id + " STEP SET: " + target.value);
+  if (exp > 0) {
+    //Exponent, check sign
+    var expval = parseInt(target.value.substr(exp+1));
+    //debug(exp + " " + expval);
+    if (expval < 0) {
+      target.step = Math.pow(10, expval);
+      debug(target.id + " step set to " + target.step);
+      return;
+    }
+  } else if (len > 0 && dpt >= 0) {
     //Decimal point found
     var lsd = len - dpt - 1;
     debug(target.value + " LEN " + len + " DPT " + dpt + " LSD " + lsd);
     target.step = Math.pow(10, -lsd);
-  } else {
-    //No decimal
-    target.step = 1;
+    //debug(target.id + " step set to " + target.step);
+    return;
   }
+
+  //No decimal
+  target.step = 1;
   debug(target.id + " step set to " + target.step);
 }
 
@@ -1548,6 +1565,14 @@ function handleFormMouseWheel(event) {
       //Scroll digit under mouse pointer or last digit if none
       var pos;
       var dpt = field.value.indexOf(".");
+      var exp = field.value.toLowerCase().indexOf('e');
+      if (exp > 0) {
+        //Exponent, strip and add back later
+        var newvalue = field.value.substr(0,exp);
+        exp = parseInt(field.value.substr(exp+1));
+        field.value = newvalue;
+      } else 
+        exp = null;
 
       //Get mouse position relative to field
       var coord = mousePageCoord(event);
@@ -1583,6 +1608,7 @@ function handleFormMouseWheel(event) {
       if (val < 0) spin = -spin;  //Reverse direction
       //Add increment value to existing value, ensure same decimal places
       field.value = (spin + val).toFixed(places);
+      if (exp) field.value = Math.floor(field.value) + "e" + exp; //Math.pow(10, exp);
     } 
 
     field.timer = setTimeout('fractal.applyChanges(); $S("' + field.id + '").cursor = "text";', 150);

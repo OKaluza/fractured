@@ -35,6 +35,7 @@ release:
 	sed "s/VERSION/$(VERSION)/g" index.html > release/index.html
 	sed "s/VERSION/$(VERSION)/g" editor.html > release/editor.html
 	sed "s/VERSION/$(VERSION)/g" viewer.html > release/viewer.html
+	sed "s/VERSION/$(VERSION)/g" palette.html > release/palette.html
 	#sed "s/VERSION/$(VERSION)/g" cache.manifest | sed "s/TIMESTAMP/$(NOW)/g" > release/cache.manifest
 	sed -i "/<!--@ -->/,/<!-- @-->/d" release/index.html
 	sed -i "s/<!--script\(.*\)script-->/<script\1script>/g" release/index.html

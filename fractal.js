@@ -6,6 +6,7 @@ var SERVER = -1;
 var newline = /\r\n?|\n/;
 
 var sectionnames = {"core" : "Core", "fractal" : "Fractal", "pre_transform" : "Pre-transform", "post_transform" : "Post-transform", "outside_colour" : "Outside Colour", "inside_colour" : "Inside Colour", "filter" : "Filter"}
+var formulaTypes = ["core", "fractal", "transform", "colour"];
 
 var savevars = {};
 var fractal_savevars = {};
@@ -29,9 +30,8 @@ Timer.prototype.print = function(action) {
 /**
  * @constructor
  */
-function Server(url, cmd) {
+function Server(url) {
   this.url = url;
-  this.cmd = cmd ? cmd : '/post';
   //Only allow one request at a time to be issued
   this.http = new XMLHttpRequest();
   //Show download progress
@@ -41,19 +41,19 @@ function Server(url, cmd) {
   this.timer = null;
 }
 
-Server.prototype.draw = function(data) {
+Server.prototype.draw = function(data, control) {
   this.data = data;
-  if (this.cmd == '/update')
-    this.post(); //Immediate
+  if (control)
+    this.post('/update'); //Immediate for server control
   else {
     //Only issue one draw request at a time with a 100ms timeout
     if (this.timer) clearTimeout(this.timer);
     var that = this;
-    this.timer = setTimeout(function () {that.post(true);}, 100);
+    this.timer = setTimeout(function () {that.post('/post', true);}, 100);
   }
 }
 
-Server.prototype.post = function(image) {
+Server.prototype.post = function(res, image) {
   var http = this.http;
   if (!image)
     http = new XMLHttpRequest();
@@ -81,7 +81,10 @@ Server.prototype.post = function(image) {
     }
   }
 
-  http.open("POST", this.url + this.cmd, true); 
+  //alert(this.url + res + " : " + fractal.state.control);
+  var url = this.url + res;
+  http.open("POST", url, true); 
+  //http.open("POST", url, false); //Synchronous test
 
   //Send the proper header information along with the request
   //http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -90,7 +93,10 @@ Server.prototype.post = function(image) {
   if (image)
     http.responseType = 'blob';
 
-  http.send(this.data); 
+  http.send(this.data);
+
+  //Timeout 5 seconds
+  //setTimeout(function() { http.abort(); }, 5000);
 }
 
 /**
@@ -123,11 +129,11 @@ Aspect.prototype.clone = function() {
 
 //Returns size of a pixel at current zoom level
 Aspect.prototype.pixelSize = function(element) {
-  var unit = 2.0 / this.zoom;
-  var pixel = unit / element.width; //height?
+  //var unit = 2.0 / this.zoom;
+  //var pixel = unit / element.width; //height?
   //debug(element.width + " x " + element.height + " ==> " + size[0] + " x " + size[1]);
   //if (this.zoom > 100) debug("Warning, precision too low, pixel size: " + pixel);
-  return pixel;
+  return 2.0 / (this.zoom * element.width);
 //    return new Array(pwidth,pheight);
 }
 
@@ -168,19 +174,24 @@ function LineOffset(category, section, value) {
 /**
  * @constructor
  */
-function Fractal(parentid, colours, ui) {
+function Fractal(parentid, colours, ui, selbox) {
   //Construct a new default fractal object
-  this.element = $(parentid);
+  this.element = $(parentid) || document.body;
   //Set canvas size
   //this.sizeCanvas();
   this.paramvars = [];
   this.preview = null;
   this.name = "";
   this.ui = ui;
-  this.select = document.createElement("div");
-  this.select.id = "select";
-  this.select.className = "select";
-  this.element.appendChild(this.select);
+
+  //Selection box
+  if (selbox) {
+    this.select = document.createElement("div");
+    this.select.id = "select";
+    this.select.className = "select";
+    this.element.appendChild(this.select);
+  }
+
   //Object with Palette class and read/get functions can be provided (eg: GradientEditor)
   if (colours) {
     this.colours = colours;
@@ -302,17 +313,11 @@ Fractal.prototype.setRenderer = function(mode) {
   }
 
   //Server side renderer
-  var serv_url;
-  
-  if (this.renderer == SERVER && serv_url) {
-    //this.webgl = null;
-    //this.webcl = null;
-    this.server = new Server(serv_url);
-  } else if (this.webgl && serv_url) {
-    //Control mode
-    this.server = new Server(serv_url, "/update");
-  }
+  if (this.state.server)
+    this.server = new Server(this.state.server);
 
+  debug(this.state.server + " SERVER: " + this.server);
+  
   //#Update UI
   if (this.ui) {
     //(reset all to enabled, 
@@ -335,7 +340,7 @@ Fractal.prototype.setRenderer = function(mode) {
     if (!window.WebGLRenderingContext || this.webgl === null) {
       $("webgl").disabled = true;
     }
-    if (!serv_url) {
+    if (!this.state.server) {
       $("server").disabled = true;
     }
 
@@ -478,6 +483,7 @@ Fractal.prototype.importFormula = function(source, filename) {
   var arr = filenameToName(filename);
   var name = arr[0];
   var type = arr[1];
+  if (formulaTypes.indexOf(type) < 0) return; //Must contain valid type as extension, prevents junk import
   var key = type + "/" + name;
   if (formula_list[key]) {
     if (formula_list[key].equals(source)) return;
@@ -1654,15 +1660,20 @@ Fractal.prototype.drawCore = function(antialias, timer) {
   //Set canvas size
   this.sizeCanvas();
 
-  if (this.webgl) {
-    this.webgl.time = timer;
-    this.renderWebGL(antialias);
-  } else if (this.renderer >= WEBCL && this.webcl) {
-    this.webcl.time = timer;
-    this.webcl.draw(this, antialias, this.colours.palette.background);
-  } 
+  //Local render can be disabled by debug flag
+  if (!this.state.disabled) {
+    if (this.webgl) {
+      this.webgl.time = timer;
+      this.renderWebGL(antialias);
+    } else if (this.renderer >= WEBCL && this.webcl) {
+      this.webcl.time = timer;
+      this.webcl.draw(this, antialias, this.colours.palette.background);
+    } 
+  }
 
-  if (this.server) this.serverRender(antialias);
+  //Render on server or control flag set for rendering on server?
+  if (this.renderer == SERVER || this.state.control)
+    if (this.server) this.serverRender(antialias);
 }
 
 Fractal.prototype.saveState = function(replace) {
@@ -1687,12 +1698,21 @@ Fractal.prototype.serverRender = function(antialias) {
   //Send shader & params to remote server
   if (!antialias) antialias = this.state.antialias;
   var src = this.paramString(true) + "antialias=" + antialias + "\n" + 
-            "\n[description]\n" + this.name + "\n" + 
-            this.paletteString() + "\n[shader]\n" + this.cache;
-            //"\n[description]\n" + this.name + "\n" + 
+            "\n[description]\n" + this.name + "\n"
+
+  //Add any uniform vars
+  if (this.paramvars.length) {
+    src += "\n[variables]\n"
+    for (v in this.paramvars)
+      src += this.paramvars[v] + "\n"
+  }
+  
+  //Finish with palette and shader code...
+  src += this.paletteString() + "\n[shader]\n" + this.cache;
+
   //Check re-render required...
   if (this.servercache != src) {
-    this.server.draw(src);
+    this.server.draw(src, this.state.control);
     this.servercache = src;
   }
 }
@@ -1708,6 +1728,7 @@ Fractal.prototype.clear = function() {
 }
 
 Fractal.prototype.renderViewport = function(x, y, w, h) {
+  //Draw julia viewport on remote app
   /*if (this.server) {
     this.serverRender();
     return;
@@ -1716,7 +1737,6 @@ Fractal.prototype.renderViewport = function(x, y, w, h) {
   var alpha = this.colours.palette.background.alpha; //Save bg alpha
   this.colours.palette.background.alpha = 1.0;
   if (this.webgl) {
-    //Render viewport content on remote server...
     this.webgl.time = null; //Disable timer
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     this.webgl.viewport = new Viewport(x, y, w, h);
@@ -1725,7 +1745,6 @@ Fractal.prototype.renderViewport = function(x, y, w, h) {
     this.renderWebGL(this.state.antialias);
     this.webgl.viewport = new Viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.disable(this.gl.SCISSOR_TEST);
-
   } else if (this.renderer >= WEBCL && this.webcl) {
     this.webcl.time = null; //Disable timer
     this.webcl.setViewport(x, y, w, h);
@@ -1790,11 +1809,15 @@ Fractal.prototype.stop = function() {
 }
 
 Fractal.prototype.click = function(event, mouse) {
+  //Don't exit preview on click when controlling remote
+  if (this.state.control && this.state.disabled && this.preview) {
+    return this.move(event, mouse);
+  }
   //Convert mouse coords into fractal coords
   var point = this.position.convert(mouse.x, mouse.y, mouse.element);
 
   //Selection box? Ignore if too small a region selected
-  if (this.select.style.display == 'block' && this.select.w > 5 && this.select.h > 5) {
+  if (this.select && this.select.style.display == 'block' && this.select.w > 5 && this.select.h > 5) {
     //Get element offset in document
     //var offset = findElementPos(mouse.element);
     //Convert coords to position relative to element
@@ -1824,25 +1847,30 @@ Fractal.prototype.click = function(event, mouse) {
     }
   }
 
-  this.select.style.display = 'none';
+  if (this.select) this.select.style.display = 'none';
   this.copyToForm();
   this.draw();
   return true;
 }
 
 Fractal.prototype.down = function(event, mouse) {
+  //Issue clear to server when in control mode
+  if (this.server && this.state.control)
+    this.server.post('/clear');
+
   //Clear focus from menu popups to hide them if active
   //$('popup').focus();
   //document.activeElement.blur()
   //Stop any current render
   this.stop();
-  this.clearPreview();
+  //Switch out of preview mode (unless controlling server renderer only)
+  if (!(this.state.control && this.state.disabled)) this.clearPreview();
   //return false;
   return true;
 }
 
 Fractal.prototype.up = function(event, mouse) {
-  this.clearPreview();
+  //this.clearPreview();
   return true;
 }
 
@@ -1880,32 +1908,34 @@ Fractal.prototype.move = function(event, mouse) {
   }
 
   //Drag processing
-  this.select.style.display = 'block';
+  if (this.select) {
+    this.select.style.display = 'block';
 
-  //Constrain selection size to canvas aspect ratio
-  this.select.w = Math.abs(mouse.deltaX)
-  var ratio = mouse.element.width / this.select.w;
-  this.select.h = mouse.element.height / ratio;
+    //Constrain selection size to canvas aspect ratio
+    this.select.w = Math.abs(mouse.deltaX)
+    var ratio = mouse.element.width / this.select.w;
+    this.select.h = mouse.element.height / ratio;
 
-  if (mouse.deltaX < 0)
-    this.select.x = mouse.x;
-  else
-    this.select.x = mouse.x - this.select.w;
+    if (mouse.deltaX < 0)
+      this.select.x = mouse.x;
+    else
+      this.select.x = mouse.x - this.select.w;
 
-  var offset = findElementPos(this.element);
-  if (mouse.deltaY < 0)
-    this.select.y = mouse.lastY - this.select.h - offset[1];
-  else
-    this.select.y = mouse.lastY - offset[1];
+    var offset = findElementPos(this.element);
+    if (mouse.deltaY < 0)
+      this.select.y = mouse.lastY - this.select.h - offset[1];
+    else
+      this.select.y = mouse.lastY - offset[1];
 
-  //Copy to style to set positions
-  this.select.style.left = this.select.x + "px";
-  this.select.style.top = this.select.y + "px";
-  this.select.style.width = this.select.w + "px";
-  this.select.style.height = this.select.h + "px";
+    //Copy to style to set positions
+    this.select.style.left = this.select.x + "px";
+    this.select.style.top = this.select.y + "px";
+    this.select.style.width = this.select.w + "px";
+    this.select.style.height = this.select.h + "px";
 
-  if (this.ui)
-    $("coords").innerHTML = this.select.style.width + "," + this.select.style.height;
+    if (this.ui)
+      $("coords").innerHTML = this.select.style.width + "," + this.select.style.height;
+  }
 }
 
 Fractal.prototype.wheel = function(event, mouse) {
@@ -1933,13 +1963,13 @@ Fractal.prototype.wheel = function(event, mouse) {
     if (this.preview) {
        this.savePos.zoom *= zoom;
        this.drawPreview();
-    } else if (this.state.timers <= 1) {
+    } else if (this.preview || this.state.timers <= 1) {
       //Instant update
       this.applyZoom(zoom);
       //Update form fields
       this.copyToForm();
       this.draw();
-    } else {
+    } else if (this.select) {
       //Zoom box processing
       if (this.select.timer) clearTimeout(this.select.timer);
       if (!this.select.zoom) this.select.zoom = 1.0;
@@ -2013,8 +2043,12 @@ Fractal.prototype.drawPreview = function() {
   //if (pwin) this.preview = pwin.fractal;
   if (pwin)
     pwin.enqueue(this.preview.toStringNoFormulae());
-  else
+  else {
     this.preview.drawCore();
+    //Draw julia viewport on remote app
+    if (this.state.control)
+      this.preview.serverRender();
+  }
 }
 
 Fractal.prototype.clearPreview = function() {
@@ -2032,9 +2066,10 @@ Fractal.prototype.showPreview = function() {
   //if (pwin) this.preview = pwin.fractal;
   if (!this.preview) {
     this.preview = new Fractal('preview');
-    this.preview.win = new MoveWindow('previewWindow');
+    //Open the previewer unless local drawing disabled
+    if (!this.state.disabled) this.preview.win = new MoveWindow('previewWindow');
     this.preview.init(this.state);
-    this.preview.state.timers = 0; //Instant updates
+    //this.preview.state.timers = 0; //Instant updates
     //this.preview.load(this.toStringMinimal());
     this.preview.load(this.toStringNoFormulae());
 
@@ -2070,11 +2105,13 @@ Fractal.prototype.togglePreview = function() {
 }
 
 Fractal.prototype.pinch = function(event, mouse) {
+  //Don't exit preview on click when controlling remote
+  if (this.state.control && this.state.disabled && this.preview) return;
   var zoom;
   if (event.distance > 0)
-    zoom = 1.0 + (event.distance * 0.001);
+    zoom = 1.0 + (event.distance * 0.0001);
   else
-    zoom = 1/(1.0 + event.distance * -0.001);
+    zoom = 1/(1.0 + event.distance * -0.0001);
   //print(diff + ' --> ' + zoom);
   this.applyZoom(zoom);
   this.copyToForm();
@@ -2083,6 +2120,9 @@ Fractal.prototype.pinch = function(event, mouse) {
   if (this.select) this.select.style.display = 'none';
 }
 
+//////////////////////////////////////////////////////////////////////////
+//Experimental popup window functions, preview & resizeable palette editor
+//////////////////////////////////////////////////////////////////////////
 var pwin;
 function openPopup() {
   //w = window.open("preview.html", "view1", "toolbar=no,scrollbars=no,location=no,statusbar=no,menubar=no,resizable=1,width=500,height=500");
@@ -2093,3 +2133,9 @@ function openPopup() {
 function closePopup() {
   pwin = null;
 }
+
+var paletteWin;
+function openPalette() {
+  paletteWin = window.open("palette.html", "palette", "resizable=1,width=500,height=600,scrollbars=yes");
+}
+

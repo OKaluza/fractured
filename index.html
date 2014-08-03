@@ -64,6 +64,10 @@
           <ul class="dd">
             <li style="display: none" id="debugmenu"><span class="fly" tabindex="1" onclick="menu(this, 1);">Debug</span>
               <ul class="dd listmenu">
+                <li><span id="drawmodebtn" onclick="menu(); state.drawMode();">Draw Mode</span></li>
+                <li><span id="ctrlmodebtn" onclick="menu(); state.controlMode();">Control Mode</span></li>
+                <li><span onclick="menu(); openPopup();">Popup</span></li>
+                <li><span onclick="menu(); openPalette();">Palette Editor</span></li>
                 <li><span onclick="menu(); state.debugOff();">Disable Debug</span></li>
                 <li><hr></li>
                 <div id="debugedit" class="selectlist">

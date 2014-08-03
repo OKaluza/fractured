@@ -1,0 +1,381 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Fractured | viewer</title>
+<meta name="viewport" content="width=device-width, height=device-height, minimum-scale=1, maximum-scale=1" />
+
+<script type="text/javascript" src="fractured_0.85.js"></script>
+
+<style type="text/css">
+html, body { padding: 0; margin: 0; }
+</style>
+
+<script id="source" type="text/fractal">
+ceramic2
+[fractal]
+version=0.85
+origin=(0.7031933842081344,-0.9980975280050188)
+zoom=200
+rotate=70
+selected=(0.7027539840928512,-0.9960765643045306)
+julia=0
+iterations=126
+core=default
+fractal=novabs_(1)
+pre_transform=none
+post_transform=fractured
+outside_colour=none
+inside_colour=smooth_(clamp)_(1)
+filter=none
+
+[preview]
+origin=(0,0)
+zoom=114.38078119512373
+rotate=0
+
+[params.core]
+test=1
+
+[params.fractal]
+znext=abs(z - (relax*(z^p-1)) / (contract*z^(p-1))) + c
+p=3
+relax=(3.488008596422134,0.3119437389977203)
+contract=(5,-0.059)
+bailtest=norm
+converge=1e-13
+
+[params.post_transform]
+z_fn=
+re_fn=
+im_fn=
+induct_on=0
+induct=(0,0)
+N=1
+circle=0
+vary=0
+miniter=50
+compat=true
+perturb=false
+
+[params.inside_colour]
+repeat=73
+type2=false
+lfn=log
+power=2
+bailout=4
+
+[formula.core]
+//Default formula core
+//Test param
+@test = real(1);
+
+main:
+
+  ---DATA---
+
+  //Globals
+  complex z, c;
+  complex point;            //Current point coord
+  complex z_1;              //Value of z(n-1)
+  complex z_2;              //Value of z(n-2)
+  int count = 0;            //Step counter
+  bool escaped = false;     //Bailout flags
+  bool converged = false;
+  bool perturb = false;     //Temporary: for old formulae
+
+  int limit = iterations;   //Max iterations
+  rgba colour = background;
+
+  //Init fractal
+  point = coord + C(offset.x, offset.y);
+
+  ---INIT---
+
+  if (julia)
+  {
+    //Julia set default
+    z = point;
+    c = selected;
+  }
+  else
+  {
+    //Mandelbrot set default
+    z = (0,0);
+    c = point;
+  }
+  z_1 = z_2 = (0,0);
+
+  //Formula specific reset...
+  ---RESET---
+
+  //Iterate the fractal formula
+  //(Loop counter can only be compared to constant in GL ES 2.0)
+  for (int i=0; i < MAXITER; i++)
+  {
+    //Second iterations check: "limit" can be overridden to cut short iterations,
+    //"iterations" must be a constant because of lame OpenGL ES 2.0 limitations on loops
+    if (i == limit) break;
+    if (i == iterations) break; //
+
+    //Update z(n-2)
+    z_2 = z_1;
+    //Save current z value for z(n-1)
+    z_1 = z;
+
+    {
+      ---PRE_TRANSFORM---
+    }
+
+    //Run next calc step
+    count++;  //Current step count
+    ---ZNEXT---
+
+    {
+      ---POST_TRANSFORM---
+    }
+
+    //Check bailout conditions
+    ---ESCAPED---
+    ---CONVERGED---
+
+    if (escaped || converged) break;
+
+    //Colour calcs...
+    {
+      ---OUTSIDE_CALC---
+    }
+    {
+      ---INSIDE_CALC---
+    }
+  }
+
+  if (escaped || converged)
+  {
+    //Outside colour: normalised colour index [0,1]
+    ---OUTSIDE_COLOUR---
+  }
+  else
+  {
+    //Inside colour: normalised colour index [0,1]
+    ---INSIDE_COLOUR---
+  }
+
+  ---FILTER---
+
+  //Set final colour
+  set_result(colour);
+
+
+[formula.fractal]
+//Novabs: z = abs(z - (relax * (z^p - 1)) / (p * z^(p-1))) + c
+//z(n+1) = 
+@znext = expression(abs(z - (relax*(z^p-1)) / (contract*z^(p-1))) + c);
+//Power (p)
+@p = real(3);
+//Relax
+@relax = complex(1,0);
+//Contract
+@contract = complex(3,0);
+//Bailout Test
+@bailtest = bailout_function(norm);
+//Converge
+@converge = real(0.00001);
+
+converged:
+  converged = (@bailtest(z-z_1) < @converge);
+
+//Reset, called immediately before iterating
+reset:
+  //Nova init
+  if (!julia) z = (1,0);
+
+[formula.post_transform]
+//Z function
+@z_fn = complex_function();
+//Real function
+@re_fn = real_function();
+//Imag function
+@im_fn = real_function();
+//Induct on
+@induct_on = list('|z(n-1)|z(n-2)');
+//Induction
+@induct = complex(1,0);
+//N (apply every)
+@N = int(1);
+//Circle limit
+@circle = real(0);
+//Vary Iterations
+@vary = real(0);
+//Min Iterations
+@miniter = int(50);
+//Compatibility mode
+@compat = bool(true);
+//Perturb
+@perturb = bool(false);
+
+init:
+  //Get radius in pixels of circle within largest dimension
+  real radius = 0.5 * (dims.y > dims.x ? dims.y : dims.x) * pixelsize;
+  //Get distance from current coord to origin divided by radius
+  real len = cabs(coord - origin) / radius;  
+
+  //Variable iterations? Adjust limit
+  if (@vary > 0.0)
+  {
+    //Half distance to farthest corner
+    real r2 = 0.5 * cabs(dims) * pixelsize;
+    //Distance from current coord to origin divided by r2
+    real l2 = cabs(coord - origin) / r2;  
+    //Vary over [miniter,iterations] in circle
+    real d = l2 * @vary;
+    limit = @miniter + int(R(iterations - @miniter) * d);
+    //if (limit > iterations) limit = iterations;
+  }
+
+  //Hack for old fractals (also requires iterations increased by 1)
+  if (@compat) limit--;
+  
+reset:
+  //Circle limit
+  if (@circle > 0.0 && len > @circle) discard;
+  if (@perturb) z = selected; //Perturbation
+
+transform:
+  //Apply every N steps
+  if (@N <= 1 || mod(R(count),R(@N)) == 0.0)
+  {
+    //Apply induction, on z(n-1) (*) or z(n-2) (@)
+    if (@induct_on > 0)
+    {
+      if (@induct_on == 1)
+        z += mul(z_1, @induct);
+      else if (@induct_on == 2)
+        z += mul(z_2, @induct);
+    }
+
+    //Apply separate functions to real/imaginary components
+    z = @z_fn(z);
+    z = C(@re_fn(z.x), @im_fn(z.y));
+  }
+
+  //Hack for old fractals
+  if (@compat && i==limit-1) count++;
+
+[formula.inside_colour]
+//Smooth colouring algorithm
+//Palette repeat
+@repeat = real(1);
+//Type 2
+@type2 = bool(false);
+//Log function
+@lfn = real_function(log);
+//Power
+@power = expression(p);
+//Bailout
+@bailout = expression(escape);
+
+//Inverse log of (power)
+real @il = 1.0/@lfn(@power);
+//Additional for Smooth 2
+real @lp = @lfn(2.0 * @lfn(sqrt(@bailout))) * @il;
+
+result:
+  real mu;
+  if (@type2)
+    //Smooth2 colouring
+    mu = R(count) + @lp - @lfn(@lfn(cabs(z))) * @il;
+  else
+    //Smooth1 colouring
+    mu = R(count+1) - @lfn(@lfn(cabs(z))) * @il;
+
+  //Set edge colours to background
+  real pos = @repeat * mu / R(limit);
+  if (pos > 0.99)
+    colour = gradient(pos);
+  else
+    colour = background;
+
+[palette]
+Background=rgba(105,97,83,1)
+0.000000=rgba(18,14,0,1)
+0.047203=rgba(248,227,213,1)
+0.061189=rgba(255,237,200,1)
+0.076923=rgba(255,254,162,1)
+0.118881=rgba(243,60,0,1)
+0.136364=rgba(255,171,0,1)
+0.147343=rgba(255,255,255,1)
+0.180490=rgba(0,0,0,1)
+0.196224=rgba(152,253,253,1)
+0.211049=rgba(35,31,25,1)
+0.226783=rgba(255,238,163,1)
+0.242517=rgba(37,16,9,1)
+0.260490=rgba(0,0,0,1)
+0.273986=rgba(75,58,0,1)
+0.325175=rgba(255,255,255,1)
+0.340909=rgba(255,229,153,1)
+0.368392=rgba(0,203,218,1)
+0.380629=rgba(248,226,135,1)
+0.394615=rgba(253,250,231,1)
+0.407343=rgba(0,188,249,1)
+0.427832=rgba(0,0,0,1)
+0.459301=rgba(255,255,255,1)
+0.529021=rgba(247,255,170,1)
+0.552448=rgba(45,56,26,1)
+0.570979=rgba(21,62,0,1)
+0.605944=rgba(255,81,0,1)
+0.621888=rgba(255,72,0,1)
+0.644406=rgba(16,20,21,1)
+0.675594=rgba(252,253,224,1)
+0.686084=rgba(24,19,19,1)
+0.698811=rgba(243,234,183,1)
+0.707343=rgba(219,58,1,1)
+0.726573=rgba(252,98,0,1)
+0.743287=rgba(21,20,19,1)
+0.755524=rgba(246,255,182,1)
+0.766783=rgba(255,244,231,1)
+0.828182=rgba(255,255,255,1)
+0.877692=rgba(45,35,27,1)
+0.905664=rgba(18,6,0,1)
+0.923147=rgba(28,6,0,1)
+1.000000=rgba(255,117,0,0)
+</script>
+
+<script type="text/javascript">
+var formula_list = {};
+var sources;
+var fractal;
+var rztimeout;
+
+function load() {
+  sources = JSON.parse(readURL('/includes_0.85.json', false));
+  fractal = new Fractal('main');
+  fractal.init(
+    {
+      "antialias" : 2, 
+      "timers" : 150,
+      "debug" : true,
+      "control" : true,
+      "disabled" : false,
+      "server" : "http://192.168.1.3:8080"
+    }
+  );
+  //fractal.init({"antialias" : 3, "renderer" : WEBCL64, "platform" : 1, "timers" : 150});
+
+  fractal.load(getSourceFromElement('source'));
+  fractal.state.disabled = true;  //Disable further drawing
+  fractal.togglePreview();
+  window.onresize = autoResize;
+}
+
+function autoResize(newval) {
+  if (rztimeout) clearTimeout(rztimeout);
+  rztimeout = setTimeout(function() {fractal.applyChanges();}, 150);
+}
+</script>
+
+</head>
+
+<body onload="load()">
+
+<div id="main"></div>
+
+</body></html>

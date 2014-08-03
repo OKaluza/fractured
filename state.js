@@ -5,6 +5,7 @@
  */
 function State(version) {
   if (!this.supported()) throw "Error initialising state: Local storage not supported";
+
   this.upgrademsg = "<a href='javascript:resetReload()'>click here" + 
                     "</a> to complete update by reloading from server"; 
   //Property list to save
@@ -32,6 +33,12 @@ function State(version) {
   this.renderer = WEBCL;  //Try WebCL first if avail
   this.platform = this.device = 0;
   this.active = this.thumbnail = null;
+
+  //Mode settings (and set ui inital state)
+  this.server = null;
+  this.disabled = this.control = false;
+  this.drawMode(true);
+  this.controlMode(true);
 
   //Load persistent settings from storage
   this.loadStatus();
@@ -102,6 +109,17 @@ State.prototype.debugOff = function() {
   this.saveStatus();
   $S('debugmenu').display = 'none';
   $S('recordmenu').display = 'none';
+}
+
+//Draw mode off disables all local rendering
+State.prototype.drawMode = function(noset) {
+  if (!noset) this.disabled = !this.disabled;
+  $('drawmodebtn').innerHTML = "Draw Mode" + (this.disabled ? "" : "&#10003;");
+}
+//Control mode controls remote server rendering
+State.prototype.controlMode = function(noset) {
+  if (!noset) this.control = !this.control;
+  $('ctrlmodebtn').innerHTML = "Control Mode" + (this.control ? "&#10003;" : "");
 }
 
 State.prototype.resetFormulae = function() {
