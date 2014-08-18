@@ -15,7 +15,6 @@ codemirror=release/codemirror_$(VERSION).js
 codemirrorstyle=release/codemirror_$(VERSION).css
 
 #Sources
-LIBSCRIPTS = utils.js mouse.js webgl.js colour.js colourPicker.js gradient.js 
 VIEWSCRIPTS = parameter.js formulae.js index.js fractal.js webcl.js 
 SCRIPTS = state.js automation.js $(VIEWSCRIPTS)
 CMSCRIPTS = $(wildcard codemirror/lib/*.js) codemirror/mode/clike/clike.js codemirror/mode/javascript/javascript.js
@@ -47,26 +46,24 @@ release:
 .PHONY : clean
 clean:
 	-rm -r release
+	cd OK.js && $(MAKE) clean
 
-$(fractured): $(SCRIPTS) OK-min.js gl-matrix-min.js parser-min.js
+$(fractured): $(SCRIPTS) OK.js/OK-min.js gl-matrix-min.js parser-min.js
 	cat $(SCRIPTS) > /tmp/fractured-index.js
 	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fractured-index.js
 	$(COMP)/tmp/fractured-index.js $(FLAGS)/tmp/fractured-compressed.js
 	#Combine into final bundle
-	cat /tmp/fractured-compressed.js OK-min.js gl-matrix-min.js parser-min.js > $(fractured)
+	cat /tmp/fractured-compressed.js OK.js/OK-min.js gl-matrix-min.js parser-min.js > $(fractured)
 
-$(viewer): $(VIEWSCRIPTS) OK-min.js gl-matrix-min.js parser-min.js
+$(viewer): $(VIEWSCRIPTS) OK.js/OK-min.js gl-matrix-min.js parser-min.js
 	cat $(VIEWSCRIPTS) > /tmp/fracturedviewer-index.js
 	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fracturedviewer-index.js
 	$(COMP)/tmp/fracturedviewer-index.js $(FLAGS)/tmp/fracturedviewer-compressed.js
 	#Combine into final bundle
-	cat /tmp/fractured-compressed.js OK-min.js gl-matrix-min.js parser-min.js > $(viewer)
+	cat /tmp/fractured-compressed.js OK.js/OK-min.js gl-matrix-min.js parser-min.js > $(viewer)
 
-OK.js: $(LIBSCRIPTS)
-	cat $(LIBSCRIPTS) > OK.js
-
-OK-min.js: OK.js
-	$(COMP)OK.js $(FLAGS)OK-min.js
+OK.js/OK-min.js:
+	cd OK.js && $(MAKE)
 
 gl-matrix-min.js: gl-matrix.js
 	$(COMP)gl-matrix.js $(FLAGS)gl-matrix-min.js
