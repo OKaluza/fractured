@@ -54,7 +54,8 @@ FormulaEntry.prototype.equals = function(source2) {
   //Strips all whitespace and comments and compares resulting string
   function strip(source) {
     source = source.replace(/\/\*([\s\S]*?)\*\/|(\/\/.*)/g, "");
-    source = source.strip();
+    source = source.replace(/(\r\n|\n|\r)/gm, "");
+    //Compat: replace complex/real with macros
       source = source.replace(/complex\(/g, "C(");
       source = source.replace(/real\(/g, "R(");
     return source;
@@ -111,13 +112,13 @@ function importFormulaList(data) {
   //  var f = new FormulaEntry("core", "Default", sources["include/fractal.template"], "default");
 
   //Set selected defaults
-  $('core_formula').value = varDefault(selected['core'], $("core_formula").options[0].value);
-  $('fractal_formula').value = varDefault(selected['fractal'], $("fractal_formula").options[0].value);
-  $('pre_transform_formula').value = varDefault(selected['pre_transform'], "none");
-  $('post_transform_formula').value = varDefault(selected['post_transform'], "none");
-  $('outside_colour_formula').value = varDefault(selected['outside_colour'], $("outside_colour_formula").options[1].value);
-  $('inside_colour_formula').value = varDefault(selected['inside_colour'], "none");
-  $('filter_formula').value = varDefault(selected['filter'], "none");
+  $('core_formula').value = selected['core'] || $("core_formula").options[0].value;
+  $('fractal_formula').value = selected['fractal'] || $("fractal_formula").options[0].value;
+  $('pre_transform_formula').value = selected['pre_transform'] || "none";
+  $('post_transform_formula').value = selected['post_transform'] || "none";
+  $('outside_colour_formula').value = selected['outside_colour'] || $("outside_colour_formula").options[1].value;
+  $('inside_colour_formula').value = selected['inside_colour'] || "none";
+  $('filter_formula').value = selected['filter'] || "none";
 }
 
 function addSelectEntry(entry) {

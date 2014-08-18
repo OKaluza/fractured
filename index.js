@@ -74,7 +74,7 @@ function appInit() {
   window.history.replaceState("", "", state.baseurl);
 
   //Colour editing and palette management
-  colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();});
+  colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();}, true);
 
   //Fractal & canvas
   fractal = new Fractal('main', colours, true, true);
@@ -106,8 +106,7 @@ function appInit() {
   var forms = ["param_inputs", "fractal_inputs", "colour_inputs"];
   for (var f in forms) {
     var element = $(forms[f]);
-    if (element.addEventListener) element.addEventListener("DOMMouseScroll", handleFormMouseWheel, false);
-    element.onmousewheel = handleFormMouseWheel;
+    element.addEventListener("onwheel" in document ? "wheel" : "mousewheel", handleFormMouseWheel, false);
     element.onchange = handleFormChange;
     element.onkeyup = handleFormKeyUp;
   }
@@ -385,7 +384,9 @@ function showCard(id) {
     input.type = "button";
     input.setAttribute("onclick", 'toggleCard("' + id + '"); this.parentNode.removeChild(this);');
     input.style.display = "block";
-    input.value = id.replace(/[_#]/g,' ').toTitleCase();
+    input.value = id.replace(/[_#]/g,' ');
+    //To title case
+    input.value = input.value.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
     manage.appendChild(input);
   }
 }
@@ -397,7 +398,10 @@ function toggleCard(el, nosave) {
   else
     card = el.parentNode;
   if (!card) {alert("Element " + el + " not found "); return;}
-  toggle(card, 'block');
+  if (!card.style.display || card.style.display == 'none')
+    card.style.display = 'block';
+  else
+    card.style.display = 'none';
   state.cards[card.id] = (card.style.display == 'none');
   if (state.cards[card.id]) showCard(card.id); //Populate replace button
   if (!nosave) state.saveStatus();
@@ -898,14 +902,13 @@ function thumbnailQuick(type, width, height, args) {
 
 function paletteThumbnail() {
   //Thumbnail image gen
-  //var canvas = $('gradient');
-  //colours.get(canvas);
   var thumb = $('thumb');
   thumb.width = 150;
   thumb.height = 1;
   thumb.style.visibility = 'visible';
-  var context = thumb.getContext('2d');  
-  context.drawImage(fractal.gradient, 0, 0, thumb.width, thumb.height);
+    colours.get(thumb);
+  //var context = thumb.getContext('2d');  
+  //context.drawImage(fractal.gradient, 0, 0, thumb.width, thumb.height);
   var result = thumb.toDataURL("image/png")
   thumb.style.visibility='hidden';
   return result;
@@ -1555,7 +1558,8 @@ function handleFormMouseWheel(event) {
   if (event.target.type == 'text' || event.target.type == 'number' || event.target.type == 'range') {
     var field = event.target; 
     if (field.timer) clearTimeout(field.timer);
-    wheelSpin(event);
+    var delta = event.deltaY ? -event.deltaY : event.wheelDelta;
+    event.spin = delta > 0 ? 1 : -1;
     field.style.cursor = "wait";
     if (event.target.type == 'range') {
       //Adjust by step

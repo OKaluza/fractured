@@ -198,8 +198,8 @@ function Fractal(parentid, colours, ui, selbox) {
   } else {
     //Default is just a wrapper for a palette object
     this.colours = {
-        "palette" : new Palette(),
-        "read" : function(source) {this.palette = new Palette(source);},
+        "palette" : new Palette(null, true),
+        "read" : function(source) {this.palette = new Palette(source, true);},
         "get"  : function(canvas) {this.palette.draw(canvas, false);}
       };
   }
@@ -297,7 +297,13 @@ Fractal.prototype.setRenderer = function(mode) {
   if (this.renderer == WEBGL) {
     try {
       //Init WebGL
-      this.webgl = new WebGL(this.canvas, this);
+      //Antialias, optional?
+      //var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+      //var antialias = gl.getContextAttributes().antialias; //Query and set built in aa lower??
+      var options = {premultipliedAlpha: false, preserveDrawingBuffer: true};
+      //Opera bug: if this is not set images are upside down
+      if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
+      this.webgl = new WebGL(this.canvas, options);
       this.gl = this.webgl.gl;
       this.webgl.init2dBuffers();
     } catch(e) {
@@ -1793,7 +1799,65 @@ Fractal.prototype.renderWebGL = function(antialias) {
   this.gl.clearColor(0, 0, 0, 0);
 
   //debug('>> Drawing fractal (aa=' + antialias + ")");
-  this.webgl.draw2d(antialias);
+  if (this.timer) {clearTimeout(this.timer); this.timer = null;}
+
+  //Prepare 2d draw
+  this.webgl.initDraw2d();
+
+  this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+  
+  //Draw passes...
+  this.gl.enable(this.gl.BLEND);
+  if (antialias > 1) {
+    //Draw and blend multiple passes for anti-aliasing
+    this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
+    this.blendinc = 0;
+
+    this.j = 0;
+    this.k = 0;
+    this.antialias = antialias;
+    this.renderPassWebGL();
+
+  } else {
+    //Draw, single pass
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.webgl.vertexPositionBuffer.numItems);
+    if (this.time) this.time.print("Draw");
+  }
+}
+
+Fractal.prototype.renderPassWebGL = function() {
+  var blendval = 1.0 - this.blendinc;
+  //debug("Antialias pass ... " + this.j + " - " + this.k + " blendinc: " + this.blendinc + " blendval: " + blendval + " bv2: " + Math.pow(blendval, 1.5));
+  //blendval *= blendval;
+  blendval = Math.pow(blendval, 1.5);
+  this.gl.blendColor(0, 0, 0, blendval);
+  //print(blendval);
+  this.blendinc += 1.0/(this.antialias*this.antialias);
+  var pixelX = 2.0 / (this.position.zoom * this.webgl.viewport.width);
+  var pixelY = 2.0 / (this.position.zoom * this.webgl.viewport.height);
+  this.gl.uniform2f(this.webgl.program.uniforms['offset'], pixelX * (this.j/this.antialias-0.5), pixelY * (this.k/this.antialias-0.5));
+  //Draw!
+  this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.webgl.vertexPositionBuffer.numItems);
+
+  //Next...
+  this.k++;
+  if (this.k >= this.antialias) {
+    this.k = 0;
+    this.j++;
+  }
+
+  if (this.j < this.antialias) {
+    if (!this.time)
+      this.renderPassWebGL();  //Don't draw incrementally when timers disabled
+    else {
+      var that = this;
+      this.timer = setTimeout(function () {that.renderPassWebGL();}, 10);
+    }
+  } else {
+    this.timer = null;
+    if (this.time) this.time.print("Draw");
+  }
 }
 
 //////////////////////////////////////////////////////////////////
@@ -1945,11 +2009,11 @@ Fractal.prototype.wheel = function(event, mouse) {
     $('iterations').value = parseInt($('iterations').value) + event.spin;
     //Accumulate spin before applying changes
     //First clear any existing timer
-    if (this.timer) clearTimeout(this.timer);
+    if (this.spintimer) clearTimeout(this.spintimer);
     //Set timer
     document.body.style.cursor = "wait";
     var that = this;
-    this.timer = setTimeout(function () {that.applyChanges(); document.body.style.cursor = "default";}, this.state.timers);
+    this.spintimer = setTimeout(function () {that.applyChanges(); document.body.style.cursor = "default";}, this.state.timers);
   } else {
     // Zoom
     var zoom;
@@ -1976,8 +2040,7 @@ Fractal.prototype.wheel = function(event, mouse) {
       if (!this.select.mouse) {
         //Handle wheel events on select element too
         this.select.mouse = mouse;
-        this.select.onmousewheel = handleMouseWheel;
-        if (this.select.addEventListener) this.select.addEventListener("DOMMouseScroll", handleMouseWheel, false);
+        this.select.addEventListener("onwheel" in document ? "wheel" : "mousewheel", handleMouseWheel, false);
       }
       this.select.zoom *= zoom;
 
