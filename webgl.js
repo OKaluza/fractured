@@ -2,7 +2,7 @@
    * WebGL interface object
    * standard utilities for WebGL 
    * Shader & matrix utilities for 3d & 2d
-   * functions for 2d rendering / image processing, fbo render to texture
+   * functions for 2d rendering / image processing
    * (c) Owen Kaluza 2012
    */
 
@@ -19,22 +19,18 @@
   /**
    * @constructor
    */
-  function WebGL(canvas, fractal) {
+  function WebGL(canvas, options) {
     this.program = null;
     this.modelView = new ViewMatrix();
     this.perspective = new ViewMatrix();
     this.textures = [];
     this.timer = null;
-    this.fractal = fractal;
 
     if (!window.WebGLRenderingContext) throw "No browser WebGL support";
 
-    //Antialias, optional?
-    //var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
-    //var antialias = gl.getContextAttributes().antialias; //Query and set built in aa lower??
-    var options = {premultipliedAlpha: false, preserveDrawingBuffer: true};
-    //Opera bug: if this is not set images are upside down
-    if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
+    //Default context options
+    if (!options) options = { antialias: true, premultipliedAlpha: false};
+
     // Try to grab the standard context. If it fails, fallback to experimental.
     try {
       this.gl = canvas.getContext("webgl", options) || canvas.getContext("experimental-webgl", options);
@@ -45,10 +41,6 @@
     this.viewport = new Viewport(0, 0, canvas.width, canvas.height);
     if (!this.gl) throw "Failed to get context";
 
-    //Handle context loss/restore (experimental as I have not found a way of testing this!)
-    //TODO: uses global!
-    canvas.addEventListener("webglcontextlost", function(event) {event.preventDefault(); print("CONTEXT LOST")}, false);
-    canvas.addEventListener("webglcontextrestored", function() {fractal.webgl = null; fractal.switchMode(WEBGL);}, false);
   }
 
   WebGL.prototype.setMatrices = function() {
@@ -65,14 +57,8 @@
     }
   }
 
-  WebGL.prototype.draw2d = function(antialias) {
-    if (antialias == undefined) antialias = 1;
-    if (this.timer) {clearTimeout(this.timer); this.timer = null;}
-      //Enable this to render frame to texture 
-      //this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, rttFramebuffer);
-
+  WebGL.prototype.initDraw2d = function() {
     this.gl.viewport(this.viewport.x, this.viewport.y, this.viewport.width, this.viewport.height);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
     this.gl.enableVertexAttribArray(this.program.attributes["aVertexPosition"]);
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexPositionBuffer);
@@ -85,87 +71,6 @@
     }
 
     this.setMatrices();
-
-    this.gl.enable(this.gl.BLEND);
-    if (antialias > 1) {
-      //Draw and blend multiple passes for anti-aliasing
-      this.gl.blendFunc(this.gl.CONSTANT_ALPHA, this.gl.ONE_MINUS_CONSTANT_ALPHA);
-      this.blendinc = 0;
-
-      this.j = 0;
-      this.k = 0;
-      this.antialias = antialias;
-      this.pass();
-
-    } else {
-      //Draw, single pass
-      this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-      this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
-      if (this.time) this.time.print("Draw");
-    }
-
-    return; //Below is to display rendered texture
-/*
-    //Draw result
-    gl.uniform1i(defaultProgram.textureUniform, 0);
-    gl.bindTexture(gl.TEXTURE_2D, rttTexture);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    gl.useProgram(defaultProgram);
-
-    //Enable texture coord array
-    gl.enableVertexAttribArray(defaultProgram.textureCoordAttribute);
-
-    //Re-apply rotation & translation matrix
-    gl.viewport(0, 0, viewport.width, viewport.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    loadIdentity();
-    //setMatrixUniforms(defaultProgram);
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    gl.vertexAttribPointer(defaultProgram.vertexPositionAttribute, vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-    gl.vertexAttribPointer(defaultProgram.textureCoordAttribute, textureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    //Draw rendered texture!
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertexPositionBuffer.numItems);
-
-    gl.disableVertexAttribArray(defaultProgram.textureCoordAttribute);
-*/
-  }
-
-  WebGL.prototype.pass = function() {
-    var blendval = 1.0 - this.blendinc;
-    //debug("Antialias pass ... " + this.j + " - " + this.k + " blendinc: " + this.blendinc + " blendval: " + blendval + " bv2: " + Math.pow(blendval, 1.5));
-    //blendval *= blendval;
-    blendval = Math.pow(blendval, 1.5);
-    this.gl.blendColor(0, 0, 0, blendval);
-    //print(blendval);
-    this.blendinc += 1.0/(this.antialias*this.antialias);
-    var pixelX = 2.0 / (this.fractal.position.zoom * this.viewport.width);
-    var pixelY = 2.0 / (this.fractal.position.zoom * this.viewport.height);
-    this.gl.uniform2f(this.program.uniforms['offset'], pixelX * (this.j/this.antialias-0.5), pixelY * (this.k/this.antialias-0.5));
-    //Draw!
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, this.vertexPositionBuffer.numItems);
-
-    //Next...
-    this.k++;
-    if (this.k >= this.antialias) {
-      this.k = 0;
-      this.j++;
-    }
-
-    if (this.j < this.antialias) {
-      if (!this.time)
-        this.pass();  //Don't draw incrementally when timers disabled
-      else {
-        var that = this;
-        this.timer = setTimeout(function () {that.pass();}, 10);
-        //window.requestAnimationFrame(function () {that.pass();});
-      }
-    } else {
-      this.timer = null;
-      if (this.time) this.time.print("Draw");
-    }
   }
 
   WebGL.prototype.updateTexture = function(texture, image, unit) {
@@ -175,41 +80,6 @@
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
     this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-  }
-
-  WebGL.prototype.initTextureFramebuffer = function(width, height, depth) {
-    //Create the framebuffer object
-    this.rttFramebuffer = this.gl.createFramebuffer();
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.rttFramebuffer);
-    this.rttFramebuffer.width = width;
-    this.rttFramebuffer.height = height;
-
-    //The texture to render to
-    this.rttTexture = this.gl.createTexture();
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.rttTexture);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 
-                       this.rttFramebuffer.width, this.rttFramebuffer.height, 
-                       0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
-    this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.rttTexture, 0);
-
-    //Depth buffer? (not required for 2d only renders)
-    if (depth) {
-      this.rttDepthbuffer = this.gl.createRenderbuffer();
-      this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.rttDepthbuffer);
-      this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, width, height);
-      this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, this.rttDepthbuffer);
-      this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
-    }
-    this.gl.bindTexture(this.gl.TEXTURE_2D, null);
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-
-    var fbo_status = this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER)
-    if (fbo_status != this.gl.FRAMEBUFFER_COMPLETE) alert("Framebuffer error: " + fbo_status);
   }
 
   WebGL.prototype.init2dBuffers = function(unit) {

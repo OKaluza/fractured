@@ -1,7 +1,8 @@
   /**
    * @constructor
    */
-  function Palette(source) {
+  function Palette(source, premultiply) {
+    this.premultiply = premultiply;
     //Default transparent black background
     this.background = new Colour("rgba(0,0,0,0)");
     //Colour palette array
@@ -38,8 +39,8 @@
         //New style: position=value
         this.colours.push(new ColourPos(pair[1], pair[0]));
     }
+
     //Sort by position (fix out of order entries in old palettes)
-    //this.colours.sort(function(a,b){return a.position - b.position});
     this.sort();
 
     //Check for all-transparent palette and fix
@@ -111,7 +112,7 @@
     
     // Figure out if a webkit browser is being used
     if (!canvas) {alert("Invalid canvas!"); return;}
-	  var webkit = /webkit/.test(navigator.userAgent.toLowerCase());
+    var webkit = /webkit/.test(navigator.userAgent.toLowerCase());
 
     if (this.colours.length == 0) {
       this.background = new Colour("#ffffff");
@@ -137,9 +138,13 @@
         for (var i = 1; i < list.length; i++) {
           var x1 = Math.round(width * list[i].position);
           context.fillStyle = context.createLinearGradient(x0, 0, x1, 0);
+          var colour1 = list[i-1].colour;
+          var colour2 = list[i].colour;
           //Pre-blend with background unless in UI mode
-          var colour1 = ui ? list[i-1].colour : this.background.blend(list[i-1].colour);
-          var colour2 = ui ? list[i].colour : this.background.blend(list[i].colour);
+          if (this.premultiply && !ui) {
+            colour1 = this.background.blend(colour1);
+            colour2 = this.background.blend(colour1);
+          }
           context.fillStyle.addColorStop(0.0, colour1.html());
           context.fillStyle.addColorStop(1.0, colour2.html());
           context.fillRect(x0, 0, x1-x0, height);
@@ -149,12 +154,26 @@
         //Single gradient
         context.fillStyle = context.createLinearGradient(0, 0, width, 0);
         for (var i = 0; i < list.length; i++) {
+          var colour = list[i].colour;
           //Pre-blend with background unless in UI mode
-          var colour = ui ? list[i].colour : this.background.blend(list[i].colour);
+          if (this.premultiply && !ui)
+            colour = this.background.blend(colour);
           context.fillStyle.addColorStop(list[i].position, colour.html());
         }
         context.fillRect(0, 0, width, height);
       }
+
+      /* Posterise mode (no gradients)
+      var x0 = 0;
+      for (var i = 1; i < list.length; i++) {
+        var x1 = Math.round(width * list[i].position);
+        //Pre-blend with background unless in UI mode
+        var colour2 = ui ? list[i].colour : this.background.blend(list[i].colour);
+        context.fillStyle = colour2.html();
+        context.fillRect(x0, 0, x1-x0, height);
+        x0 = x1;
+      }
+      */
 
       //Background colour
       var bg = document.getElementById('backgroundCUR');
@@ -200,7 +219,6 @@
       }
     } else {
       throw( "Invalid Colour Position: " + pos);
-      return null;
     }
   }
   
@@ -275,6 +293,15 @@
     this.alpha = ((intcolour&0xff000000) >>> 24) / 255.0;
   }
 
+  Colour.prototype.toInt = function() {
+    //Convert to integer AABBGGRR
+    var result = this.red;
+    result += (this.green << 8);
+    result += (this.blue << 16);
+    result += (Math.round(this.alpha * 255) << 24);
+    return result;
+  }
+
   Colour.prototype.toString = function() {return this.html();}
 
   Colour.prototype.html = function() {
@@ -309,11 +336,17 @@
     return 'R:' + this.red + ' G:' + this.green + ' B:' + this.blue + (alpha ? ' A:' + this.alpha : '');
   }
 
-  Colour.prototype.htmlHex=function(o) { 
-    HEX=function(o) { o=Math.round(Math.min(Math.max(0,o),255));
+  Colour.prototype.HEX = function(o) {
+     o = Math.round(Math.min(Math.max(0,o),255));
      return("0123456789ABCDEF".charAt((o-o%16)/16)+"0123456789ABCDEF".charAt(o%16));
-    };
-    return("#" + HEX(this.red) + HEX(this.green) + HEX(this.blue)); 
+   }
+
+  Colour.prototype.htmlHex = function(o) { 
+    return("#" + this.HEX(this.red) + this.HEX(this.green) + this.HEX(this.blue)); 
+  };
+
+  Colour.prototype.hex = function(o) { 
+    return(this.HEX(this.red) + this.HEX(this.green) + this.HEX(this.blue) + this.HEX(this.alpha*255)); 
   };
 
   Colour.prototype.setHSV = function(o)

@@ -42,10 +42,8 @@
     this.moveUpdate = false;  //Save mouse move origin once on mousedown or every move
     this.enableContext = enableContext ? true : false;
 
-    // for mouse scrolling in Firefox
-    if (element.addEventListener) element.addEventListener("DOMMouseScroll", handleMouseWheel, false);
+    element.addEventListener("onwheel" in document ? "wheel" : "mousewheel", handleMouseWheel, false);
     element.onmousedown = handleMouseDown;
-    element.onmousewheel = handleMouseWheel;
     element.onmouseout = handleMouseLeave;
     document.onmouseup = handleMouseUp;
     document.onmousemove = handleMouseMove;
@@ -120,6 +118,7 @@
   }
 
   function getMouse(event) {
+    if (!event) event = window.event; //access the global (window) event object
     var mouse = event.target.mouse;
     if (mouse) return mouse;
     //Attempt to find in parent nodes
@@ -138,8 +137,7 @@
     var mouse = getMouse(event);
     if (!mouse || mouse.disabled) return true;
     var e = event || window.event;
-    mouse.elementId = e.target.id;
-    mouse.elementClass = e.target.className;
+    mouse.target = e.target;
     //Clear dragged flag on mouse down
     mouse.dragged = false;
 
@@ -212,26 +210,14 @@
     return action;
   }
  
-  function wheelSpin(event) {
-    if (!event) event = window.event; // For IE, access the global (window) event object
-    // cross-bowser handling of eventdata 
-    if (event.wheelDelta) // IE and Opera
-      nDelta= event.wheelDelta;
-    else if (event.detail)
-      nDelta= -event.detail; // Mozilla FireFox
-
-    event.spin = nDelta > 0 ? 1 : -1;
-
-  }
-
   function handleMouseWheel(event) {
     var mouse = getMouse(event);
     if (!mouse || mouse.disabled) return true;
     mouse.update(event);
-    var nDelta = 0;
     var action = false; //Default action disabled
-    wheelSpin(event);
-    mouse.spin += event.spin;
+
+    var delta = event.deltaY ? -event.deltaY : event.wheelDelta;
+    event.spin = delta > 0 ? 1 : -1;
 
     if (mouse.handler.wheel) action = mouse.handler.wheel(event, mouse);
 
@@ -258,7 +244,6 @@
   //Pinch handling all by OK
   function touchHandler(event)
   {
-    //debug(event.type + " - " + event.touches.length + " touches");
     var touches = event.changedTouches,
         first = touches[0],
         simulate = null,  //Mouse event to simulate

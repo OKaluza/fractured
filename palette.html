@@ -50,7 +50,7 @@ var fractal;
 var queue;
 
   openWin = function() {
-    colours = new GradientEditor($('pal'), function() {loadPalette(colours.palette.toString());}, false, true);
+    colours = new GradientEditor($('pal'), function() {loadPalette(colours.palette.toString());}, true, false, true);
     var data = window.opener.colours.palette.toString();
     loadPalette(data);
     colours.read(data);

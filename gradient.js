@@ -1,9 +1,10 @@
 /**
  * @constructor
  */
-function GradientEditor(canvas, callback, nopicker, scrollable) {
+function GradientEditor(canvas, callback, premultiply, nopicker, scrollable) {
   this.canvas = canvas;
   this.callback = callback;
+  this.premultiply = premultiply;
   this.changed = true;
   this.inserting = false;
   this.editing = null;
@@ -14,10 +15,10 @@ function GradientEditor(canvas, callback, nopicker, scrollable) {
   function saveColour(val) {self.save(val);}
   function abortColour() {self.cancel();}
   if (!nopicker)
-    this.picker = new ColourPicker(saveColour, abortColour);
+    this.picker = new ColourPicker(this.save.bind(this), this.cancel.bind(this));
 
-  //Create default palette object
-  this.palette = new Palette();
+  //Create default palette object (enable premultiply if required)
+  this.palette = new Palette(null, premultiply);
   //Event handling for palette
   this.canvas.mouse = new Mouse(this.canvas, this);
   this.canvas.oncontextmenu="return false;";
@@ -29,7 +30,7 @@ function GradientEditor(canvas, callback, nopicker, scrollable) {
 //Palette management
 GradientEditor.prototype.read = function(source) {
   //Read a new palette from source data
-  this.palette = new Palette(source);
+  this.palette = new Palette(source, this.premultiply);
   this.reset();
   this.update(true);
 }
@@ -200,7 +201,7 @@ GradientEditor.prototype.wheel = function(event, mouse) {
   this.spin += 0.01 * event.spin;
   //this.cycle(0.01 * event.spin);
   var this_ = this;
-  this.timer = setTimeout(function() {this_.cycle(this_.spin); this_.spin = 0;}, state.timers);
+  this.timer = setTimeout(function() {this_.cycle(this_.spin); this_.spin = 0;}, 150);
 }
 
 GradientEditor.prototype.leave = function(event, mouse) {
