@@ -178,7 +178,9 @@ function formulaKey(category, label, check) {
 }
 
 function nameToLabel(name) {
-  return name.replace(/_/g,' ').toTitleCase();
+  //Convert to title case and strip underscores
+  var result = name.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+  return result.replace(/_/g,' ');
 }
 
 function filenameToName(filename) {
