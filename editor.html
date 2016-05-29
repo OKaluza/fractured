@@ -103,7 +103,7 @@ var formula;
 
   loadEditor = function() {
     var editmode = "text/x-glsl";
-    var edittheme = window.opener.localStorageDefault("fractured.editorTheme", "fracturedlight");
+    var edittheme = localStorage["fractured.editorTheme"] || "fracturedlight";
 
     //Copy for fallback to code
     code = document.getElementById('editor');
@@ -129,7 +129,7 @@ var formula;
 
     if (filename.indexOf(".js") >= 0) {
       editmode = "text/javascript";
-      edittheme = window.opener.localStorageDefault("fractured.scriptTheme", "monokai");
+      edittheme = localStorage["fractured.scriptTheme"] || "monokai";
       var btn = document.getElementById('runbtn');
       btn.style.display = "block";
       sel.options[sel.length] = new Option("cobalt");

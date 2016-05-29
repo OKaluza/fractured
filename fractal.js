@@ -41,16 +41,16 @@ function Server(url) {
   this.timer = null;
 }
 
-Server.prototype.draw = function(data, control) {
+Server.prototype.draw = function(data, render) {
   this.data = data;
-  if (control)
-    this.post('/update'); //Immediate for server control
-  else {
+  if (render) {
     //Only issue one draw request at a time with a 100ms timeout
     if (this.timer) clearTimeout(this.timer);
     var that = this;
     this.timer = setTimeout(function () {that.post('/post', true);}, 100);
-  }
+  } else
+    //Immediate for server control, no image requested
+    this.post('/update');
 }
 
 Server.prototype.post = function(res, image) {
@@ -176,7 +176,8 @@ function LineOffset(category, section, value) {
  */
 function Fractal(parentid, colours, ui, selbox) {
   //Construct a new default fractal object
-  this.element = $(parentid) || document.body;
+  if (parentid && typeof parentid == 'string') parentid = $(parentid);
+  this.element = parentid || document.body;
   //Set canvas size
   //this.sizeCanvas();
   this.paramvars = [];
@@ -267,54 +268,58 @@ Fractal.prototype.setRenderer = function(mode) {
   if (this.renderer == undefined) this.renderer = WEBGL;
   //if (window.webcl == undefined && this.renderer > WEBGL) this.renderer = WEBGL;
 
-  //WebCL local renderer
-  if (this.renderer >= WEBCL) {
-    //Init WebCL
-    if (this.webcl) this.webcl.free();
-    try {
-      this.webcl = new OpenCL(this.state.platform, this.state.device);  //Use existing settings
+  //Create the local renderer if enabled
+  if (!this.state.disabled) {
+    //WebCL local renderer
+    if (this.renderer >= WEBCL) {
+      //Init WebCL
+      if (this.webcl) this.webcl.free();
+      try {
+        this.webcl = new OpenCL(this.state.platform, this.state.device);  //Use existing settings
 
-      if (this.renderer > WEBCL && !this.webcl.fp64avail) {
-        popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> " + 
-              "extension is required for double precision support in WebCL");
-        this.renderer = WEBCL;
+        if (this.renderer > WEBCL && !this.webcl.fp64avail) {
+          popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> " + 
+                "extension is required for double precision support in WebCL");
+          this.renderer = WEBCL;
+        }
+
+        debug(this.state.platform + " : " + this.state.device + " --> " + this.canvas.width + "," + this.canvas.height);
+        this.webcl.init(this.canvas, this.renderer > WEBCL, 8, this.gradient);
+        this.webgl = undefined;
+      } catch(e) {
+        //WebCL init failed, fallback to WebGL
+        var error = e;
+        if (e.message) error = e.message;
+        if (mode >= WEBGL) popup("WebCL could not be initialised (" + error + ")");
+        this.webcl = null;
+        this.renderer = WEBGL;
       }
-
-      debug(this.state.platform + " : " + this.state.device + " --> " + this.canvas.width + "," + this.canvas.height);
-      this.webcl.init(this.canvas, this.renderer > WEBCL, 8, this.gradient);
-      this.webgl = undefined;
-    } catch(e) {
-      //WebCL init failed, fallback to WebGL
-      var error = e;
-      if (e.message) error = e.message;
-      if (mode >= WEBGL) popup("WebCL could not be initialised (" + error + ")");
-      this.webcl = null;
-      this.renderer = WEBGL;
     }
-  }
 
-  //WebGL local renderer
-  if (this.renderer == WEBGL) {
-    try {
-      //Init WebGL
-      //Antialias, optional?
-      //var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
-      //var antialias = gl.getContextAttributes().antialias; //Query and set built in aa lower??
-      var options = {premultipliedAlpha: false, preserveDrawingBuffer: true};
-      //Opera bug: if this is not set images are upside down
-      if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
-      this.webgl = new WebGL(this.canvas, options);
-      this.gl = this.webgl.gl;
-      this.webgl.init2dBuffers();
-    } catch(e) {
-      //WebGL init failed
-      var error = e;
-      if (e.message) error = e.message;
-      popup("WebGL support not available (" + error + 
-            ")<br>Try <a href='http://get.webgl.org/troubleshooting'>" + 
-            "http://get.webgl.org/troubleshooting</a> for more information.");
-      this.webgl = null;
-      this.renderer = SERVER;
+    //WebGL local renderer
+    if (this.renderer == WEBGL) {
+      try {
+        if (this.disabled) this.webgl = 1;
+        //Init WebGL
+        //Antialias, optional?
+        //var options = { antialias: true, premultipliedAlpha: false, preserveDrawingBuffer: true};
+        //var antialias = gl.getContextAttributes().antialias; //Query and set built in aa lower??
+        var options = {premultipliedAlpha: false, preserveDrawingBuffer: true};
+        //Opera bug: if this is not set images are upside down
+        if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
+        this.webgl = new WebGL(this.canvas, options);
+        this.gl = this.webgl.gl;
+        this.webgl.init2dBuffers();
+      } catch(e) {
+        //WebGL init failed
+        var error = e;
+        if (e.message) error = e.message;
+        popup("WebGL support not available (" + error + 
+              ")<br>Try <a href='http://get.webgl.org/troubleshooting'>" + 
+              "http://get.webgl.org/troubleshooting</a> for more information.");
+        this.webgl = null;
+        this.renderer = SERVER;
+      }
     }
   }
 
@@ -542,11 +547,12 @@ Fractal.prototype.toStringMinimal = function() {
   return this.paramString() + this.formulaParamString();
 }
 
-Fractal.prototype.paramString = function(fixedsize) {
+Fractal.prototype.paramString = function(server) {
   //Return fractal parameters as a string
   var code = "[fractal]\n";
   if (this.state.version) code += "version=" + this.state.version + "\n";
-  if (fixedsize) {
+  if (server) {
+    //Always send actual size
     code += "width=" + this.canvas.clientWidth + "\n" +
             "height=" + this.canvas.clientHeight + "\n";
   } else if (this.width && this.height) {
@@ -560,10 +566,12 @@ Fractal.prototype.paramString = function(fixedsize) {
           "iterations=" + this.iterations + "\n";
 
   //Formula selections
-  for (category in this.choices)
-    code += category + "=" + this.choices[category].selected + "\n";
+  if (!server) {
+    for (category in this.choices)
+      code += category + "=" + this.choices[category].selected + "\n";
+  }
 
-  if (!fixedsize && this.savePos) code += "\n[preview]\n" + this.savePos + "\n";
+  if (!server && this.savePos) code += "\n[preview]\n" + this.savePos + "\n";
 
   return code;
 }
@@ -1334,7 +1342,7 @@ Fractal.prototype.sizeCanvas = function() {
 Fractal.prototype.updatePalette = function() {
   if (!this.webgl && !this.webcl) return;
   //Update palette texture
-  this.colours.get(this.gradient);
+  this.colours.get(this.gradient, true);
   if (this.webgl) this.webgl.updateTexture(this.webgl.gradientTexture, this.gradient);
 }
 
@@ -1704,21 +1712,19 @@ Fractal.prototype.serverRender = function(antialias) {
   //Send shader & params to remote server
   if (!antialias) antialias = this.state.antialias;
   var src = this.paramString(true) + "antialias=" + antialias + "\n" + 
-            "\n[description]\n" + this.name + "\n"
+            "description=\"" + this.name + "\"\n"
 
   //Add any uniform vars
-  if (this.paramvars.length) {
-    src += "\n[variables]\n"
-    for (v in this.paramvars)
-      src += this.paramvars[v] + "\n"
-  }
+  if (this.paramvars.length)
+    src += "variables=" + JSON.stringify(this.paramvars);
   
   //Finish with palette and shader code...
   src += this.paletteString() + "\n[shader]\n" + this.cache;
 
   //Check re-render required...
   if (this.servercache != src) {
-    this.server.draw(src, this.state.control);
+    //Request image from server only if in server mode and draw not disabled
+    this.server.draw(src, !this.state.disabled && this.renderer == SERVER);
     this.servercache = src;
   }
 }
@@ -1940,7 +1946,7 @@ Fractal.prototype.up = function(event, mouse) {
 
 Fractal.prototype.move = function(event, mouse) {
   //Mouseover processing
-    mouse.point = new Aspect(0, 0, 0, 0);
+  mouse.point = new Aspect(0, 0, 0, 0);
   if (!this.state || this.state.mode == 0) return true;
   if (mouse.x >= 0 && mouse.y >= 0 && mouse.x <= mouse.element.width && mouse.y <= mouse.element.height)
   {
@@ -1963,7 +1969,7 @@ Fractal.prototype.move = function(event, mouse) {
   //Right & middle buttons: drag to scroll
   if (mouse.button > 0 && this.ui) {
     // Set the scroll position
-    if (isFullScreen()) {
+    if (document.fullScreenEnabled) {
       this.element.scrollLeft -= mouse.deltaX;
       this.element.scrollTop -= mouse.deltaY;
     } else
@@ -2027,7 +2033,7 @@ Fractal.prototype.wheel = function(event, mouse) {
     if (this.preview) {
        this.savePos.zoom *= zoom;
        this.drawPreview();
-    } else if (this.preview || this.state.timers <= 1) {
+    } else if (this.preview || this.state.timers <= 1 || !this.select) {
       //Instant update
       this.applyZoom(zoom);
       //Update form fields
@@ -2103,15 +2109,12 @@ Fractal.prototype.drawPreview = function() {
   this.preview.selected = new Complex(this.selected.re, this.selected.im);
   this.preview.position = this.savePos; //.clone();
 
-  //if (pwin) this.preview = pwin.fractal;
-  if (pwin)
-    pwin.enqueue(this.preview.toStringNoFormulae());
-  else {
-    this.preview.drawCore();
-    //Draw julia viewport on remote app
-    if (this.state.control)
-      this.preview.serverRender();
-  }
+  if (this.preview.win) this.preview.win.focus();
+
+  this.preview.drawCore();
+  //Draw julia viewport on remote app
+  if (this.state.control)
+    this.preview.serverRender();
 }
 
 Fractal.prototype.clearPreview = function() {
@@ -2119,7 +2122,7 @@ Fractal.prototype.clearPreview = function() {
   $('previewbtn').innerHTML = "Show Preview"
   clearTimeout(this.preview.timeout);
   document.mouse.moveUpdate = false;
-  this.preview.win.close();
+  if (this.preview.win) this.preview.win.close();
   //this.preview.move = null;
   this.preview = null;
 }
@@ -2128,9 +2131,18 @@ Fractal.prototype.showPreview = function() {
   document.mouse.moveUpdate = true;  //Enable constant deltaX/Y updates
   //if (pwin) this.preview = pwin.fractal;
   if (!this.preview) {
-    this.preview = new Fractal('preview');
     //Open the previewer unless local drawing disabled
-    if (!this.state.disabled) this.preview.win = new MoveWindow('previewWindow');
+    if (!this.state.disabled) {
+      var pwin = window.open("", "view1", "resizable=1,width=500,height=500");
+      pwin.document.open();
+      pwin.document.write("<html><head><link rel='stylesheet' type='text/css' href='styles.css'></head><body><script>window.onkeydown = function(e) {if (e.keyCode === 27) window.close();};</script><div id='previewer'></div></body></html>")
+      //pwin.document.write("<html><head><style>* {margin: 0; padding: 0;}</style></head><body><script>window.onkeydown = function(e) {if (e.keyCode === 27) window.close();};</script><div id='preview'></div></body></html>")
+      pwin.document.close();
+      this.preview = new Fractal(pwin.document.getElementById('previewer'));
+      this.preview.win = pwin;
+    } else
+      this.preview = new Fractal('preview');
+
     this.preview.init(this.state);
     //this.preview.state.timers = 0; //Instant updates
     //this.preview.load(this.toStringMinimal());
@@ -2138,16 +2150,17 @@ Fractal.prototype.showPreview = function() {
 
     //this.preview.resetZoom();
     this.preview.width = this.preview.height = 0; //Fit to container
+
   } else
     this.preview.load(this.toStringMinimal());
 
   if (this.preview.win) {
-    this.preview.win.open(100, 100);
+//    this.preview.win.open(100, 100);
     //that = this;
     //this.preview.move = function(event, mouse) {
     //  return that.preview.win.move(event, that.preview.win.mouse);
     //};
-    //this.preview.click = null; //function() {return true;};
+    this.preview.click = null; //function() {return true;};
     this.preview.down = null; //function() {return true;};
     this.preview.up = null; //function() {return true;};
   }
@@ -2163,7 +2176,8 @@ Fractal.prototype.togglePreview = function() {
     this.clearPreview();
   } else {
     this.showPreview();
-    $('previewbtn').innerHTML = "Show Preview &#10003;"
+    if ($('previewbtn'))
+      $('previewbtn').innerHTML = "Show Preview &#10003;"
   }
 }
 
@@ -2186,17 +2200,6 @@ Fractal.prototype.pinch = function(event, mouse) {
 //////////////////////////////////////////////////////////////////////////
 //Experimental popup window functions, preview & resizeable palette editor
 //////////////////////////////////////////////////////////////////////////
-var pwin;
-function openPopup() {
-  //w = window.open("preview.html", "view1", "toolbar=no,scrollbars=no,location=no,statusbar=no,menubar=no,resizable=1,width=500,height=500");
-  //pwin = window.open("preview.html", "view1", "menubar=yes,resizable=1,width=500,height=500");
-  pwin = window.open("preview.html", "view1", "resizable=1,width=500,height=500");
-}
-
-function closePopup() {
-  pwin = null;
-}
-
 var paletteWin;
 function openPalette() {
   paletteWin = window.open("palette.html", "palette", "resizable=1,width=500,height=600,scrollbars=yes");
