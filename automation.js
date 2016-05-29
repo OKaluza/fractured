@@ -1,6 +1,10 @@
 function recordStart() {
   //Switched on
   state.recording = true;
+  if (state.server) {
+    state.controlMode(true);
+    state.drawMode(false);
+  }
   //Ensure a multiple of 2
   if (fractal.width % 2 == 1) fractal.width -= 1;
   if (fractal.height % 2 == 1) fractal.height -= 1;
@@ -10,7 +14,16 @@ function recordStart() {
 }
 
 function recordStop() {
-  if (state.recording) {
+  if (state.server) {
+    state.controlMode(false);
+    state.recording = false;
+    var http = new XMLHttpRequest();
+    //Record off bug immediately starts new recording overwriting previous, quit instead
+    //http.open("GET", fractal.server.url + "/command=record", false); 
+    http.open("GET", fractal.server.url + "/command=quit", false); 
+    http.send(null); 
+    state.drawMode(true);
+  } else if (state.recording) {
     ajaxReadFile('http://localhost:8080/end', frameDone);
     fractal.ondraw = null;
   }
@@ -19,6 +32,13 @@ function recordStop() {
 }
 
 function outputFrame() {
+  if (state.server) { //Post synchronous to avoid frame ordering problems
+    var http = new XMLHttpRequest();
+    http.open("POST", fractal.server.url + "/update", false); 
+    http.send(fractal.server.data);
+    frameDone();
+    return;
+  }
   var canvas = $("fractal-canvas");
   var data = imageToBlob("image/jpeg", 0.95);
   var fd = new FormData();
@@ -70,6 +90,7 @@ function Script(source) {
   this.count = 1;
   this.step = 1;
   this.step = Function(source);
+  this.core = new ParamVals(fractal.choices.core.currentParams);
   this.fractal = new ParamVals(fractal.choices.fractal.currentParams);
   this.preTransform = new ParamVals(fractal.choices.pre_transform.currentParams); 
   this.postTransform = new ParamVals(fractal.choices.post_transform.currentParams);
@@ -79,6 +100,7 @@ function Script(source) {
 }
 
 Script.prototype.update = function() {
+  this.core.update();
   this.fractal.update();
   this.preTransform.update();
   this.postTransform.update();

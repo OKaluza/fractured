@@ -11,6 +11,14 @@
 <link rel="stylesheet" type="text/css" href="codemirror_VERSION.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
+<script src="https://apis.google.com/js/client:platform.js" async defer></script>
+<meta name="google-signin-client_id" content="1087347516393-8mvvavg96lmvf9mbk1on1lnsq52979q1.apps.googleusercontent.com">
+
+<meta name="google-signin-scope" content="https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.appfolder">
+<meta name="google-signin-client_id" content="1087347516393-8mvvavg96lmvf9mbk1on1lnsq52979q1.apps.googleusercontent.com">
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+
+
 <!--@ -->
 <script type="text/javascript" src="OK.js"></script>
 <script type="text/javascript" src="parameter.js"></script>
@@ -26,16 +34,6 @@
 <!-- @-->
 
 <!--script type="text/javascript" src="fractured_VERSION.js"></script-->
-
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-  ga('create', 'UA-43643531-2', 'ured.me');
-  ga('send', 'pageview');
-</script>
 
 </head>
 
@@ -78,33 +76,12 @@
                 </ul>
               </li>
               <li><hr></li>
-              <li><span onclick="menu(); logout();">Logout</span></li>
+              <li><span onclick="menu(); signOut();">Logout</span></li>
             </div>
             <div id="session_login_menu" class="loggedout">
               <li><span onclick="menu(); exportStateFile();">Export Session</span></li>
               <li><span onclick="menu(); $('fileupload').click();">Import Data</span></li>
-              <li><span class="fly" tabindex="1" onclick="menu(this, 1);">Login with</span>
-                <ul class="login">
-                  <li><span onclick="menu(); toggle('openid_form'); $('openid').focus();">
-                    <img src="media/logos/logo_openid.png" alt="OpenID">
-                  </span></li>
-                  <li><span onclick="menu(); login('https://www.google.com/accounts/o8/id');">
-                    <img src="media/logos/logo_google.png" alt="Google">
-                  </span></li>
-                  <li><span onclick="menu(); login('https://me.yahoo.com');">
-                    <img src="media/logos/logo_yahoo.png" alt="Yahoo">
-                  </span></li>
-                  <li><span onclick="menu(); login('http://myopenid.com');">
-                    <img src="media/logos/logo_myopenid.png" alt="MyOpenID">
-                  </span></li>
-                  <li><span onclick="menu(); login('http://openid.aol.com');">
-                    <img src="media/logos/logo_aol.png" alt="AOL">
-                  </span></li>
-                  <li><span onclick="menu(); login('http://openid.stackexchange.com');">
-                    <img src="media/logos/logo_stackexchange.png" alt="Stack Exchange">
-                  </span></li>
-                </ul>
-              </li>
+              <li><span onclick="menu();"><div class="g-signin2" data-width="150" data-longtitle="true" data-theme="dark" data-onsuccess="onSignIn" data-onfailure="onFailure"></span></span></li>
             </div>
           </ul>
         </li>
@@ -227,7 +204,6 @@
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Fractured VERSION Released:</h3>
           <ul>
-            <li>WebCL support for the updated Nokia Firefox plugin now fixed.</li>
             <li>History: browser back/forward buttons can be used to view fractal history.</li>
             <li>Pause/resume for scripting, general bug fixes</li>
           </ul>
@@ -262,13 +238,6 @@
           </p>
         </div>
 
-        <div class="card" id="no_webcl">
-          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
-          <h3>No WebCL Support</h3>
-          <p>You don't appear to have a working WebCL implementation, such as the <a href="http://webcl.nokiaresearch.com">Nokia WebCL</a> firefox plugin or <a href="https://github.com/SRA-SiliconValley/webkit-webcl">Webkit-WebCL</a>.</p>
-          <p>The default WebGL renderer is generally faster but only if your graphics card (GPU) is up to the task. WebCL can use the CPU or GPU and where available allows double-precision support for deeper fractal zooms.</p>
-        </div>
-
         <div class="card" id="webgl_detected">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>WebGL</h3>
@@ -278,7 +247,7 @@
         <div class="card" id="no_webgl">
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>No WebGL Support</h3>
-          <p>WebGL or WebCL is required to view fractals, see <a href=http://get.webgl.org/troubleshooting">http://get.webgl.org/troubleshooting</a> for help</p>
+          <p>WebGL is required to view fractals, see <a href=http://get.webgl.org/troubleshooting">http://get.webgl.org/troubleshooting</a> for help</p>
         </div>
 
         <div class="card" id="mouse_reference" style="font-size: 9pt;">

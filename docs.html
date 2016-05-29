@@ -1,0 +1,571 @@
+<h1 id="fractured-user-guide">Fractured - <a href="http://fract.ured.me/docs.html">User Guide</a></h1>
+
+<p>Fractured - Fractal art studio, version 0.86 <br>
+© Owen Kaluza, 2012-2016</p>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>Fractured is a GPU accelerated fractal exploration application written in HTML,CSS,Javascript and <a href="http://www.khronos.org/webgl">WebGL</a> / <a href="http://www.khronos.org/webcl">WebCL</a>*. It is designed to work as a stand-alone app, but there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.</p>
+
+<p>I started working on it because I was interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos. Now many lost weekends and evenings later it seems to finally have turned into a fairly complete thing and does what I needed it to.</p>
+
+<p>*There’s also experimental <a href="http://www.khronos.org/webcl">WebCL</a> support which allows CPU rendering and double precision mode where possible. It should work with the Nokia Firefox <a href="http://webcl.nokiaresearch.com">plugin</a> and <a href="https://github.com/SRA-SiliconValley/webkit-webcl">WebkitWebCL</a>.</p>
+
+<p><em>(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)</em></p>
+
+<h3 id="acknowledgments">Acknowledgments</h3>
+
+<ul>
+<li>CodeMirror <a href="http://codemirror.net">http://codemirror.net</a> used for formula / shader code editing component.</li>
+<li>Expression parser built using Jison <a href="http://zaach.github.com/jison">http://zaach.github.com/jison</a></li>
+<li>Vector and Matrix library: glMatrix <a href="https://github.com/toji/gl-matrix">https://github.com/toji/gl-matrix</a></li>
+<li>Learning WebGL <a href="http://learningwebgl.com">http://learningwebgl.com</a> for WebGL tutorials</li>
+<li>WebCL tutorials: Nokia Research WebCL <a href="http://webcl.nokiaresearch.com">http://webcl.nokiaresearch.com</a> (particular thanks to Tomi Aarnio from Nokia for helping me get WebCL working correctly on CPU platforms).</li>
+<li>The libwebcl.js wrapper <a href="https://github.com/alerock/libwebcl">https://github.com/alerock/libwebcl</a> to support Webkit-WebCL (thanks heaps to Alexandre Rocha and Marcelo Morais for helping with this).</li>
+<li>WebCL Examples \&lt;<a href="http://www.ibiblio.org/e-notes/webcl/webcl.htm">http://www.ibiblio.org/e-notes/webcl/webcl.htm</a>&gt;.</li>
+<li>Some fractal formulae based on those in Gnofract <a href="http://gnofract4d.sourceforge.net/">http://gnofract4d.sourceforge.net/</a> and UltraFractal <a href="http://www.ultrafractal.com">http://www.ultrafractal.com</a></li>
+<li>My colour picker css design is based on one from <a href="http://www.colorjack.com/software/dhtml+color+picker.html">ColorJack.com</a>.</li>
+</ul>
+
+
+
+<h3 id="requirements">Requirements</h3>
+
+<ul>
+<li>A modern browser supporting WebGL, confirmed working with Firefox, Chrome &amp; Safari.</li>
+<li>A graphics card with up to date drivers that support OpenGL.</li>
+<li>Experimental WebCL support is also available.</li>
+<li><strong>Note: Windows</strong> in windows Chrome and Firefox do WebGL rendering via conversion 0.86to DirectX shaders (<a href="http://code.google.com/p/angleproject/">Angle</a>), this is a workaround for poor quality windows OpenGL graphics drivers and is a bit unreliable at times. For best results where possible I recommend using native OpenGL rendering, this has to be enabled in your browser manually. In Firefox: set webgl.prefer-native-gl to true in , in Chrome: run with arguments: –use-gl=desktop -   </li>
+</ul>
+
+<h2 id="workspace">Workspace</h2>
+
+<p>What you are looking at on first loading the app: a workspace showing a selection of example fractals and the following user interface:</p>
+
+<ul>
+<li><em>Top Menu</em> containing the [<img src="media/draw.png" alt="draw" title=""> Studio], <img src="media/fractal.png" alt="fractal" title=""> Fractal, <img src="media/formula.png" alt="formula" title=""> Formula, <img src="media/camerai.png" alt="image" title=""> Image, <img src="media/palette.png" alt="palette" title=""> Palette and <img src="media/settingsi.png" alt="settings" title=""> Settings menus.</li>
+<li><em>Palette</em> an editable gradient colour palette and background colour selection</li>
+<li><em>Tools</em> the set of tabs and panels on the left where you are reading this help file, containing tools with complete control over the fractal formula being rendered, the tabs are [Parameters] [Formula] [Colour] [Info] and [Log]</li>
+<li><em>Main Display</em> occupies the rest of the available browser window, initially showing an image gallery, switching to display the rendered fractal image (when in rendering mode).</li>
+<li><em>Coordinates</em> at the bottom left, shows the current complex coordinate under the mouse pointer as you move it over the fractal display.</li>
+</ul>
+
+
+
+<h3 id="main-display">Main Display</h3>
+
+<p>The main window area is initially occupied by an image/fractal gallery, this is the welcome screen. When you render a fractal image it will switch to rendering mode and the fractal image will be displayed here.</p>
+
+
+
+<h4 id="welcome-screen">Welcome screen</h4>
+
+<p>This page only shows when you first load the site, it displays some example images and allows viewing and loading fractals and images that other users have shared.</p>
+
+<p>Only some of the options in the Fractal menu are visible in this mode.</p>
+
+<p>There are several large buttons at the top of the page that allow switching between the available views:</p>
+
+<ul>
+<li><em>Examples</em> Some simple pre-loaded example fractals, click on the thumbnail to load them into the renderer.</li>
+<li><em>Shared</em> Fractals that have been shared by other users, you can also click on these to load them.</li>
+<li><em>Images</em> Images that have been uploaded by other users, click to view (hosted on imgur or flickr).</li>
+<li><em>My Shared</em> Fractals uploaded and shared by you</li>
+<li><em>My Uploads</em> Fractals uploaded by you but not shared</li>
+<li><em>My Images</em> Images uploaded by you to imgur / flickr</li>
+</ul>
+
+<p>Loading any fractal switches to the fractal display, to go back to the welcome page, click on the “Fractured” heading in the top left corner.</p>
+
+
+
+<h4 id="fractal-display">Fractal Display</h4>
+
+<p>This is the output of the fractal formula and parameters, showing a rendering of the selected fractal formula coloured using the selected colouring algorithms using the palette gradient. This area of the screen is responsive to various mouse actions, many of which can be customised (see later section on editing mouse commands).</p>
+
+<p>The default mouse actions are:</p>
+
+<ul>
+<li><em>Mouse scroll over fractal</em> zoom in and out</li>
+<li><em>Left-click</em> centre fractal on coordinate clicked on</li>
+<li><em>Left-click and drag</em> Select an area of the fractal to zoom in on</li>
+<li><em>Right click</em> switch between Mandelbrot set and Julia set at selected coordinate (at mouse pointer)</li>
+<li><em>Right-click and drag</em> pan/scroll fractal window (if larger than display window)</li>
+<li><em>Shift + scroll</em> Rotate in 10 degree increments</li>
+</ul>
+
+<p>Julia set preview mode: to display a Julia set preview as you move the mouse around a Mandelbrot set hit the [ESC] or back-tick [`] key. Hit the key again to turn the preview off.</p>
+
+
+
+<h3 id="coordinates">Coordinates</h3>
+
+<p>As you move the mouse over the fractal display the coordinates in the complex plane are displayed in the box at the bottom left of the window. When switching between the Mandebrot and Julia sets or selecting a region of the fractal the coordinates show the position in fractal space that the mouse is pointing to.</p>
+
+
+
+<h3 id="palette">Palette</h3>
+
+<p>The palette editor allows selection of a number of colours forming a gradient which is used to colour the fractal display. Each of the colours in the gradient is represented by a line and a slider tool, except for the start and end colours.</p>
+
+<ul>
+<li>The sliders can be dragged, adjusting the position of the colour in the gradient.</li>
+<li>Clicking on the line below the slider opens the Colour Selector box allowing you to edit the colour.</li>
+<li>Clicking elsewhere in the gradient also opens the Colour Selector box allowing you to add a new colour at the selected position.</li>
+<li>The start and end colours can also be edited by clicking at the start/end of the gradient.</li>
+<li>Right-clicking on a colour position marker deletes the colour from the gradient.</li>
+<li>Ctrl+click reverses the gradient.</li>
+<li>Scrolling the mouse shifts all the central colours in the gradient.</li>
+</ul>
+
+
+
+<h4 id="colour-selector">Colour Selector</h4>
+
+<p>A colour picker box appears whenever you click to add or edit a colour on the gradient. This allows selection of the Saturation and Brightness of the colour using the large square box to the left and the Hue and Opacity using the columns to the right.</p>
+
+<ul>
+<li>The box can be moved around by clicking and dragging on its edges.</li>
+<li>To accept changes to the colour, press the [OK] button and the box will close.</li>
+<li>To cancel the changes press the [X] button.</li>
+</ul>
+
+
+
+<h3 id="tools">Tools</h3>
+
+<p>The majority of the controls used to control the fractal rendering appear in the set of tabs on the left, which we will call the “Tools” area. The arrow icon at the top can be used to quickly hide and show this area.</p>
+
+<p>Many of the parameters in this area can be adjusted using the mouse scroll wheel.</p>
+
+<ul>
+<li>Scrolling over a numeric parameter will update the value in increments of 1 and redraw the fractal.</li>
+<li>Finer adjustment can be achieved by holding [SHIFT] while scrolling, then only the digit under the mouse pointer will be updated. (If the mouse is not over a digit then the last digit will be updated instead). This is very handy to interactively adjust parameters and instantly see the effect on the fractal rendering.</li>
+</ul>
+
+
+
+<h4 id="parameters">Parameters</h4>
+
+<p>The first is the Parameters tab. This shows basic details of the fractal display, common to all fractal renderings regardless of chosen formula. All of these fields can be edited and changing most of them will modify the way the fractal is rendered. The fractal will be redrawn after you finish editing the value of a field. The fields are:</p>
+
+<ul>
+<li><em>Name</em> a name for the fractal, used when saving</li>
+<li><em>Fit to window</em> when checked the fractal display will take up all available window space and will be automatically adjusted when the window is resized.</li>
+<li><em>Size</em> width and height dimensions of the fractal display window, uncheck Fit to window when using this to set width and height.</li>
+<li><em>Zoom</em> factor of magnification used when displaying the fractal, the [Reset] button returns this value to the default (0.5)</li>
+<li><em>Rotate</em> degrees of rotation to apply</li>
+<li><em>Origin</em> complex coordinate at the centre of the fractal display</li>
+<li><em>Selected</em> complex coordinate selected for use in rendering Julia Sets and the Perturb option.</li>
+<li><em>Julia</em> when checked indicates Julia Set mode, plotting a Julia Set at the selected coordinate.</li>
+<li><em>Iterations</em> maximum number of iterations to apply the selected formula</li>
+</ul>
+
+
+
+<h4 id="formula">Formula</h4>
+
+<p>This is where we start to really gain control of the fractal space to render. The first three options here allow selection of different <em>Formulae</em> used to generate the fractal.</p>
+
+<ul>
+<li><em>Fractal</em> this is the most important of all, the actual fractal formula. This is controls the equation that is iterated multiple times until either the maximum iterations value is reached or the resulting value escapes above a set value or converges below a set value. A number of predefined formulae are offered which you can edit or even create your own (see <em>Formula Editing</em>)</li>
+<li><em>Pre-Transform</em> this is an optional formula that will be applied every iteration before the fractal formula.</li>
+<li><em>Post-Transform</em> this is an optional formula that will be applied every iteration after the fractal formula.</li>
+</ul>
+
+<p>When a formula is selected, it usually has a number of parameters you can edit to control its behaviour. These will appear below the formula selections.</p>
+
+<p>Each formula will have different options which are best understood by playing with the values and seeing the effect they have, but we will go over the parameters for the basic Mandelbrot set here as an example:</p>
+
+<ul>
+<li><em>z(n+1)</em> is the core of the formula itself, the expression that will be calculated every iteration. Two special values to note here, <em>z</em> is the complex variable we are applying the formula to, <em>c</em> is an additional complex variable, representing either the current pixel coordinate (Mandelbrot sets) or a constant selected coordinate (Julia sets). Each iteration (n) we apply the formula to get the next value (n+1). The basic Mandelbrot set formula is z = z^2+c, our example here is z^p+c, <em>p</em> is the power to raise <em>z</em> to, described below.</li>
+<li><em>p</em> is an additional parameter we have defined allowing us to control the power. This builds an additional dimension of flexibility into the formula definition, essentially providing many different possible types of fractal to be rendered by simply changing a parameter value, rather than having to edit the formula.</li>
+<li><em>Escape</em> is the value which controls the <em>Bailout</em> condition, if this condition is met the fractal calculation is finished.</li>
+<li><em>Bailout Test</em> is the test to apply to <em>z</em> to see if it meets the bailout value <em>Escape</em>. By default here it is <em>norm</em> so the coordinate will be considered outside the set if this condition is ever true: norm(z) &gt; <em>escape</em> which is equivalent to norm(z) &gt; 4.</li>
+</ul>
+
+<p>The default <em>Fractal</em> formula list contains <em>Mandelbrot, Burning Ship, Magnet 1,2 &amp; 3, Nova, Cactus &amp; Phoenix</em> fractal formulae. The default <em>Transform</em> formula list contains two simple transforms: <em>Inverse</em> (which only works as a pre-transform) and <em>Functions</em> which simply applies a mathematical function to the result of the selected formula at every iteration.</p>
+
+
+
+<h4 id="colour">Colour</h4>
+
+<p>Additional formulae can be selected controlling how the values calculated by iterating the fractal formula above are used to colour the resulting image. These formulae usually derive a colour from the gradient palette, but may calculate a colour value directly, ignoring the gradient.</p>
+
+<p>The default <em>Colour</em> formula lists contains <em>Default, Smooth, Exponential Smoothing, Triangle Inequality, Orbit Traps, Gaussian Integers and Hot &amp; Cold</em> colouring algorithms.</p>
+
+<p>There are also entries for <em>None</em> - disabling colouring in the selected area, and <em>As Above</em> (for Inside Colour only) which indicates the same colouring parameters will be used for inside colour as the selected outside colour method.</p>
+
+
+
+<h4 id="info">Info</h4>
+
+<p>This tab contains various information notes, the content of which won’t be described here as they are self-explanatory. All these notes can be closed using the X icon in the top right corner. The last card in the info tab is a list of closed notes which allows you to re-open them if desired.</p>
+
+
+
+<h4 id="log">Log</h4>
+
+<p>This tab shows a log of status information and sometimes error messages from the fractal renderer.</p>
+
+<p>The [Clear Log] button clears all messages from the display.</p>
+
+<p>Some log entries will have a “@” symbol before them, this can be clicked to restore the view to the previous logged state.</p>
+
+
+
+<h3 id="top-menu">Top Menu</h3>
+
+<p>Now we get to the menu bar which has various options controlling fractal rendering and allowing saving and loading fractals and other data to local storage and to the web server.</p>
+
+<p>When viewing the welcome page only a subset of the items will be shown in the menu. Some of the items are also only visible when logged in.</p>
+
+<p>Going from right to left we have:</p>
+
+
+
+<h4 id="tools-arrow">Tools Arrow</h4>
+
+<ul>
+<li><em>Hide/Show Tools</em> this arrow button hides or shows the <em>tools</em> area from the window, allowing more room for the fractal display.</li>
+</ul>
+
+
+
+<h4 id="settings">Settings</h4>
+
+<p><img src="media/settingsi.png" alt="settings" title=""> Application preferences and utilities:</p>
+
+<ul>
+<li><em>Anti-aliasing</em> select the anti-aliasing quality to use when rendering fractals.</li>
+<li><em>Scripts</em> (experimental feature, not yet properly documented) allows you to write scripts that control the fractal display. New Script creates a new script entry in the list and opens the editor. Pressing the [Run] button in the editor window runs the script.</li>
+<li><em>Rebuild Thumbnails</em> redraw and save all stored fractal thumbnail images.</li>
+<li><em>Show Preview</em> enables or disables the Julia set preview window.</li>
+<li><em>Full Screen</em> enter full screen mode.</li>
+</ul>
+
+
+
+<h4 id="palette-1">Palette</h4>
+
+<p><img src="media/palette.png" alt="palette" title=""> This menu displays all the gradient palettes saved in local storage. Clicking on one of these saved entries loads that palette. After loading a palette it will be selected in this list and a [ X ] button appears which can be used to delete the palette from the list. Above the list of saved palettes the other functions are:</p>
+
+<ul>
+<li><em>Store Palette</em> stores the current palette in the list.</li>
+<li><em>Export Palette</em> download active palette as a file, this can be loaded later using the <em>Import</em> option in the [Studio] menu.</li>
+</ul>
+
+
+
+<h4 id="image">Image</h4>
+
+<p><img src="media/camerai.png" alt="image" title=""> Actions that take a screen shot of the current fractal.</p>
+
+<ul>
+<li><em>Save JPEG Image</em> save current fractal image display as a JPEG image file (smaller image file but slightly lower quality).</li>
+<li><em>Save PNG Image</em> save current fractal image as a PNG file (best quality, larger file size)</li>
+<li><em>Share on Imgur</em> Publish an image of the current fractal to imgur.com (will be displayed in the shared images list). Responds with a unique URL that can be used to view this image. Imgur doesn’t require logging in but your images will not be kept idefinitely if they don’t receive any views for a long time.</li>
+<li><em>Share on Flickr</em> Publish an image of the current fractal to Flickr.com (will be displayed in the shared images list). Responds with a unique URL that can be used to view this image, requires you to log in to your Flickr account.</li>
+</ul>
+
+
+
+<h4 id="formula-1">Formula</h4>
+
+<p><img src="media/formula.png" alt="formula" title=""> A set of features allowing you to save and restore sets of formula for later use or sharing. The first two menu options <em>Public</em> and <em>Uploaded</em> contain formula sets on the server which you can choose to load. Selecting one of the names formula sets from either of these sub-menus will prompt you to download and use this formula set. <em>Warning</em> loading a formula set will replace all your active formula definitions. Once you have loaded a formula set from the server it will be highlighted in the menu with a grey border and a [ X ] delete button will be available if you wish to remove the formula set from the server.</p>
+
+<ul>
+<li>The <em>Public</em> list is all formula sets that yourself or others have published on the server.</li>
+<li>The <em>Uploaded</em> list contains only your own formula sets that you have uploaded.</li>
+<li>The <em>Publish</em> option will upload your current formula set and make it available for all users.</li>
+<li>The <em>Upload</em> option will save your current formula set on the server but only you will be able to access it later.</li>
+<li>The <em>Export</em> option will save your current formula set as a data file.</li>
+</ul>
+
+
+
+<h4 id="fractal">Fractal</h4>
+
+<p><img src="media/fractal.png" alt="fractal" title=""> This menu contains features relating to the current fractal display.</p>
+
+<ul>
+<li><em>New</em> Create a new fractal and reset all fractal settings to defaults.</li>
+<li><em>Store</em> stores the current fractal in local storage using the name entered in the <em>parameters</em> tab. If the name is already used you will be asked if you’d like to overwrite the existing entry (This will be cleared if you clear your browsing history! To save permanently you must save your session to the server or export).</li>
+<li><em>Upload</em> a fractal to the server. Responds with a unique URL that can be used to load this fractal. You will be prompted if you wish to share the uploaded fractal publicly (displayed in the shared fractals list), if you choose not to then only you or anyone you provide the URL link to will be able to see it.</li>
+<li><em>Export</em> download the current fractal parameters and formula as a fractal data text file, this can be loaded later using the <em>Import</em> option in the [Studio] menu.</li>
+<li><em>Stored Fractals</em> finally a list of all the fractals in local storage is shown, with thumbnail images if available. Clicking on one of these saved entries loads that fractal and displays it. After loading a fractal it will be selected in this list and a [ X ] button appears which can be used to delete the fractal from the list.</li>
+</ul>
+
+
+
+<h4 id="studio">Studio</h4>
+
+<p>This menu gives you options over the current studio <em>session</em> data, a <em>session</em> represents all the currently saved fractals, formulae, palettes etc stored in local storage. This data can be stored on the server and then retrieved from another browser on another computer. It also allows more fractal files to be saved that would otherwise fit in the allocated local storage space, if you run low on space you can just save your session to the server and start a new session.</p>
+
+<p>In order to use the server features you must log in, you can use any OpenID provider account to log in, Google, Yahoo, myOpenID, AOL and StackExchange account options are provided on the menu, others are supported by selecting the <em>OpenID</em> option and entering your identity URL.</p>
+
+<ul>
+<li><em>New</em> clears the session data and creates a new session, this will delete any saved fractals and formulae, make sure you have exported or uploaded your session data before you do this!</li>
+<li><em>Save</em> (when logged in only) saves the current set of saved fractals, formula, palettes etc as a session entry on the server, if the current session was previously saved allows saving over the previous data. If not you will be prompted for a description for the session.</li>
+<li><em>Export</em> download a data file containing all the data in the current session.</li>
+<li><em>Import</em> select and upload a previously exported data file, supports importing of a fractal, palette, formula, formula set or studio session file. Importing a previously exported session will replace the current session and clear all data, make sure you have saved anything you want to keep.</li>
+<li><em>Login with</em> shows the OpenID login options if not already logged in. Allows you to use an OpenID provider to log in and save sessions, formula sets and fractals on the server.</li>
+<li><em>Saved Sessions</em> (when logged in only) shows a list of saved session associated with the logged in account that have been stored on the server. Clicking on one of these allows loading all the session data and replacing the current session. If a session from this list is active it will be outlined and a [ X ] delete button will be shown to allow you to remove the saved session and delete all its data from the server.</li>
+<li><em>Logout</em> (when logged in only) log out from the server. An option to clear the session data will be given, if you press No here all your session data will still be loaded even after logging out, it can be cleared by starting a new session (the “New” option above.)</li>
+</ul>
+
+
+
+<h2 id="editing-formulae">Editing Formulae</h2>
+
+<p>Once you exhaust the possibilities opened by changing the parameters in the predefined formulae and editing expressions within the <strong>expression parser</strong> there are further limitless possibile fractal domains to explore by defining your own fractal, transform and colour formulae using the built in formula definition language. Each formula selection has three buttons to the right:</p>
+
+<ul>
+<li>The [Edit] button opens an editor allowing you to modify the formula code.</li>
+<li>The [ + ] button allows you to add a new formula definition, after you enter a name the editor will open with the currently selected formula code as a starting point.</li>
+<li>The [ - ] button deletes a formula from the list.</li>
+</ul>
+
+<p>A formula definition consists of a set of parameter definitions and (optionally) data declarations and a set of formula code sections.</p>
+
+
+
+<h3 id="parameter-definitions">Parameter definitions</h3>
+
+<p>A parameter definition is a description of a formula variable or option which you want to allow to be controlled by the user interface. These definitions specify the controls that appear when you select this formula.</p>
+
+<p>The format of a definition is:</p>
+
+<pre><code>//Description
+@variable_name = type(default);
+</code></pre>
+
+<ul>
+<li><em>@</em> Indicates to the formula parser that this is a parameter definition, must start with this symbol.</li>
+<li><em>Description</em> Enter the information you want to appear in the control label in this comment area on the line before the actual definition. This description can be left out, in which case the variable name will be used as a label instead.</li>
+<li><em>variable_name</em> Enter a variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number) this is the name by which you will use this parameters value in the formula code.</li>
+<li><em>type</em> the type of value: bool, int, real, complex, rgba, list, real_function, complex_function, bailout_function, expression, define or range</li>
+<li><em>default</em> the default value that is inserted for the parameter if it has not been edited.</li>
+</ul>
+
+<p><strong>Parameter types explained</strong></p>
+
+<ul>
+<li><em>bool</em> a true/false value, appears as a check box</li>
+<li><em>int</em> an integer value, appears as a number entry</li>
+<li><em>real</em> a real number, appears as a number entry</li>
+<li><em>complex</em> a complex number value, represented as a real and imaginary value separated by a comma in code, appears as two number entries.</li>
+<li><em>rgba</em> a colour value, appears as a colour box which can be clicked on to bring up a colour picker</li>
+<li><em>list</em> a list of labels, the variable will be assigned a numeric value based on user selection from 0 to n-1 (where n is number of list items), appears as a drop down list.</li>
+<li><em>define</em> a list of labels, the name of the parameter will be defined literally to the value of the selected entry (as #define param_name selected_value in generated code)</li>
+<li><em>real_function</em> a drop down list of functions returning real number values</li>
+<li><em>complex_function</em> a drop down list of functions returning complex number values</li>
+<li><em>bailout_function</em> a drop down list of bailout functions</li>
+<li><em>expression</em> a mathematical expression that will be parsed and converted into formula code</li>
+<li><em>range</em> as real number, but appears as a slider control, optional additional values min, max, step (comma separated, defaults 0, 1, 0.05)</li>
+</ul>
+
+
+
+<h3 id="data-declarations">Data declarations</h3>
+
+<p>Following the parameter definitions a list of data variables that will be used in the formula calculation can be defined, in the form:</p>
+
+<pre><code>type variable_name = default;
+</code></pre>
+
+<ul>
+<li><em>type</em> can be one of bool, int, uint, real, float, complex or rgba.</li>
+<li><em>variable_name</em> a standard variable name (containing only the characters a-z, A-Z, 0-9 and underscore _, must not start with a number)</li>
+<li><em>default</em> initial value of variable, complex numbers can be specified simply using parentheses, eg: (0.3,0.3)</li>
+</ul>
+
+
+
+<h3 id="formula-code-sections">Formula code sections</h3>
+
+<p>These are sections of code that will be processed in various points during the fractal calculation, different sections are available depending on the type of formula being edited.</p>
+
+<p>They are defined in the form:</p>
+
+<pre><code>section:
+  code statements...
+  ...
+</code></pre>
+
+<p><em>section</em> is the name of the section, on the following line you enter the formula code, it doesn’t have to be indented but doing so will make it easier to read. Any statements from the preceding section heading until the next section heading or the end of the file will be interpreted as the section contents.</p>
+
+
+
+<h4 id="common-sections">Common sections</h4>
+
+<ul>
+<li><em>init:</em> inserted after data declarations, before all processing.</li>
+<li><em>reset:</em> inserted after setting up the initial conditions of the formula, selected starting coordinates etc.</li>
+</ul>
+
+
+
+<h4 id="fractal-formula-sections">Fractal Formula sections</h4>
+
+<ul>
+<li><em>znext:</em> the calculation of the next z value, z(n+1), the core of the fractal formula processing. To define a fractal formula that does anything this section must be defined, but it may be defined as a <em>parameter</em> of type <em>expression</em> named znext, which will simply execute the code resulting from the entered mathematical expression in this code section. Otherwise you must define the znext section, you can define znext as a parameter or a code section but not both.</li>
+<li><em>escaped:</em> define an escape bailout test, set the <strong>escaped</strong> built in variable to true here if your bailout condition is met, false otherwise, eg: escaped = (norm(z) &gt; 4.0); if escaped is set to true, the fractal iteration halts. This section can also be replaced by a parameter named “escape” containing a numeric value (which will be used with a default bailout function) or an expression parameter (which will bailout if it evaluates to true).</li>
+<li><em>converged:</em> define a convergent bailout test, same as escape except should set the <strong>converged</strong> built in to true when triggered. This section can also be replaced by a parameter named “converge” containing a numeric value (which will be used with a default bailout function) or an expression (which will bailout if it evaluates to true).</li>
+</ul>
+
+
+
+<h4 id="transform-formula-sections">Transform Formula sections</h4>
+
+<ul>
+<li><em>transform:</em> code entered here will be inserted at the fractal z(n+1) calculation stage, before processing znext if it is a pre-transform, or after if it is a post-transform.</li>
+</ul>
+
+
+
+<h4 id="colour-formula-sections">Colour Formula sections</h4>
+
+<ul>
+<li><em>calc:</em> code entered here will be inserted after the fractal z(n+1) calculation stage, use for any additional values that must be calculated during the fractal iteration to be used in the final colour calculation.</li>
+<li><em>result:</em> this is where the final colour is calculated, set the built in variable <strong>colour</strong> to the value desired. This must be an rgba value, the colours of the editable gradient can be accessed using the function <strong>gradient(value)</strong> where value is a number between 0 and 1 representing the position on the gradient to sample, this function returns an rgba colour value.</li>
+</ul>
+
+
+
+<h3 id="formula-language">Formula language</h3>
+
+<p>Apart from the special format of the parameter definitions and section headers, the formula code is entered in a C-style syntax as a form of augmented GLSL ES 2.0 (<a href="http://www.khronos.org/opengles/2_X">http://www.khronos.org/opengles/2_X</a>) with an additional function library for complex numbers and some definitions and pre-processing for ease of use writing fractal formulae.</p>
+
+<p>Complex numbers are represented as two-dimensional vector types, and created using the type <em>complex</em>, complex constants can be defined in code in the form (re, im), eg: complex Z = (-1,0.5). You can then access the real component (-1.0) as Z.x and the imaginary component (0.5) as Z.y.</p>
+
+<p>All code statements in the formula definition must end in a semi-colon “;” as with in other c-style languages.</p>
+
+
+
+<h4 id="complex-arithmetic-in-formulae">Complex arithmetic in formulae</h4>
+
+<p>When writing formula code you need to be aware that arithmetic operations on GLSL vector types operate component wise, this works nicely for some operations but not others.</p>
+
+<p>Addition and subtraction of two complex numbers and multiplication of a real number with a complex number works correctly as these operations are defined for complex numbers the same as the equivalent vector operations.</p>
+
+<p>Multiplication and division of complex numbers and addition/subtraction of complex to real numbers do not.</p>
+
+<p>The best way to avoid this problem is to use the <strong>expression parser</strong> discussed in the section below, this will automatically translate your operations into the correct form, in fact you might as well skip ahead to the next heading as the rest of this section is for information purposes only and not relevant if you stick to using the expression parser for entering equations.</p>
+
+<p>As operators can’t be overloaded in GLSL, for mathematically correct results with complex numbers the <em>mul()</em> and <em>div()</em> functions have been defined instead of * and / which are designed to do correct complex number multiplication and division. For addition/subtraction ensure if you add or subtract a real number to a complex you declare it as a complex with a zero imaginary component.</p>
+
+<p><em>eg: if z is a complex number</em>:</p>
+
+<pre><code>z = z*(1.5,-1);       
+  - incorrect, component-wise vector multiplication
+z = mul(z,(1.5,-1));  
+  - correct, complex multiplication
+
+z = z + (1,0);        
+  - correct, adds 1.0 only to the real part of z
+z = z + 1.0;          
+  - incorrect, adds 1.0 to both components of z
+</code></pre>
+
+<p>If writing equations directly into the formula code you must also be careful to always put a decimal point in real number constants, eg: 1. or 1.0 instead of just 1 or you will get type errors from the GLSL compiler when using them with complex or real number variables, another reason to use the expression parser instead…</p>
+
+
+
+<h4 id="solution-the-expression-parser">Solution: The Expression Parser</h4>
+
+<p>The expression parser allows you to enter mathematical expressions using any combination of complex and real numbers using the * (multiply) / (divide) and ^ (raise to power) symbols. Behind the scenes it will convert the expression to the formula code necessary to evaluate the expression correctly. This allows entering formulae in much clearer mathematical notation than would be possible using raw GLSL code as noted previously.</p>
+
+<p>There are two ways of using this feature:</p>
+
+<p>The <strong>expression</strong> parameter type creates an editable parameter where a formula expression can be entered, this has the additional bonus that the expression contents can be easily edited in the tools panel while working with a fractal without having to open the formula editor.</p>
+
+<p>In the formula editor code sections, any text surrounded by back-slash “\” characters will also be processed by the expression parser.</p>
+
+<p>For example, entering:</p>
+
+<pre><code>z = \z^2 + 2\;
+</code></pre>
+
+<p>will be translated internally to:</p>
+
+<pre><code>z = sqr(z) + complex(2,0);
+</code></pre>
+
+<p>Some forms of implicit multiplication are recognised, eg:</p>
+
+<blockquote>
+  <p>(z + 1)(z - 1) ==&gt; (z + 1) * (z - 1) 3(z + 1) ==&gt; 3 * (z + 1) 3x(z + 1) ==&gt; 3 * x * (z + 1) (z + 1)x ==&gt; (z + 1) * x</p>
+</blockquote>
+
+<p>This does not work with variables alone, eg: x(z + 1) as it is indistinguishable from a function call to the parser, so make sure you use a multiplication symbol in such cases.</p>
+
+<p>A set of brackets with a comma implies a complex number, in parsed expressions the components of the complex number can contain any expression:</p>
+
+<pre><code>(sin(x), y^2) ==&gt; complex(sin(x), y^2)
+</code></pre>
+
+<p>In base formula code you are limited to single constants or variables as the real and imaginary components in parentheses for them to be converted automatically to complex number initialisations, for other expressions you must fully specify “complex(real expr, imag expr)”.</p>
+
+<p>Expressions can also be entered over multiple lines and semi-colons are not required at the end of lines.</p>
+
+<p><strong>Note: Colour and Transform formulae</strong> As the same colour and transform formula can be selected twice in different categories, variables declared in these formulae can cause conflicts (attempting to declare a variable or parameter of the same name twice).</p>
+
+<p>To get around this you can use the at “@” character at the start of any variable as in a parameter name. When the formula code is translated to shader code the “@” will be replaced with the formula type, preventing “redefinition” errors, eg:</p>
+
+<pre><code>complex x = (4,5);
+... can be replaced by ...
+complex @x = (4,5);
+</code></pre>
+
+<p>If the above is not followed and a colour formula is selected for both inside and outside colouring, you will get errors of the form:</p>
+
+<pre><code>(ERROR: 0:182: 'x' : redefinition).
+</code></pre>
+
+
+
+<h4 id="built-in-variables">Built in variables</h4>
+
+<p>(TODO: Explanation required!)</p>
+
+<ul>
+<li>z</li>
+<li>c</li>
+<li>z_1</li>
+<li>z_2</li>
+<li>point</li>
+<li>coord</li>
+<li>selected</li>
+<li>limit</li>
+<li>count</li>
+<li>escaped</li>
+<li>converged</li>
+<li>colour</li>
+<li>offset</li>
+<li>julia</li>
+<li>pixelsize</li>
+<li>dims</li>
+<li>origin</li>
+<li>palette</li>
+<li>background</li>
+<li>antialias</li>
+<li>PI</li>
+<li>E</li>
+</ul>
+
+
+
+<h4 id="functions">Functions</h4>
+
+<p>Real input, Real output only - zero lnr _inv _neg _sqr _cube</p>
+
+<p>Real input, Real output (or component-wise Complex input and output) - abs acos asin atan - ceil cos cross - degrees radians distance exp - inversesqrt - log log2 log10 max min mix mod - pow sign sin sqrt tan - floor trunc round</p>
+
+<p>Complex input, Real output - manhattan norm cabs - dot length normalize</p>
+
+<p>Complex input, Complex output - czero mul div inv sqr cube - ln log10 - arg neg conj - cosh tanh sinh acosh atanh asinh - cpow cexp csin ccos ctan casin cacos - catan csinh ccosh ctanh casinh - cacosh catanh csqrt csqrt2 equals - normalize</p>
+
+<p>Others - rgba gradient(mu) - complex polar(r, theta) - bool equals(complex, complex, real tolerance)</p>
+
+<p><strong>TODO: Further document maths library functions, scripting, default formulae</strong></p>
