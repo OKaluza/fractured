@@ -9,13 +9,47 @@
 html, body { padding: 0; margin: 0; }
 </style>
 
+
+<script type="text/javascript">
+var formula_list = {};
+var sources;
+var fractal;
+var rztimeout;
+
+function load() {
+  sources = JSON.parse(readURL('/includes_0.85.json', false));
+  fractal = new Fractal('main');
+  fractal.init(
+    {
+      "antialias" : 2, 
+      "timers" : 150,
+      "debug" : true,
+      "control" : true,
+      "disabled" : false,
+      "server" : "http://" + window.location.hostname + ":8080"
+    }
+  );
+  //fractal.init({"antialias" : 3, "renderer" : WEBCL64, "platform" : 1, "timers" : 150});
+
+  fractal.load(getSourceFromElement('source'));
+  fractal.state.disabled = true;  //Disable further drawing
+  fractal.togglePreview();
+  window.onresize = autoResize;
+}
+
+function autoResize(newval) {
+  if (rztimeout) clearTimeout(rztimeout);
+  rztimeout = setTimeout(function() {fractal.applyChanges();}, 150);
+}
+</script>
+
 <script id="source" type="text/fractal">
 ceramic2
 [fractal]
 version=0.85
 origin=(0.7031933842081344,-0.9980975280050188)
 zoom=200
-rotate=70
+rotate=160
 selected=(0.7027539840928512,-0.9960765643045306)
 julia=0
 iterations=126
@@ -338,40 +372,6 @@ Background=rgba(105,97,83,1)
 0.923147=rgba(28,6,0,1)
 1.000000=rgba(255,117,0,0)
 </script>
-
-<script type="text/javascript">
-var formula_list = {};
-var sources;
-var fractal;
-var rztimeout;
-
-function load() {
-  sources = JSON.parse(readURL('/includes_0.85.json', false));
-  fractal = new Fractal('main');
-  fractal.init(
-    {
-      "antialias" : 2, 
-      "timers" : 150,
-      "debug" : true,
-      "control" : true,
-      "disabled" : false,
-      "server" : "http://192.168.1.3:8080"
-    }
-  );
-  //fractal.init({"antialias" : 3, "renderer" : WEBCL64, "platform" : 1, "timers" : 150});
-
-  fractal.load(getSourceFromElement('source'));
-  fractal.state.disabled = true;  //Disable further drawing
-  fractal.togglePreview();
-  window.onresize = autoResize;
-}
-
-function autoResize(newval) {
-  if (rztimeout) clearTimeout(rztimeout);
-  rztimeout = setTimeout(function() {fractal.applyChanges();}, 150);
-}
-</script>
-
 </head>
 
 <body onload="load()">

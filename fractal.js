@@ -48,7 +48,7 @@ Server.prototype.draw = function(data, render) {
     if (this.timer) clearTimeout(this.timer);
     var that = this;
     this.timer = setTimeout(function () {that.post('/post', true);}, 100);
-  } else
+  } else if (!state.recording) //outputFrame will do the request in record mode (synchronous)
     //Immediate for server control, no image requested
     this.post('/update');
 }
@@ -534,12 +534,12 @@ Fractal.prototype.reselectAll = function() {
 //Save fractal (write param/source file)
 Fractal.prototype.toString = function() {
   //All information required to reconstruct fractal
-  return this.paramString() + this.formulaParamString() + this.formulaSourceString() + this.paletteString();
+  return this.paramString() + this.formulaParamString() + this.formulaSourceString() + this.paletteString() + this.scriptString();
 }
 
 Fractal.prototype.toStringNoFormulae = function() {
   //All information required to reconstruct fractal if formula set already loaded
-  return this.paramString() + this.formulaParamString() + this.paletteString();
+  return this.paramString() + this.formulaParamString() + this.paletteString() + this.scriptString();
 }
 
 Fractal.prototype.toStringMinimal = function() {
@@ -550,6 +550,7 @@ Fractal.prototype.toStringMinimal = function() {
 Fractal.prototype.paramString = function(server) {
   //Return fractal parameters as a string
   var code = "[fractal]\n";
+  code += "name=\"" + this.name + "\"\n";
   if (this.state.version) code += "version=" + this.state.version + "\n";
   if (server) {
     //Always send actual size
@@ -607,6 +608,14 @@ Fractal.prototype.paletteString = function() {
   return "\n[palette]\n" + this.colours.palette;
 }
 
+Fractal.prototype.scriptString = function() {
+  //Return active script as a string
+  var script = localStorage["scripts/" + this.name + ".js"];
+  if (script)
+    return "\n\n[script]\n" + script;
+  return "";
+}
+
 Fractal.prototype.loadPalette = function(source) {
   //Parse out palette section only, works with old and new file formats
   var lines = source.split(newline); // split on newlines
@@ -650,13 +659,23 @@ Fractal.prototype.load = function(source, checkversion, noapply) {
       var buffer = "";
       section = line.slice(1, line.length-1);
 
-      if (section == "palette"){
-        //Collect lines into palette data
+      if (section == "palette" || section == "script") {
+        //Collect lines
         for (var j = i+1; j < lines.length; j++) {
           if (lines[j][0] == "[") break;
           buffer += lines[j] + "\n";
         }
-        this.colours.read(buffer);
+
+        if (section == "palette")
+          this.colours.read(buffer);
+
+        if (section == "script")
+        {
+          localStorage["scripts/" + this.name + ".js"] = buffer;
+          //TODO: Fix calling global function from here
+          populateScripts();
+        }
+
         i = j-1;
       }
       continue;
@@ -1486,24 +1505,25 @@ Generator.prototype.generateCore = function() {
   this.offsets = [];
   //this.source += sources["include/fractal.template"]; 
   this.source += "---DATA---\n---CORE---\n"; 
-  this.source = this.templateInsert(this.source, "DATA", "data", ["core"], 0);
-  this.source = this.templateInsert(this.source, "CORE", "main", ["core"], 0);
+  this.templateInsert("DATA", "data", ["core"], 0);
+  this.templateInsert("CORE", "main", ["core"], 0);
 
   //Replace ---SECTION--- in template with formula code
   var alltypes = ["pre_transform", "fractal", "post_transform", "inside_colour", "outside_colour", "filter"];
-  this.source = this.templateInsert(this.source, "DATA", "data", alltypes, 2);
-  this.source = this.templateInsert(this.source, "INIT", "init", alltypes, 0);
-  this.source = this.templateInsert(this.source, "RESET", "reset", alltypes, 0);
-  this.source = this.templateInsert(this.source, "PRE_TRANSFORM", "transform", ["pre_transform"], 4);
-  this.source = this.templateInsert(this.source, "ZNEXT", "znext", ["fractal"], 2);
-  this.source = this.templateInsert(this.source, "POST_TRANSFORM", "transform", ["post_transform"], 4);
-  this.source = this.templateInsert(this.source, "ESCAPED", "escaped", ["fractal"], 2);
-  this.source = this.templateInsert(this.source, "CONVERGED", "converged", ["fractal"], 2);
-  this.source = this.templateInsert(this.source, "OUTSIDE_CALC", "calc", ["outside_colour"], 4);
-  this.source = this.templateInsert(this.source, "INSIDE_CALC", "calc", ["inside_colour"], 4);
-  this.source = this.templateInsert(this.source, "OUTSIDE_COLOUR", "result", ["outside_colour"], 2);
-  this.source = this.templateInsert(this.source, "INSIDE_COLOUR", "result", ["inside_colour"], 2);
-  this.source = this.templateInsert(this.source, "FILTER", "filter", ["filter"], 0);
+  this.templateInsert("DATA", "data", alltypes, 2);
+  this.templateInsert("INIT", "init", alltypes, 0);
+  //These entries can be inserted multiple times
+  while (this.templateInsert("RESET", "reset", alltypes, 0)) {}
+  while (this.templateInsert("PRE_TRANSFORM", "transform", ["pre_transform"], 4)) {}
+  while (this.templateInsert("ZNEXT", "znext", ["fractal"], 2)) {}
+  while (this.templateInsert("POST_TRANSFORM", "transform", ["post_transform"], 4)) {}
+  while (this.templateInsert("ESCAPED", "escaped", ["fractal"], 2)) {}
+  while (this.templateInsert("CONVERGED", "converged", ["fractal"], 2)) {}
+  while (this.templateInsert("OUTSIDE_CALC", "calc", ["outside_colour"], 4)) {}
+  while (this.templateInsert("INSIDE_CALC", "calc", ["inside_colour"], 4)) {}
+  while (this.templateInsert("OUTSIDE_COLOUR", "result", ["outside_colour"], 2)) {}
+  while (this.templateInsert("INSIDE_COLOUR", "result", ["inside_colour"], 2)) {}
+  while (this.templateInsert("FILTER", "filter", ["filter"], 0)) {}
   this.offsets.push(new LineOffset("(end)", "(end)", this.source.split(newline).length));
 
   //Replace any (x,y) constants with complex(x,y)
@@ -1516,16 +1536,16 @@ Generator.prototype.generateCore = function() {
   this.source = this.source.replace(/ident/g, ""); //Strip ident() calls
 }
 
-Generator.prototype.templateInsert = function(source, marker, section, sourcelist, indent) {
+Generator.prototype.templateInsert = function(marker, section, sourcelist, indent) {
   var newsource = "//***" + marker + "***\n";
   var regex = new RegExp("---" + marker + "---");
   var spaces = "          ";
   spaces = spaces.substr(0, indent);
 
   //Save the line offset where inserted
-  var match = regex.exec(source);
-  if (!match) return source; //No section defined for this template
-  var offset = source.slice(0, match.index).split(newline).length;
+  var match = regex.exec(this.source);
+  if (!match) return false; //No section entry found for this template
+  var offset = this.source.slice(0, match.index).split(newline).length;
   //alert(offset + "\n" + this.source.slice(0, match.index));
   //debug(section + "-->" + marker + " STARTING offset == " + offset);
 
@@ -1551,7 +1571,8 @@ Generator.prototype.templateInsert = function(source, marker, section, sourcelis
   }
 
   //Replaces a template section with the passed source
-  return source.replace(regex, newsource);
+  this.source = this.source.replace(regex, newsource);
+  return true;
 }
 
 //Rebuild from source
@@ -1711,8 +1732,7 @@ Fractal.prototype.saveState = function(replace) {
 Fractal.prototype.serverRender = function(antialias) {
   //Send shader & params to remote server
   if (!antialias) antialias = this.state.antialias;
-  var src = this.paramString(true) + "antialias=" + antialias + "\n" + 
-            "description=\"" + this.name + "\"\n"
+  var src = this.paramString(true) + "antialias=" + antialias + "\n";
 
   //Add any uniform vars
   if (this.paramvars.length)
@@ -2204,4 +2224,5 @@ var paletteWin;
 function openPalette() {
   paletteWin = window.open("palette.html", "palette", "resizable=1,width=500,height=600,scrollbars=yes");
 }
+
 

@@ -14,7 +14,187 @@ var fractals; //Fractal list
 var palettes; //Palette list
 
 //Timers
-var rztimeout = undefined;
+var rztimeout;
+
+//GOOGLE SIGN IN
+var googleSignIn = false;
+
+function onSignIn(googleUser) {
+  // Useful data for your client-side scripts:
+  var profile = googleUser.getBasicProfile();
+  console.log("ID: " + profile.getId()); // Don't send this directly to your server!
+  console.log("Name: " + profile.getName());
+  console.log("Image URL: " + profile.getImageUrl());
+  console.log("Email: " + profile.getEmail());
+
+  // The ID token you need to pass to your backend:
+  googleSignIn = googleUser.getAuthResponse();
+  if (!googleSignIn) { 
+    alert("Login failed!");
+    //This seems to happen sometimes if two logins active,
+    //Requires log out of both and back in
+    return;
+  }
+  console.log("ID Token: " + googleSignIn.id_token);
+
+  if (state) sessionGet();
+};
+
+function onFailure(error) {
+  console.log("Fail: " + error);
+  print('Offline!');
+  state.offline = true;
+}
+
+function signOut() {
+  var auth2 = gapi.auth2.getAuthInstance();
+  auth2.signOut().then(function () {
+    console.log('User signed out.');
+    window.location.reload();
+  });
+}
+
+function loadDriveFiles(list) {
+  // Read list of files in sessions directory
+  if (!list || list.length == 0 || list[0] == null) return;
+  //From sessionGet()...
+  //Load list of saved states/sessions
+  try {
+    //Sort by title descending
+    list.sort(function(a, b) { return a.title > b.title ? -1 : 1; });
+    //Clear & repopulate lists
+    var menu = $('sessions');
+    var menu2 = $('formulae-private');
+    removeChildren(menu);
+    removeChildren(menu2);
+    for (var i=0; i<list.length; i++) {
+      console.log(JSON.stringify(list[i]));
+      console.log(list[i].title);
+      //Strip extension
+      var label = list[i].title.substr(0, list[i].title.lastIndexOf('.'));
+      if (list[i].fileExtension == 'session') {
+        var item = addMenuItem(menu, label, "menu(); loadDriveSession('" + list[i].downloadUrl + "', '" + list[i].id + "')", null, true);
+        if (state.session == list[i].id) selectMenuItem(item, "deleteSelectedState();");
+      } else if (list[i].fileExtension == 'formulae') {
+        var item = addMenuItem(menu2, label, "menu(); loadDriveFormulaSet('" + list[i].downloadUrl + "', '" + list[i].id + "', this)");
+        if (state.formulae == list[i].id)
+          selectMenuItem(item, "deleteSelectedFormulae();");
+      }
+    }
+    checkMenuHasItems(menu);
+    checkMenuHasItems(menu2);
+
+  } catch(e) {
+    alert('LoadFilesList: Error! ' + e);
+  }
+}
+
+function loadDriveSession(url, id) {
+  if (!confirm('Loading new session. This will overwrite everything!')) return;
+  state.session = id;
+  state.saveStatus();
+  ajaxReadFile(url, function(data) {state.read(data);}, false, updateProgress, {'Authorization' : 'Bearer ' + googleSignIn.access_token});
+  progress("Downloading session from Google Drive...");
+}
+
+function loadDriveFormulaSet(url, id, item) {
+  //progress("Downloading formulae from Google Drive...");
+  if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
+  deselectAllMenuItems($('formulae-private'), true);
+  deselectAllMenuItems($('formulae-public'), true);
+  state.formulae = id;
+  selectMenuItem(item, "deleteSelectedFormulae();");
+  state.saveStatus();
+  ajaxReadFile(url, importFormulae, false, updateProgress, {'Authorization' : 'Bearer ' + googleSignIn.access_token});
+}
+
+
+function uploadDriveFile(data, title, callback) {
+  console.log("Uploading: " + title);
+  var method = 'POST';
+  var id = '';
+  if (!title) {
+    //Update existing
+    method = 'PUT';
+    id = '/' + state.session;
+  }
+
+  var boundary = '-------314159265358979323846';
+  var delimiter = "\r\n--" + boundary + "\r\n";
+  var close_delim = "\r\n--" + boundary + "--";
+
+  var contentType = 'application/octet-stream';
+  var metadata = {
+    'mimeType': contentType,
+    'parents': [{'id': 'appfolder'}]
+  };
+  if (title) metadata.title = title;
+  //alert(JSON.stringify(metadata));
+  
+  var base64Data = btoa(data);
+  var multipartRequestBody =
+      delimiter +   
+      'Content-Type: application/json\r\n\r\n' +
+      JSON.stringify(metadata) +
+      delimiter +
+      'Content-Type: ' + contentType + '\r\n' +
+      'Content-Transfer-Encoding: base64\r\n' +
+      '\r\n' +
+      base64Data +
+      close_delim;
+  var request = gapi.client.request({
+      'path': '/upload/drive/v2/files' + id,
+      'method': method,
+      'params': {'uploadType': 'multipart'},
+      'headers': {
+        'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'
+      },
+      'body': multipartRequestBody});
+
+  request.execute(callback);
+}
+
+/**
+ * Permanently delete a file, skipping the trash.
+ *
+ * @param {String} fileId ID of the file to delete.
+ */
+function deleteDriveFile(fileId, callback) {
+  var request = gapi.client.drive.files.delete({
+    'fileId': fileId
+  });
+  request.execute(callback);
+}
+
+/**
+ * List all files contained in the Application Data folder.
+ *
+ * @param {Function} callback Function to call when the request is complete.
+ */
+function listFilesInApplicationDataFolder(callback) {
+  if (state.offline) return;
+  console.log("LISTFILESINAPPDATAFOLDER");
+  //if (!state.loggedin) return;
+  var retrievePageOfFiles = function(request, result) {
+    request.execute(function(resp) {
+      result = result.concat(resp.items);
+      var nextPageToken = resp.nextPageToken;
+      if (nextPageToken) {
+        request = gapi.client.drive.files.list({
+          'pageToken': nextPageToken
+        });
+        retrievePageOfFiles(request, result);
+      } else {
+        callback(result);
+      }
+    });
+  }
+  var initialRequest = gapi.client.drive.files.list({
+    'q': '\'appfolder\' in parents'
+  });
+  retrievePageOfFiles(initialRequest, []);
+}
+
 
 var activeMenu = null;
 var activeSubMenu = null;
@@ -56,6 +236,8 @@ function mainmenu() {
   }
 }
 
+var loadAction;
+
 function appInit() {
   try {
     state = new State("---VERSION---");
@@ -66,6 +248,7 @@ function appInit() {
 
   //Force offline mode when loaded locally
   if (window.location.href.indexOf("file://") == 0) state.offline = true;
+  if (window.location.href.indexOf("localhost:") >= 0) state.offline = true;
   if (!navigator.onLine) state.offline = true;
 
   //Read query string
@@ -74,7 +257,7 @@ function appInit() {
   window.history.replaceState("", "", state.baseurl);
 
   //Load query (returns action, "flickr" if requested to skip gallery display)
-  var action = parseQuery(query);
+  loadAction = parseQuery(query);
 
   //Colour editing and palette management
   colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();}, true);
@@ -85,14 +268,23 @@ function appInit() {
   if (!state.offline) {
     //Session restore:
     //First call to server must not be async or we'll get session creation race conditions
-    sessionGet(readURL('ss/session_get.php?info=' + fractal.infoString(), false)); //Get updated list...
+//    sessionGet(readURL('ss/session_get.php?info=' + fractal.infoString(), false)); //Get updated list...
     //ajaxReadFile('ss/session_get.php', sessionGet, false); //Get updated list...
-    //Load formula lists from server
+
+    //Load PUBLIC formula lists from server
+    //TODO: get rid of this!
     ajaxReadFile('ss/formula_get.php', loadFormulaeList, false);
+
+      //Load the drive api & check logged in state
+      sessionGet();
+
   }
 
   //Initialise app
-  if (!state.load()) return;   //Load the last program state
+  state.load(appInitState);   //Load the last program state
+}
+
+function appInitState() {
   fractal.init(state);         //Create a default fractal
 
   //Event handling
@@ -120,19 +312,19 @@ function appInit() {
   var loaded = state.lastFractal();
 
   //Deferred actions from parsing url
-  if (action) {
-    if (loaded && action == "flickr") {
+  if (loadAction) {
+    if (loaded && loadAction == "flickr") {
       //Previous viewing restored
       //(Upload when draw finished)
       fractal.ondraw = uploadFlickr;
       hideGallery();
       fractal.applyChanges();
-    } else if (action.length && action.indexOf('.html') < 0) {
+    } else if (loadAction.length && loadAction.indexOf('.html') < 0) {
       //Load from URL/address
-      if (action.length > 30)
-        restoreFractal(action);   //Restore from URL
+      if (loadAction.length > 30)
+        restoreFractal(loadAction);   //Restore from URL
       else
-        loadUrl(action); //Load from hash
+        loadUrl(loadAction); //Load from hash
     }
   }
 
@@ -149,7 +341,7 @@ function appInit() {
   if (loaded) showCard("previous_fractal");
   showCard("local_storage");
   showCard("render_mode");
-  if (!$("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
+  //if (!$("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
   if (!$("webgl").disabled) showCard("webgl_detected"); else if ($("webcl").disabled) showCard("no_webgl");
   showCard("mouse_reference");
   showCard("user_guide");
@@ -203,10 +395,14 @@ function parseQuery(query, loaded) {
         action = "flickr"; //Skip gallery display & upload to flickr
       } else if (list[i].indexOf('server') >= 0) {
         //Controlling a server app
-        state.server = "http://" + window.location.hostname + ":8080"
-        if (list[i].indexOf('control') >= 0) {
+        if (list[i].length > 1) {
+          var host = list[i].substr(list[i].indexOf('=')+1);
+          state.server = "http://" + host + ":8080"
           state.control = true;
           state.controlMode(true);
+        } else {
+          //Act as a render server
+          state.server = "http://" + window.location.hostname + ":8080"
         }
       } else if (list[i].indexOf('reset') >= 0) {
         state.resetFormulae();
@@ -255,7 +451,7 @@ function snapshot() {
 
 //Forced reset - used when upgrading
 function resetReload() {
-  history.pushState("",document.title,location.pathname+"&reset");
+  history.pushState("",document.title,location.pathname+"?reset");
   location.reload(true);
 }
 
@@ -306,7 +502,7 @@ function sendEmail() {
 }
 
 function loadHelp() {
-  ajaxReadFile('docs_' + state.version + '.html', function(data) {
+  ajaxReadFile('docs.html', function(data) {
     var tempDiv = document.createElement('div');
     tempDiv.innerHTML = data;
     var divs = tempDiv.getElementsByTagName('div')
@@ -367,6 +563,7 @@ function fillGallery(html) {
 }
 
 function hideGallery() {
+  console.log("STATE LOGGED IN : " + state.loggedin); 
   //Hide gallery, show fractal
   $S('gallery').display = "none";
   setAll('block', 'render');  //Unhide render mode menu options
@@ -415,6 +612,37 @@ function toggleCard(el, nosave) {
 
 //session JSON received
 function sessionGet(data) {
+  if (state.offline) return;
+
+      //Load the drive api
+      gapi.client.load('drive', 'v2', function() {
+
+        console.log("Drive Client Loaded");
+
+        if (googleSignIn) {
+      //      state.offline = false;
+            var usermenu = $('session_user_menu');
+            var loginmenu = $('session_login_menu');
+            //Parse session data, if we get this far we have an active logged in user
+            state.loggedin = true;
+      //      var session = JSON.parse(data);
+            loginmenu.style.display = 'none';
+            setAll('block', 'loggedin');  //Unhide logged in menu options
+            setAll('none', 'loggedout');  //Hide logged out menu options
+
+            listFilesInApplicationDataFolder(loadDriveFiles);
+        }
+
+
+      });
+
+//TODO: Refactor this stuff
+//Responds with either: 
+// -- nothing, sets offline mode 
+// -- session list, update in menu including selected
+console.log("SESSIONGET: DECPRECATED!");
+return;
+  if (!state) {alert("NO STATE"); return;}
   state.offline = false;
   var usermenu = $('session_user_menu');
   var loginmenu = $('session_login_menu');
@@ -432,6 +660,7 @@ function sessionGet(data) {
     state.loggedin = true;
     var session = JSON.parse(data);
     loginmenu.style.display = 'none';
+  console.log("SESSIONGET: STATE LOGGED IN : " + state.loggedin); 
     setAll('block', 'loggedin');  //Unhide logged in menu options
     setAll('none', 'loggedout');  //Hide logged out menu options
     //Load list of saved states/sessions
@@ -471,6 +700,7 @@ function restoreFractal(restored) {
     state.active = data;
     state.fractal = name;
     state.lastFractal();  //Restore it
+    fractal.applyChanges();
   }
   //Restore output state
   state.output = true;
@@ -536,6 +766,14 @@ function selectMenuItem(span, ondelete) {
   span.parentNode.className = "selected_item";
 }
 
+function deselectAllMenuItems(menu, ondelete) {
+  if (!menu) return;
+  for (var i = 0; i < menu.childNodes.length; i++) {
+    var span = menu.childNodes[i].firstChild;
+    deselectMenuItem(span, ondelete);
+  }
+}
+
 function deselectMenuItem(span, ondelete) {
   if (!span) return;
   //Remove delete button if any
@@ -597,7 +835,7 @@ function fractalMenuAdd(name) {
 }
 
 function fractalMenuSelect(name) {
-  if (state.fractal)
+  if (state.fractal && fractals[state.fractal])
     deselectMenuItem($(fractals[state.fractal].id), true);
   state.fractal = name;
   state.saveStatus();
@@ -712,7 +950,6 @@ function newFractal() {
 }
 
 function storeFractal() {
-  source = fractal.toStringNoFormulae();  //Default is to save to local storage without formulae
   //Save current fractal to list
   if (state.fractal) {
     //Save existing
@@ -720,7 +957,7 @@ function storeFractal() {
     if (name == fractal.name && fractals[name]) {
       if (confirm('Overwrite "' + name + '"?')) {
         try {
-          fractals[name].source = source;
+          fractals[name].source = fractal.toStringNoFormulae();  //Default is to save to local storage without formulae
           fractals[name].thumbnail = thumbnail();
           fractalMenuUpdate(name);
         } catch(e) {
@@ -742,12 +979,11 @@ function storeFractal() {
     checkstr = name + (++add);
   if (name != checkstr && !confirm('Save as "' + checkstr + '"?')) return;
   //if (name == checkstr && !confirm('Save new fractal as "' + name + '"?')) return;
-  name = checkstr;
+  name = fractal.name = checkstr;
   try {
-    fractals[name] = new FractalEntry(source);
+    fractals[name] = new FractalEntry(fractal.toStringNoFormulae());
     fractalMenuAdd(name);
     fractalMenuSelect(name);
-    fractal.name = name;
   } catch(e) {
     //data wasn’t successfully saved due to quota exceed so throw an error
     alert('error! ' + e);
@@ -784,8 +1020,9 @@ function savePalette() {
   if (window.opera) state.save();
 }
 
-function populatePalettes() {
+function populatePalettes(paldata) {
   //Clear & repopulate list
+  if (paldata) palettes = paldata;
   var menu = $('palettes');
   removeChildren(menu);
 
@@ -807,8 +1044,10 @@ function populatePalettes() {
 }
 
 function loadPalette(idx) {
-  if (palettes[idx])
+  if (palettes && palettes[idx])
     colours.read(palettes[idx].data);
+  else
+    colours.read("Background=rgba(0,0,0,0)\n0.0=rgba(0,0,0,1)\n0.5=rgba(255,255,255,1)\n1.0=rgba(0,0,0,1)\n");
   if (window.opera) state.save();
 }
 
@@ -924,25 +1163,29 @@ function paletteThumbnail() {
 
 //Import/export all local storage to server
 function uploadState() {
-  var formdata = new FormData();
-  formdata.append("session_id", (state.session ? state.session : 0)); 
-  if (state.session > 0 && confirm('Save changes to this session on server?')) {
+//  var formdata = new FormData();
+//  formdata.append("session_id", (state.session ? state.session : 0)); 
+  var data = state.toString(); 
+  if (state.session != 0 && confirm('Save changes to this session on server?')) {
     //Update existing
+    uploadDriveFile(data);
   } else {
     var desc = prompt("Enter description for new session");
     if (!desc || desc.length == 0) return;
-    formdata.append("description", desc); 
+//    formdata.append("description", desc); 
+    uploadDriveFile(data, desc + ".session", function(file) {state.session = file.id; listFilesInApplicationDataFolder(loadDriveFiles); console.log(file)});
   }
 
-  formdata.append("data", state.toString()); 
-  progress("Uploading session to server...");
-  ajaxPost("ss/session_save.php", formdata, sessionSaved, updateProgress);
+//  formdata.append("data", state.toString()); 
+//  progress("Uploading session to server...");
+//  ajaxPost("ss/session_save.php", formdata, sessionSaved, updateProgress);
 }
 
 function sessionSaved(data) {
   state.session = data;
   state.saveStatus();
-  sessionGet(readURL('ss/session_get.php')); //Get updated list...
+  //sessionGet(readURL('ss/session_get.php')); //Get updated list...
+  listFilesInApplicationDataFolder(loadDriveFiles);
   progress();
 }
 
@@ -1187,44 +1430,46 @@ function uploadFlickr() {
 
 
 function loadFormulaeList(data) {
+  //Only public formulae stored on our server now...
   if (state.offline) return;
   //Load list of saved formula sets from server
   try {
     //Clear & repopulate list
     var menu1 = $('formulae-public');
-    var menu2 = $('formulae-private');
+    //var menu2 = $('formulae-private');
     if (state.loggedin == false)
       ondelete = null;
     removeChildren(menu1);
-    removeChildren(menu2);
+    //removeChildren(menu2);
     var list = JSON.parse(data);
     for (var i=0; i<list.length; i++) {
       var label = list[i].date + "\n" + list[i].name;
-      var onclick = "menu(); loadFormulaSet(" + list[i].id + ")";
+      var onclick = "menu(); loadFormulaSet(" + list[i].id + ", this)";
       var item;
       if (list[i]["public"] == "1")
         item = addMenuItem(menu1, label, onclick);
-      else
-        item = addMenuItem(menu2, label, onclick);
+      //else
+      //  item = addMenuItem(menu2, label, onclick);
 
       if (state.formulae == list[i].id)
         selectMenuItem(item, "deleteSelectedFormulae();");
     }
     checkMenuHasItems(menu1);
-    checkMenuHasItems(menu2);
+    //checkMenuHasItems(menu2);
   } catch(e) {
     alert('LoadFormulaeList: Error! ' + e);
   }
 }
 
-function loadFormulaSet(id) {
+function loadFormulaSet(id, item) {
   if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
+  deselectAllMenuItems($('formulae-public'), false);
+  deselectAllMenuItems($('formulae-private'), true);
   state.formulae = id;
+  selectMenuItem(item);
   state.saveStatus();
   progress("Downloading formula set...");
   importFormulae(readURL('ss/formula_get.php?id=' + id, true, updateProgress));
-  //Repopulate menu (so selected set)
-  loadFormulaeList(readURL('ss/formula_get.php'));
   progress();
 }
 
@@ -1261,8 +1506,9 @@ function loadSession(id)
 function deleteSelectedState()
 {
   if (state.session && confirm('Delete this session from the server?')) {
-    readURL('ss/session_delete.php?id=' + state.session);
-    sessionGet(readURL('ss/session_get.php')); //Get updated list...
+    deleteDriveFile(state.session, function(resp) {listFilesInApplicationDataFolder(loadDriveFiles); });
+    //readURL('ss/session_delete.php?id=' + state.session);
+    //sessionGet(readURL('ss/session_get.php')); //Get updated list...
     state.session = 0;
     state.saveStatus();
   }
@@ -1679,7 +1925,7 @@ function importFile(source, filename, date) {
       alert('ImportFile: JSON Parse Error! ' + e);
     }
   } else {
-    //Text: formula, fractal, palette
+    //Text: formula, fractal, palette, script
     if (/\[Fractal\]/ig.exec(source)) {
       //Fractal file
       debug("Import: FRACTAL");
@@ -1700,6 +1946,10 @@ function importFile(source, filename, date) {
       //Palette
       debug("Import: PALETTE");
       colours.read(source);
+    } else if (filename.indexOf(".js") > -1) {
+      //Import a script
+      localStorage["scripts/" + filename] = source;
+      populateScripts();
     } else {
       //Assume formula definition
       debug("Import: FORMULA");

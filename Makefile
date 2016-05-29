@@ -1,16 +1,17 @@
-VERSION = 0.85
-COMP = java -jar compiler-latest/compiler.jar --jscomp_warning internetExplorerChecks --js=
-FLAGS = --js_output_file=
-#COMP = cp 
-#FLAGS = 
-RSTFLAGS = --stylesheet-path=docs/docstyle.css 
+VERSION = 0.86
+ifeq ($(CONFIG),debug)
+  COMP = cp 
+  FLAGS = 
+else
+  COMP = java -jar compiler-latest/compiler.jar --jscomp_warning internetExplorerChecks --js=
+  FLAGS = --js_output_file=
+endif
 
 #Targets
 fractured=release/fractured_$(VERSION).js
 viewer=release/fracturedviewer_$(VERSION).js
 includes=release/includes_$(VERSION).json
 formulae=release/formulae_$(VERSION).json
-docs=release/docs_$(VERSION).html
 codemirror=release/codemirror_$(VERSION).js
 codemirrorstyle=release/codemirror_$(VERSION).css
 
@@ -22,15 +23,15 @@ CMSCRIPTS = $(wildcard codemirror/lib/*.js) codemirror/mode/clike/clike.js codem
 # Use ':=' instead of '=' to avoid multiple evaluation of NOW.
 # Substitute problematic characters with underscore using tr,
 #   make doesn't like spaces and ':' in filenames.
-NOW := $(shell date +"%c" | tr ' :' '__')
+#NOW := $(shell date +"%c" | tr ' :' '__')
 
-all: release $(fractured) $(codemirror) $(codemirrorstyle) $(docs) $(includes) $(formulae)
+all: release $(fractured) $(codemirror) $(codemirrorstyle) $(includes) $(formulae)
 
-viewer: release $(viewer) $(docs) $(includes) $(formulae)
+viewer: release $(viewer) $(includes) $(formulae)
 
 .PHONY : release
 release:
-	-mkdir release
+	-mkdir -p release
 	#Write version info
 	sed "s/VERSION/$(VERSION)/g" index.html > release/index.html
 	sed "s/VERSION/$(VERSION)/g" editor.html > release/editor.html
@@ -42,28 +43,27 @@ release:
 	cp palettes.json favicon.ico styles.css offline.html release
 	cp -R media release
 	cp -R ss release
+	sed -i "s/version [0-9.]*/version $(VERSION)/g" README.md
+	sed -i "s/version [0-9.]*/version $(VERSION)/g" docs.html
+	cp docs.html release
 
 .PHONY : clean
 clean:
 	-rm -r release
-	cd OK.js && $(MAKE) clean
 
-$(fractured): $(SCRIPTS) OK.js/OK-min.js gl-matrix-min.js parser-min.js
+$(fractured): $(SCRIPTS) OK-min.js gl-matrix-min.js parser-min.js
 	cat $(SCRIPTS) > /tmp/fractured-index.js
 	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fractured-index.js
 	$(COMP)/tmp/fractured-index.js $(FLAGS)/tmp/fractured-compressed.js
 	#Combine into final bundle
-	cat /tmp/fractured-compressed.js OK.js/OK-min.js gl-matrix-min.js parser-min.js > $(fractured)
+	cat /tmp/fractured-compressed.js OK-min.js gl-matrix-min.js parser-min.js > $(fractured)
 
-$(viewer): $(VIEWSCRIPTS) OK.js/OK-min.js gl-matrix-min.js parser-min.js
+$(viewer): $(VIEWSCRIPTS) OK-min.js gl-matrix-min.js parser-min.js
 	cat $(VIEWSCRIPTS) > /tmp/fracturedviewer-index.js
 	sed -i "s/---VERSION---/$(VERSION)/g" /tmp/fracturedviewer-index.js
 	$(COMP)/tmp/fracturedviewer-index.js $(FLAGS)/tmp/fracturedviewer-compressed.js
 	#Combine into final bundle
-	cat /tmp/fractured-compressed.js OK.js/OK-min.js gl-matrix-min.js parser-min.js > $(viewer)
-
-OK.js/OK-min.js:
-	cd OK.js && $(MAKE)
+	cat /tmp/fractured-compressed.js OK-min.js gl-matrix-min.js parser-min.js > $(viewer)
 
 gl-matrix-min.js: gl-matrix.js
 	$(COMP)gl-matrix.js $(FLAGS)gl-matrix-min.js
@@ -78,10 +78,6 @@ $(codemirror): $(CMSCRIPTS)
 
 $(codemirrorstyle): codemirror/theme/*.css codemirror/lib/codemirror.css codemirror/lib/dialog.css
 	cat codemirror/lib/codemirror.css codemirror/lib/dialog.css codemirror/theme/*.css > $(codemirrorstyle)
-
-$(docs): docs/docs.rst
-	rst2html $(RSTFLAGS) $< $@
-	sed -i "s/VERSION/$(VERSION)/g" $(docs)
 
 $(includes): $(wildcard include/*)
 	python rebuild.py $(includes)

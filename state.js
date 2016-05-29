@@ -155,28 +155,42 @@ State.prototype.convertFractals = function(count) {
 State.prototype.getFractals = function() {
   var fractals = {};
   var fr_str = localStorage["fractured.fractals"];
-  if (fr_str) {
-    //Detect/convert old format...
-    var count = parseInt(fr_str);
-    if (isNaN(count))
+  if (fr_str != undefined) {
+    try {
       fractals = JSON.parse(fr_str);
-    else
-      fractals = this.convertFractals(count); //Convert from old format
+      //Detect/convert old format...
+      var count = parseInt(fr_str);
+      if (isNaN(count))
+        fractals = JSON.parse(fr_str);
+      else
+        fractals = this.convertFractals(count); //Convert from old format
+    } catch(e) {
+      //Skip
+      console.log("Invalid fractal string: " + fr_str);
+    }
   }
   return fractals;
 }
 
 State.prototype.getPalettes = function() {
-  var palettes = [];
   var pstr = localStorage["fractured.palettes"];
-  if (!pstr)
-    //Default palettes
-    palettes = JSON.parse(readURL('/palettes.json', false));
-  else
-    palettes = JSON.parse(pstr);
+  this.palettes = [];
+  if (pstr != undefined) {
+    try {
+      this.palettes = JSON.parse(pstr);
+      populatePalettes(this.palettes);
+    } catch(e) {
+      //Default palettes
+      var that = this;
+      ajaxReadFile('/palettes.json', function(data) {
+        that.palettes = JSON.parse(data);
+        populatePalettes(that.palettes);
+      }, false);
+    }
+  }
   //Back compat:
-  if (typeof(palettes) != 'object') palettes = [];
-  return palettes;
+  //if (typeof(palettes) != 'object') palettes = [];
+  //return palettes;
 }
 
 State.prototype.save = function() {
@@ -202,7 +216,8 @@ State.prototype.reset = function(noconfirm) {
     localStorage.clear(); //be careful as this will clear the entire database
     this.load();
     if (!this.offline)
-      sessionGet(readURL('ss/session_get.php')); //Get updated list...
+      //sessionGet(readURL('ss/session_get.php')); //Get updated list...
+      listFilesInApplicationDataFolder(loadDriveFiles);
     loadPalette(0); //Palette reset
     newFractal();
     this.session = 0;
@@ -213,46 +228,49 @@ State.prototype.reset = function(noconfirm) {
   }
 }
 
-State.prototype.load = function() {
+State.prototype.load = function(callback) {
   //Load includes...
   //(Allow cache, when changed update the version number)
   var incfile = '/includes_' + this.version + '.json';
-  var incdata = readURL(incfile, false);
-  if (!incdata) {
-    popup("<b><i>" + incfile + "</i></b> not found! Application may have been upgraded, " + this.upgrademsg);
-    return false;
-  }
-  sources = JSON.parse(incdata);
+  var that = this;
+  ajaxReadFile(incfile, function(incdata) {
+    if (!incdata) {
+      popup("<b><i>" + incfile + "</i></b> not found! Application may have been upgraded, " + that.upgrademsg);
+    } else {
+      sources = JSON.parse(incdata);
 
-  if (this.debug) {
-    //Entries for all source files in debug edit menu
-    var menu = $('debugedit');
-    removeChildren(menu);
-    for (key in sources) {
-      var onclick = "openEditor('" + key + "')";
-      addMenuItem(menu, key, onclick);
+      if (that.debug) {
+        //Entries for all source files in debug edit menu
+        var menu = $('debugedit');
+        removeChildren(menu);
+        for (key in sources) {
+          var onclick = "openEditor('" + key + "')";
+          addMenuItem(menu, key, onclick);
+        }
+      }
+      
+      //Load formulae
+      formula_list = null;
+      var f_source = localStorage["fractured.formulae"];
+      if (f_source) importFormulaList(f_source);
+      if (!formula_list) importFormulaList(readURL('/formulae_' + that.version + '.json', false));
+
+      that.getPalettes();
+      fractals = that.getFractals();
+      if (that.fractal && !fractals[that.fractal]) that.fractal = null;
+      //populatePalettes();
+      populateFractals();
+      populateScripts();
+
+      //Show an indicator, assumes 5K char limit or 2.5K in WebKit
+      var isWebKit = /AppleWebKit/.test(navigator.userAgent);
+      var size = JSON.stringify(localStorage).length;
+      var indic = size / (isWebKit ? 2500000 : 5000000);
+      $S('indicator').width = (350 * indic) + 'px';
+
+      if (callback) callback();
     }
-  }
-  
-  //Load formulae
-  formula_list = null;
-  var f_source = localStorage["fractured.formulae"];
-  if (f_source) importFormulaList(f_source);
-  if (!formula_list) importFormulaList(readURL('/formulae_' + this.version + '.json', false));
-
-  palettes = this.getPalettes();
-  fractals = this.getFractals();
-  if (this.fractal && !fractals[this.fractal]) this.fractal = null;
-  populatePalettes();
-  populateFractals();
-  populateScripts();
-
-  //Show an indicator, assumes 5K char limit or 2.5K in WebKit
-  var isWebKit = /AppleWebKit/.test(navigator.userAgent);
-  var size = JSON.stringify(localStorage).length;
-  var indic = size / (isWebKit ? 2500000 : 5000000);
-  $S('indicator').width = (350 * indic) + 'px';
-  return true;
+  }, false);
 }
 
 State.prototype.read = function(data) {
@@ -276,7 +294,8 @@ State.prototype.read = function(data) {
   }
   //Replace session id, not saved in state data
   this.saveStatus(); //Restore settings
-  sessionGet(readURL('ss/session_get.php')); //Get updated list...
+  //sessionGet(readURL('ss/session_get.php')); //Get updated list...
+    listFilesInApplicationDataFolder(loadDriveFiles);
   this.load();  //load the state data
   progress();
 }
