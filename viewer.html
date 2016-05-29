@@ -28,7 +28,7 @@ var sources;
 var fractal;
 var rztimeout;
 
-function load() {
+function init() {
   sources = JSON.parse(readURL('/includes_0.85.json', false));
   fractal = new Fractal('main');
   fractal.init({"antialias" : 3, "timers" : 150});
@@ -42,6 +42,17 @@ function load() {
   window.onresize = autoResize;
 }
 
+function load(src) {
+  fractal.load(src);
+}
+
+function julia(selected) {
+  if (!fractal) return;
+  fractal.julia = true;
+  fractal.selected = selected;
+  //fractal.position = fractal.savePos;
+}
+
 function autoResize(newval) {
   if (rztimeout) clearTimeout(rztimeout);
   rztimeout = setTimeout(function() {fractal.applyChanges();}, 150);
@@ -50,7 +61,7 @@ function autoResize(newval) {
 
 </head>
 
-<body onload="load()">
+<body onload="init()">
 
 <div id="main"></div>
 
