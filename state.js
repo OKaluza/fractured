@@ -30,7 +30,7 @@ function State(version) {
   this.formulae = 0;
   this.antialias = 2;
   this.debug = false;
-  this.renderer = WEBCL;  //Try WebCL first if avail
+  this.renderer = WEBGL;
   this.platform = this.device = 0;
   this.active = this.thumbnail = null;
 

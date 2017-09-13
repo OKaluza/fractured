@@ -1284,11 +1284,20 @@ function exportPaletteFile() {
 
 function exportImage(type, args) {
   //Export using blob, no way to set filename yet
-  window.URL = window.URL || window.webkitURL;
-  if (window.URL)
-    window.open(window.URL.createObjectURL(imageToBlob(type, args)));
-  else
-    window.open($("main-fractal-canvas").toDataURL(type, args));
+  try {
+    if (window.URL) {
+      var blob = imageToBlob(type, args);
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(blob);
+      }
+      else {
+        var url = encodeURI(window.URL.createObjectURL(blob));
+        window.open(url);
+      }
+    };
+  } catch(e) {
+    window.open(document.getElementById("main-fractal-canvas").toDataURL(type, args));
+  }
 }
 
 function exportFile(filename, content, data) {
@@ -1335,16 +1344,7 @@ function imageToBlob(type, args) {
   //Export using blob, no way to set filename yet
   var data = convertToBinary(imageBase64(type, args));
   var blob;
-  try {
-    //Preferred method
-    blob = new Blob([data], {type: type});
-  } catch(e) {
-    //Deprecated, chrome
-    var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder
-    var bb = new BlobBuilder;
-    bb.append(data.buffer);
-    blob = bb.getBlob(type);
-  }
+  blob = new Blob([data], {type: type});
   return blob;
 }
 
@@ -1827,8 +1827,8 @@ function handleFormMouseWheel(event) {
         exp = null;
 
       //Get mouse position relative to field
-      var coord = mousePageCoord(event);
-      elementRelativeCoord(field, coord)
+      var rect = field.getBoundingClientRect();
+      var coord = [event.clientX-rect.left, event.clientY-rect.top];
       //Calculate the digit position the mouse is above
       //...for each digit in field
       pos = field.value.length;

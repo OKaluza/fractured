@@ -2141,6 +2141,8 @@ Fractal.prototype.clearPreview = function() {
   if (this.preview.win) this.preview.win.close();
   //this.preview.move = null;
   this.preview = null;
+  //Ensure UI selections are restored (TODO: preview shouldn't change UI, but it does)
+  this.reselectAll();
 }
 
 Fractal.prototype.showPreview = function() {
@@ -2151,9 +2153,10 @@ Fractal.prototype.showPreview = function() {
     if (!this.state.disabled) {
       var pwin = window.open("", "view1", "resizable=1,width=500,height=500");
       pwin.document.open();
-      pwin.document.write("<html><head><link rel='stylesheet' type='text/css' href='styles.css'></head><body><script>window.onkeydown = function(e) {if (e.keyCode === 27) window.close();};</script><div id='previewer'></div></body></html>")
-      //pwin.document.write("<html><head><style>* {margin: 0; padding: 0;}</style></head><body><script>window.onkeydown = function(e) {if (e.keyCode === 27) window.close();};</script><div id='preview'></div></body></html>")
+      pwin.document.write("<html><head><link rel='stylesheet' type='text/css' href='styles.css'></head><body><div id='previewer'></div></body></html>")
+      //pwin.document.write("<html><head><style>* {margin: 0; padding: 0;}</style></head><body><div id='preview'></div></body></html>")
       pwin.document.close();
+      pwin.document.onkeydown = handleKey;
       this.preview = new Fractal(pwin.document.getElementById('previewer'));
       this.preview.win = pwin;
     } else
