@@ -29,7 +29,7 @@ var fractal;
 var rztimeout;
 
 function init() {
-  sources = JSON.parse(readURL('/includes_0.85.json', false));
+  sources = JSON.parse(readURL('/includes_VERSION.json', false));
   fractal = new Fractal('main');
   fractal.init({"antialias" : 3, "timers" : 150});
   //fractal.init({"antialias" : 3, "renderer" : WEBCL64, "platform" : 1, "timers" : 150});

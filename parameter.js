@@ -587,7 +587,7 @@ ParameterSet.prototype.createFields = function(category, name) {
     //Create the input fields
     this[key].input = null;
     var input;
-    var onchange = "setFormFieldStep(this); fractal.applyChanges();"
+    var onchange = "fractal.applyChanges();"
     var numtype = "text"; //"number";
     switch (this[key].typeid)
     {
@@ -602,6 +602,7 @@ ParameterSet.prototype.createFields = function(category, name) {
         break;
       case 0: //Integer
       case 1: //real
+        onchange = "setFormFieldStep(this); fractal.applyChanges();"
       case 8: //range
         input = document.createElement("input");
         input.id = category + '_' + key;
