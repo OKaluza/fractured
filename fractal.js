@@ -306,7 +306,6 @@ Fractal.prototype.setRenderer = function(mode) {
         //var antialias = gl.getContextAttributes().antialias; //Query and set built in aa lower??
         var options = {premultipliedAlpha: false, preserveDrawingBuffer: true};
         //Opera bug: if this is not set images are upside down
-        if (window.opera) options.premultipliedAlpha = true;  //Work around an opera bug
         this.webgl = new WebGL(this.canvas, options);
         this.gl = this.webgl.gl;
         this.webgl.init2dBuffers();
@@ -1714,9 +1713,6 @@ Fractal.prototype.drawCore = function(antialias, timer) {
 Fractal.prototype.saveState = function(replace) {
   //Note: should never do this when animating!
   if (!this.state.output) return;
-
-  //Opera doesn't support onbeforeunload, so save state now
-  if (window.opera && this.state.output) this.state.save();
 
   //Experimental: history state push on change
   var data = this.name + "\n" + this.toStringNoFormulae();

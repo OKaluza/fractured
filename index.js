@@ -293,7 +293,6 @@ function appInitState() {
   window.onmozfullscreenchange = toggleFullscreen
   window.onfullscreenchange = toggleFullscreen
   $('main').onwebkitfullscreenchange = toggleFullscreen;
-  if (window.opera) window.onunload = beforeUnload;
   window.onbeforeunload = beforeUnload;
   window.onpopstate = historyStateChange;
 
@@ -855,7 +854,6 @@ function deleteFractal(name) {
     fractalMenuDelete(name);
     fractalMenuSelect();
     delete fractals[name];
-    if (window.opera) state.save();  //Not saved on beforeunload
   } catch(e) {
     alert('Storage delete error! ' + e);
   }
@@ -988,7 +986,6 @@ function storeFractal() {
     //data wasn’t successfully saved due to quota exceed so throw an error
     alert('error! ' + e);
   }
-  if (window.opera) state.save();  //Not saved on beforeunload
 }
 
 /**
@@ -1017,7 +1014,6 @@ function savePalette() {
   source = colours.palette + "";
   palettes.push(new PaletteEntry(source, paletteThumbnail()));
   populatePalettes();
-  if (window.opera) state.save();
 }
 
 function populatePalettes(paldata) {
@@ -1048,13 +1044,11 @@ function loadPalette(idx) {
     colours.read(palettes[idx].data);
   else
     colours.read("Background=rgba(0,0,0,0)\n0.0=rgba(0,0,0,1)\n0.5=rgba(255,255,255,1)\n1.0=rgba(0,0,0,1)\n");
-  if (window.opera) state.save();
 }
 
 function deletePalette(idx) {
   palettes.splice(idx,1);
   populatePalettes();
-  if (window.opera) state.save();
 }
 
 function packPalette() {
