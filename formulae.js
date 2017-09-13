@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////
 //Formula list management - merge with Formula class in Fractal?
-var formula_list = null;
+//var formula_list = null;
 var selected = {};
 
 //FormulaEntry - container
@@ -67,13 +67,13 @@ FormulaEntry.prototype.equals = function(source2) {
 function importFormulaList(data) {
   formula_list = {};
   //Clear existing
-  $("core_formula").options.length = 0;
-  $("fractal_formula").options.length = 0;
-  $("pre_transform_formula").options.length = 0;
-  $("post_transform_formula").options.length = 0;
-  $("outside_colour_formula").options.length = 0;
-  $("inside_colour_formula").options.length = 0;
-  $("filter_formula").options.length = 0;
+  document.getElementById("core_formula").options.length = 0;
+  document.getElementById("fractal_formula").options.length = 0;
+  document.getElementById("pre_transform_formula").options.length = 0;
+  document.getElementById("post_transform_formula").options.length = 0;
+  document.getElementById("outside_colour_formula").options.length = 0;
+  document.getElementById("inside_colour_formula").options.length = 0;
+  document.getElementById("filter_formula").options.length = 0;
 
   addToSelect("pre_transform", "none", "");
   addToSelect("post_transform", "none", "");
@@ -108,17 +108,17 @@ function importFormulaList(data) {
   }
 
   //CONVERSION... moved from sources to core formula
-  //if ($("core_formula").options.length == 0)
+  //if (document.getElementById("core_formula").options.length == 0)
   //  var f = new FormulaEntry("core", "Default", sources["include/fractal.template"], "default");
 
   //Set selected defaults
-  $('core_formula').value = selected['core'] || $("core_formula").options[0].value;
-  $('fractal_formula').value = selected['fractal'] || $("fractal_formula").options[0].value;
-  $('pre_transform_formula').value = selected['pre_transform'] || "none";
-  $('post_transform_formula').value = selected['post_transform'] || "none";
-  $('outside_colour_formula').value = selected['outside_colour'] || $("outside_colour_formula").options[1].value;
-  $('inside_colour_formula').value = selected['inside_colour'] || "none";
-  $('filter_formula').value = selected['filter'] || "none";
+  document.getElementById('core_formula').value = selected['core'] || document.getElementById("core_formula").options[0].value;
+  document.getElementById('fractal_formula').value = selected['fractal'] || document.getElementById("fractal_formula").options[0].value;
+  document.getElementById('pre_transform_formula').value = selected['pre_transform'] || "none";
+  document.getElementById('post_transform_formula').value = selected['post_transform'] || "none";
+  document.getElementById('outside_colour_formula').value = selected['outside_colour'] || document.getElementById("outside_colour_formula").options[1].value;
+  document.getElementById('inside_colour_formula').value = selected['inside_colour'] || "none";
+  document.getElementById('filter_formula').value = selected['filter'] || "none";
 }
 
 function addSelectEntry(entry) {
@@ -135,7 +135,7 @@ function addSelectEntry(entry) {
 }
 
 function addToSelect(type, name, label) {
-  select = $(type + "_formula");
+  select = document.getElementById(type + "_formula");
   if (!select) return null;
   select.options[select.length] = new Option(label, name);
   return select.options[select.length];
@@ -146,7 +146,7 @@ function saveSelections() {
   selected = {};
   for (s in selects) {
     var selname = selects[s] + "_formula";
-    var select = $(selname);
+    var select = document.getElementById(selname);
     //Get selected
     if (select.selectedIndex < 0) select.selectedIndex = 0;
     selected[selects[s]] = select.options[select.selectedIndex].value;
@@ -206,7 +206,7 @@ function FormulaSelection(category) {
   this.defaultparams = {};
   this.lineoffsets = {};
 
-  this.sel = $(this.category + '_formula');
+  this.sel = document.getElementById(this.category + '_formula');
 
   if (!this.sel) {
     //Create hidden select to hold data
@@ -249,7 +249,7 @@ FormulaSelection.prototype.select = function(name) {
   //debug("Selecting " + name + " for " + this.category + "_params");
 
   //Delete any existing dynamic form fields
-  var element = $(this.category + "_params");
+  var element = document.getElementById(this.category + "_params");
   //if (!element) alert("Element is null! " + this.category + " - " + name);
   if (element) removeChildren(element);
 

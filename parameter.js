@@ -461,7 +461,7 @@ ParameterSet.prototype.toCode = function(fractal) {
 
 ParameterSet.prototype.getField = function(id) {
   //Check if a field is created by this parameter set
-  var field = $(id);
+  var field = document.getElementById(id);
   for (key in this)
   {
     if (typeof(this[key]) == 'object') {
@@ -527,22 +527,22 @@ ParameterSet.prototype.createFields = function(category, name) {
   //Now processed whenever showPanel called and only displays fields in active panel
   switch (category) {
     case "core":
-      if (selectedTab != $('tab_params')) return;
+      if (selectedTab != document.getElementById('tab_params')) return;
       break;
     case "fractal":
     case "pre_transform":
     case "post_transform":
-      if (selectedTab != $('tab_formula')) return;
+      if (selectedTab != document.getElementById('tab_formula')) return;
       break;
     case "inside_colour":
     case "outside_colour":
     case "filter":
-      if (selectedTab != $('tab_colour')) return;
+      if (selectedTab != document.getElementById('tab_colour')) return;
       break;
   }
   /* Hack: detect Android and disable CodeMirror on fields */
   var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
-  var field_area = $(category + "_params");
+  var field_area = document.getElementById(category + "_params");
   var parambox = document.createElement("div");
   parambox.className = "parambox";
   var label = "";

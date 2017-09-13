@@ -100,26 +100,26 @@ State.prototype.loadStatus = function() {
 
 State.prototype.debugOn = function() {
   this.debug = true;
-  $S('debugmenu').display = 'block';
-  $S('recordmenu').display = 'block';
+  document.getElementById('debugmenu').style.display = 'block';
+  document.getElementById('recordmenu').style.display = 'block';
 }
 
 State.prototype.debugOff = function() {
   this.debug = false;
   this.saveStatus();
-  $S('debugmenu').display = 'none';
-  $S('recordmenu').display = 'none';
+  document.getElementById('debugmenu').style.display = 'none';
+  document.getElementById('recordmenu').style.display = 'none';
 }
 
 //Draw mode off disables all local rendering
 State.prototype.drawMode = function(noset) {
   if (!noset) this.disabled = !this.disabled;
-  $('drawmodebtn').innerHTML = "Draw Mode" + (this.disabled ? "" : "&#10003;");
+  document.getElementById('drawmodebtn').innerHTML = "Draw Mode" + (this.disabled ? "" : "&#10003;");
 }
 //Control mode controls remote server rendering
 State.prototype.controlMode = function(noset) {
   if (!noset) this.control = !this.control;
-  $('ctrlmodebtn').innerHTML = "Control Mode" + (this.control ? "&#10003;" : "");
+  document.getElementById('ctrlmodebtn').innerHTML = "Control Mode" + (this.control ? "&#10003;" : "");
 }
 
 State.prototype.resetFormulae = function() {
@@ -203,7 +203,7 @@ State.prototype.save = function() {
     if (fractal.thumb) {
       this.active = fractal.toString();
       this.thumbnail = fractal.thumb;
-      this.fractal = $('name').value;
+      this.fractal = document.getElementById('name').value;
       this.saveStatus();
     }
   } catch(e) {
@@ -241,7 +241,7 @@ State.prototype.load = function(callback) {
 
       if (that.debug) {
         //Entries for all source files in debug edit menu
-        var menu = $('debugedit');
+        var menu = document.getElementById('debugedit');
         removeChildren(menu);
         for (key in sources) {
           var onclick = "openEditor('" + key + "')";
@@ -266,7 +266,7 @@ State.prototype.load = function(callback) {
       var isWebKit = /AppleWebKit/.test(navigator.userAgent);
       var size = JSON.stringify(localStorage).length;
       var indic = size / (isWebKit ? 2500000 : 5000000);
-      $S('indicator').width = (350 * indic) + 'px';
+      document.getElementById('indicator').style.width = (350 * indic) + 'px';
 
       if (callback) callback();
     }
@@ -313,11 +313,11 @@ State.prototype.lastFractal = function() {
   //Load current fractal (as default)
   if (this.active) {
     fractal.load(this.active, false, true); //Don't display immediately
-    $('name').value = this.fractal;
+    document.getElementById('name').value = this.fractal;
     if (this.thumbnail)
-      $('lastimage').src = this.thumbnail;
+      document.getElementById('lastimage').src = this.thumbnail;
     else
-      $S('lastimage').display = 'none';
+      document.getElementById('lastimage').style.display = 'none';
     return true;
   } else {
     //Load & draw default palettes

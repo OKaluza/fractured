@@ -9,8 +9,8 @@ function recordStart() {
   if (fractal.width % 2 == 1) fractal.width -= 1;
   if (fractal.height % 2 == 1) fractal.height -= 1;
   fractal.ondraw = outputFrame;
-  $('recordOn').className = 'selected_item';
-  $('recordOff').className = '';
+  document.getElementById('recordOn').className = 'selected_item';
+  document.getElementById('recordOff').className = '';
 }
 
 function recordStop() {
@@ -27,8 +27,8 @@ function recordStop() {
     ajaxReadFile('http://localhost:8080/end', frameDone);
     fractal.ondraw = null;
   }
-  $('recordOn').className = '';
-  $('recordOff').className = 'selected_item';
+  document.getElementById('recordOn').className = '';
+  document.getElementById('recordOff').className = 'selected_item';
 }
 
 function outputFrame() {
@@ -39,19 +39,19 @@ function outputFrame() {
     frameDone();
     return;
   }
-  var canvas = $("fractal-canvas");
+  var canvas = document.getElementById("fractal-canvas");
   var data = imageToBlob("image/jpeg", 0.95);
   var fd = new FormData();
   fd.append("image", data);
   try {
     var http = new XMLHttpRequest();
-    http.open("POST", "http://localhost:8080/frame?name=" + labelToName($('name').value), false); 
+    http.open("POST", "http://localhost:8080/frame?name=" + labelToName(document.getElementById('name').value), false); 
     http.send(fd);
   } catch (e) {
     debug(e.message);
   }
   frameDone();
-  //ajaxPost("http://localhost:8080/frame?name=" + labelToName($('name').value) + "&frame=" + state.recording, fd, frameDone);
+  //ajaxPost("http://localhost:8080/frame?name=" + labelToName(document.getElementById('name').value) + "&frame=" + state.recording, fd, frameDone);
 }
 
 function frameDone(response) {
@@ -123,21 +123,21 @@ function runScript(filename) {
   }
   state.output = false;
   state.paused = false;
-  $S('script_controls').display = 'block';
-  $("resume").disabled = true;
-  $("pause").disabled = false;
+  document.getElementById('script_controls').style.display = 'block';
+  document.getElementById("resume").disabled = true;
+  document.getElementById("pause").disabled = false;
 
   function next() {
     script.step();
     //Update & redraw (without timers or incremental drawing)
-    $("steps").innerHTML = script.count + " / " + script.steps;
+    document.getElementById("steps").innerHTML = script.count + " / " + script.steps;
     fractal.applyChanges(null, true);
     if (state.recording) window.outputFrame(); 
     if (state.paused) {
       //Save in state until resumed
       state.paused = script;
-      $("resume").disabled = false;
-      $("pause").disabled = true;
+      document.getElementById("resume").disabled = false;
+      document.getElementById("pause").disabled = true;
       return;
     }
     //Next step...
@@ -150,7 +150,7 @@ function runScript(filename) {
     } else {
       state.output = true;
       timer.print("Script");
-      $S('script_controls').display = 'none';
+      document.getElementById('script_controls').style.display = 'none';
     }
   }
 

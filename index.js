@@ -63,8 +63,8 @@ function loadDriveFiles(list) {
     //Sort by title descending
     list.sort(function(a, b) { return a.title > b.title ? -1 : 1; });
     //Clear & repopulate lists
-    var menu = $('sessions');
-    var menu2 = $('formulae-private');
+    var menu = document.getElementById('sessions');
+    var menu2 = document.getElementById('formulae-private');
     removeChildren(menu);
     removeChildren(menu2);
     for (var i=0; i<list.length; i++) {
@@ -100,8 +100,8 @@ function loadDriveSession(url, id) {
 function loadDriveFormulaSet(url, id, item) {
   //progress("Downloading formulae from Google Drive...");
   if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
-  deselectAllMenuItems($('formulae-private'), true);
-  deselectAllMenuItems($('formulae-public'), true);
+  deselectAllMenuItems(document.getElementById('formulae-private'), true);
+  deselectAllMenuItems(document.getElementById('formulae-public'), true);
   state.formulae = id;
   selectMenuItem(item, "deleteSelectedFormulae();");
   state.saveStatus();
@@ -223,15 +223,15 @@ function menu(el, level) {
     //Action executed, hide menus
     if (activeMenu) activeMenu.display = 'none';
     if (activeSubMenu) activeSubMenu.display = 'none';
-    $S('nav').display = '';
+    document.getElementById('nav').style.display = '';
   }
 }
 
 function mainmenu() {
-  if ($S('nav').display != 'block') {
-    $S('nav').display = 'block';
+  if (document.getElementById('nav').style.display != 'block') {
+    document.getElementById('nav').style.display = 'block';
   } else {
-    $S('nav').display = 'none';
+    document.getElementById('nav').style.display = 'none';
     menu();
   }
 }
@@ -260,7 +260,7 @@ function appInit() {
   loadAction = parseQuery(query);
 
   //Colour editing and palette management
-  colours = new GradientEditor($('palette'), function() {if (fractal) fractal.applyChanges();}, true);
+  colours = new GradientEditor(document.getElementById('palette'), function() {if (fractal) fractal.applyChanges();}, true);
 
   //Fractal & canvas
   fractal = new Fractal('main', colours, true, true);
@@ -299,7 +299,7 @@ function appInitState() {
   //Form mouse wheel
   var forms = ["param_inputs", "fractal_inputs", "colour_inputs"];
   for (var f in forms) {
-    var element = $(forms[f]);
+    var element = document.getElementById(forms[f]);
     element.addEventListener("onwheel" in document ? "wheel" : "mousewheel", handleFormMouseWheel, false);
     element.onchange = handleFormChange;
     element.onkeyup = handleFormKeyUp;
@@ -340,8 +340,8 @@ function appInitState() {
   if (loaded) showCard("previous_fractal");
   showCard("local_storage");
   showCard("render_mode");
-  //if (!$("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
-  if (!$("webgl").disabled) showCard("webgl_detected"); else if ($("webcl").disabled) showCard("no_webgl");
+  //if (!document.getElementById("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
+  if (!document.getElementById("webgl").disabled) showCard("webgl_detected"); else if (document.getElementById("webcl").disabled) showCard("no_webgl");
   showCard("mouse_reference");
   showCard("user_guide");
   showCard("contact_form");
@@ -373,7 +373,7 @@ function getQuery() {
       state.baseurl = urlq.substr(0, pos);
     }
   }
-  if (!query && location.hash && !$(location.hash)) {
+  if (!query && location.hash && !document.getElementById(location.hash)) {
     //Convert #id to query if not a section tag
     query = location.hash.substr(1);
   }
@@ -493,9 +493,9 @@ function handleKey(event) {
 
 function sendEmail() {
   var formdata = new FormData();
-  formdata.append("email", $('email').value); 
+  formdata.append("email", document.getElementById('email').value); 
   formdata.append("subject", "[http://fract.ured.me contact form]");
-  formdata.append("message", $('message_body').value);
+  formdata.append("message", document.getElementById('message_body').value);
   progress("Sending email...");
   ajaxPost("ss/email.php", formdata, progressDone, updateProgress);
 }
@@ -506,7 +506,7 @@ function loadHelp() {
     tempDiv.innerHTML = data;
     var divs = tempDiv.getElementsByTagName('div')
     if (divs.length > 0)
-      $('help').innerHTML = divs[0].innerHTML;
+      document.getElementById('help').innerHTML = divs[0].innerHTML;
     } );
 }
 
@@ -526,52 +526,52 @@ function showGallery(id) {
     state.offset = 0;
   }
   if (state.gallery) {
-    $(state.gallery).className = '';
-    $S('about' + state.gallery).display = 'none';
+    document.getElementById(state.gallery).className = '';
+    document.getElementById('about' + state.gallery).style.display = 'none';
   }
-  $(id).className = 'selected';
-  $S('about' + id).display = 'block';
+  document.getElementById(id).className = 'selected';
+  document.getElementById('about' + id).style.display = 'block';
   state.gallery = id;
   state.mode = 0;
   loadGallery();
 }
 
 function loadGallery(offset) {
-  $S('gallery').display = "block";
+  document.getElementById('gallery').style.display = "block";
 
   //Disable scrollbars instead of hiding canvas (some implementations don't like hidden canvas)
   document.documentElement.style.overflow = "hidden";
-  //$S('main-fractal-canvas').display = "none";
+  //document.getElementById('main-fractal-canvas').style.display = "none";
 
   setAll('none', 'render');  //hide render mode menu options
   if (offset == undefined) offset = state.offset;
-  var w = $('gallery').clientWidth;
-  var h = $('gallery').clientHeight;
-  //$S('gallery').width = w + "px";
-  //$S('gallery').height = h + "px";
+  var w = document.getElementById('gallery').clientWidth;
+  var h = document.getElementById('gallery').clientHeight;
+  //document.getElementById('gallery').style.width = w + "px";
+  //document.getElementById('gallery').style.height = h + "px";
   if (state.offline) return;  //Skip load
 
   type = state.gallery.substr(1);
-  //$('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
+  //document.getElementById('gallery-display').innerHTML = readURL('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h);
   ajaxReadFile('ss/images.php?type=' + type + '&offset=' + offset + '&width=' + w + "&height=" + h, fillGallery, false);
   state.offset = offset;
 }
 
 function fillGallery(html) {
-  $('gallery-display').innerHTML = html;
+  document.getElementById('gallery-display').innerHTML = html;
 }
 
 function hideGallery() {
   console.log("STATE LOGGED IN : " + state.loggedin); 
   //Hide gallery, show fractal
-  $S('gallery').display = "none";
+  document.getElementById('gallery').style.display = "none";
   setAll('block', 'render');  //Unhide render mode menu options
   setAll(state.loggedin ? 'block' : 'none', 'loggedin');  //show/hide logged in menu options
   state.mode = 1;
   //Re-enable scrollbars (unless fit-to-window)
   if (!document["inputs"].elements["autosize"].checked)
     document.documentElement.style.overflow = "auto";
-  //$S('main-fractal-canvas').display = "block";
+  //document.getElementById('main-fractal-canvas').style.display = "block";
 }
 
 function showCard(id) {
@@ -579,7 +579,7 @@ function showCard(id) {
     toggleCard(id, true);
   else {
     //Populate manager card
-    var manage = $("manage_info");
+    var manage = document.getElementById("manage_info");
     manage.style.display = 'block';
     var input = document.createElement("input");
     input.id = key + '_enable';
@@ -596,7 +596,7 @@ function showCard(id) {
 function toggleCard(el, nosave) { 
   var card;
   if (typeof el == 'string')
-    card = $(el);
+    card = document.getElementById(el);
   else
     card = el.parentNode;
   if (!card) {alert("Element " + el + " not found "); return;}
@@ -620,8 +620,8 @@ function sessionGet(data) {
 
         if (googleSignIn) {
       //      state.offline = false;
-            var usermenu = $('session_user_menu');
-            var loginmenu = $('session_login_menu');
+            var usermenu = document.getElementById('session_user_menu');
+            var loginmenu = document.getElementById('session_login_menu');
             //Parse session data, if we get this far we have an active logged in user
             state.loggedin = true;
       //      var session = JSON.parse(data);
@@ -643,8 +643,8 @@ console.log("SESSIONGET: DECPRECATED!");
 return;
   if (!state) {alert("NO STATE"); return;}
   state.offline = false;
-  var usermenu = $('session_user_menu');
-  var loginmenu = $('session_login_menu');
+  var usermenu = document.getElementById('session_user_menu');
+  var loginmenu = document.getElementById('session_login_menu');
   //Check for invalid or empty response
   if (!data || data.charAt(0) != "[") {
     //Responds with "!" if no session, so check for as valid response
@@ -665,7 +665,7 @@ return;
     //Load list of saved states/sessions
     try {
       //Clear & repopulate list
-      var menu = $('sessions');
+      var menu = document.getElementById('sessions');
       removeChildren(menu);
       var list = JSON.parse(data);
       for (var i=0; i<list.length; i++) {
@@ -722,10 +722,10 @@ function setAntiAlias(val) {
 
 function setAntiAliasMenu() {
   if (!state.antialias) state.antialias = 1;
-  $('aa1').className = state.antialias == 1 ? 'selected_item' : '';
-  $('aa2').className = state.antialias == 2 ? 'selected_item' : '';
-  $('aa3').className = state.antialias == 3 ? 'selected_item' : '';
-  $('aa4').className = state.antialias > 3 ? 'selected_item' : '';
+  document.getElementById('aa1').className = state.antialias == 1 ? 'selected_item' : '';
+  document.getElementById('aa2').className = state.antialias == 2 ? 'selected_item' : '';
+  document.getElementById('aa3').className = state.antialias == 3 ? 'selected_item' : '';
+  document.getElementById('aa4').className = state.antialias > 3 ? 'selected_item' : '';
 }
 
 function setDelayTimer() {
@@ -815,7 +815,7 @@ function fractalMenuThumb(name) {
 function fractalMenuUpdate(name) {
   //Update thumbnail
   var img = fractalMenuThumb(name);
-  var item = $(fractals[name].id);
+  var item = document.getElementById(fractals[name].id);
   if (img && item.childNodes.length > 1) {
     item.replaceChild(img, item.childNodes[1]);
   }
@@ -823,7 +823,7 @@ function fractalMenuUpdate(name) {
 
 var next_id = 0;
 function fractalMenuAdd(name) {
-  var menu = $('fractals');
+  var menu = document.getElementById('fractals');
   var source = fractals[name].source;
   var img = fractalMenuThumb(name);
   var item = addMenuItem(menu, name.substr(0, 18), "selectedFractal('" + name + "')", img, true)
@@ -835,15 +835,15 @@ function fractalMenuAdd(name) {
 
 function fractalMenuSelect(name) {
   if (state.fractal && fractals[state.fractal])
-    deselectMenuItem($(fractals[state.fractal].id), true);
+    deselectMenuItem(document.getElementById(fractals[state.fractal].id), true);
   state.fractal = name;
   state.saveStatus();
   if (name)
-    selectMenuItem($(fractals[name].id), "deleteFractal('" + name + "');");
+    selectMenuItem(document.getElementById(fractals[name].id), "deleteFractal('" + name + "');");
 }
 
 function fractalMenuDelete(name) {
-  $('fractals').removeChild($(fractals[name].id).parentNode);
+  document.getElementById('fractals').removeChild(document.getElementById(fractals[name].id).parentNode);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -908,10 +908,10 @@ function regenerateThumbs() {
   performTask(count, step,
     function (f) {
       fractal.load(f.source, false, true);
-      $("width").value = $("height").value = 32;
+      document.getElementById("width").value = document.getElementById("height").value = 32;
       document["inputs"].elements["autosize"].checked = false;
       fractal.applyChanges(4, true);
-      var result = $('main-fractal-canvas').toDataURL("image/jpeg", 0.75)
+      var result = document.getElementById('main-fractal-canvas').toDataURL("image/jpeg", 0.75)
       f.thumbnail = result;
     });
 }
@@ -919,7 +919,7 @@ function regenerateThumbs() {
 function populateFractals() {
   //Clear & repopulate list
   next_id = 0;
-  var menu = $('fractals');
+  var menu = document.getElementById('fractals');
   removeChildren(menu);
   for (var name in fractals)
     fractalMenuAdd(name);
@@ -1019,7 +1019,7 @@ function savePalette() {
 function populatePalettes(paldata) {
   //Clear & repopulate list
   if (paldata) palettes = paldata;
-  var menu = $('palettes');
+  var menu = document.getElementById('palettes');
   removeChildren(menu);
 
   for (var i=0; i<palettes.length; i++) {
@@ -1058,7 +1058,7 @@ function packPalette() {
 
 function populateScripts() {
   //Clear & repopulate list
-  var menu = $('scripts');
+  var menu = document.getElementById('scripts');
   removeChildren(menu);
   for (var key in localStorage) {
     if (key.indexOf("scripts/") != 0) continue;
@@ -1085,7 +1085,7 @@ function thumbnail(type, size, args) {
   if (type == undefined) type = "jpeg";
   if (args == undefined && type == "jpeg") args = 75;
   if (size == undefined) size = 32; //40;
-  var canvas = $("main-fractal-canvas");
+  var canvas = document.getElementById("main-fractal-canvas");
 
   if (fractal.renderer != SERVER) {
     //Thumb generated by re-render at thumbnail size
@@ -1102,7 +1102,7 @@ function thumbnail(type, size, args) {
   } else {
     //Thumb generated by browser in canvas, badly aliased
     //Always use this method when rendering on server
-    var thumb = $("thumb");
+    var thumb = document.getElementById("thumb");
     thumb.style.visibility='visible';
     var context = thumb.getContext('2d');
     thumb.width = thumb.height = size;
@@ -1122,7 +1122,7 @@ function thumbnailQuick(type, width, height, args) {
   //Thumbnail image gen, quick method
   if (type == undefined) type = "jpeg";
   if (args == undefined && type == "jpeg") args = 75;
-  var canvas = $("main-fractal-canvas");
+  var canvas = document.getElementById("main-fractal-canvas");
 
   if (canvas.clientWidth < 1 && canvas.clientHeight < 1)
     return "";
@@ -1131,7 +1131,7 @@ function thumbnailQuick(type, width, height, args) {
   if (!height) height = canvas.clientHeight * (width / canvas.clientWidth);
 
   // Thumb generated by browser in canvas, badly aliased?
-  var thumb = document.createElement("canvas"); //$("thumb");
+  var thumb = document.createElement("canvas"); //document.getElementById("thumb");
   thumb.width = width;
   thumb.height = height;
   thumb.style.visibility = 'visible';
@@ -1201,7 +1201,7 @@ function uploadFractalFile(pub) {
 
 function fractalUploaded(url) {
   if (url.indexOf("http") < 0) {alert(url); progress(); return;}
-  //$S("progressbar").width = "300px";
+  //document.getElementById("progressbar").style.width = "300px";
   progressDone(url, url);
 }
 
@@ -1217,7 +1217,7 @@ function packURL(data) {
   var linkText = document.createTextNode("here it is");
   link.appendChild(linkText);
   popup("Copy this link:<br><br>");
-  $("popupmessage").appendChild(link);
+  document.getElementById("popupmessage").appendChild(link);
 }
 
 function uploadFormulaSet(shared) {
@@ -1307,8 +1307,8 @@ function exportFile(filename, content, data) {
   } else {
 
     //Export using server side script to get proper filename
-    $("export-filename").setAttribute("value", filename);
-    $("export-content").setAttribute("value", content);
+    document.getElementById("export-filename").setAttribute("value", filename);
+    document.getElementById("export-content").setAttribute("value", content);
 
     var hiddenField = document.createElement("input");
     hiddenField.setAttribute("type", "hidden");
@@ -1323,7 +1323,7 @@ function exportFile(filename, content, data) {
 }
 
 function imageBase64(type, args) {
-  var canvas = $("main-fractal-canvas");
+  var canvas = document.getElementById("main-fractal-canvas");
   var data = canvas.toDataURL(type, args);
   var BASE64_MARKER = ';base64,';
   var base64Index = data.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
@@ -1349,7 +1349,7 @@ function imageToBlob(type, args) {
 }
 
 function uploadImgur() {
-  var canvas = $("main-fractal-canvas");
+  var canvas = document.getElementById("main-fractal-canvas");
   var data = imageToBlob("image/jpeg", 0.95);
  
   var fd = new FormData();
@@ -1429,8 +1429,8 @@ function loadFormulaeList(data) {
   //Load list of saved formula sets from server
   try {
     //Clear & repopulate list
-    var menu1 = $('formulae-public');
-    //var menu2 = $('formulae-private');
+    var menu1 = document.getElementById('formulae-public');
+    //var menu2 = document.getElementById('formulae-private');
     if (state.loggedin == false)
       ondelete = null;
     removeChildren(menu1);
@@ -1457,8 +1457,8 @@ function loadFormulaeList(data) {
 
 function loadFormulaSet(id, item) {
   if (!confirm('Loading new formula set. This will overwrite currently loaded formulae!')) return;
-  deselectAllMenuItems($('formulae-public'), false);
-  deselectAllMenuItems($('formulae-private'), true);
+  deselectAllMenuItems(document.getElementById('formulae-public'), false);
+  deselectAllMenuItems(document.getElementById('formulae-private'), true);
   state.formulae = id;
   selectMenuItem(item);
   state.saveStatus();
@@ -1514,16 +1514,16 @@ var panels = ['panel_params', 'panel_formula', 'panel_colour', 'panel_info', 'pa
 var selectedTab = null;
 function showPanel(name)
 {
-  var tab = $('tab_' + name);
+  var tab = document.getElementById('tab_' + name);
   var panel = 'panel_' + name;
-  if (!selectedTab) selectedTab = $('tab_params');
+  if (!selectedTab) selectedTab = document.getElementById('tab_params');
 
   selectedTab.className = 'unselected';
   selectedTab = tab;
   selectedTab.className = 'selected';
 
   for(i = 0; i < panels.length; i++)
-    $(panels[i]).style.display = (panel == panels[i]) ? 'block':'none';
+    document.getElementById(panels[i]).style.display = (panel == panels[i]) ? 'block':'none';
 
   //Update edit fields
   if (panel == "panel_params") {
@@ -1543,29 +1543,29 @@ function showPanel(name)
 }
 
 function toggleParams(on) {
-  var sidebar = $("left");
-  var main = $("main");
+  var sidebar = document.getElementById("left");
+  var main = document.getElementById("main");
   if (on) {
     sidebar.style.display = 'block';
     if (window.innerWidth < 500)
       ;//main.style.display = 'none';
     else
       main.style.left = sidebar.clientWidth + "px";
-    $S('hidetools').display = 'block'
-    $S('showtools').display = 'none'
+    document.getElementById('hidetools').style.display = 'block'
+    document.getElementById('showtools').style.display = 'none'
   } else {
     //main.style.display = 'block';
     sidebar.style.display = 'none';
     main.style.left = '0px';
-    $S('hidetools').display = 'none'
-    $S('showtools').display = 'block'
+    document.getElementById('hidetools').style.display = 'none'
+    document.getElementById('showtools').style.display = 'block'
   }
   autoResize(document["inputs"].elements["autosize"].checked);
 }
 
 function toggleFullscreen(newval) {
-  var main = $("main");
-  var showparams = ($S("left").display != 'none');
+  var main = document.getElementById("main");
+  var showparams = (document.getElementById("left").style.display != 'none');
   if (window.requestFullScreen) {
     //Use new html5 full screen API
     if (typeof(newval) == 'boolean' && newval == true) {
@@ -1579,7 +1579,7 @@ function toggleFullscreen(newval) {
       if (!document.fullScreenEnabled) {
         main.style.overflow = "visible";
         main.style.top = '27px';
-        main.style.left = showparams ? $("left").clientWidth + 'px' : '1px';
+        main.style.left = showparams ? document.getElementById("left").clientWidth + 'px' : '1px';
       }
     }
   }
@@ -1597,9 +1597,9 @@ function popup(text) {
   var popmsg = document.createElement('div');
   popmsg.appendChild(popclose.ownerDocument.createTextNode(text));
   popdiv.appendChild(popmsg);
-  $('main').appendChild(popdiv);
+  document.getElementById('main').appendChild(popdiv);
   */
-  var el = $('popup');
+  var el = document.getElementById('popup');
   if (!el) {
     var popdiv = document.createElement('div');
     popdiv.className = 'popup';
@@ -1615,11 +1615,11 @@ function popup(text) {
   } else {
     if (text) {
       if (el.style.display == 'block') {
-        $('popupmessage').innerHTML += "<hr>" + text;
+        document.getElementById('popupmessage').innerHTML += "<hr>" + text;
       } else {
-        $('popupmessage').innerHTML = text;
+        document.getElementById('popupmessage').innerHTML = text;
       }
-      el.style.marginTop = "-" + Math.floor($('popup').clientHeight / 2) + "px";
+      el.style.marginTop = "-" + Math.floor(document.getElementById('popup').clientHeight / 2) + "px";
       el.style.display = 'block';
     } else
       el.style.display = 'none';
@@ -1627,21 +1627,21 @@ function popup(text) {
 }
 
 function progress(text) {
-  var el = $('progress');
+  var el = document.getElementById('progress');
   if (text == undefined) {
     el.style.display = 'none';
-    //setTimeout("$('progress').style.display = 'none';", 150);
+    //setTimeout("document.getElementById('progress').style.display = 'none';", 150);
   } else {
-    $('progressmessage').innerHTML = text;
-    $('progressstatus').innerHTML = "";
-    $S('progressbar').width = 0;
+    document.getElementById('progressmessage').innerHTML = text;
+    document.getElementById('progressstatus').innerHTML = "";
+    document.getElementById('progressbar').style.width = 0;
     el.style.display = 'block';
   }
 }
 
 function progressDone(msg, url) {
-  $("progressstatus").innerHTML = "";
-  var pmsg = $("progressmessage")
+  document.getElementById("progressstatus").innerHTML = "";
+  var pmsg = document.getElementById("progressmessage")
   pmsg.innerHTML = "";
   if (url) {
     var link = document.createElement("a");
@@ -1652,12 +1652,12 @@ function progressDone(msg, url) {
   } else {
     pmsg.appendChild(pmsg.ownerDocument.createTextNode(msg));
   }
-  $S("progressbar").width = "0px";
+  document.getElementById("progressbar").style.width = "0px";
 }
 
 function login(id) {
   if (id) {
-    var id_field = $("openid");
+    var id_field = document.getElementById("openid");
     id_field.setAttribute("value", id);
   }
   var form = document.forms["login_form"];
@@ -1674,8 +1674,8 @@ function logout() {
 /////////////////////////////////////////////////////////////////////////
 //Event handling
 function doResize() {
-  var sidebar = $("left");
-  var main = $("main");
+  var sidebar = document.getElementById("left");
+  var main = document.getElementById("main");
   if (window.innerWidth >= 500) {
     //main.style.display = 'block';
     if (sidebar.style.display == 'block')
@@ -1744,8 +1744,8 @@ function handleFormEnter(event) {
       //Detect two-component (complex number) field
       if (/_[01]$/i.exec(event.target.id)) {
         target = event.target.id.slice(0, event.target.id.length-1);
-        $(target + "0").value = fractal.canvas.mouse.coord.re;
-        $(target + "1").value = fractal.canvas.mouse.coord.im;
+        document.getElementById(target + "0").value = fractal.canvas.mouse.coord.re;
+        document.getElementById(target + "1").value = fractal.canvas.mouse.coord.im;
       }
     }
   }
@@ -1834,7 +1834,7 @@ function handleFormMouseWheel(event) {
       pos = field.value.length;
       for (var i=1; i<=field.value.length; i++) {
         var txt=field.value.substr(0,i);
-        var test = $("fonttest");
+        var test = document.getElementById("fonttest");
         test.innerHTML = txt;
         var width = (test.clientWidth + 1);
         var digit = field.value.substr(i-1, 1);
@@ -1863,7 +1863,7 @@ function handleFormMouseWheel(event) {
       if (exp) field.value = Math.floor(field.value) + "e" + exp; //Math.pow(10, exp);
     } 
 
-    field.timer = setTimeout('fractal.applyChanges(); $S("' + field.id + '").cursor = "text";', 150);
+    field.timer = setTimeout('fractal.applyChanges(); document.getElementById("' + field.id + '").style.cursor = "text";', 150);
     //field.timer = setTimeout('fractal.applyChanges();', 150);
     if (event.preventDefault) event.preventDefault();  // Firefox
     return false;
@@ -1935,7 +1935,7 @@ function importFile(source, filename, date) {
           fractal.load(source, true);
         //if (/version=\(/g.exec(source))
       }
-      //$("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
+      //document.getElementById("namelabel").value = filename.substr(0, filename.lastIndexOf('.')) || filename;
     } else if (source.indexOf('Background=') == 0) {
       //Palette
       debug("Import: PALETTE");
@@ -1960,13 +1960,13 @@ function debug(str) {
 
 function print(str) {
   if (!state || !state.output) return;
-  var console = $('console');
+  var console = document.getElementById('console');
   console.innerHTML += "<div class='message'>" + str + "</div>";
-  $('panel_log').scrollTop = console.clientHeight - $('panel_log').clientHeight + $('panel_log').offsetHeight;
+  document.getElementById('panel_log').scrollTop = console.clientHeight - document.getElementById('panel_log').clientHeight + document.getElementById('panel_log').offsetHeight;
 }
 
 function consoleClear() {
-  var console = $('console');
+  var console = document.getElementById('console');
   console.innerHTML = '';
 }
 

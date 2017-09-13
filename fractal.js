@@ -65,7 +65,7 @@ Server.prototype.post = function(res, image) {
     if (http.status == 200) {
       if (image) {
         setProgress(100);
-        var canvas = $("main-fractal-canvas");
+        var canvas = document.getElementById("main-fractal-canvas");
         var context = canvas.getContext("2d"); 
         var img = new Image();
         img.onload = function(e) {
@@ -176,7 +176,7 @@ function LineOffset(category, section, value) {
  */
 function Fractal(parentid, colours, ui, selbox) {
   //Construct a new default fractal object
-  if (parentid && typeof parentid == 'string') parentid = $(parentid);
+  if (parentid && typeof parentid == 'string') parentid = document.getElementById(parentid);
   this.element = parentid || document.body;
   //Set canvas size
   //this.sizeCanvas();
@@ -259,7 +259,7 @@ Fractal.prototype.setRenderer = function(mode) {
   this.canvas.mouse.setDefault();
 
   //Remove existing canvas if any
-  var ccanvas = $(this.canvas.id);
+  var ccanvas = document.getElementById(this.canvas.id);
   if (ccanvas) this.element.removeChild(ccanvas);
   this.element.appendChild(this.canvas);
 
@@ -332,41 +332,41 @@ Fractal.prototype.setRenderer = function(mode) {
   if (this.ui) {
     //(reset all to enabled, 
     //shouldn't be necessary but this state seems not to be cleared sometimes)
-    $("server").disabled = false;
-    $("webgl").disabled = false;
-    $("webcl").disabled = false;
-    $("fp64").disabled = false;
-    $("webcl_list").disabled = true;
+    document.getElementById("server").disabled = false;
+    document.getElementById("webgl").disabled = false;
+    document.getElementById("webcl").disabled = false;
+    document.getElementById("fp64").disabled = false;
+    document.getElementById("webcl_list").disabled = true;
     if (!this.webcl) {
       if (window.webcl == undefined || !webcl.getPlatforms) {
-        $("webcl").disabled = true;
-        $("fp64").disabled = true;
+        document.getElementById("webcl").disabled = true;
+        document.getElementById("fp64").disabled = true;
       }
     } else {
-      $("fp64").disabled = !this.webcl.fp64avail;
-      this.webcl.populateDevices($("webcl_list"));
-      if (this.renderer >= WEBCL) $("webcl_list").disabled = false;
+      document.getElementById("fp64").disabled = !this.webcl.fp64avail;
+      this.webcl.populateDevices(document.getElementById("webcl_list"));
+      if (this.renderer >= WEBCL) document.getElementById("webcl_list").disabled = false;
     }
     if (!window.WebGLRenderingContext || this.webgl === null) {
-      $("webgl").disabled = true;
+      document.getElementById("webgl").disabled = true;
     }
     if (!this.state.server) {
-      $("server").disabled = true;
+      document.getElementById("server").disabled = true;
     }
 
     //Style buttons
-    $("server").className = "";
-    $("webgl").className = "";
-    $("webcl").className = "";
-    $("fp64").className = "";
+    document.getElementById("server").className = "";
+    document.getElementById("webgl").className = "";
+    document.getElementById("webcl").className = "";
+    document.getElementById("fp64").className = "";
     if (this.renderer == SERVER) 
-      $("server").className = "activemode";
+      document.getElementById("server").className = "activemode";
     else if (this.renderer == WEBGL) 
-      $("webgl").className = "activemode";
+      document.getElementById("webgl").className = "activemode";
     else if (this.renderer == WEBCL64 && this.webcl.fp64)
-      $("fp64").className = "activemode";
+      document.getElementById("fp64").className = "activemode";
     else if (this.renderer == WEBCL)
-      $("webcl").className = "activemode";
+      document.getElementById("webcl").className = "activemode";
 
     var renderer_names = ["Server", "WebGL", "WebCL", "WebCL fp64"];
     print("Mode set to " + renderer_names[this.renderer+1]);
@@ -426,8 +426,8 @@ Fractal.prototype.selectPoint = function(point) {
     this.selected.re = this.position.re + point.re;
     this.selected.im = this.position.im + point.im;
     if (this.ui) {
-      $("xSelect").value = this.selected.re;
-      $("ySelect").value = this.selected.im;
+      document.getElementById("xSelect").value = this.selected.re;
+      document.getElementById("ySelect").value = this.selected.im;
     }
   } else {
     this.julia = false;
@@ -485,7 +485,7 @@ Fractal.prototype.newFormula = function(select) {
   if (!f) return;
 
   this.choices[select].select(f.name); //Set selected
-  $(select + '_formula').value = f.name;
+  document.getElementById(select + '_formula').value = f.name;
   this.editFormula(select);
 }
 
@@ -510,7 +510,7 @@ Fractal.prototype.importFormula = function(source, filename) {
 }
 
 Fractal.prototype.deleteFormula = function(select) {
-  var sel = $(select + '_formula');
+  var sel = document.getElementById(select + '_formula');
   var selid = sel.selectedIndex;
   var key = formulaKey(select, sel.options[selid].value);
   if (!key) return;
@@ -1323,8 +1323,8 @@ Fractal.prototype.sizeCanvas = function() {
     height = this.canvas.clientHeight;
     //#Update UI
     if (this.ui) {
-      $("width").value = width;
-      $("height").value = height;
+      document.getElementById("width").value = width;
+      document.getElementById("height").value = height;
     }
     //Disable scrollbars when using autosize
   } else { //Enable scrollbars
@@ -1380,15 +1380,15 @@ Fractal.prototype.applyChanges = function(antialias, notime) {
       this.height = 0;
     } else {
       //Use size from form
-      this.width = parseInt($("width").value);
-      this.height = parseInt($("height").value);
+      this.width = parseInt(document.getElementById("width").value);
+      this.height = parseInt(document.getElementById("height").value);
     }
 
-    this.iterations = parseReal($("iterations").value);
+    this.iterations = parseReal(document.getElementById("iterations").value);
     this.julia = document["inputs"].elements["julia"].checked ? 1 : 0;
-    this.position = new Aspect(parseReal($("xOrigin").value), parseReal($("yOrigin").value),
-                               parseReal($("rotate").value), parseReal($("zoom").value));
-    this.selected = new Complex(parseReal($("xSelect").value), parseReal($("ySelect").value));
+    this.position = new Aspect(parseReal(document.getElementById("xOrigin").value), parseReal(document.getElementById("yOrigin").value),
+                               parseReal(document.getElementById("rotate").value), parseReal(document.getElementById("zoom").value));
+    this.selected = new Complex(parseReal(document.getElementById("xSelect").value), parseReal(document.getElementById("ySelect").value));
 
     //Limit rotate to range [0-360)
     if (this.position.rotate < 0) this.position.rotate += 360;
@@ -1427,7 +1427,7 @@ Fractal.prototype.copyToForm = function() {
   document["inputs"].elements["julia"].checked = this.julia;
   document["inputs"].elements["iterations"].value = this.iterations;
   for (category in this.choices)
-    $(category + '_formula').value = this.choices[category].selected;
+    document.getElementById(category + '_formula').value = this.choices[category].selected;
   //No width or height? Set autosize, otherwise disable
   var autosize = (this.width == 0 || this.height == 0);
   document["inputs"].elements["autosize"].checked = autosize;
@@ -1945,7 +1945,7 @@ Fractal.prototype.down = function(event, mouse) {
     this.server.post('/clear');
 
   //Clear focus from menu popups to hide them if active
-  //$('popup').focus();
+  //document.getElementById('popup').focus();
   //document.activeElement.blur()
   //Stop any current render
   this.stop();
@@ -1970,7 +1970,7 @@ Fractal.prototype.move = function(event, mouse) {
     mouse.point = this.position.convert(mouse.x, mouse.y, mouse.element);
     mouse.coord = new Complex(mouse.point.re + this.position.re, mouse.point.im + this.position.im);
     if (this.ui)
-      $("coords").innerHTML = "&nbsp;re: " + this.precision(mouse.coord.re) + " im: " + this.precision(mouse.coord.im);
+      document.getElementById("coords").innerHTML = "&nbsp;re: " + this.precision(mouse.coord.re) + " im: " + this.precision(mouse.coord.im);
 
     //Constantly updated mini julia set rendering
     if (this.preview && !this.julia) {
@@ -2020,15 +2020,15 @@ Fractal.prototype.move = function(event, mouse) {
     this.select.style.height = this.select.h + "px";
 
     if (this.ui)
-      $("coords").innerHTML = this.select.style.width + "," + this.select.style.height;
+      document.getElementById("coords").innerHTML = this.select.style.width + "," + this.select.style.height;
   }
 }
 
 Fractal.prototype.wheel = function(event, mouse) {
   this.stop();
   if (!this.preview && event.shiftKey) {
-    //$('rotate').value = parseReal($('rotate').value, 1) + event.spin * 10;
-    $('iterations').value = parseInt($('iterations').value) + event.spin;
+    //document.getElementById('rotate').value = parseReal(document.getElementById('rotate').value, 1) + event.spin * 10;
+    document.getElementById('iterations').value = parseInt(document.getElementById('iterations').value) + event.spin;
     //Accumulate spin before applying changes
     //First clear any existing timer
     if (this.spintimer) clearTimeout(this.spintimer);
@@ -2135,7 +2135,7 @@ Fractal.prototype.drawPreview = function() {
 
 Fractal.prototype.clearPreview = function() {
   if (!this.preview) return;
-  $('previewbtn').innerHTML = "Show Preview"
+  document.getElementById('previewbtn').innerHTML = "Show Preview"
   clearTimeout(this.preview.timeout);
   document.mouse.moveUpdate = false;
   if (this.preview.win) this.preview.win.close();
@@ -2195,8 +2195,8 @@ Fractal.prototype.togglePreview = function() {
     this.clearPreview();
   } else {
     this.showPreview();
-    if ($('previewbtn'))
-      $('previewbtn').innerHTML = "Show Preview &#10003;"
+    if (document.getElementById('previewbtn'))
+      document.getElementById('previewbtn').innerHTML = "Show Preview &#10003;"
   }
 }
 
