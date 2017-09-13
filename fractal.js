@@ -1905,7 +1905,8 @@ Fractal.prototype.click = function(event, mouse) {
   //Selection box? Ignore if too small a region selected
   if (this.select && this.select.style.display == 'block' && this.select.w > 5 && this.select.h > 5) {
     //Get element offset in document
-    //var offset = findElementPos(mouse.element);
+    //var rect = mouse.element.getBoundingClientRect();
+    //var offset = [rect.left, rect.top];
     //Convert coords to position relative to element
     //select.x -= offset[0];
     //select.y -= offset[1];
@@ -2007,7 +2008,8 @@ Fractal.prototype.move = function(event, mouse) {
     else
       this.select.x = mouse.x - this.select.w;
 
-    var offset = findElementPos(this.element);
+    var rect = this.element.getBoundingClientRect();
+    var offset = [rect.left, rect.top];
     if (mouse.deltaY < 0)
       this.select.y = mouse.lastY - this.select.h - offset[1];
     else

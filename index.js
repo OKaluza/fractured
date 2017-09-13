@@ -290,9 +290,7 @@ function appInitState() {
   //Event handling
   document.onkeydown = handleKey;
   window.onresize = autoResize;
-  window.onmozfullscreenchange = toggleFullscreen
   window.onfullscreenchange = toggleFullscreen
-  $('main').onwebkitfullscreenchange = toggleFullscreen;
   window.onbeforeunload = beforeUnload;
   window.onpopstate = historyStateChange;
 
