@@ -69,7 +69,7 @@
             <div id="session_user_menu" class="loggedin">
               <li><span onclick="menu(); uploadState();">Save This Session</span></li>
               <li><span onclick="menu(); exportStateFile();">Export Session</span></li>
-              <li><span onclick="menu(); $('fileupload').click();">Import Data</span></li>
+              <li><span onclick="menu(); document.getElementById('fileupload').click();">Import Data</span></li>
               <li><hr></li>
               <li><span class="fly" tabindex="1" onclick="menu(this, 1);">Saved Sessions</span>
                 <ul id="sessions" class="selectlist listmenu">
@@ -80,7 +80,7 @@
             </div>
             <div id="session_login_menu" class="loggedout">
               <li><span onclick="menu(); exportStateFile();">Export Session</span></li>
-              <li><span onclick="menu(); $('fileupload').click();">Import Data</span></li>
+              <li><span onclick="menu(); document.getElementById('fileupload').click();">Import Data</span></li>
               <li><span onclick="menu();"><div class="g-signin2" data-width="150" data-longtitle="true" data-theme="dark" data-onsuccess="onSignIn" data-onfailure="onFailure"></span></span></li>
             </div>
           </ul>
@@ -571,7 +571,7 @@
     <img src="media/logos/logo_openid.png" alt="OpenID">
     <form action="ss/authenticate.php" method="post" name="login_form" accept-charset="utf-8">
       <input type="text" value="" name="openid_url" id="openid"/>
-      <input type="button" class="right" value="Login" onclick="toggle('openid_form'); login($('openid').value);">
+      <input type="button" class="right" value="Login" onclick="toggle('openid_form'); login(document.getElementById('openid').value);">
     </form>
   </div>
 
