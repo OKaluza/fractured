@@ -100,6 +100,7 @@ State.prototype.loadStatus = function() {
 
 State.prototype.debugOn = function() {
   this.debug = true;
+  if (!document.getElementById('debugmenu')) return;
   document.getElementById('debugmenu').style.display = 'block';
   document.getElementById('recordmenu').style.display = 'block';
 }
@@ -114,11 +115,13 @@ State.prototype.debugOff = function() {
 //Draw mode off disables all local rendering
 State.prototype.drawMode = function(noset) {
   if (!noset) this.disabled = !this.disabled;
+  if (!document.getElementById('drawmodebtn')) return;
   document.getElementById('drawmodebtn').innerHTML = "Draw Mode" + (this.disabled ? "" : "&#10003;");
 }
 //Control mode controls remote server rendering
 State.prototype.controlMode = function(noset) {
   if (!noset) this.control = !this.control;
+  if (!document.getElementById('ctrlmodebtn')) return;
   document.getElementById('ctrlmodebtn').innerHTML = "Control Mode" + (this.control ? "&#10003;" : "");
 }
 
@@ -242,10 +245,12 @@ State.prototype.load = function(callback) {
       if (that.debug) {
         //Entries for all source files in debug edit menu
         var menu = document.getElementById('debugedit');
-        removeChildren(menu);
-        for (key in sources) {
-          var onclick = "openEditor('" + key + "')";
-          addMenuItem(menu, key, onclick);
+        if (menu) {
+          removeChildren(menu);
+          for (key in sources) {
+            var onclick = "openEditor('" + key + "')";
+            addMenuItem(menu, key, onclick);
+          }
         }
       }
       
@@ -266,7 +271,8 @@ State.prototype.load = function(callback) {
       var isWebKit = /AppleWebKit/.test(navigator.userAgent);
       var size = JSON.stringify(localStorage).length;
       var indic = size / (isWebKit ? 2500000 : 5000000);
-      document.getElementById('indicator').style.width = (350 * indic) + 'px';
+      var ind = document.getElementById('indicator');
+      if (ind) ind.style.width = (350 * indic) + 'px';
 
       if (callback) callback();
     }

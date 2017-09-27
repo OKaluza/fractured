@@ -65,6 +65,7 @@ function loadDriveFiles(list) {
     //Clear & repopulate lists
     var menu = document.getElementById('sessions');
     var menu2 = document.getElementById('formulae-private');
+    if (!menu || !menu2) return;
     removeChildren(menu);
     removeChildren(menu2);
     for (var i=0; i<list.length; i++) {
@@ -664,6 +665,7 @@ return;
     try {
       //Clear & repopulate list
       var menu = document.getElementById('sessions');
+      if (!menu) return;
       removeChildren(menu);
       var list = JSON.parse(data);
       for (var i=0; i<list.length; i++) {
@@ -918,6 +920,7 @@ function populateFractals() {
   //Clear & repopulate list
   next_id = 0;
   var menu = document.getElementById('fractals');
+  if (!menu) return;
   removeChildren(menu);
   for (var name in fractals)
     fractalMenuAdd(name);
@@ -1018,6 +1021,7 @@ function populatePalettes(paldata) {
   //Clear & repopulate list
   if (paldata) palettes = paldata;
   var menu = document.getElementById('palettes');
+  if (!menu) return;
   removeChildren(menu);
 
   for (var i=0; i<palettes.length; i++) {
@@ -1057,6 +1061,7 @@ function packPalette() {
 function populateScripts() {
   //Clear & repopulate list
   var menu = document.getElementById('scripts');
+  if (!menu) return;
   removeChildren(menu);
   for (var key in localStorage) {
     if (key.indexOf("scripts/") != 0) continue;
@@ -1428,6 +1433,7 @@ function loadFormulaeList(data) {
   try {
     //Clear & repopulate list
     var menu1 = document.getElementById('formulae-public');
+    if (!menu1) return;
     //var menu2 = document.getElementById('formulae-private');
     if (state.loggedin == false)
       ondelete = null;
