@@ -8,12 +8,12 @@ else
 endif
 
 #Targets
-fractured=release/fractured_$(VERSION).js
-viewer=release/fracturedviewer_$(VERSION).js
-includes=release/includes_$(VERSION).json
-formulae=release/formulae_$(VERSION).json
-codemirror=release/codemirror_$(VERSION).js
-codemirrorstyle=release/codemirror_$(VERSION).css
+fractured=../fractured_$(VERSION).js
+viewer=../fracturedviewer_$(VERSION).js
+includes=../includes_$(VERSION).json
+formulae=../formulae_$(VERSION).json
+codemirror=../codemirror_$(VERSION).js
+codemirrorstyle=../codemirror_$(VERSION).css
 
 #Sources
 VIEWSCRIPTS = parameter.js formulae.js index.js fractal.js
@@ -26,24 +26,22 @@ viewer: release $(viewer) $(includes) $(formulae)
 
 .PHONY : release
 release:
-	-mkdir -p release
 	#Write version info
-	sed "s/VERSION/$(VERSION)/g" index.html > release/index.html
-	sed "s/VERSION/$(VERSION)/g" editor.html > release/editor.html
-	sed "s/VERSION/$(VERSION)/g" viewer.html > release/viewer.html
-	sed "s/VERSION/$(VERSION)/g" palette.html > release/palette.html
-	sed -i "/<!--@ -->/,/<!-- @-->/d" release/index.html
-	sed -i "s/<!--script\(.*\)script-->/<script\1script>/g" release/index.html
-	cp palettes.json favicon.ico styles.css offline.html release
-	cp -R media release
-	cp -R ss release
-	sed -i "s/version [0-9.]\+/version $(VERSION)/g" README.md
-	markdown README.md > docs.html
-	cp docs.html release
+	sed "s/VERSION/$(VERSION)/g" index.html > ../index.html
+	sed "s/VERSION/$(VERSION)/g" editor.html > ../editor.html
+	sed "s/VERSION/$(VERSION)/g" viewer.html > ../viewer.html
+	sed "s/VERSION/$(VERSION)/g" palette.html > ../palette.html
+	sed -i "/<!--@ -->/,/<!-- @-->/d" ../index.html
+	sed -i "s/<!--script\(.*\)script-->/<script\1script>/g" ../index.html
+	#cp palettes.json favicon.ico styles.css offline.html ..
+	sed -i "s/version [0-9.]\+/version $(VERSION)/g" ../README.md
+	markdown ../README.md > ../docs.html
 
 .PHONY : clean
 clean:
-	-rm -r release
+	-rm ../*.html
+	-rm ../*.js
+	-rm ../*.json
 
 $(fractured): $(SCRIPTS) OK-min.js gl-matrix-min.js parser-min.js
 	cat $(SCRIPTS) > /tmp/fractured-index.js
