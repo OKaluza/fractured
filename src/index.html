@@ -1,0 +1,595 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=0" />
+
+<title>Fractured | Fractal Studio</title>
+
+<link href='https://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" type="text/css" href="codemirror_VERSION.css">
+<link rel="stylesheet" type="text/css" href="styles.css">
+
+<script src="https://apis.google.com/js/client:platform.js" async defer></script>
+<meta name="google-signin-client_id" content="1087347516393-8mvvavg96lmvf9mbk1on1lnsq52979q1.apps.googleusercontent.com">
+
+<meta name="google-signin-scope" content="https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.appfolder https://www.googleapis.com/auth/drive.file">
+<meta name="google-signin-client_id" content="1087347516393-8mvvavg96lmvf9mbk1on1lnsq52979q1.apps.googleusercontent.com">
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+
+
+<!--@ -->
+<script type="text/javascript" src="OK.js"></script>
+<script type="text/javascript" src="parameter.js"></script>
+<script type="text/javascript" src="formulae.js"></script>
+<script type="text/javascript" src="index.js"></script>
+<script type="text/javascript" src="state.js"></script>
+<script type="text/javascript" src="automation.js"></script>
+<script type="text/javascript" src="parser.js"></script>
+<script type="text/javascript" src="fractal.js"></script>
+
+<script type="text/javascript" src="gl-matrix.js"></script>
+<!-- @-->
+
+<!--script type="text/javascript" src="fractured_VERSION.js"></script-->
+
+</head>
+
+<body onload="appInit();" id="body">
+
+  <header id="header">
+
+    <div id="title">
+      <a href="#" onclick="switchGallery();return false;"><img src="media/icon.png" ><h1 id="heading">Fractured</h1></a>
+      <h3 id="version">VERSION</h3>
+    </div>
+
+    <span id="hidetools" onclick="menu(); toggleParams(0);">&uarr;</span>
+    <span id="showtools" onclick="menu(); toggleParams(1);">&darr;</span>
+    <span id="mainmenu" onclick="mainmenu();"><img src="media/menu.png" ><span>Menu</span></span>
+    <nav id="menu">
+      <ul id="nav">
+        <li><span class="fly" tabindex="1" onclick="menu(this);"><img src="media/draw.png" ><p>Studio</p></span>
+          <ul class="dd">
+            <li style="display: none" id="debugmenu"><span class="fly" tabindex="1" onclick="menu(this, 1);">Debug</span>
+              <ul class="dd listmenu">
+                <li><span id="drawmodebtn" onclick="menu(); state.drawMode();">Draw Mode</span></li>
+                <li><span id="ctrlmodebtn" onclick="menu(); state.controlMode();">Control Mode</span></li>
+                <li><span onclick="menu(); openPopup();">Popup</span></li>
+                <li><span onclick="menu(); openPalette();">Palette Editor</span></li>
+                <li><span onclick="menu(); state.debugOff();">Disable Debug</span></li>
+                <li><hr></li>
+                <div id="debugedit" class="selectlist">
+                </div>
+              </ul>
+            </li>
+            <li><span onclick="state.reset();">New Session</span></li>
+            <div id="session_user_menu" class="loggedin">
+              <li><span onclick="menu(); uploadState();">Save This Session</span></li>
+              <li><span onclick="menu(); exportStateFile();">Export Session</span></li>
+              <li><span onclick="menu(); document.getElementById('fileupload').click();">Import Data</span></li>
+              <li><hr></li>
+              <li><span class="fly" tabindex="1" onclick="menu(this, 1);">Saved Sessions</span>
+                <ul id="sessions" class="selectlist listmenu">
+                </ul>
+              </li>
+              <li><hr></li>
+              <li><span onclick="menu(); signOut();">Logout</span></li>
+            </div>
+            <div id="session_login_menu" class="loggedout">
+              <li><span onclick="menu(); exportStateFile();">Export Session</span></li>
+              <li><span onclick="menu(); document.getElementById('fileupload').click();">Import Data</span></li>
+              <li>
+                <span onclick="menu();">
+                  <div class="g-signin2" data-width="150" data-longtitle="true" data-theme="dark" data-onsuccess="onSignIn" data-onfailure="onFailure"></div>
+                </span>
+              </li>
+            </div>
+          </ul>
+        </li>
+        <!--li><span class="fly" tabindex="1">Fractal</span-->
+        <li><span class="fly" tabindex="1" onclick="menu(this);"><img src="media/fractal.png" ><p>Fractal</p></span>
+          <ul class="dd listmenu">
+            <li><span onclick="menu(); newFractal();">New</span></li>
+            <li class="render"><span onclick="menu(); storeFractal();">Store</span></li>
+            <li class="loggedin render"><span onclick="menu(); uploadFractalFile();">Upload</span></li>
+            <li class="render"><span onclick="menu(); exportFractalFile();">Export</span></li>
+            <li class="render"><span onclick="menu(); packFractal();">URL Encode</span></li>
+            <li><hr></li>
+            <li>
+              <div id="fractals" class="selectlist">
+              </div>
+            </li>
+          </ul>
+        </li>
+        <li><span class="fly" tabindex="1" onclick="menu(this);"><img src="media/formula.png" ><p>Formulae</p></span>
+          <ul class="dd">
+            <li><span class="fly" tabindex="1" onclick="menu(this, 1);">Public Formulae</span>
+              <ul id="formulae-public" class="selectlist listmenu">
+              </ul>
+            </li>
+            <li class="loggedin"><span class="fly" tabindex="1" onclick="menu(this, 1);">My Formulae</span>
+              <ul id="formulae-private" class="selectlist listmenu">
+              </ul>
+            </li>
+            <li><span onclick="menu(); uploadFormulaSet(1);" class="loggedin">Publish</span></li>
+            <li><span onclick="menu(); uploadFormulaSet(0);" class="loggedin">Upload</span></li>
+            <li><span onclick="menu(); exportFormulaSet();">Export</span></li>
+          </ul>
+        </li>
+        <li class="render"><span class="fly" tabindex="1" onclick="menu(this);"><img src="media/camera.png" ><p>Image</p></span>
+          <ul class="dd">
+            <li><span onclick="menu(); exportImage('image/jpeg', 0.95);">Save JPEG Image</span></li>
+            <li><span onclick="menu(); exportImage('image/png');">Save PNG Image</span></li>
+            <li><span onclick="menu(); uploadImgur();">Share on Imgur</span></li>
+            <li><span onclick="menu(); uploadFlickr();">Share on Flickr</span></li>
+          </ul>
+        </li>
+        <li><span class="fly" tabindex="1" onclick="menu(this);"><img src="media/palette.png" ><p>Palette</p></span>
+          <ul class="dd listmenu">
+            <li><span onclick="savePalette();">Store Palette</span></li>
+            <li><span onclick="menu(); exportPaletteFile();">Export Palette</span></li>
+            <!--li><span onclick="menu(); packPalette();">Palette to URL</span></li-->
+            <li><hr>
+              <div id="palettes" class="selectlist">
+              </div>
+            </li>
+          </ul>
+        </li>
+        <li><span class="fly" tabindex="1" onclick="menu(this);"><img src="media/settings.png" ><p>Settings</p></span>
+          <ul class="dd">
+            <li><span class="fly" tabindex="1" onclick="menu(this, 1);">Anti-aliasing</span>
+              <ul>
+                <li><span id="aa1" onclick="menu(); setAntiAlias(1);">1) Low quality</span></li>
+                <li><span id="aa2" onclick="menu(); setAntiAlias(2);">2) Medium quality</span></li>
+                <li><span id="aa3" onclick="menu(); setAntiAlias(3);">3) High quality</span></li>
+                <li><span id="aa4" onclick="menu(); setAntiAlias();">Custom quality</span></li>
+              </ul>
+            </li>
+            <li style="display: none" id="recordmenu"><span class="fly" tabindex="1" onclick="menu(this, 1);">Record</span>
+              <ul>
+                <li><span id="recordOn" onclick="menu(); recordStart();">On</span></li>
+                <li><span id="recordOff" class="selected_item" onclick="menu(); recordStop();">Off</span></li>
+              </ul>
+            </li>
+            <li><span onclick="menu(); setDelayTimer();">Set Delay Timer</span></li>
+            <li><span class="fly" tabindex="1" onclick="menu(this, 1);">Scripts</span>
+              <ul class="dd listmenu">
+                <li><span onclick="menu(); editScript()">New Script</span></li>
+                <li><hr>
+                <div id="scripts" class="selectlist">
+                </div>
+              </ul>
+            </li>
+            <li><span onclick="menu(); regenerateThumbs();">Rebuild Thumbnails</span></li>
+            <li class="render"><span id="previewbtn" onclick="menu(); fractal.togglePreview();">Show Preview</span></li>
+            <li class="render"><span onclick="menu(); toggleFullscreen(true);">Full Screen</span></li>
+          </ul>
+        </li>
+      </ul>
+
+    </nav>
+
+    <section id="controls">
+      <div id="backgroundBG" class="colourbg checkerboard">
+        <div id="backgroundCUR" class="colour" onmousedown="colours.editBackground(this);"></div>
+      </div>
+      <canvas id="palette" width="572" height="28" class="checkerboard"></canvas>
+    </section>
+
+  </header>
+
+
+  <section id="left">  
+
+    <aside id="sidebar">
+
+      <nav id="tabs">
+        <ul>
+          <li onmousedown="showPanel('info');" id="tab_info" class="selected">Info</li>
+          <li onmousedown="showPanel('params');" id="tab_params" class="unselected">Parameters</li>
+          <li onmousedown="showPanel('formula');" id="tab_formula" class="unselected">Formula</li>
+          <li onmousedown="showPanel('colour');" id="tab_colour" class="unselected">Colour</li>
+          <li onmousedown="showPanel('log');" id="tab_log" class="unselected">Log</li>
+        </ul>
+      </nav>
+
+      <div class="panel scroll" id="panel_info" style="display: block">
+        <div class="card" id="script_controls">
+          <h3>Script Running:</h3>
+          <input type="button" id="pause" value="pause" onClick="state.paused = true;">
+          <input type="button" id="resume" value="resume" disabled="true" onClick="runScript();">
+          <span id="steps"></span>
+        </div>
+
+        <div class="card" id="new_version_VERSION">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Fractured VERSION Released:</h3>
+          <ul>
+            <li>WebCL support disabled since it no longer exists.</li>
+            <li>Mouse rework, removed support for older browsers</li>
+            <li>Image export fixed</li>
+            <li>Various minor bug fixes</li>
+          </ul>
+        </div>
+
+        <div class="card" id="previous_fractal">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Previous Fractal:</h3>
+          <p><a href="javascript:state.lastFractal();switchGallery(0);">
+          <img id="lastimage" class="left">View</a>
+          the fractal you had displayed last time you used this site.</p>
+        </div>
+
+        <div class="card" id="render_mode">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Rendering Mode</h3>
+          Select rendering mode below. Setting will be remembered.</p>
+          <input type="button" id="server" value="Server" onClick="fractal.switchMode(SERVER);">
+          <input type="button" id="webgl" value="WebGL" onClick="fractal.switchMode(WEBGL);">
+          <!--input type="button" id="webcl" value="WebCL" onClick="fractal.switchMode(WEBCL);">
+          <input type="button" id="fp64" value="WebCL fp64" onClick="fractal.switchMode(WEBCL64);"-->
+          </select>
+        </div>
+
+        <div class="card" id="webgl_detected">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>WebGL</h3>
+          <p>Your system appears to support the default WebGL fractal renderer, you should be able to view fractals with no problems.</p>
+        </div>
+
+        <div class="card" id="no_webgl">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>No WebGL Support</h3>
+          <p>WebGL is required to view fractals, see <a href=http://get.webgl.org/troubleshooting">http://get.webgl.org/troubleshooting</a> for help</p>
+        </div>
+
+        <div class="card" id="mouse_reference" style="font-size: 9pt;">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>User Interface Quick Reference</h3>
+          <img src='media/mouse.png' class='right'>
+          <b>Left-click</b>
+          <ul><li>Set Origin</li>
+          <li>Drag: Select region</li></ul>
+          <b>Right-click</b><br>
+          <ul><li>Julia Set switch</li>
+          <li>Drag: Pan (when fractal larger than window)</li></ul>
+          <b>Middle-click</b><br>
+          <ul><li>Drag: Pan (when fractal larger than window)</li></ul>
+          <b>Scroll-wheel - fractal display</b><br>
+          <ul><li>Zoom</li>
+          <li>[shift] Adjust Iterations</li></ul>
+          <b>Scroll-wheel - parameter field</b><br>
+          <ul><li>Adjust value of parameter by &plusmn;1</li>
+          <li>[shift] Adjust value of digit under pointer by &plusmn;1</li></ul>
+          <img src='media/keyboard.png' class='right'>
+          <b>Keys:</b><br>
+          <ul><li>[Enter] Apply changes and Draw</li>
+          <li>[ESC] or [`] Toggle Julia Set preview</li></ul>
+          <b>Touchscreen Support:</b><br>
+          <ul><li>Basic touch support should work but has not been tried on many devices</li>
+          <li>Pinch to zoom has been implemented and works on Android in Chrome &amp; Opera</li></ul>
+        </div>
+
+        <div class="card" id="local_storage">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Local Storage:</h3>
+          <div id="indicatorbg"><div id="indicator"></div></div>
+          <p>Estimated local storage allocation currently in use by this site... your browser may allow you to extend this when full.</p>
+        </div>
+
+        <div class="card" id="user_guide">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Documentation</h3>
+          <div class="docs" id="help">
+          <p><a href="javascript:loadHelp();">Click here</a> to load the (still incomplete) user guide...</p>
+          </div>
+        </div>
+
+        <div class="card" id="contact_form">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Feedback</h3>
+          <p>This is an experimental project and I'm still working on supporting various device/browser combinations where possible so if you have any problems, questions or feedback don't hesitate to use this form to contact me.</p>
+          <div id="emailform">
+            <p>E-mail:</p>
+            <input type="email" id="email" />
+            <p>Message:</p>
+            <textarea id="message_body"></textarea></p>
+            <input type="button" value="Send" onclick="sendEmail();">
+          </div>
+        </div>
+
+        <div class="card" id="manage_info">
+          <h3>Closed notes</h3>
+          <p>Click to open...</p>
+        </div>
+      </div>
+
+      <div class="panel scroll" id="panel_params" style="display: none">
+
+        <div class="card" id="parameters_help">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Parameters</h3>
+          <p>Edit these values to change the basic settings for all fractals: position, size and orientation etc</p>
+          <ul>
+          <li><b>Name:</b> label to use when saving the fractal.</li>
+          <li><b>Fit to window:</b> resize the display area to the browser window</li>
+          <li><b>Size:</b> manually set the fractal display size</li>
+          <li><b>Zoom:</b> magnification factor, press reset to go back to base level</li>
+          <li><b>Rotation:</b> rotate fractal by (degrees)</li>
+          <li><b>Origin:</b> fractal coordinate at the centre of the display</li>
+          <li><b>Selected:</b> fractal coordinate selected for Julia sets</li>
+          <li><b>Iterations:</b> maximum iterations to perform (increase for more detail)</li>
+          </ul>
+          <p><b>Core Formula:</b> core formula, default built from template selections in Formula &amp; Colour tabs.<br>
+          Creating or editing this formula allows complete control over fractal algorithm</p>
+        </div>
+
+        <form id="param_inputs" name="inputs" onmousedown="handleFormMouseDown(event)">
+          <div class="row">
+            <label>Name</label>
+            <span class="field"><input type="text" id="name" name="description" value="unnamed"  onkeypress="fractal.name = this.value;" onchange="fractal.name = this.value;">
+            </span>
+          </div>
+          <div class="row">
+            <label for="autosize">Fit to window</label>
+            <span class="field"><input type="checkbox" id="autosize" checked="checked" onclick="autoResize(this.checked);"></span>
+          </div>
+          <div class="row">
+            <label>Size</label>
+            <span class="field"><input type="number" id="width" value="600" disabled></span><span class="field"><input type="number" id="height" value="600" disabled></span>
+          </div>
+
+          <div class="row">
+            <label>Zoom</label>
+            <span class="field"><input type="number" id="zoom" step="any"></span>
+            <input type="button" value="Reset" onclick="fractal.resetZoom()">
+          </div>
+          <div class="row">
+            <label>Rotate&#176;</label>
+            <span class="field"><input type="number" id="rotate" value="0.0" min="0" max="360" step="0.1"></span>
+          </div>
+          <div class="row">
+            <label>Origin</label>
+            <span class="field"><input type="text" id="xOrigin" value="0.0"></span>
+            <span class="field"><input type="text" id="yOrigin" value="0.0"></span>
+          </div>
+          <div class="row">
+            <label>Selected</label>
+            <span class="field"><input type="text" id="xSelect" value="0.0"></span>
+            <span class="field"><input type="text" id="ySelect" value="0.0"></span>
+          </div>
+          <div class="row">
+            <label for="julia">Julia</label>
+            <span class="field"><input type="checkbox" id="julia" checked="unchecked"></span>
+          </div>
+          <div class="row">
+            <label for="iterations">Iterations</label>
+            <span class="field"><input type="text" id="iterations"></span>
+          </div>
+
+
+          <div class="clear"></div>
+          <div class="gap"></div>
+
+          <p>Core Formula</p>
+          <div class="field">
+            <select id="core_formula" class="formula" onchange="fractal.choices['core'].select(this.value);">
+            </select>
+            <div class="formula_buttons">
+              <input type="button" value="Edit" onclick="fractal.editFormula('core');">
+              <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('core');">
+              <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('core');">
+            </div>
+          </div>
+          <div class="gap"></div>
+          <div id="core_params" width="100%"></div>
+
+        </form>
+
+      </div>
+
+      <div class="panel scroll" id="panel_formula" style="display: none">
+        <div class="card" id="formula_help">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Fractal &amp; Transform Formula</h3>
+          <p>Choose and edit a fractal formula to use and edit its parameters</p>
+          <ul>
+          <li><b>Fractal:</b> main formula used to calculate the fractal.</li>
+          <li><b>Pre-transform:</b> optional modification formula applied each iteration <i>before</i> calculating next value</li>
+          <li><b>Post-transform:</b> optional modification formula applied each iteration <i>after</i> calculating next value</li>
+          </ul>
+          <p>The <b>[Edit]</b> button opens an editor to modify the formula code</p>
+          <p>The <b>[+]</b> button adds a new formula</p>
+          <p>The <b>[-]</b> button deletes the selected formula</p>
+          <p>The editable parameters relating to each selected formula will appear below allowing you to change the default behaviour.</p>
+        </div>
+
+        <form id="fractal_inputs" onmousedown="handleFormMouseDown(event)">
+        <p>Fractal</p>
+        <div class="field">
+          <select id="fractal_formula" class="formula" onchange="fractal.choices['fractal'].select(this.value);">
+          </select>
+          <div class="formula_buttons">
+            <input type="button" value="Edit" onclick="fractal.editFormula('fractal');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('fractal');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('fractal');">
+          </div>
+        </div>
+
+        <p>Pre-Transform</p>
+        <div class="field">
+          <select id="pre_transform_formula" class="formula" onchange="fractal.choices['pre_transform'].select(this.value);">
+            <option value="none"></option>
+          </select>
+          <div class="formula_buttons">
+            <input type="button" value="Edit" onclick="fractal.editFormula('pre_transform');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('pre_transform');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('pre_transform');">
+          </div>
+        </div>
+
+        <p>Post-Transform</p>
+        <div class="field">
+          <select id="post_transform_formula" class="formula" onchange="fractal.choices['post_transform'].select(this.value);">
+            <option value="none"></option>
+          </select>
+          <div class="formula_buttons">
+            <input type="button" value="Edit" onclick="fractal.editFormula('post_transform');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('post_transform');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('post_transform');">
+          </div>
+        </div>
+
+          <div class="gap"></div>
+          <div id="fractal_params" width="100%"></div>
+          <div id="pre_transform_params" width="100%"></div>
+          <div id="post_transform_params" width="100%"></div>
+        </form>
+      </div>
+
+      <div class="panel scroll" id="panel_colour" style="display: none">
+        <div class="card" id="colour_help">
+          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
+          <h3>Colouring Methods</h3>
+          <p>Choose and edit colouring formula to use and edit their parameters</p>
+          <ul>
+          <li><b>Outside Colour:</b> colouring formula used to colour points <i>outside</i> the Mandelbrot/Julia set.</li>
+          <li><b>Inside Colour:</b> colouring formula used to colour points <i>inside</i> the Mandelbrot/Julia set.</li>
+          </ul>
+          <p>The <b>[Edit]</b> button opens an editor to modify the formula code</p>
+          <p>The <b>[+]</b> button adds a new formula</p>
+          <p>The <b>[-]</b> button deletes the selected formula</p>
+          <p>The editable parameters relating to each selected formula will appear below allowing you to change the default behaviour.</p>
+        </div>
+
+        <form id="colour_inputs" onmousedown="handleFormMouseDown(event)">
+        <p>Outside Colour</p>
+        <div class="field">
+          <select id="outside_colour_formula" class="formula" onchange="fractal.choices['outside_colour'].select(this.value);">
+          </select>
+          <div class="formula_buttons">
+            <input type="button" value="Edit" onclick="fractal.editFormula('outside_colour');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('outside_colour');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('outside_colour');">
+          </div>
+        </div>
+        <p>Inside Colour</p>
+        <div class="field">
+          <select id="inside_colour_formula" class="formula" onchange="fractal.choices['inside_colour'].select(this.value);">
+          </select>
+          <div class="formula_buttons">
+            <input type="button" value="Edit" onclick="fractal.editFormula('inside_colour');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('inside_colour');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('inside_colour');">
+          </div>
+        </div>
+
+        <p>Filter</p>
+        <div class="field">
+          <select id="filter_formula" class="formula" onchange="fractal.choices['filter'].select(this.value);">
+            <option value="none"></option>
+          </select>
+          <div class="formula_buttons">
+            <input type="button" value="Edit" onclick="fractal.editFormula('filter');">
+            <input type="button" value="&nbsp;+&nbsp;" onclick="fractal.newFormula('filter');">
+            <input type="button" value="&nbsp;&ndash;&nbsp;" onclick="fractal.deleteFormula('filter');">
+          </div>
+        </div>
+
+          <div class="gap"></div>
+
+          <div id="outside_colour_params" width="100%"></div>
+          <div id="inside_colour_params" width="100%"></div>
+          <div id="filter_params" width="100%"></div>
+        </form>
+      </div>
+
+      <div class="panel scroll" id="panel_log" style="display: none">
+        <input type="button" value="Clear log" onClick="consoleClear()">
+        <div id="consolearea">
+          <div id="console" class="info">
+            <!--p>Want to support this site? Buy something from <a href="http://redbubble.com.au/people/owenk">here.</a></p-->
+          </div>
+        </div>
+      </div>
+
+      <div id="statusbar">
+        <span id="coords">&nbsp;re: im:</span>
+      </div>
+
+    </aside>
+
+  </section>
+
+  <section id="main">
+    <div id="gallery">
+      <div id="setgallery">
+        <a id="#examples" href="#examples">Examples</a>
+        <a id="#shared" href="#shared">Shared</a>
+        <a id="#images" href="#images">Images</a>
+        <!--a id="#myshared" href="#myshared" class="loggedin">My Shared </a>
+        <a id="#myuploads" href="#myuploads" class="loggedin">My Uploads</a>
+        <a id="#myimages" href="#myimages" class="loggedin">My Images</a-->
+        <div id="about#examples">
+          Some simple example fractals showing the basic pre-defined formulae and colouring algorithms. Click on the preview image to load the fractal into the viewer.
+        </div>
+        <div id="about#shared">Fractals that users have shared and made available to others to view and explore. Click on the preview to open the fractal.</div>
+        <div id="about#images">Images created from fractals and shared on Imgur or Flickr</div>
+        <div id="about#myshared">Fractals shared by you</div>
+        <div id="about#myuploads">Fractals uploaded by you (but not shared)</div>
+        <div id="about#myimages">Images shared by you on Imgur / Flickr</div>
+      </div>
+      <div id="gallery-display">
+      </div>
+    </div>
+    <img id="background" class="checkerboard" src="">
+
+  </section>
+
+  <div id="fonttest"></div>
+  <!-- Hidden -->
+  <div id="hidden" style="display: none">
+        <a id="dummylink" href="#">Dummy</a>
+    <canvas id="thumb" width="32" height=32"></canvas>
+
+    <form name="exporter" action="ss/savefile.php" method="post">
+      <input type="hidden" id="export-filename" name="filename"/>
+      <input type="hidden" id="export-content" name="content"/>
+    </form>
+  </div>
+  <input name="file" id="fileupload" type="file" onchange="fileSelected(this.files)">
+
+  <div id="openid_form" class="popup">
+    <div class="popclose" onclick="toggle('openid_form');">&times;</div>
+    <img src="media/logos/logo_openid.png" alt="OpenID">
+    <form action="ss/authenticate.php" method="post" name="login_form" accept-charset="utf-8">
+      <input type="text" value="" name="openid_url" id="openid"/>
+      <input type="button" class="right" value="Login" onclick="toggle('openid_form'); login(document.getElementById('openid').value);">
+    </form>
+  </div>
+
+
+  <div id="progress" class="popup">
+    <div class="popclose" onclick="toggle('progress');">&times;</div>
+    <span id="progressmessage"></span><span id="progressstatus"></span>
+    <div id="progressbar"></div>
+  </div>
+
+  <div id="popup" class="popup">
+    <div class="popclose" onclick="toggle('popup');">&times;</div>
+    <div id="popupmessage">
+    </div>
+  </div>
+
+  <div id="previewWindow" class="window">
+    <div id="previewCLOSE" class="CLOSE" onclick="fractal.clearPreview();">X</div>
+    <div id="previewTitle" class="left">Preview</div>
+    <div id="preview"></div>
+    <hr>
+  </div>
+
+</body>
+</html>
+

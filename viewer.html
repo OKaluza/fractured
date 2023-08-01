@@ -3,7 +3,7 @@
 <title>Fractured | viewer</title>
 <meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1" />
 
-<script type="text/javascript" src="fractured_VERSION.js"></script>
+<script type="text/javascript" src="fractured_0.92.js"></script>
 
 <style type="text/css">
 html, body { padding: 0; margin: 0; }
@@ -29,7 +29,7 @@ var fractal;
 var rztimeout;
 
 function init() {
-  sources = JSON.parse(readURL('/includes_VERSION.json', false));
+  sources = JSON.parse(readURL('/includes_0.92.json', false));
   fractal = new Fractal('main');
   fractal.init({"antialias" : 3, "timers" : 150});
   //fractal.init({"antialias" : 3, "renderer" : WEBCL64, "platform" : 1, "timers" : 150});

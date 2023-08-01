@@ -33,7 +33,7 @@ release:
 	sed "s/VERSION/$(VERSION)/g" palette.html > ../palette.html
 	sed -i "/<!--@ -->/,/<!-- @-->/d" ../index.html
 	sed -i "s/<!--script\(.*\)script-->/<script\1script>/g" ../index.html
-	#cp palettes.json favicon.ico styles.css offline.html ..
+	cp palettes.json styles.css offline.html ..
 	sed -i "s/version [0-9.]\+/version $(VERSION)/g" ../README.md
 	markdown ../README.md > ../docs.html
 

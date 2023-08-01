@@ -1,0 +1,180 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Fractured - Source rebuilder</title>
+
+<script src="ajax.js"></script>
+<script src="utils.js"></script>
+<script src="formulae.js"></script>
+
+<script type="text/javascript">
+//Source files list
+var sources = {};
+var offline = false;
+
+//Standard formulae library
+//var formulae = {"base":["Default"], "fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Novabs","Cactus","Phoenix","Stretch","GM","GMM","Quadra"],"transform":["Inverse","Functions","Fractured"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
+var formulae = {"base":["Default"], "fractal":["Mandelbrot","Burning Ship","Magnet 1","Magnet 2","Magnet 3","Nova","Cactus","Phoenix"],"transform":["Inverse","Functions"],"colour":["Default","Smooth","Exponential Smoothing","Triangle Inequality","Orbit Traps","Gaussian Integers","Hot and Cold"]};
+
+function rebuild() {
+  //Get shader source files on server
+  sources["include/glsl-header.frag"] = "";
+  sources["include/opencl-header.cl"] = "";
+  sources["include/complex-header.frag"] = "";
+  sources["include/fractal-shader.frag"] = "";
+  sources["include/complex-math.frag"] = "";
+  sources["include/shader2d.vert"] = "";
+  sources["include/script.js"] = "";
+
+  formula_list = {};
+
+  for (type in formulae)
+    for (i in formulae[type])
+      sources[formulaFilename(type, formulae[type][i])] = "";
+
+  //Load a from list of remaining source files
+  for (filename in sources) {
+    if (!sources[filename]) {
+      if (offline)
+        iframeReadFile(filename);  //iFrame file reader that works offline (sometimes)
+      else
+        ajaxReadFile(filename, saveSource, true);
+    } else {
+      print("restored: " + filename);
+    }
+  }
+
+  //Check if all loaded yet
+  checkSources();
+}
+
+function saveLocal() {
+  //Formula files
+  for (type in formulae) {
+    for (i in formulae[type]) {
+      var filename = formulaFilename(type, formulae[type][i]);
+      var source = sources[filename];
+      var f = new FormulaEntry(type, formulae[type][i], source);
+      delete sources[filename];
+    }
+  }
+
+  /*/Include files
+  for (filename in sources) {
+    var slash = filename.indexOf("/");
+    var type = filename.substr(0, slash);
+    if (type != "formulae") {
+      localStorage[filename] = sources[filename];
+    }
+  }*/
+
+  //localStorage["formulae"] = JSON.stringify(formula_list);
+  var idata = JSON.stringify(sources)
+  var fdata = JSON.stringify(formula_list)
+  $('formula_output').value = fdata;
+  $('include_output').value = idata;
+  print("Rebuild complete");
+  
+  $('link1').href = 'data:text/plain;base64,' + window.btoa(fdata);
+  $('link2').href = 'data:text/plain;base64,' + window.btoa(idata);
+
+  var params = "filename=../defaultformulae.json&data=" + encodeURIComponent(fdata);
+  ajaxPost("ss/writefile.php", params, alert);
+  var params = "filename=../includes.json&data=" + encodeURIComponent(idata);
+  ajaxPost("ss/writefile.php", params, alert);
+}
+
+//Console functions
+function debug(str) {
+  //print(str);
+}
+
+function print(str) {
+  var console = document.getElementById('console');
+  console.innerHTML += "<div class='message'>" + str + "</div>";
+  //$('panel4').scrollTop = console.clientHeight - $('panel4').clientHeight + $('panel4').offsetHeight;
+}
+
+function consoleClear() {
+  var console = document.getElementById('console');
+  console.innerHTML = '';
+}
+
+//External content load via iframe dynamic insert
+function iframeReadFile(doc) {
+ //Unfortunately doesn't work in chrome for local files in sub-directories,
+ //Stupidly it treats them as from another domain
+
+  // create a new iframe element
+  var iframe = document.createElement('iframe');
+  // set the src attribute to that url
+  iframe.setAttribute('src', doc);
+  iframe.setAttribute('name', doc);
+  iframe.setAttribute('onload', 'transferHTML(this)');
+  // insert the script into our page
+    print("Loading " + doc);
+    //<iframe onload="transferHTML();" id="hiddenContent" name=""></iframe>
+  document.getElementById('hidden').appendChild(iframe);
+}
+
+function transferHTML(srcFrame) {
+  var doc = srcFrame.name;
+  srcContent='';
+  //if (srcFrame.contentDocument) {
+    srcContent=srcFrame.contentDocument.body.textContent; //innerHTML; //textContent;
+  //}
+  //else if (srcFrame.contentWindow) {
+  //  srcContent=srcFrame.contentWindow.document.body.textContent;
+  //  srcContent=srcFrame.contentWindow.document.body.textContent;
+  //}
+  sources[doc] = localStorage[doc] = srcContent;
+
+  print("loaded: " + doc);
+  checkSources();
+}
+
+//Source file loaded
+function saveSource(data, filename) {
+  sources[filename] = localStorage[filename] = data; //Save content
+  print("loaded: " + filename);
+  checkSources();
+}
+
+function checkSources() {
+  //Check if all loaded yet
+  var remain = false;
+  for (filename in sources) {
+    if (!sources[filename] || sources[filename].length == 0) {remain=true; break;}
+  }
+
+  if (!remain) saveLocal();  //All data loaded, call init
+}
+
+</script>
+
+</head>
+
+<body onload="rebuild()">
+
+<div id="info">
+Rebuilding source files...
+</div>
+
+<div id="console">
+</div>
+
+  <a id="link1" href="data:text/plain;base64," download="defaultformulae.json">defaultformulae.json</a>
+  <a id="link2" href="data:text/plain;base64," download="includes.json">includes.json</a>
+  <hr>
+<textarea id="formula_output" cols="100" rows="10" spellcheck="false">
+</textarea>
+<textarea id="include_output" cols="100" rows="10" spellcheck="false">
+</textarea>
+
+
+  <div id="progress" class="popup" style="display:none; width: 310px; height: 32px;">
+    <div class="popclose" onclick="toggle('progress');">X</div>
+    <span id="progressmessage"></span><span id="progressstatus"></span>
+    <div id="progressbar" style="width: 300px; height: 10px; background: #58f;"></div>
+  </div>
+
+</body></html>

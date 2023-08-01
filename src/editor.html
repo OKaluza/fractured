@@ -1,0 +1,206 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<title>Fractured | editor</title>
+<meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1" />
+
+<link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
+
+<!-- CodeMirror-->
+<script src="codemirror_VERSION.js"></script>
+<!--script src="codemirror/lib/codemirror.js"></script>
+<script src="codemirror/lib/searchcursor.js"></script>
+<script src="codemirror/lib/search.js"></script>
+<script src="codemirror/lib/dialog.js"></script>
+<script src="codemirror/mode/clike/clike.js"></script>
+<script src="codemirror/mode/javascript/javascript.js"></script-->
+
+<link rel="stylesheet" type="text/css" href="codemirror_VERSION.css">
+<!--link rel="stylesheet" href="codemirror/dialog.css">
+
+<link rel="stylesheet" href="codemirror/theme/fractured.css">
+<link rel="stylesheet" href="codemirror/theme/cobalt.css">
+<link rel="stylesheet" href="codemirror/theme/eclipse.css">
+<link rel="stylesheet" href="codemirror/theme/elegant.css">
+<link rel="stylesheet" href="codemirror/theme/monokai.css">
+<link rel="stylesheet" href="codemirror/theme/neat.css">
+<link rel="stylesheet" href="codemirror/theme/night.css">
+<link rel="stylesheet" href="codemirror/theme/rubyblue.css"-->
+
+<style type="text/css">
+/* Override some codemirror defaults */
+.CodeMirror {
+  font-family: 'Droid Sans Mono',monospace;
+  font-size: 10pt;
+  line-height: 1.1em;
+  height: 100%;
+}
+
+body {
+  background: #ffe;
+  font-family: 'Droid Sans Mono',monospace;
+}
+html, body { padding: 0; margin: 0; }
+
+#buttons{ 
+  margin: 1px; padding:0px;
+  background: #fefdee;
+  border-radius: 4px;
+  height: 28px;
+}
+#buttons input,select{ 
+  float: left;
+  height: 24px;
+  margin: 2px; padding: 0px 4px 2px;   /*Top L/R Bottom */
+  font-size: 10pt;
+}
+input[type="button"]:hover {background:#dac083;}
+input[type="button"] {border: 1px solid #998; border-radius: 3px; background: #eed;}
+select {border: 1px solid #998; border-radius: 3px; background: #eed; padding: 1px;}
+
+#code {position: absolute; top: 30px; left: 2px; right: 2px; bottom: 2px;}
+#editor {width: 100%; height: 100%;}
+
+</style>
+
+
+<script type="text/javascript">
+var editor;
+var code;
+var filename;
+var type;
+var formula;
+
+  runScript = function() {
+    saveEditor();
+    window.opener.runScript(filename)
+  }
+
+  saveEditor = function() {
+    if (editor)
+      editor.save();  //Updates textarea content
+
+    //JS Script?
+    if (filename.indexOf(".js") >= 0) {
+      localStorage[filename] = code.value
+      return;
+    }
+
+    //Editing compiled shader source?
+    if (filename == "generated.source") {
+      window.opener.fractal.generated.compile(code.value);
+    } else {
+      //Save, reselect, rebuild
+      if (type) {
+        window.opener.formula_list[filename].source = code.value;
+        window.opener.fractal.choices[type].select();
+      } else {
+        window.opener.sources[filename] = code.value;
+      }
+      window.opener.fractal.generated.generate();
+    }
+    window.opener.fractal.draw();
+  }
+
+  loadEditor = function() {
+    var editmode = "x-shader/x-fragment";
+    var edittheme = localStorage["fractured.editorTheme"] || "fracturedlight";
+
+    //Copy for fallback to code
+    code = document.getElementById('editor');
+
+    var query = decodeURI(window.location.href).split("?")[1]; //whole querystring including ?
+    var param = query ? query.split("=")[1] : "";
+
+    type = "";
+    filename = param;
+    var pos = param.indexOf('#');
+    if (pos > 0) {
+      filename = param.substr(0, pos);
+      type = param.substr(pos+1);
+      code.value = window.opener.formula_list[filename].source;
+    } else {
+      if (window.opener.sources[filename])
+        code.value = window.opener.sources[filename];
+      else
+        code.value = localStorage[filename];
+    }
+
+    sel = document.getElementById('theme');
+
+    if (filename.indexOf(".js") >= 0) {
+      editmode = "text/javascript";
+      edittheme = localStorage["fractured.scriptTheme"] || "monokai";
+      var btn = document.getElementById('runbtn');
+      btn.style.display = "block";
+      sel.options[sel.length] = new Option("cobalt");
+      sel.options[sel.length] = new Option("eclipse");
+      sel.options[sel.length] = new Option("elegant");
+      sel.options[sel.length] = new Option("monokai");
+      sel.options[sel.length] = new Option("neat");
+      sel.options[sel.length] = new Option("night");
+      sel.options[sel.length] = new Option("rubyblue");
+    } else {
+      sel.options[sel.length] = new Option("light", "fracturedlight");
+      sel.options[sel.length] = new Option("dark", "fractureddark");
+    }
+
+      editor = new CodeMirror.fromTextArea(code, {
+        mode: editmode,
+        theme: edittheme,
+        height: "100%",
+        saveFunction: saveEditor,
+        lineNumbers: true,
+        indentUnit: 2,
+        tabSize: 2,
+        /*tabMode: "classic",*/
+        matchBrackets: true
+      });
+      sel.value = edittheme;
+  };
+
+  function selectTheme(sel) {
+    var theme = sel.options[sel.selectedIndex].value;
+    editor.setOption("theme", theme);
+    if (filename.indexOf(".js") < 0)
+      localStorage["fractured.editorTheme"] = theme;
+    else
+      localStorage["fractured.scriptTheme"] = theme;
+  }
+
+
+function search() {
+  CodeMirror.commands["clearSearch"](editor);
+  CodeMirror.commands["findNext"](editor);
+}
+
+function replace() {
+  CodeMirror.commands["clearSearch"](editor);
+  CodeMirror.commands["replace"](editor);
+}
+</script>
+
+</head>
+
+<body onload="loadEditor()">
+
+<div id="buttons">
+  <input type="button" id="runbtn" value="Run" style="display:none" onclick="runScript()">
+  <input type="button" id="savebtn" value="Save" onclick="saveEditor()">
+  <input type="button" value="Export" onclick="window.opener.exportFormulaFile(filename, window.type, code.value)">
+  <div id="cm_buttons">
+    <input type="button" value="Find" onclick="search()">
+    <input type="button" value="Replace" onclick="replace()">
+    <input type="button" value=" < " onclick="CodeMirror.commands['findPrevious'](editor);">
+    <input type="button" value=" > " onclick="CodeMirror.commands['findNext'](editor);">
+    <input type="button" value="Replace All" onclick="CodeMirror.commands['replaceAll'](editor);">
+    <select id="theme" style="float: right" onchange="selectTheme(this)">
+    </select>
+  </div>
+</div>
+
+<div id="code">
+<textarea id="editor" spellcheck="false">
+</textarea> 
+</div>
+
+</body></html>

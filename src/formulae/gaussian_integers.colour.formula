@@ -1,0 +1,105 @@
+//Gaussian integers
+//Palette repeat
+@repeat = real(1);
+//Round Mode
+@rmode = define('round|trunc|floor|ceil');
+//Colour by
+@colourby = list('min dist|iteration @ min|angle @ min|max dist|iteration @ max|angle @ max|avg dist|min/mean/max angle|max/min ratio');
+//Normalisation
+@normalise = list('none|point|factor|f(z)');
+//Norm factor
+@normfact = complex(1,0);
+//Norm fn
+@normfunc = complex_function();
+
+real @rmin = 1.0e12;
+real @rmax = 0.0;
+real @rave = 0.0;
+real @total = 0.0;
+real @itermin = 0.0;
+real @itermax = 0.0;
+
+complex @zmin = (0,0);
+complex @zmax = (0,0);
+real @r;
+
+complex @factor = (1,0);
+
+init:
+  if (@normalise == 1)
+    @factor = point;        //point normalisation
+  if (@normalise == 2)
+    @factor = @normfact;    //factor normalisation
+
+calc:
+  //Round Mode = round/truncate/floor/ceiling
+  if (@normalise == 3)
+    @factor = @normfunc(z); //f(z) normalisation
+  
+  @r = cabs(z - mul(@rmode(div(z,@factor)), @factor));
+
+  @total = @total + @r;
+  @rave = @total / R(count);
+  if (@r < @rmin)
+  {
+     @rmin = @r;
+     @zmin = z;
+     @itermin = R(count+1);
+  }
+  if (@r > @rmax)
+  {
+     @rmax = @r;
+     @zmax = z;
+     @itermax = R(count+1);
+  }
+
+result:
+  real index, t;
+  
+  // minimum distance
+  if (@colourby == 0)
+    index = @rmin;
+  // iteration @ min
+  if (@colourby == 1)
+    index = 0.01 * @itermin;
+  // angle @ min
+  if (@colourby == 2)
+  {
+    t = arg(@zmin);
+    t = t/PI;
+    if (t < 0.0) t = t + 2.0;
+    index = 0.5 * t;
+  }
+  // maximum distance  
+  if (@colourby == 3)
+    index = @rmax;
+  // iteration @ max
+  if (@colourby == 4)
+    index = 0.01 * @itermax;
+  // angle @ max
+  if (@colourby == 5)
+  {
+    t = arg(@zmax);
+    t = t/PI;
+    if (t < 0.0) t = t + 2.0;
+    index = 0.5 * t;
+  }
+  // average distance
+  if (@colourby == 6)
+    index = @rave;
+  // min/mean/max angle
+  if (@colourby == 7)
+  {
+     @zmax = complex(@rave - @rmin, @rmax - @rave);
+     t = arg(@zmax);
+     t = t/PI;
+     if (t < 0.0) t = t + 2.0;
+     index = 0.5 * t;
+  }
+  // max/min ratio
+  if (@colourby == 8)
+    index = @rmax / (@rmin + 1.e-12);
+
+  colour = gradient(@repeat * index);
+
+

@@ -1,0 +1,629 @@
+/* Main Stylesheet */
+body {
+  font-size: 10pt;
+  background: white;
+}
+/* Default font */
+* {
+    font-family: 'Droid Sans',helvetica,arial,serif;
+  }
+html, body { 
+  padding: 0; margin: 0;
+  border: none; 
+}
+ul {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+h2 {font-weight: bold; font-size: 120%;}
+
+/* For calculating text width in input controls */
+#fonttest
+{
+  padding: 1px; font-size: 10pt;
+  visibility: hidden;
+  position: absolute;
+  height: auto; width: auto;
+  border: 1px solid #998; border-radius: 3px;
+}
+
+/* Data entry form layout */
+div.row       {clear: both; margin-top: 3px;}
+div.row label {display: inline; float: left; width: 84px; text-align: right; margin: 6px 3px 0px 0px; ; height: 20px; line-height:80%}
+div.row span.field   {display: inline; float: left; text-align: left; margin: 0px;} 
+form input, form select, form textarea{ margin: 2px; padding: 0px; font-size: 10pt; height: 20px;}
+input[type=file] {height:0; width:0;}  /* Hidden uploads, triggered by buttons */
+
+/* Attempt to style inputs cleanly */
+input[type="text"] {border: 1px solid #998; border-radius: 3px;}
+input[type="number"] {border: 1px solid #998; border-radius: 3px; text-align: left;}
+input[type="range"] {border: 1px solid #998; border-radius: 3px; width: 150px;}
+input[type="button"] {height: 23px; font-size: 8pt; padding: 3px; min-width: 30px; border: 1px solid #998; border-radius: 3px; background: #eed; margin: 1px;}
+input[type="checkbox"] {margin: 4px;}
+form select {width: 150px; border: 1px solid #998; border-radius: 3px; background: #fff;}
+select.formula {width: 60%;}
+textarea {border: 1px solid #998; border-radius: 3px; min-height: 20px;}
+
+/* Disable spin buttons in webkit */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}
+
+div.row textarea {min-width: 200px; max-width: 200px;}
+div.row input[type="number"] {width: 100px;}
+div.row input[type="text"] {width: 100px;}
+div.row select {min-width: 100px;}
+
+input[type="button"]:hover {background:#dac083;}
+input[type="button"]:disabled {background:#eee;}
+div.row input:focus {border-color: blue;}
+div.row select:focus {border-color: blue;}
+div.row textarea:focus {border-color: blue;}
+
+input[type="button"].activemode {border-color: blue;}
+
+/* Exception for name field */
+div.row #name {width: 160px;}
+
+/* Console & help areas */
+div.info {
+  border:1px solid #888;
+  margin: 2px; padding: 2px;  
+  background: #ffe;
+  border-radius: 5px;
+overflow:auto;
+}
+.message {font-family: 'Droid Sans Mono'; font-size: 8pt;}
+
+p {margin: 0px 2px; }
+
+
+div.gap {height: 5px; }
+
+/* Visible only when logged in */
+.loggedin {display: none;}
+.loggedout {display: block;}
+
+/* Floating divs */
+.left       {float: left}
+.right      {float: right}
+.clear      {clear: both;}
+
+.parambox {
+  clear: both; margin: 1px 0px 8px; padding: 5px 0px 0px; 
+  font-size: 9pt;
+  border: 1px solid #aa8;  
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 1px 1px 2px #555;
+}
+.parambox-label {
+  margin: 4px;
+  padding:2px 3px;
+  background: #653;
+  color: #eee;
+  border-radius: 3px;
+}
+
+canvas {
+  z-index: 0; margin: 0px; padding:0px;
+  background: transparent;
+  border: none; 
+}
+
+canvas#palette {
+  width: 572px;
+  height: 28px;
+  border:1px solid #000;
+  border-radius: 4px;
+}
+
+canvas#gradient {width: 2048px; height: 1px;}
+canvas#thumb {width: 32px; height: 32px;}
+
+.checkerboard {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAIElEQVQ4jWP4TwAcOHAAL2YYNWBYGEBIASEwasCwMAAALvidroqDalkAAAAASUVORK5CYII=");}
+
+/* Colour select */
+.colourbg { margin:1px; width: 100px; height: 20px; border: solid 1px; border-radius: 4px;}
+.colour { width: 100px; height: 20px; background: #fff; border-radius: 4px;}
+
+/* Background colour */
+#backgroundBG { float: left; margin: 0px 2px 0px 0px; width: 28px; height: 28px;}
+#backgroundCUR { float: left; width: 28px; height: 28px;}
+
+/* Image area selection */
+.select {
+  display: none;
+  z-index: 20;
+  position:absolute;
+  border:1px solid #596380;
+  background: #EECC11;
+  opacity: 0.3;
+}
+
+/* Background image */
+#background {z-index: -1; position: absolute; top: 0; left: 0; display:none;}
+
+/* Popup div */
+.popup {
+  position:fixed;
+  width:300px;
+  top:50%; left:50%;
+  margin:-40px 0 0 -150px; /* [-(height/2)px 0 0 -(width/2)px] */
+  display:none; 
+  z-index: 100;
+  border: none; 
+  padding: 5px;
+  overflow-y: auto;
+  background: #ffe;
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 3px 3px 2px #222;
+}
+.popclose {float: right; cursor: pointer; color: #333; margin: 0px; font-weight: bold;
+  border-radius: 3px; border: 1px solid #663; padding: 0px 4px; background: #ddc;
+}
+.popclose:hover {background:#dac083;}
+#loginpop {
+  width:300px; height:200px;
+  margin:-100px 0 0 -150px;
+}
+
+#openid_form {display: none; width: 255px;}
+#openid {width: 200px;}
+
+/* Card div */
+.card {
+  display:none;
+  color: #332;
+  width: 96%;
+  margin: 5px 0px 10px;
+  padding: 5px; overflow-y: auto;
+  background: #fafac8;
+  border: none;  
+  box-shadow: 1px 1px 3px #555;
+}
+.card h3 {
+  font-size: 11pt;
+  font-weight: bold;
+  margin: 2px 0px; padding: 0;
+}
+#lastimage {margin-right: 5px;}
+.noteclose {float: right; cursor: pointer; color: #333; margin: 0px; font-weight: bold;
+  border: none; padding: 0px 4px; font-size: 14pt; line-height: 16px;}
+
+/* Progress popup */
+#progress {width: 302px; height: 32px;}
+#progressbar {width: 300px; height: 10px; background: #58f;}
+
+/* Formula editing */
+.formula_buttons {float: right; padding-right: 5px;}
+
+/* Tab panels */
+.panel { 
+  z-index: 1;
+  border-width: 1px 1px 1px 1px; 
+  border-color: #663; 
+  border-style: solid; 
+  padding: 5px; overflow: hidden;
+  background: #fefdee;
+  border-radius: 0px 5px 5px 5px;
+  position: absolute; top: 28px; left: 2px; bottom: 24px; width: 318px;
+}
+
+/* Scrolling areas */
+.scroll {overflow-y: auto; overflow-x: hidden}
+
+#statusbar {position: absolute; bottom: 1px; width: 328px; height: 18px; margin: 2px 0px 0px; padding: 0; border-radius: 4px; border: 1px solid #663; background-color: #ddc}
+
+#coords {float: left; padding: 0px 5px; margin: 1px;}
+
+#indicatorbg {width: 100%; background-color: #666; margin: 1px; border-radius: 4px;}
+#indicator {width: 0px; height: 5px; background-color: #0b2; margin: 0px; border-radius: 4px;}
+
+.savelist {width: 200px;}
+.fractal-list {width: 98%;}
+
+section, header, aside, nav, article {display: block;}
+
+header { 
+  z-index: 100;
+  margin: 0 auto;
+  height: 30px;
+  width:100%;
+  background: #222;
+  color: #ccc;
+     position: fixed;
+ min-width: 292px;
+}
+
+/* Title + home link */
+#title img {float: left; margin: 5px 0px 5px 5px; background-color: #ffe; }
+#heading {float: left;  margin: 0px;  height: 12px;  padding: 4px;  font-size: 13pt; font-weight:normal; line-height:22px;}
+#title a {font-weight:normal; text-decoration:none; color: #eec}
+#title a:visited {color: #eec}
+#heading #bar {color: #887;}
+header h3 {float: left;  margin: 0px; height: 12px; padding: 10px 2px;  font-size: 8pt; font-weight:normal;}
+
+/* Nav-menu */
+nav#menu {float: left;}
+
+#nav,#nav ul {
+  list-style:none;
+  margin:0; padding:0;
+}
+#mainmenu, #nav {
+  height:28px;
+  padding-left:2px;
+  padding-top:1px;
+  position:relative;
+  z-index: 102;
+}
+
+#mainmenu {
+  display: none; /* Initially hidden */
+}
+
+
+/* Drop menus */
+#nav ul {
+  display: none; /* Initially hidden */
+  box-shadow: 3px 3px 2px #222;
+    position:absolute;
+    top:28px;
+    width:auto;
+  border-radius:4px;
+  padding:3px;
+  background-color:#2f2c2a;
+    border: 1px solid #444;
+}
+#nav ul ul {
+  display: none; /* Initially hidden */
+    position:absolute;
+    top:0;
+    width:auto;
+    border: 1px solid #444;
+}
+#nav li {
+  float:left;
+    margin-right:3px;
+    position:relative;
+}
+
+#nav li span {
+    color:#ffd;
+    display:block;
+    float:left;
+    font-size:14px;
+    padding:2px 3px 0px;
+    text-decoration:none;
+    line-height: 20px;
+    min-height: 24px;
+  cursor: pointer; 
+}
+#nav li span p {
+    line-height: 18px;
+    font-size:12px;
+    float:right;
+}
+
+/* Dividers */
+#nav ul li hr {margin: 2px 0px; min-width:150px; width:100%; }
+
+/* Top level items only */
+#nav > li > span {
+    border-radius:4px;
+    overflow:hidden;
+  border: 1px solid #444;
+  color:#bbb;
+    height: 24px;
+}
+#nav li span.fly {
+  background:#2f2c2a url(media/arrow.gif) no-repeat right center;
+  padding-right:15px;
+}
+#nav ul li { margin:0; }
+#nav ul li span { width:150px; }
+#nav ul li span.fly { padding-right:3px; }
+
+/*hover styles*/
+#mainmenu:hover { background-color:#6a6043; color:#000; }
+#nav li:hover > span { background-color:#6a6043; color:#000; }
+/*focus styles - removes the dotted outline */
+#nav li span:focus { outline-width:0; }
+
+/* Sub-menu */
+#nav ul.dd li ul
+{ 
+  left:160px; top:-3px;
+}
+
+/* Hide labels except for very wide screen */
+@media (max-width: 1290px) {
+#nav li span p {
+  display: none;
+}
+}
+
+/* Small screen display */
+@media (max-width: 700px)
+{
+#nav {
+  border-radius:4px;
+  padding:3px;
+  box-shadow: 3px 3px 2px #222;
+    /* Small screen default*/
+    position:absolute;
+    top: 30px;
+    right: 5px;
+  display: none; /* Initially hidden in small screen */
+    border-radius:4px;
+    border: 1px solid #444;
+  background-color:#2f2c2a;
+  height:auto;
+}
+#nav li {
+  border-radius:0;
+  clear:both;
+}
+#mainmenu {
+ margin: 2px;
+    height: 24px;
+  display: block;
+    float:right;
+    font-size:14px;
+    padding:2px 3px 0px;
+    text-decoration:none;
+    line-height: 20px;
+  cursor: pointer; 
+}
+#mainmenu span {
+  line-height: 22px;
+  margin: 0px 3px;
+  color:#bbb;
+}
+#mainmenu img,#nav img {
+  float: left;
+  margin-top: 2px;
+}
+/* Top level items only */
+#nav > li > span {
+  width:150px;
+    border-radius:0;
+    overflow:hidden;
+  border: 0;
+  color:#bbb;
+}
+#nav li span p {
+  font-size: 14px; 
+  float: none;
+  display: inline;
+    line-height: 20px;
+}
+#nav ul
+{
+  left: -32px;
+  top:28px;
+  z-index: 103;
+}
+#nav ul.dd li ul
+{ 
+  left: -32px;
+  top:28px;
+  z-index: 104;
+  width: auto;
+}
+}
+
+/* For login options */
+#nav ul.login {border: 1px solid #2f2c2a; background:#fcfccf;}
+#nav ul.login li span {background:#fcfccf; text-align: center; width: 120px;}
+#nav ul.login li img:hover {background:#dac083;}
+#nav ul.login li img {padding: 0px 15px;}
+
+/* Menu lists */
+.selected_item {border: 1px dotted #777;}
+.selectlist {width: 202px; overflow-y:auto; overflow-x: hidden; max-height: 300px; margin:0px; padding: 0px;}
+.listmenu li {width: 200px;}
+.listmenu span {min-width: 194px; display: inline-block; float: left}
+#palettes li {border: none;}
+#palettes li img {position: absolute; left: 2px; top: 2px;
+                  height: 22px; width: 150px; margin: 0px; padding: 0px;}
+
+#nav span input {height: 22px; font-size: 9pt; padding: 0px; margin: 0px 12px 0px 0px; border: 1px solid #998; border-radius: 3px; background: #665;}
+
+.thumb {margin: 0px; padding-right: 3px; display: inline-block; float: left;}
+
+/* Tab navigation */
+#tabs {z-index: 2; position: relative;}
+#tabs ul {
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
+  display: block;
+  float: left;
+  line-height: 18px;
+}
+#tabs li {
+  border-color: black; 
+  color: #211; 
+  background: #fefdee;
+  padding: 2px 0.5em 0px 0.5em; 
+  margin-right: 1px;
+  text-decoration: none;
+  float: left;        
+  height: 24px;
+  border-radius: 5px 5px 0px 0px;
+
+  border-width: 1px 1px 0px 1px; 
+  border-color: #663; 
+  border-style: solid; 
+}
+
+#tabs .unselected:hover { 
+  color: #0088AA; 
+  border-color: black; 
+  background: #fce2a5; 
+  height: 24px;
+  cursor: pointer
+}
+
+#tabs .selected {
+  background: #fefdee;
+  padding-top: 2px;
+}
+#tabs .unselected {
+  padding-top: 1px;
+  background: #ddc;
+}
+
+#controls {
+  z-index: 1;
+  margin: 0px 0px 2px 0px; padding:0px;
+  height: 30px;
+  color: #888;
+/* Fix so palette doesn't wrap when window resized too small */
+position: absolute; right: 1px; 
+overflow: hidden;
+}
+
+#left {
+  margin: 0 auto;
+  z-index: 2;
+     position: fixed;
+  /*position:absolute;*/
+  left:0;
+  top: 30px;  /* Space for header */
+  bottom:0px;  
+    width:334px;
+}
+
+aside {
+  height: 99%;
+  margin: 2px;
+  float: left;
+  width: 330px;
+}
+
+#main {
+  z-index: 0;
+  margin: 0px;
+  padding: 0px;
+  position:absolute;   
+  left: 334px;
+  top: 30px;  /* Space for header */
+  bottom: 0px;
+  right: 0px;
+}
+
+/* colourPicker.js */
+.window { 
+  display: none;
+  z-index: 50; 
+  padding: 6px; 
+  position: fixed; 
+  border-radius: 5px; border: 1px solid #444;
+  background: #0d0d0d; color: #aaa; cursor: move; 
+  box-shadow: 3px 3px 2px #222;
+  font-family: arial; font-size: 11px; 
+}
+
+#previewWindow { 
+  top: 100px; left: 200px;
+}
+
+#preview { 
+  width: 400px; height: 400px;
+}
+
+.docs p, .docs h1, .docs h2, .docs h3 {margin-top: .5em; margin-bottom: .5em;}
+
+/* Help docs styles */
+.docs { font-size: 9pt }
+
+.docs h1 { font-size: 130% }
+.docs h2 { font-size: 115% }
+.docs h3 { font-size: 100% }
+
+/* bold-faced definition list terms */
+.docs li em { font-weight: bold }
+
+#emailform textarea { margin: 2px; padding: 0px; font-size: 10pt; height: 100px; width: 98%;}
+#emailform input[type="text"] { border: 1px solid #998; border-radius: 3px; width: 98%;}
+
+/* Gallery: floating images  and container */    
+div#gallery {width: 100%; height: 100%; margin: 0px; padding: 0;
+  box-sizing: border-box; -moz-box-sizing: border-box; 
+  color:#000; font-family: verdana, helvetica, sans; 
+  border-radius: 6px;
+}
+#setgallery {padding: 5px;}
+#setgallery div {color: #665; font-size: 10pt;
+  display:none;
+  margin: 5px;
+  padding: 3px;
+  border: none;  
+  box-shadow: 1px 1px 2px #555;
+border-radius: 4px; 
+}
+#setgallery a {height: 28px; font-size: 12pt; line-height: 26px; margin: 4px 0px 4px 4px; padding: 0px 5px;
+            border: none; border-radius: 4px; background: #554; color: #eee; text-decoration: none; display: inline-block;
+            box-shadow: 1px 1px 2px #222;
+            }
+#setgallery a:hover {background:#ead0a3; color: black}
+#setgallery a.selected {background:#9a8053;}
+#setgallery a:focus { outline-width:0; }/*focus styles - removes the dotted outline */
+div.float {min-width: 100px; min-height: 100px; margin: 0; padding-left: 10px; padding-bottom: 10px; float: left}
+div.float p {text-align: center}    
+div.float img {border: 0; display: block; box-shadow: 1px 1px 2px #222;}
+div.float a:focus { outline-width:0; }/*focus styles - removes the dotted outline */
+div.spacer {clear: both; height: 0;} 
+div.ginfo  {margin: 4px; padding-left: 10px; clear: both; float: left;
+          font-family: verdana, helvetica; font-size: 9pt; color: #333;}
+div.ginfo a  {padding-right: 10px; font-family: verdana, helvetica}
+
+#heading1 a:focus { outline-width:0; }/*focus styles - removes the dotted outline */
+
+/* Navigation Buttons */
+ul.navigation {list-style-type: none; margin: 0px 10px; padding: 3px 0px; font-size: 11pt; line-height: 20px; float: left;}
+ul.navigation li {margin-right: 10px;}
+ul.navigation li a {border-radius: 4px; display: block; width: 5em; height: 20px; padding: 2px 0; text-align: center; text-decoration: none; border: 1px solid #998; background: #eed; color: #332}
+ul.navigation li a:hover {color: #FFF; background-color: #963;}
+ul.navigation li span {border-radius: 4px; display: block; width: 5em; color: #332; background-color: #aa9; padding: 2px 0; text-align: center; text-decoration: none; height: 20px; border: 1px solid #998; }
+
+/* Override some codemirror defaults */
+.CodeMirror {
+  font-family: 'Droid Sans Mono',monospace;
+  font-size: 9pt;
+  line-height: 1.0em;
+  background: #fff;
+  min-width: 200px; max-width: 200px;
+  min-height: 20px;
+  height: auto;
+  margin: 2px; padding: 0px;
+  border: 1px solid #998; border-radius: 3px; 
+/* overflow: visible; Causes problem in CM 3.1 */
+}
+
+.cm-s-fracturedlight { background: #fff; }
+
+#showtools {display: none; float: left; margin: 2px; height: 26px; padding: 0px 9px; cursor: pointer; line-height:24px}
+#hidetools {display: block; float: left; margin: 2px; height: 26px; padding: 0px 9px; cursor: pointer; line-height:24px}
+#showtools:hover { background-color:#6a6043; color:#000; }
+#hidetools:hover { background-color:#6a6043; color:#000; }
+
+/* Small screen handling */
+@media (max-width: 1018px) {
+  #controls {display:none}
+}
+
+@media (max-width: 500px) {
+  #left {display:none; width: 99%; min-width: 332px;}
+  aside {width: 100%; min-width: 292px;}
+  #statusbar {width: 99%;}
+  .panel {width: 96%;}
+  #main {left:0px;}
+  #showtools {display: block;}
+  #hidetools {display: none;}
+}
+
+

@@ -1,0 +1,13 @@
+//Invert the complex plane
+//Center
+@center = complex(0,0);
+//Radius
+@radius = real(1);
+
+#define invert(P) P = \@center + @radius / (P - @center)\
+
+//Init, called before setting initial conditions
+init:
+  invert(point);
+  invert(selected);
+

@@ -1,0 +1,67 @@
+.cm-s-fracturedlight { background: #fffadd; color: black; }
+.cm-s-fracturedlight span.CodeMirror-selected { background: #b96 !important; }
+.cm-s-fracturedlight .CodeMirror-cursor { border-left: 1px solid black !important; }
+/*
+.cm-s-fracturedlight .CodeMirror-gutter { background: #443; border-right: 1px solid #aaa; }
+.cm-s-fracturedlight .CodeMirror-gutter-text { color: #888; }
+*/
+
+.cm-s-fracturedlight span.cm-marker {color: gray; font-weight:bold;}
+.cm-s-fracturedlight span.cm-keyword {color: #7f0055; font-weight:bold;}
+/*.cm-s-fracturedlight span.cm-atom {color: brown;}*/
+.cm-s-fracturedlight span.cm-number {color: brown;}
+.cm-s-fracturedlight span.cm-operator {color: red;}
+.cm-s-fracturedlight span.cm-comment {color: green; font-style: italic;}
+.cm-s-fracturedlight span.cm-meta {color: gray;}
+
+.cm-s-fracturedlight span.cm-modifier {color: #558fff;}
+.cm-s-fracturedlight span.cm-section {color: #900; font-weight:bold; text-decoration: underline;}
+.cm-s-fracturedlight span.cm-builtin {color: #008; font-weight:bold;}
+.cm-s-fracturedlight span.cm-atom {color: #089; font-weight:bold;}
+.cm-s-fracturedlight span.cm-type {color: blue;}
+.cm-s-fracturedlight span.cm-param {color: black; font-weight:bold;}
+.cm-s-fracturedlight span.cm-local {color: #633;}
+
+.cm-s-fracturedlight .CodeMirror-matchingbracket {text-decoration: underline; color: black !important;}
+.cm-s-elegant .CodeMirror-activeline-background {background: #e8f2ff !important;}
+
+/* Dark version */
+.cm-s-fractureddark { background: #312922; color: beige; }
+.cm-s-fractureddark span.CodeMirror-selected { background: #38c !important; }
+.cm-s-fractureddark .CodeMirror-gutter { background: #443; border-right: 1px solid #aaa; }
+.cm-s-fractureddark .CodeMirror-gutter-text { color: #888; }
+.cm-s-fractureddark .CodeMirror-cursor { border-left: 1px solid white !important; }
+
+.cm-s-fractureddark span.cm-marker {color: #8ca; font-weight:bold;}
+.cm-s-fractureddark span.cm-keyword {color: #8f6500; font-weight:bold;}
+/*.cm-s-fractureddark span.cm-atom {color: limegreen;}*/
+.cm-s-fractureddark span.cm-number {color: limegreen;}
+.cm-s-fractureddark span.cm-operator {color: orange;}
+.cm-s-fractureddark span.cm-comment {color: gray; font-style: italic;}
+.cm-s-fractureddark span.cm-meta {color: #8ca;}
+
+.cm-s-fractureddark span.cm-modifier {color: #558fff;}
+.cm-s-fractureddark span.cm-section {color: khaki; font-weight:bold; text-decoration: underline;}
+.cm-s-fractureddark span.cm-builtin {color: #ba0; font-weight:bold;}
+.cm-s-fractureddark span.cm-atom {color: #8cc; font-weight:bold;}
+.cm-s-fractureddark span.cm-type {color: #7a0;}
+.cm-s-fractureddark span.cm-param {color: #ccc; font-weight:bold;}
+.cm-s-fractureddark span.cm-local {color: seagreen; }
+
+.cm-s-fractureddark .CodeMirror-matchingbracket {text-decoration: underline; color: white !important;}
+.cm-s-elegant .CodeMirror-activeline-background {background: #e8f2ff !important;}
+
+/* Unused? */
+.cm-s-fractured span.cm-def {color: white;}
+.cm-s-fractured span.cm-variable {color: black;}
+.cm-s-fractured span.cm-variable-2 {color: #05a;}
+.cm-s-fractured span.cm-variable-3 {color: #0a5;}
+.cm-s-fractured span.cm-property {color: black;}
+.cm-s-fractured span.cm-string {color: #a11;}
+.cm-s-fractured span.cm-error {color: #f00;}
+.cm-s-fractured span.cm-qualifier {color: #555;}
+/*.cm-s-fractured span.cm-builtin {color: #30a;}*/
+.cm-s-fractured span.cm-bracket {color: #cc7;}
+.cm-s-fractured span.cm-tag {color: #170;}
+.cm-s-fractured span.cm-attribute {color: #00c;}
+
