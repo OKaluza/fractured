@@ -281,7 +281,7 @@ Param.prototype.declare = function(key, fractal) {
       isconst = false;
       if (type == 'real_function' && rfreg.test(this.value))
         //declaration = "#define " + key + "(args) _" + this.value + "(args)\n";
-        expr = "(args) _" + this.value + "(args)";
+        expr = "(args) _" + this.value + "((args))";
       else
         //declaration = "#define " + key + "(args) " + this.value + "(args)\n";
         expr = "(args) " + this.value + "(args)";
@@ -540,8 +540,6 @@ ParameterSet.prototype.createFields = function(category, name) {
       if (selectedTab != document.getElementById('tab_colour')) return;
       break;
   }
-  /* Hack: detect Android and disable CodeMirror on fields */
-  var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
   var field_area = document.getElementById(category + "_params");
   var parambox = document.createElement("div");
   parambox.className = "parambox";
@@ -587,7 +585,7 @@ ParameterSet.prototype.createFields = function(category, name) {
     //Create the input fields
     this[key].input = null;
     var input;
-    var onchange = "fractal.applyChanges();"
+    var onchange = function() {fractal.applyChanges;};
     var numtype = "text"; //"number";
     switch (this[key].typeid)
     {
@@ -669,10 +667,10 @@ ParameterSet.prototype.createFields = function(category, name) {
         break;
       case 6: 
         //Expression
-        if (!isAndroid && typeof CodeMirror == 'function') {
+        if (typeof CodeMirror == 'function') {
           input = CodeMirror(spanin, {
             value: this[key].value,
-            mode: "text/x-glsl",
+            mode: "x-shader/x-fragment",
             theme: "fracturedlight",
             matchBrackets: true,
             lineWrapping: true,

@@ -16,7 +16,8 @@ $message = check_input($_POST['message'], "Write your message");
 if (!empty($email))
 {
   //Split given email address into username and domain.
-  list($userName, $mailDomain) = split("@", $email);
+  list($userName, $mailDomain) = explode("@", $email);
+
   
   if (empty($userName) || empty($mailDomain))
   {
@@ -34,7 +35,7 @@ if (!empty($email))
 }
 
 //Prevent email address injection
-if (ereg( "[\r\n]", $email ) ) 
+if (preg_match( "[\r\n]", $email ) ) 
   $error = "Invalid characters in name or email.";
 
 //Write entry form data to text file for logging

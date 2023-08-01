@@ -148,4 +148,10 @@ complex catanh(in complex z)
   return C(-0.5*a.y, 0.5*a.x);
 }
 
+complex rotate2(complex v, real angle)
+{
+  real Cos = cos(radians(angle));
+  real Sin = sin(radians(angle));
+  return C(v.x * Cos - v.y * Sin, v.x * Sin + v.y * Cos);
+}
 

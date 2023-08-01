@@ -1,8 +1,5 @@
 //TODO:
-//Image on flickr (or imgur) deleted (both sites show a placeholder image), detect and remove from db?
 //Resize bug?
-//WebCL error when not installed
-//Switch to WebGL from WebCL still renders slow in WebCL
 //Fractals sometimes erroneously saved as unnamed
 
 //Globals
@@ -18,6 +15,11 @@ var rztimeout;
 
 //GOOGLE SIGN IN
 var googleSignIn = false;
+
+//CLIENT-ID
+//1087347516393-8mvvavg96lmvf9mbk1on1lnsq52979q1.apps.googleusercontent.com
+//API-KEY
+//AIzaSyBCbiLCVUDUvofFC_80PpY5FjcBOqHVZGA
 
 function onSignIn(googleUser) {
   // Useful data for your client-side scripts:
@@ -35,7 +37,7 @@ function onSignIn(googleUser) {
     //Requires log out of both and back in
     return;
   }
-  console.log("ID Token: " + googleSignIn.id_token);
+  //console.log("ID Token: " + googleSignIn.id_token);
 
   if (state) sessionGet();
 };
@@ -69,15 +71,18 @@ function loadDriveFiles(list) {
     removeChildren(menu);
     removeChildren(menu2);
     for (var i=0; i<list.length; i++) {
-      console.log(JSON.stringify(list[i]));
+      //console.log(JSON.stringify(list[i]));
       console.log(list[i].title);
+      var url = list[i].downloadUrl;
+      //See: https://stackoverflow.com/questions/68016649/google-drive-api-download-file-gives-lockeddomaincreationfailure-error
+      url = url.replace(/content.googleapis/g, "www.googleapis");
       //Strip extension
       var label = list[i].title.substr(0, list[i].title.lastIndexOf('.'));
       if (list[i].fileExtension == 'session') {
-        var item = addMenuItem(menu, label, "menu(); loadDriveSession('" + list[i].downloadUrl + "', '" + list[i].id + "')", null, true);
+        var item = addMenuItem(menu, label, "menu(); loadDriveSession('" + url + "', '" + list[i].id + "')", null, true);
         if (state.session == list[i].id) selectMenuItem(item, "deleteSelectedState();");
       } else if (list[i].fileExtension == 'formulae') {
-        var item = addMenuItem(menu2, label, "menu(); loadDriveFormulaSet('" + list[i].downloadUrl + "', '" + list[i].id + "', this)");
+        var item = addMenuItem(menu2, label, "menu(); loadDriveFormulaSet('" + url + "', '" + list[i].id + "', this)");
         if (state.formulae == list[i].id)
           selectMenuItem(item, "deleteSelectedFormulae();");
       }
@@ -94,7 +99,7 @@ function loadDriveSession(url, id) {
   if (!confirm('Loading new session. This will overwrite everything!')) return;
   state.session = id;
   state.saveStatus();
-  ajaxReadFile(url, function(data) {state.read(data);}, false, updateProgress, {'Authorization' : 'Bearer ' + googleSignIn.access_token});
+  ajaxReadFile(url, function(data) {console.log(data); state.read(data);}, false, updateProgress, {'Authorization' : 'Bearer ' + googleSignIn.access_token});
   progress("Downloading session from Google Drive...");
 }
 
@@ -257,7 +262,7 @@ function appInit() {
   //Strip initial commands from base url
   window.history.replaceState("", "", state.baseurl);
 
-  //Load query (returns action, "flickr" if requested to skip gallery display)
+  //Load query (returns action)
   loadAction = parseQuery(query);
 
   //Colour editing and palette management
@@ -311,13 +316,7 @@ function appInitState() {
 
   //Deferred actions from parsing url
   if (loadAction) {
-    if (loaded && loadAction == "flickr") {
-      //Previous viewing restored
-      //(Upload when draw finished)
-      fractal.ondraw = uploadFlickr;
-      hideGallery();
-      fractal.applyChanges();
-    } else if (loadAction.length && loadAction.indexOf('.html') < 0) {
+    if (loadAction.length && loadAction.indexOf('.html') < 0) {
       //Load from URL/address
       if (loadAction.length > 30)
         restoreFractal(loadAction);   //Restore from URL
@@ -339,8 +338,7 @@ function appInitState() {
   if (loaded) showCard("previous_fractal");
   showCard("local_storage");
   showCard("render_mode");
-  //if (!document.getElementById("webcl").disabled) showCard("webcl_detected"); else showCard("no_webcl");
-  if (!document.getElementById("webgl").disabled) showCard("webgl_detected"); else if (document.getElementById("webcl").disabled) showCard("no_webgl");
+  if (!document.getElementById("webgl").disabled) showCard("webgl_detected"); else showCard("no_webgl");
   showCard("mouse_reference");
   showCard("user_guide");
   showCard("contact_form");
@@ -389,8 +387,6 @@ function parseQuery(query, loaded) {
         //debug mode enabled, show extra menus
         state.debugOn();
         state.saveStatus();
-      } else if (list[i].indexOf('flickr') >= 0) {
-        action = "flickr"; //Skip gallery display & upload to flickr
       } else if (list[i].indexOf('server') >= 0) {
         //Controlling a server app
         if (list[i].length > 1) {
@@ -826,8 +822,11 @@ function fractalMenuAdd(name) {
   var menu = document.getElementById('fractals');
   var source = fractals[name].source;
   var img = fractalMenuThumb(name);
-  var item = addMenuItem(menu, name.substr(0, 18), "selectedFractal('" + name + "')", img, true)
-  if (state.fractal == name) selectMenuItem(item, "deleteFractal('" + name + "');");
+  //Can't have single quotes in name
+  var name_esc = name.replace("'", "\\'");
+  //console.log("NAME: " + name_esc);
+  var item = addMenuItem(menu, name.substr(0, 18), "selectedFractal('" + name_esc + "')", img, true)
+  if (state.fractal == name) selectMenuItem(item, "deleteFractal('" + name_esc + "');");
   item.id = "fractalmenu_" + next_id;  //Set entry id
   fractals[name].id = item.id;
   next_id++;
@@ -849,6 +848,7 @@ function fractalMenuDelete(name) {
 /////////////////////////////////////////////////////////////////////////
 
 function deleteFractal(name) {
+  name = name.replace("\\'", "'");
   if (!name || !confirm('Really delete the fractal: "' + name + '"')) return;
   try {
     fractalMenuDelete(name);
@@ -927,6 +927,7 @@ function populateFractals() {
 }
 
 function selectedFractal(name) {
+  name = name.replace("\\'", "'");
   hideGallery();
   fractalMenuSelect(name);
   fractal.name = name;
@@ -1389,43 +1390,6 @@ function uploadImgur() {
   ajaxPost("https://api.imgur.com/3/image", fd, onload, updateProgress, {"Authorization" : "Client-ID b29e1ddddcb30a7"});
 }
 
-function uploadFlickr() {
-  fractal.ondraw = null;  //Remove callback
-  var test = JSON.parse(readURL('ss/flickr.php?test'));
-  if (!test.username) {
-    popup("Not logged in.<br><a href='/ss/flickr.php?auth'>Click here</a> to log in to your flickr account");
-    //window.location = "/ss/flickr.php?auth";
-    return;
-  }
-
-  var data = imageToBlob("image/jpeg", 0.95);
- 
-  var fd = new FormData();
-  fd.append("photo", data);
-  fd.append("title", fractal.name);
-  fd.append("description", "Created using <a href='http://fract.ured.me'>Fractured Studio (fract.ured.me)</a>");
-  fd.append("tags", fractal.name);
-  fd.append("public", 1);
-  fd.append("friend", 1);
-  fd.append("family", 1);
-  fd.append("hidden", 2);
- 
-  var onload = function(response) {
-    var data = JSON.parse(response);
-    progressDone(data.url, data.url);
-    //...save in our db
-    var formdata = new FormData();
-    formdata.append("url", data.url);
-    formdata.append("description", fractal.name);
-    formdata.append("thumbnail", data.thumb);
-    formdata.append("info", response);
-    ajaxPost("ss/image_save.php", formdata);
-  }
-  progress("Uploading image to Flickr...");
-  ajaxPost("ss/flickr.php?upload", fd, onload, updateProgress);
-}
-
-
 function loadFormulaeList(data) {
   //Only public formulae stored on our server now...
   if (state.offline) return;
@@ -1713,7 +1677,6 @@ function autoResize(newval) {
 function beforeUnload(event) {
   //This event works in webkit but doesn't allow interaction, always save for now
   state.save();
-  if (fractal.webcl) fractal.webcl.free();
   return null; //"beforeUnload";
 }
 
@@ -1799,7 +1762,6 @@ function handleFormKeyUp(event) {
 
 function handleFormChange(event) {
   //Redraw
-    debug(event.target.id + " = " + event.target.value);
   fractal.applyChanges();
   return true;
 }

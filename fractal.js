@@ -1,3 +1,5 @@
+"use strict";
+
 //Constants
 var WEBGL = 0;
 var WEBCL = 1;
@@ -228,11 +230,6 @@ Fractal.prototype.infoString = function() {
   var info = "";
   if (window.WebGLRenderingContext) info += "W";
   if (this.webgl) info += "G";
-  if (this.webcl) {
-    info += "C";
-    if (this.webcl.fp64avail) info += "D";
-    if (this.webcl.pfstrings) info += this.webcl.pfstrings;
-  }
   debug("INFO: " + info);
   return info;
 }
@@ -266,36 +263,9 @@ Fractal.prototype.setRenderer = function(mode) {
   //Render mode, If not set, use WebGL if available
   this.renderer = mode;
   if (this.renderer == undefined) this.renderer = WEBGL;
-  //if (window.webcl == undefined && this.renderer > WEBGL) this.renderer = WEBGL;
 
   //Create the local renderer if enabled
   if (!this.state.disabled) {
-    //WebCL local renderer
-    if (this.renderer >= WEBCL) {
-      //Init WebCL
-      if (this.webcl) this.webcl.free();
-      try {
-        this.webcl = new OpenCL(this.state.platform, this.state.device);  //Use existing settings
-
-        if (this.renderer > WEBCL && !this.webcl.fp64avail) {
-          popup("Sorry, the <b><i>cl_khr_fp64</i></b> or the <b><i>cl_amd_fp64</i></b> " + 
-                "extension is required for double precision support in WebCL");
-          this.renderer = WEBCL;
-        }
-
-        debug(this.state.platform + " : " + this.state.device + " --> " + this.canvas.width + "," + this.canvas.height);
-        this.webcl.init(this.canvas, this.renderer > WEBCL, 8, this.gradient);
-        this.webgl = undefined;
-      } catch(e) {
-        //WebCL init failed, fallback to WebGL
-        var error = e;
-        if (e.message) error = e.message;
-        if (mode >= WEBGL) popup("WebCL could not be initialised (" + error + ")");
-        this.webcl = null;
-        this.renderer = WEBGL;
-      }
-    }
-
     //WebGL local renderer
     if (this.renderer == WEBGL) {
       try {
@@ -334,19 +304,6 @@ Fractal.prototype.setRenderer = function(mode) {
     //shouldn't be necessary but this state seems not to be cleared sometimes)
     document.getElementById("server").disabled = false;
     document.getElementById("webgl").disabled = false;
-    document.getElementById("webcl").disabled = false;
-    document.getElementById("fp64").disabled = false;
-    document.getElementById("webcl_list").disabled = true;
-    if (!this.webcl) {
-      if (window.webcl == undefined || !webcl.getPlatforms) {
-        document.getElementById("webcl").disabled = true;
-        document.getElementById("fp64").disabled = true;
-      }
-    } else {
-      document.getElementById("fp64").disabled = !this.webcl.fp64avail;
-      this.webcl.populateDevices(document.getElementById("webcl_list"));
-      if (this.renderer >= WEBCL) document.getElementById("webcl_list").disabled = false;
-    }
     if (!window.WebGLRenderingContext || this.webgl === null) {
       document.getElementById("webgl").disabled = true;
     }
@@ -357,18 +314,12 @@ Fractal.prototype.setRenderer = function(mode) {
     //Style buttons
     document.getElementById("server").className = "";
     document.getElementById("webgl").className = "";
-    document.getElementById("webcl").className = "";
-    document.getElementById("fp64").className = "";
     if (this.renderer == SERVER) 
       document.getElementById("server").className = "activemode";
-    else if (this.renderer == WEBGL) 
+    else
       document.getElementById("webgl").className = "activemode";
-    else if (this.renderer == WEBCL64 && this.webcl.fp64)
-      document.getElementById("fp64").className = "activemode";
-    else if (this.renderer == WEBCL)
-      document.getElementById("webcl").className = "activemode";
 
-    var renderer_names = ["Server", "WebGL", "WebCL", "WebCL fp64"];
+    var renderer_names = ["Server", "WebGL"];
     print("Mode set to " + renderer_names[this.renderer+1]);
 
     //Save last used renderer in state
@@ -377,24 +328,7 @@ Fractal.prototype.setRenderer = function(mode) {
   }
 }
 
-//Fractal.prototype.webclSet = function(pfid, devid) {
-Fractal.prototype.webclSet = function(valstr) {
-  var val = JSON.parse(valstr);
-  //Init with new selection
-  this.state.platform = val.platform;
-  this.state.device = val.device;
-  this.setRenderer(this.renderer);
-
-  //Redraw if updating
-  if (this.cache) {
-    //Invalidate shader cache
-    this.cache = null;
-    this.applyChanges();
-  }
-}
-
 Fractal.prototype.precision = function(val) {
-  if (this.renderer > WEBGL && this.webcl.fp64) return val.toFixed(15);
   return val.toFixed(8);
 }
 
@@ -632,7 +566,7 @@ Fractal.prototype.loadPalette = function(source) {
 
 //Load fractal from file
 Fractal.prototype.load = function(source, checkversion, noapply) {
-  //if (!this.webgl && !this.webcl) return;
+  //if (!this.webgl) return;
   //Strip leading : from old data
   source = source.replace(/:([a-zA-Z_])/g, "$1"); //Strip ":", now using @ only
   //Only prompt for old fractals when loaded from file or stored, not restored or from server
@@ -1347,18 +1281,12 @@ Fractal.prototype.sizeCanvas = function() {
     if (this.webgl) {
       this.webgl.viewport.width = width;
       this.webgl.viewport.height = height;
-    } else if (this.renderer >= WEBCL && this.webcl) {
-      //Update WebCL buffer if size changed
-      if (this.webcl.viewport.width != this.canvas.width || this.webcl.viewport.height != this.canvas.height) {
-        debug("Size changed, WebCL resize");
-        this.webcl.setViewport(0, 0, width, height);
-      }
     }
   }
 }
 
 Fractal.prototype.updatePalette = function() {
-  if (!this.webgl && !this.webcl) return;
+  if (!this.webgl) return;
   //Update palette texture
   this.colours.get(this.gradient, true);
   if (this.webgl) this.webgl.updateTexture(this.webgl.gradientTexture, this.gradient);
@@ -1366,9 +1294,9 @@ Fractal.prototype.updatePalette = function() {
 
 //Apply any changes to parameters or formula selections and redraw
 Fractal.prototype.applyChanges = function(antialias, notime) {
-  //if (!this.webgl && !this.webcl) return;
+  //if (!this.webgl) return;
   //Only redraw when visible
-  if (this.canvas.offsetWidth < 1 || this.canvas.offsetHeight < 1) return;
+  //if (this.canvas.offsetWidth < 1 || this.canvas.offsetHeight < 1) return;
   //Update palette texture
   this.updatePalette();
 
@@ -1401,12 +1329,13 @@ Fractal.prototype.applyChanges = function(antialias, notime) {
   }
 
   //Has anything actually changed (parameters)?
-  if (this.paramcache != this.toString) {
+  var asString = this.toString();
+  if (this.paramcache != asString) {
     //Update shader code & redraw
     this.generated = new Generator(this, notime);
     this.draw(antialias, notime);
 
-    this.paramcache = this.toString();
+    this.paramcache = asString;
   }
 }
 
@@ -1440,8 +1369,9 @@ Fractal.prototype.copyToForm = function() {
  */
 function Generator(fractal, notime) {
   this.fractal = fractal;
-  this.webcl = fractal.renderer >= WEBCL && fractal.webcl;
+  this.webcl = fractal.renderer >= WEBCL;
   this.webgl = (fractal.webgl ? true : false);
+  console.log("FRACTAL RENDERER = " + fractal.renderer + " webcl " + this.webcl);
   this.notime = notime;
   this.source = "";
   this.generate();
@@ -1591,7 +1521,7 @@ Generator.prototype.compile = function(targetsrc) {
       if (this.webcl) {
         error_regex = /[^-](\d+):/;
         //error_regex = /:(\d+):/;
-        this.fractal.webcl.buildProgram(targetsrc);
+        //this.fractal.webcl.buildProgram(targetsrc);
       } else if (this.webgl) {
         this.fractal.updateShader(targetsrc);
       }
@@ -1638,7 +1568,7 @@ Generator.prototype.parseErrors = function(errors, regex) {
   }
   if (!found) {
     //Otherwise show raw error
-    popup("<b>Error</b>:<hr><code style='font-family: monospace;'>" + errors.substr(0,511) + "</code>");
+    popup("<b>Error</b>:<hr><code style='font-family: monospace;'>" + JSON.stringify(errors).substr(0,511) + "</code>");
   }
 }
 
@@ -1699,9 +1629,10 @@ Fractal.prototype.drawCore = function(antialias, timer) {
     if (this.webgl) {
       this.webgl.time = timer;
       this.renderWebGL(antialias);
-    } else if (this.renderer >= WEBCL && this.webcl) {
-      this.webcl.time = timer;
-      this.webcl.draw(this, antialias, this.colours.palette.background);
+    } else if (this.renderer >= WEBCL) {
+      //this.webcl.time = timer;
+      //this.webcl.draw(this, antialias, this.colours.palette.background);
+      //TODO: Server side OpenCL
     } 
   }
 
@@ -1718,11 +1649,16 @@ Fractal.prototype.saveState = function(replace) {
   var data = this.name + "\n" + this.toStringNoFormulae();
   if (replace || !history.state) {
     debug("Replaced State: " + data.length + " # " + history.length);
+    console.log("Replaced State: " + data.length + " # " + history.length);
     window.history.replaceState(window.btoa(data), "", this.state.baseurl);
   } else {
     debug("Saved State: " + data.length + " # " + history.length);
+    console.log("Saved State: " + data.length + " # " + history.length);
     window.history.pushState(window.btoa(data), "");
   }
+  //Update the last rendered state
+  this.state.active = this.toString();
+  localStorage["fractured.active"] = this.state.active;
 }
 
 Fractal.prototype.serverRender = function(antialias) {
@@ -1751,7 +1687,7 @@ Fractal.prototype.clear = function() {
 
   if (this.webgl)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-  else //if (this.renderer >= WEBCL && this.webcl)
+  else
     this.canvas.width = this.canvas.width;  //Clears 2d canvas
 }
 
@@ -1773,11 +1709,6 @@ Fractal.prototype.renderViewport = function(x, y, w, h) {
     this.renderWebGL(this.state.antialias);
     this.webgl.viewport = new Viewport(0, 0, this.canvas.width, this.canvas.height);
     this.gl.disable(this.gl.SCISSOR_TEST);
-  } else if (this.renderer >= WEBCL && this.webcl) {
-    this.webcl.time = null; //Disable timer
-    this.webcl.setViewport(x, y, w, h);
-    this.webcl.draw(this, this.state.antialias, this.colours.palette.background);
-    this.webcl.setViewport(0, 0, this.canvas.width, this.canvas.height);
   }
   this.colours.palette.background.alpha = alpha;  //Restore alpha
 }
@@ -1888,9 +1819,6 @@ Fractal.prototype.stop = function() {
   if (this.webgl && this.webgl.timer) {
     clearTimeout(this.webgl.timer);
     this.webgl.timer = null;
-  } else if (this.webcl && this.webcl.timer) {
-    clearTimeout(this.webcl.timer);
-    this.webcl.timer = null;
   }
 }
 
@@ -2224,6 +2152,17 @@ Fractal.prototype.pinch = function(event, mouse) {
 var paletteWin;
 function openPalette() {
   paletteWin = window.open("palette.html", "palette", "resizable=1,width=500,height=600,scrollbars=yes");
+}
+
+//Stuff for node.js
+try {
+  module.exports = {
+    Fractal : Fractal, State : State,
+    getSources : function() { return sources; },
+    getFormula_list : function() { return formula_list; },
+  };
+} catch(e) {
+  console.log("Browser mode");
 }
 
 

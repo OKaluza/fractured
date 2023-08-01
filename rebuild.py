@@ -8,7 +8,7 @@ def process(cat, formulae):
   for i in formulae:
     name = p.sub("_", i).lower()
     fn = "formulae/" + name + "." + cat + ".formula"
-    print fn
+    print(fn)
     f = open(fn, 'r')
     key = cat + "/" + name
     entry = dict(type=cat, name=name, label=i, source=f.read())
@@ -25,7 +25,7 @@ if "include" in sys.argv[1]:
   }
 
   for key in sources:
-    print key
+    print(key)
     if os.path.exists(key):
       f = open(key, 'r')
       sources[key] = f.read()

@@ -91,9 +91,10 @@ __kernel void sample(
     int height,
     int j, int k)
 {
+  int idx = get_global_id(1)*get_global_size(0)+get_global_id(0);
+
   real zoom = params[0];
   real rotation = params[1];
-  real pixelsize = params[2];
   complex origin = (complex)(params[3],params[4]);
   complex selected = (complex)(params[5],params[6]);
   rgba background = (rgba)(params[7],params[8],params[9],params[10]);
@@ -107,13 +108,16 @@ __kernel void sample(
   real pixelY = 2.0 / (zoom * height);
   complex offset = (complex)(pixelX * ((real)j/(real)antialias-0.5), 
                              pixelY * ((real)k/(real)antialias-0.5));
-  rgba pixel = calcpixel(iterations, coord, offset, julia, pixelsize, 
-                     dims, origin, selected, palette, background, &params[11]);
+  rgba pixel = calcpixel(iterations, coord, offset, julia, pixelX, 
+                         dims, origin, selected, palette, background, &params[11]);
 
-  if (j==0 && k==0) temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] = (rgba)(0);
-  temp[get_global_id(1)*get_global_size(0)+get_global_id(0)] += pixel;
+  //pixel = rgba(J, K, 0, 1.0);
+
+  //if (j==0 && k==0) temp[idx] = (rgba)(0);
+  temp[idx] += pixel;
 }
 
+#if 1
 __kernel void average(write_only image2d_t output, __global float4* temp, int passes)
 {
   int2 pos = (int2)(get_global_id(0), get_global_id(1));
@@ -121,4 +125,11 @@ __kernel void average(write_only image2d_t output, __global float4* temp, int pa
   pixel /= (rgba)passes;
   write_imagef(output, pos, pixel);
 }
-
+#else
+__kernel void average(__global uchar4* output, __global float4* temp, int passes)
+{
+  int idx = get_global_id(1)*get_global_size(0)+get_global_id(0);
+  output[idx] = convert_uchar4((float4)(255.0)*temp[idx]);
+  //output[idx] = convert_uchar4(255.0*temp[idx] / (rgba)(passes));
+}
+#endif

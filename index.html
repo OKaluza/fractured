@@ -6,15 +6,15 @@
 
 <title>Fractured | Fractal Studio</title>
 
-<link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
-<link href='http://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Droid+Sans+Mono' rel='stylesheet' type='text/css'>
 <link rel="stylesheet" type="text/css" href="codemirror_VERSION.css">
 <link rel="stylesheet" type="text/css" href="styles.css">
 
 <script src="https://apis.google.com/js/client:platform.js" async defer></script>
 <meta name="google-signin-client_id" content="1087347516393-8mvvavg96lmvf9mbk1on1lnsq52979q1.apps.googleusercontent.com">
 
-<meta name="google-signin-scope" content="https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.appfolder">
+<meta name="google-signin-scope" content="https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.appfolder https://www.googleapis.com/auth/drive.file">
 <meta name="google-signin-client_id" content="1087347516393-8mvvavg96lmvf9mbk1on1lnsq52979q1.apps.googleusercontent.com">
 <script src="https://apis.google.com/js/platform.js" async defer></script>
 
@@ -30,7 +30,6 @@
 <script type="text/javascript" src="fractal.js"></script>
 
 <script type="text/javascript" src="gl-matrix.js"></script>
-<script type="text/javascript" src="webcl.js"></script>
 <!-- @-->
 
 <!--script type="text/javascript" src="fractured_VERSION.js"></script-->
@@ -81,7 +80,11 @@
             <div id="session_login_menu" class="loggedout">
               <li><span onclick="menu(); exportStateFile();">Export Session</span></li>
               <li><span onclick="menu(); document.getElementById('fileupload').click();">Import Data</span></li>
-              <li><span onclick="menu();"><div class="g-signin2" data-width="150" data-longtitle="true" data-theme="dark" data-onsuccess="onSignIn" data-onfailure="onFailure"></span></span></li>
+              <li>
+                <span onclick="menu();">
+                  <div class="g-signin2" data-width="150" data-longtitle="true" data-theme="dark" data-onsuccess="onSignIn" data-onfailure="onFailure"></div>
+                </span>
+              </li>
             </div>
           </ul>
         </li>
@@ -204,8 +207,10 @@
           <div class="noteclose" onclick="toggleCard(this);">&times;</div>
           <h3>Fractured VERSION Released:</h3>
           <ul>
-            <li>History: browser back/forward buttons can be used to view fractal history.</li>
-            <li>Pause/resume for scripting, general bug fixes</li>
+            <li>WebCL support disabled since it no longer exists.</li>
+            <li>Mouse rework, removed support for older browsers</li>
+            <li>Image export fixed</li>
+            <li>Various minor bug fixes</li>
           </ul>
         </div>
 
@@ -223,19 +228,9 @@
           Select rendering mode below. Setting will be remembered.</p>
           <input type="button" id="server" value="Server" onClick="fractal.switchMode(SERVER);">
           <input type="button" id="webgl" value="WebGL" onClick="fractal.switchMode(WEBGL);">
-          <input type="button" id="webcl" value="WebCL" onClick="fractal.switchMode(WEBCL);">
-          <input type="button" id="fp64" value="WebCL fp64" onClick="fractal.switchMode(WEBCL64);">
+          <!--input type="button" id="webcl" value="WebCL" onClick="fractal.switchMode(WEBCL);">
+          <input type="button" id="fp64" value="WebCL fp64" onClick="fractal.switchMode(WEBCL64);"-->
           </select>
-        </div>
-
-        <div class="card" id="webcl_detected">
-          <div class="noteclose" onclick="toggleCard(this);">&times;</div>
-          <h3>WebCL Detected</h3>
-          <p>When available, <i>WebCL fp64</i> uses double precision calculations allowing deeper fractal zooms, but will be slower to draw.</p>
-          <p><b>OpenCL platforms and devices:</b>
-          <select id="webcl_list" style="width: 100%; font-size: 9pt;" onchange="fractal.webclSet(this.value);">
-          </select>
-          </p>
         </div>
 
         <div class="card" id="webgl_detected">

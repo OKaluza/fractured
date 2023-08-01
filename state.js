@@ -48,10 +48,10 @@ function State(version) {
 
   //Legacy
   if (typeof this.fractal != 'string') this.fractal = null;
-  if (!this.active) {
+  //if (!this.active) {
     this.active = localStorage["fractured.active"];
     delete localStorage["fractured.active"];
-  }
+  //}
   if (!this.thumbnail) {
     this.thumbnail = localStorage["fractured.thumbnail"];
     delete localStorage["fractured.thumbnail"];
