@@ -137,8 +137,9 @@ function addSelectEntry(entry) {
 function addToSelect(type, name, label) {
   select = document.getElementById(type + "_formula");
   if (!select) return null;
-  select.options[select.length] = new Option(label, name);
-  return select.options[select.length];
+  var opt = new Option(label, name);
+  select.add(opt); //options[select.length] = opt;
+  return opt;
 }
 
 function saveSelections() {

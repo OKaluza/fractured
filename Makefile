@@ -1,4 +1,4 @@
-VERSION = 0.86
+VERSION = 0.92
 ifeq ($(CONFIG),debug)
   COMP = cp 
   FLAGS = 
@@ -16,14 +16,9 @@ codemirror=release/codemirror_$(VERSION).js
 codemirrorstyle=release/codemirror_$(VERSION).css
 
 #Sources
-VIEWSCRIPTS = parameter.js formulae.js index.js fractal.js webcl.js 
+VIEWSCRIPTS = parameter.js formulae.js index.js fractal.js
 SCRIPTS = state.js automation.js $(VIEWSCRIPTS)
 CMSCRIPTS = $(wildcard codemirror/lib/*.js) codemirror/mode/clike/clike.js codemirror/mode/javascript/javascript.js
-
-# Use ':=' instead of '=' to avoid multiple evaluation of NOW.
-# Substitute problematic characters with underscore using tr,
-#   make doesn't like spaces and ':' in filenames.
-#NOW := $(shell date +"%c" | tr ' :' '__')
 
 all: release $(fractured) $(codemirror) $(codemirrorstyle) $(includes) $(formulae)
 
@@ -37,14 +32,13 @@ release:
 	sed "s/VERSION/$(VERSION)/g" editor.html > release/editor.html
 	sed "s/VERSION/$(VERSION)/g" viewer.html > release/viewer.html
 	sed "s/VERSION/$(VERSION)/g" palette.html > release/palette.html
-	#sed "s/VERSION/$(VERSION)/g" cache.manifest | sed "s/TIMESTAMP/$(NOW)/g" > release/cache.manifest
 	sed -i "/<!--@ -->/,/<!-- @-->/d" release/index.html
 	sed -i "s/<!--script\(.*\)script-->/<script\1script>/g" release/index.html
 	cp palettes.json favicon.ico styles.css offline.html release
 	cp -R media release
 	cp -R ss release
-	sed -i "s/version [0-9.]*/version $(VERSION)/g" README.md
-	sed -i "s/version [0-9.]*/version $(VERSION)/g" docs.html
+	sed -i "s/version [0-9.]\+/version $(VERSION)/g" README.md
+	markdown README.md > docs.html
 	cp docs.html release
 
 .PHONY : clean

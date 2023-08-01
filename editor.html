@@ -102,7 +102,7 @@ var formula;
   }
 
   loadEditor = function() {
-    var editmode = "text/x-glsl";
+    var editmode = "x-shader/x-fragment";
     var edittheme = localStorage["fractured.editorTheme"] || "fracturedlight";
 
     //Copy for fallback to code
@@ -144,11 +144,6 @@ var formula;
       sel.options[sel.length] = new Option("dark", "fractureddark");
     }
 
-    /* Hack: detect Android and disable CodeMirror */
-    var isAndroid = /android/.test(navigator.userAgent.toLowerCase());
-    if (isAndroid) {
-      document.getElementById('cm_buttons').style.display = 'none';
-    } else {
       editor = new CodeMirror.fromTextArea(code, {
         mode: editmode,
         theme: edittheme,
@@ -161,7 +156,6 @@ var formula;
         matchBrackets: true
       });
       sel.value = edittheme;
-    }
   };
 
   function selectTheme(sel) {

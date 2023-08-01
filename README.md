@@ -1,17 +1,17 @@
-Fractured - [User Guide](http://fract.ured.me/docs_VERSION.html)
+Fractured - [User Guide](http://fract.ured.me/docs.html)
 =====================================
 
-Fractured | Fractal art studio | version 0.86
-© Owen Kaluza, 2012-2016
+Fractured | Fractal art studio | version 0.92
+© Owen Kaluza, 2012-2017
 
 Introduction
 ------------
 
-Fractured is a GPU accelerated fractal exploration application written in HTML,CSS,Javascript and [WebGL](http://www.khronos.org/webgl) / [WebCL](http://www.khronos.org/webcl)\*. It is designed to work as a stand-alone app, but there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
+Fractured is a GPU accelerated fractal exploration application written in HTML,CSS,Javascript with [WebGL](http://www.khronos.org/webgl)\*. It is designed to work as a stand-alone app, but there are a number of additional functions provided by the server allowing data to be stored online and accessed anywhere.
 
 I started working on it (years ago now) because I was interested in doing high resolution renders of computationally intensive fractals a hell of a lot faster on the GPU with GLSL, which was not being done at the time I started except for a few proof of concept demos. Now many lost weekends and evenings later it seems to finally have turned into a fairly complete thing and does what I needed it to.
 
-\*There's also experimental [WebCL](http://www.khronos.org/webcl) support which allows CPU rendering and double precision mode where possible. It should work with the Nokia Firefox [plugin](http://webcl.nokiaresearch.com) and [WebkitWebCL](https://github.com/SRA-SiliconValley/webkit-webcl).
+\*There was experimental [WebCL](http://www.khronos.org/webcl) modes which allowed CPU rendering and double precision where possible but this has been removed as browser support never eventuated and no plugins exist anymore. The plan is to replace this with a server side OpenCL mode.
 
 *(NOTE: this documentation is still a work in progress, if you have any questions or feedback email me at: owen (at) ozone.id.au)*
 
@@ -21,9 +21,6 @@ I started working on it (years ago now) because I was interested in doing high r
 -   Expression parser built using Jison <http://zaach.github.com/jison>
 -   Vector and Matrix library: glMatrix <https://github.com/toji/gl-matrix>
 -   Learning WebGL <http://learningwebgl.com> for WebGL tutorials
--   WebCL tutorials: Nokia Research WebCL <http://webcl.nokiaresearch.com> (particular thanks to Tomi Aarnio from Nokia for helping me get WebCL working correctly on CPU platforms).
--   The libwebcl.js wrapper <https://github.com/alerock/libwebcl> to support Webkit-WebCL (thanks heaps to Alexandre Rocha and Marcelo Morais for helping with this).
--   WebCL Examples \<<http://www.ibiblio.org/e-notes/webcl/webcl.htm>\>.
 -   Some fractal formulae based on those in Gnofract <http://gnofract4d.sourceforge.net/> and UltraFractal <http://www.ultrafractal.com>
 -   My colour picker css design is based on one from [ColorJack.com](http://www.colorjack.com/software/dhtml+color+picker.html).
 
@@ -31,8 +28,7 @@ I started working on it (years ago now) because I was interested in doing high r
 
 -   A modern browser supporting WebGL, confirmed working with Firefox, Chrome & Safari.
 -   A graphics card with up to date drivers that support OpenGL.
--   Experimental WebCL support is also available.
--   **Note: Windows** in windows Chrome and Firefox do WebGL rendering via conversion 0.86to DirectX shaders ([Angle](http://code.google.com/p/angleproject/)), this is a workaround for poor quality windows OpenGL graphics drivers and is a bit unreliable at times. For best results where possible I recommend using native OpenGL rendering, this has to be enabled in your browser manually. In Firefox: set webgl.prefer-native-gl to true in <about:config>, in Chrome: run with arguments: –use-gl=desktop *(in recent versions of Chrome it appears Native OpenGL support is broken, until this is fixed you are stuck with Angle!)*.
+-   **Note: Windows** in windows Chrome and Firefox do WebGL rendering via conversion to DirectX shaders ([Angle](http://code.google.com/p/angleproject/)), this is a workaround for poor quality windows OpenGL graphics drivers and is a bit unreliable at times. For best results where possible I recommend using native OpenGL rendering, this has to be enabled in your browser manually. In Firefox: set webgl.prefer-native-gl to true in <about:config>, in Chrome: run with arguments: –use-gl=desktop *(in recent versions of Chrome it appears Native OpenGL support is broken, until this is fixed you are stuck with Angle!)*.
 -   **Note: Safari** if not enabled, WebGL can be switched on by going into preferences -\> advanced, show develop menu. Then select Enable WebGL on the Develop menu.
 -   *Note* My development platform is Linux, Firefox, NVidia. I've tested as many other platforms as I've been able to but if haven't covered every browser/platform combination.
 
